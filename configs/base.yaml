@@ -1,0 +1,134 @@
+# BinaryMatchboxNet-3x2xC -- baseline config.
+# Every size in the model comes from here. Do not hardcode C/T/kernels in code.
+#
+# Sources for the numbers below:
+#   MatchboxNet.pdf Table 1 + 4.1   -> stage kernels, channel multipliers, STFT
+#   Cerutti IV-A / IV-C / VI-A      -> AFE envelope, thresholds, Adam 1e-4
+#   CLAUDE.md 2.2                   -> per-stage precision assignment
+
+tag: base
+
+afe:
+  n_channels: 16
+  sample_rate: 16000
+  clip_ms: 1000.0
+
+  stft_win_ms: 25.0
+  stft_hop_ms: 10.0
+  n_fft: 512
+
+  n_mels: 64          # Mel analysis resolution (Cerutti VI-A)
+  f_min: 50.0         # Cerutti Fig.6: 50 Hz - 8 kHz was the best 8-filter range
+  f_max: 7500.0
+
+  # 10 ms -> native T = 100, zero-padded to T = 128 exactly as MatchboxNet 4.1.
+  # 25 ms (native T = 40) is a sweep point, not the baseline: after conv1's
+  # stride 2 it leaves 20 frames, which is shorter than conv2's kernel span of
+  # 57. See Config.time_axis_report().
+  envelope_win_ms: 10.0
+  envelope_reduce: max
+
+  normalize: minmax
+  threshold_init: channel_mean
+  threshold_trainable: true
+  ste: hardtanh
+  ste_clip: 1.0
+
+model:
+  C: 64
+  T: 128               # MatchboxNet 4.1 pads to 128 frames
+  n_classes: 12
+  in_channels: 16
+
+  weight_ste: hardtanh
+  weight_ste_clip: 1.0
+  scale_binary_weights: true
+
+  bn_momentum: 0.1
+  bn_eps: 1.0e-5
+  final_pool: avg
+
+  # MatchboxNet Table 1 topology, with CLAUDE.md 2.2 precision overlay.
+  stages:
+    - name: conv1          # prologue: NEVER binary (input is already binary)
+      kernel: 11
+      stride: 2
+      precision: int8
+      channels_mult: 2.0   # 128 when C=64
+      separable: false
+
+    - name: b1
+      kernel: 13
+      precision: binary
+      channels_mult: 1.0
+      n_sub_blocks: 2
+      separable: true
+      residual: true
+      dropout: 0.0
+
+    - name: b2
+      kernel: 15
+      precision: binary
+      channels_mult: 1.0
+      n_sub_blocks: 2
+      separable: true
+      residual: true
+      dropout: 0.0
+
+    - name: b3
+      kernel: 17
+      precision: binary
+      channels_mult: 1.0
+      n_sub_blocks: 2
+      separable: true
+      residual: true
+      dropout: 0.0
+
+    - name: conv2          # ablation knob: binary <-> int8 (CLAUDE.md 2.2)
+      kernel: 29
+      dilation: 2
+      precision: binary
+      channels_mult: 2.0
+
+    - name: conv3
+      kernel: 1
+      precision: int8
+      channels_mult: 2.0
+
+    - name: conv4          # epilogue: NEVER binary
+      kernel: 1
+      precision: fixed
+      channels_abs: 12
+
+data:
+  name: speech_commands_v2
+  root: datasets/speech_commands_v2
+  version: v0.02
+  keywords: [yes, no, up, down, left, right, on, off, stop, go]
+  split: official
+  silence_fraction: 0.1
+  unknown_fraction: 0.1
+  num_workers: 2
+  cache_features: true
+  # Augmentation off for the first reproducible run (CLAUDE.md 3).
+  aug_time_shift_ms: 0.0
+  aug_specaug_time_masks: 0
+  aug_specaug_freq_masks: 0
+  aug_noise_prob: 0.0
+
+train:
+  epochs: 100
+  batch_size: 128
+  optimizer: adam       # NovoGrad only after Adam reproduces (CLAUDE.md 3)
+  lr: 1.0e-3
+  min_lr: 1.0e-5
+  weight_decay: 0.0
+  betas: [0.9, 0.999]
+  scheduler: plateau
+  label_smoothing: 0.0
+  grad_clip: 0.0
+  amp: true
+  seed: 1234
+  log_every: 50
+  out_dir: runs
+  device: auto

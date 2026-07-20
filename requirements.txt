@@ -1,0 +1,15 @@
+# Colab Pro already ships torch/torchaudio/numpy built against its CUDA runtime.
+# Do NOT pin torch here -- reinstalling it on Colab breaks the CUDA build and
+# costs ~5 minutes per session. Only pin what Colab lacks or ships too old.
+#
+# Local (CPU-only, scaffold work):  pip install -r requirements.txt
+# Colab:                            pip install -r requirements-colab.txt
+
+torch>=2.1
+torchaudio>=2.1
+numpy>=1.24
+pyyaml>=6.0
+tqdm>=4.65
+pytest>=7.4
+soundfile>=0.12
+matplotlib>=3.7

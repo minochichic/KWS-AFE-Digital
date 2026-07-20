@@ -1,0 +1,28 @@
+# --- datasets (never commit; Colab re-downloads) ---
+datasets/
+*.wav
+*.tar.gz
+*.zip
+
+# --- experiment outputs ---
+runs/
+checkpoints/
+*.pt
+*.pth
+*.ckpt
+wandb/
+
+# --- python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- os / editor ---
+.claude/settings.local.json
+.DS_Store
+.vscode/
+.idea/

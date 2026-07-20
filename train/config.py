@@ -1,0 +1,348 @@
+"""Config dataclasses for BinaryMatchboxNet.
+
+Design notes
+------------
+* YAML is the single source of truth; dataclasses give type hints + validation.
+  Nothing downstream (models/, data/, export/) may hardcode C, T, kernels or
+  precision -- see CLAUDE.md section 5.
+* Layer precision is a *config flag*, not a code branch scattered around the
+  model, so the Conv2 binary-vs-int8 ablation (CLAUDE.md 2.2) is a one-line
+  YAML change.
+* `validate()` encodes CLAUDE.md's two hard rules (first/last layer never
+  binary) so a bad YAML fails loudly at load time instead of silently training
+  an architecture we promised not to build.
+
+Python 3.9-compatible (Colab is newer, but local dev here is 3.9).
+"""
+
+from __future__ import annotations
+
+import dataclasses
+from dataclasses import dataclass, field, asdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+import yaml
+
+# Precision tags understood by models/. "fp32" is for debugging only.
+PRECISIONS = ("binary", "int8", "fixed", "fp32")
+
+
+# --------------------------------------------------------------------------- #
+# AFE (analog front-end simulation)
+# --------------------------------------------------------------------------- #
+@dataclass
+class AFEConfig:
+    """Software simulation of Cerutti et al.'s analog front end.
+
+    Pipeline: waveform -> STFT -> Mel filterbank (n_mels) -> regroup to
+    n_channels equally-spaced corner freqs in the Mel domain -> per-window
+    envelope (max) -> min-max normalize -> per-channel learnable threshold
+    -> {-1,+1}.
+
+    Cerutti IV-A: envelope = "maximum full-precision values of the spectrogram
+    in windows of 10 ms or 25 ms"; thresholds initialized with the per-channel
+    average over the training set, min-max scaled the same way as the features.
+    """
+
+    n_channels: int = 16          # AFE binary channels -> model input rows
+    sample_rate: int = 16000
+    clip_ms: float = 1000.0       # Speech Commands clips are 1 s
+
+    # STFT front-end (MatchboxNet 4.1 / Cerutti VI-A both use 25 ms / 10 ms)
+    stft_win_ms: float = 25.0
+    stft_hop_ms: float = 10.0
+    n_fft: int = 512
+
+    # Mel filterbank. n_mels is the *analysis* resolution; n_channels is the
+    # AFE filter count. These are deliberately different (CLAUDE.md 3).
+    n_mels: int = 64
+    f_min: float = 50.0
+    f_max: float = 7500.0
+
+    # AFE envelope window: 10 ms or 25 ms (Cerutti IV-A). Sets the native T.
+    envelope_win_ms: float = 25.0
+    envelope_reduce: str = "max"  # "max" | "mean"
+
+    # Binarization
+    normalize: str = "minmax"           # matches Cerutti's min-max scaling
+    threshold_init: str = "channel_mean"
+    threshold_trainable: bool = True
+    ste: str = "hardtanh"               # STE flavor for the step function
+    ste_clip: float = 1.0
+
+    @property
+    def native_T(self) -> int:
+        """Number of envelope windows produced by a full-length clip."""
+        return int(round(self.clip_ms / self.envelope_win_ms))
+
+
+# --------------------------------------------------------------------------- #
+# Model
+# --------------------------------------------------------------------------- #
+@dataclass
+class StageConfig:
+    """One prologue/epilogue conv, or one residual block of R sub-blocks.
+
+    `channels_mult` is relative to the model width C so that a single C knob
+    scales the whole net (MatchboxNet Table 1 uses 2*C for Conv1/2/3).
+    `channels_abs`, when set, overrides it (used by Conv4 = n_classes).
+    """
+
+    name: str
+    kernel: int
+    precision: str
+    stride: int = 1
+    dilation: int = 1
+    channels_mult: float = 1.0
+    channels_abs: Optional[int] = None
+    n_sub_blocks: int = 1          # R, only >1 for the TCS residual blocks
+    separable: bool = False        # True -> depthwise + pointwise (TCS)
+    residual: bool = False
+    dropout: float = 0.0
+
+    def out_channels(self, C: int, n_classes: int) -> int:
+        if self.channels_abs is not None:
+            return self.channels_abs
+        return max(1, int(round(C * self.channels_mult)))
+
+
+@dataclass
+class ModelConfig:
+    """BinaryMatchboxNet-BxRxC, per CLAUDE.md 2.2."""
+
+    C: int = 64                   # channel width -- primary sweep axis
+    T: int = 64                   # time window count -- primary sweep axis
+    n_classes: int = 12
+    in_channels: int = 16         # must equal afe.n_channels
+
+    # Binary weight/activation handling (QAT)
+    weight_ste: str = "hardtanh"
+    weight_ste_clip: float = 1.0
+    scale_binary_weights: bool = True   # per-output-channel alpha (XNOR-Net)
+
+    bn_momentum: float = 0.1
+    bn_eps: float = 1e-5
+    final_pool: str = "avg"
+
+    stages: List[StageConfig] = field(default_factory=list)
+
+
+# --------------------------------------------------------------------------- #
+# Data / training
+# --------------------------------------------------------------------------- #
+@dataclass
+class DataConfig:
+    name: str = "speech_commands_v2"
+    root: str = "datasets/speech_commands_v2"
+    version: str = "v0.02"
+    # 12-class setup (Cerutti IV-A)
+    keywords: List[str] = field(default_factory=lambda: [
+        "yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go",
+    ])
+    unknown_label: str = "_unknown_"
+    silence_label: str = "_silence_"
+    silence_fraction: float = 0.1     # share of synthesized silence clips
+    unknown_fraction: float = 0.1
+    # Official split via validation_list.txt / testing_list.txt hashing
+    split: str = "official"
+    num_workers: int = 2
+    cache_features: bool = True
+
+    # Augmentation. Off by default -- CLAUDE.md 3 says introduce only if we
+    # miss 85%. Kept in config so turning it on is a YAML edit.
+    aug_time_shift_ms: float = 0.0
+    aug_specaug_time_masks: int = 0
+    aug_specaug_freq_masks: int = 0
+    aug_noise_prob: float = 0.0
+
+
+@dataclass
+class TrainConfig:
+    epochs: int = 100
+    batch_size: int = 128
+    optimizer: str = "adam"       # "adam" | "novograd" (phase 2)
+    lr: float = 1e-3
+    min_lr: float = 1e-5
+    weight_decay: float = 0.0
+    betas: List[float] = field(default_factory=lambda: [0.9, 0.999])
+    scheduler: str = "plateau"    # "plateau" | "warmup_hold_decay" | "none"
+    warmup_ratio: float = 0.05    # WHD only (MatchboxNet 4.1)
+    hold_ratio: float = 0.45
+    label_smoothing: float = 0.0
+    grad_clip: float = 0.0
+    amp: bool = True
+    seed: int = 1234
+    log_every: int = 50
+    out_dir: str = "runs"
+    device: str = "auto"
+
+
+@dataclass
+class Config:
+    afe: AFEConfig = field(default_factory=AFEConfig)
+    model: ModelConfig = field(default_factory=ModelConfig)
+    data: DataConfig = field(default_factory=DataConfig)
+    train: TrainConfig = field(default_factory=TrainConfig)
+    tag: str = "base"
+
+    # ------------------------------------------------------------------ #
+    def validate(self) -> None:
+        m, a = self.model, self.afe
+
+        if m.in_channels != a.n_channels:
+            raise ValueError(
+                f"model.in_channels ({m.in_channels}) must equal "
+                f"afe.n_channels ({a.n_channels})"
+            )
+        if a.envelope_win_ms not in (10.0, 25.0):
+            raise ValueError(
+                f"afe.envelope_win_ms must be 10 or 25 ms (Cerutti IV-A), "
+                f"got {a.envelope_win_ms}"
+            )
+        if a.f_max > a.sample_rate / 2:
+            raise ValueError(
+                f"afe.f_max ({a.f_max}) exceeds Nyquist ({a.sample_rate / 2})"
+            )
+        if not m.stages:
+            raise ValueError("model.stages is empty")
+
+        names = [s.name for s in m.stages]
+        for s in m.stages:
+            if s.precision not in PRECISIONS:
+                raise ValueError(
+                    f"stage {s.name}: unknown precision {s.precision!r}, "
+                    f"expected one of {PRECISIONS}"
+                )
+
+        # --- CLAUDE.md 2.2 absolute rules -------------------------------- #
+        first, last = m.stages[0], m.stages[-1]
+        if first.precision == "binary":
+            raise ValueError(
+                f"CLAUDE.md 2.2: the first layer ({first.name}) must never be "
+                f"binarized -- the input is already binary."
+            )
+        if last.precision == "binary":
+            raise ValueError(
+                f"CLAUDE.md 2.2: the last layer ({last.name}) must never be "
+                f"binarized -- it needs fixed-point 12-class separability."
+            )
+        if last.out_channels(m.C, m.n_classes) != m.n_classes:
+            raise ValueError(
+                f"final stage {last.name} must emit n_classes="
+                f"{m.n_classes} channels"
+            )
+        if len(set(names)) != len(names):
+            raise ValueError(f"duplicate stage names: {names}")
+
+    def warnings(self) -> List[str]:
+        """Non-fatal consistency notes (T vs. AFE window, kernel spans)."""
+        out: List[str] = []
+        native = self.afe.native_T
+        if self.model.T != native:
+            verb = "zero-padded" if self.model.T > native else "cropped"
+            out.append(
+                f"model.T={self.model.T} != native T={native} from a "
+                f"{self.afe.envelope_win_ms:.0f} ms envelope window over a "
+                f"{self.afe.clip_ms:.0f} ms clip -> features will be {verb}."
+            )
+        out.extend(self.time_axis_report()[1])
+        return out
+
+    def time_axis_report(self):
+        """Track the time-axis length through the stages.
+
+        MatchboxNet's kernels (up to k=29, dilation=2 -> span 57) were sized for
+        T=128 frames. Small (C, T) sweep points shrink the time axis below the
+        kernel span, at which point a layer convolves mostly over padding --
+        wasted parameters and a likely accuracy cliff. Flag it rather than
+        silently training it.
+        """
+        lengths: List[tuple] = []
+        notes: List[str] = []
+        t = self.model.T
+        for s in self.model.stages:
+            t_in = t
+            t = -(-t // s.stride)  # ceil div; 'same' padding
+            span = (s.kernel - 1) * s.dilation + 1
+            lengths.append((s.name, t_in, t, span))
+            if span > t_in:
+                notes.append(
+                    f"stage {s.name}: kernel span {span} "
+                    f"(k={s.kernel}, dilation={s.dilation}) exceeds its input "
+                    f"time length {t_in} -> convolves mostly over padding."
+                )
+        return lengths, notes
+
+    # ------------------------------------------------------------------ #
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    def save(self, path) -> None:
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w") as f:
+            yaml.safe_dump(self.to_dict(), f, sort_keys=False, allow_unicode=True)
+
+
+# --------------------------------------------------------------------------- #
+# YAML loading
+# --------------------------------------------------------------------------- #
+def _build(cls, raw: Optional[Dict[str, Any]]):
+    """Instantiate a dataclass from a dict, rejecting unknown keys.
+
+    Silently dropping a typo'd key would mean training a different model than
+    the YAML claims, so unknown keys are a hard error.
+    """
+    if raw is None:
+        return cls()
+    known = {f.name for f in dataclasses.fields(cls)}
+    unknown = set(raw) - known
+    if unknown:
+        raise ValueError(
+            f"{cls.__name__}: unknown config key(s) {sorted(unknown)}; "
+            f"valid keys are {sorted(known)}"
+        )
+    return cls(**raw)
+
+
+def load_config(path, overrides: Optional[Dict[str, Any]] = None) -> Config:
+    """Load a YAML config.
+
+    `overrides` uses dotted paths, e.g. {"model.C": 32, "model.T": 40} -- this
+    is what the (C, T) sweep in experiments/ drives.
+    """
+    with Path(path).open() as f:
+        raw: Dict[str, Any] = yaml.safe_load(f) or {}
+
+    model_raw = dict(raw.get("model") or {})
+    stages_raw = model_raw.pop("stages", None) or []
+
+    cfg = Config(
+        afe=_build(AFEConfig, raw.get("afe")),
+        model=_build(ModelConfig, model_raw),
+        data=_build(DataConfig, raw.get("data")),
+        train=_build(TrainConfig, raw.get("train")),
+        tag=raw.get("tag", "base"),
+    )
+    cfg.model.stages = [_build(StageConfig, s) for s in stages_raw]
+
+    if overrides:
+        for dotted, value in overrides.items():
+            _set_dotted(cfg, dotted, value)
+
+    cfg.validate()
+    return cfg
+
+
+def _set_dotted(cfg: Config, dotted: str, value: Any) -> None:
+    parts = dotted.split(".")
+    obj: Any = cfg
+    for p in parts[:-1]:
+        if not hasattr(obj, p):
+            raise ValueError(f"override {dotted!r}: no such section {p!r}")
+        obj = getattr(obj, p)
+    leaf = parts[-1]
+    if not hasattr(obj, leaf):
+        raise ValueError(f"override {dotted!r}: no such key {leaf!r}")
+    setattr(obj, leaf, value)

@@ -1,0 +1,5 @@
+# Colab-only extras. torch/torchaudio/numpy/matplotlib/tqdm are preinstalled --
+# listing them here would trigger a reinstall against the wrong CUDA build.
+pyyaml>=6.0
+soundfile>=0.12
+pytest>=7.4
