@@ -46,10 +46,17 @@ Cerutti Fig.5의 교훈(입력·양 끝단 이진화 시 정확도 급락)을 �
 | B1 | TCS sub-block ×2, k=13 | **이진 (XNOR/popcount)** | depthwise + pointwise 모두 이진 |
 | B2 | TCS sub-block ×2, k=15 | 이진 | |
 | B3 | TCS sub-block ×2, k=17 | 이진 | |
-| Conv2 (epilogue) | 1D conv, k=29, dilation=2 | 이진 or INT8 (ablation) | 리소스 초과 시 첫 축소 후보 |
+| Conv2 (epilogue) | 1D **separable** conv, k=29, dilation=2 | 이진 or INT8 (ablation) | 리소스 초과 시 첫 축소 후보 |
 | Conv3 | 1×1 conv | INT8 | |
 | Conv4 | 1×1 conv → 12 classes | **fixed-point** | 마지막 층 이진화 금지 |
 | Head | avg pool + softmax | — | |
+
+**결정 기록 (2026-07-21, 사용자 승인):** Conv2는 기본 **separable**.
+dense k=29 conv는 그것만으로 238K 파라미터로 MatchboxNet 논문 전체(93K)를
+초과하므로, 원 논문의 epilogue는 separable이었다고 판단. separable 기준 총
+~96.5K로 논문 수치와 일치. **단, 정확도가 85% 목표에 미달하면 이 선택이
+원인일 수 있음** — `configs/base.yaml`에서 `separable: false`로 되돌려
+dense(총 324K)와 비교하는 것이 1순위 ablation이다.
 
 **절대 규칙:**
 1. **첫 층(Conv1)과 마지막 층(Conv4)은 절대 이진화하지 않는다.**

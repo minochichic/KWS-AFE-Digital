@@ -82,3 +82,6 @@ python3 experiments/inspect_config.py configs/base.yaml model.C=16 model.T=96 af
 **주의**: 16채널 AFE에서 12-class 85% 목표는 Cerutti의 8ch(76.3%)와
 64ch(86.0%) 사이에 있고, 논문 스스로 AFE 방식의 상한을 ~85%로 언급한다.
 목표가 낙관적일 수 있다 — sweep 결과가 나오면 재검토한다.
+
+**결정 기록 (2026-07-21)**: conv2는 기본 **separable** (총 96.5K, 논문 93K와
+일치). dense(총 324K)는 정확도 미달 시 1순위 ablation — CLAUDE.md 2.2 참고.

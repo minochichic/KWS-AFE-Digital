@@ -85,11 +85,18 @@ model:
       residual: true
       dropout: 0.0
 
-    - name: conv2          # ablation knob: binary <-> int8 (CLAUDE.md 2.2)
-      kernel: 29
+    - name: conv2          # ablation knobs: precision binary <-> int8,
+      kernel: 29           #                 separable <-> dense
       dilation: 2
       precision: binary
       channels_mult: 2.0
+      # DECISION (2026-07-21, user-approved): separable by default. A dense
+      # k=29 conv here alone is 238K params -- more than the whole 93K
+      # MatchboxNet-3x2x64 -- so the original paper's epilogue must have been
+      # separable. separable brings the total to ~96.5K, matching the paper.
+      # IF ACCURACY FALLS SHORT of the 85% target, flipping this back to
+      # `separable: false` (dense, 324K total) is a known candidate fix.
+      separable: true
 
     - name: conv3
       kernel: 1

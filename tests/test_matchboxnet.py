@@ -253,14 +253,19 @@ def test_conv2_int8_ablation_builds_and_runs() -> None:
     assert model(binary_image(2, 16, 128)).shape == (2, 12)
 
 
-def test_conv2_separable_variant_builds_and_shrinks() -> None:
+def test_conv2_default_is_separable_dense_is_fallback() -> None:
+    """Decision 2026-07-21 (user-approved, see CLAUDE.md 2.2): conv2 defaults
+    to separable (~96.5K total, matching the paper's 93K); dense (324K) stays
+    available as the first ablation if accuracy misses the 85% target."""
     cfg = load_config(BASE)
-    dense_params = sum(p.numel() for p in BinaryMatchboxNet(cfg.model).parameters())
-
     conv2 = next(s for s in cfg.model.stages if s.name == "conv2")
-    conv2.separable = True
+    assert conv2.separable is True
+
+    sep_params = sum(p.numel() for p in BinaryMatchboxNet(cfg.model).parameters())
+
+    conv2.separable = False                      # the recorded fallback
     model = BinaryMatchboxNet(cfg.model)
-    sep_params = sum(p.numel() for p in model.parameters())
+    dense_params = sum(p.numel() for p in model.parameters())
 
     assert model(binary_image(2, 16, 128)).shape == (2, 12)
     assert sep_params < dense_params
