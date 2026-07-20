@@ -15,7 +15,7 @@ Cerutti et al.의 아날로그 프론트엔드(AFE)가 만드는 **이진 시간
 | 2 | 이진 연산 원자(`sign_ste`, `BinaryConv1d`) + 단위 테스트 | ✅ 완료 |
 | 3 | AFE 이진화 모듈 (학습 가능 threshold) | ✅ 완료 |
 | 4 | BinaryMatchboxNet 조립 | ✅ 완료 |
-| 5 | 학습 루프 + 합성 데이터 오버핏 검증 | ⬜ |
+| 5 | 학습 루프 + 합성 데이터 오버핏 검증 | ✅ 완료 |
 | 6 | Speech Commands v2 파이프라인, (C, T) sweep | ⬜ |
 
 ## 개발 환경
