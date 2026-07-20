@@ -17,7 +17,8 @@ afe:
   stft_hop_ms: 10.0
   n_fft: 512
 
-  n_mels: 64          # Mel analysis resolution (Cerutti VI-A)
+  n_mels: 64          # full-precision baseline only; AFE builds its own
+                      # n_channels-filter bank (see data/afe.py)
   f_min: 50.0         # Cerutti Fig.6: 50 Hz - 8 kHz was the best 8-filter range
   f_max: 7500.0
 

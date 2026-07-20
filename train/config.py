@@ -35,10 +35,13 @@ PRECISIONS = ("binary", "int8", "fixed", "fp32")
 class AFEConfig:
     """Software simulation of Cerutti et al.'s analog front end.
 
-    Pipeline: waveform -> STFT -> Mel filterbank (n_mels) -> regroup to
-    n_channels equally-spaced corner freqs in the Mel domain -> per-window
-    envelope (max) -> min-max normalize -> per-channel learnable threshold
-    -> {-1,+1}.
+    Pipeline: waveform -> STFT -> mel filterbank built directly with
+    n_channels triangular filters (corner freqs equally spaced in the mel
+    domain, CLAUDE.md 3) -> log -> per-window envelope (max) -> min-max
+    normalize -> per-channel learnable threshold -> {-1,+1}.
+
+    n_mels is NOT used by the AFE path; it is the analysis resolution for the
+    full-precision Mel baseline (Cerutti VI-A) we may compare against.
 
     Cerutti IV-A: envelope = "maximum full-precision values of the spectrogram
     in windows of 10 ms or 25 ms"; thresholds initialized with the per-channel
