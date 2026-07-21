@@ -1,0 +1,268 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1010" height="1780" viewBox="0 0 1010 1780" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<defs><marker id="ar" markerWidth="12" markerHeight="12" refX="8" refY="4" orient="auto"><path d="M0,0 L9,4 L0,8 Z" fill="#dc2626"/></marker></defs>
+<rect width="1010" height="1780" fill="#ffffff"/>
+<text x="505.0" y="38" text-anchor="middle" font-size="23" font-weight="700" fill="#0f172a">이진 TCS sub-block 전 과정 (채널별 α 스케일 시각화)</text>
+<text x="505.0" y="62" text-anchor="middle" font-size="13" fill="#64748b">Depthwise → ⊙α → BN → sign → Pointwise → popcount(+residual) → BN → sign.   슬랩: 앞모서리=시간(T), 깊이=채널(C).</text>
+<polygon points="430.0,150.0 586.0,222.0 612.0,210.0 456.0,138.0" fill="#e9d5ff"/>
+<polygon points="456.0,138.0 612.0,210.0 638.0,198.0 482.0,126.0" fill="#e9d5ff"/>
+<polygon points="482.0,126.0 638.0,198.0 664.0,186.0 508.0,114.0" fill="#e9d5ff"/>
+<polygon points="508.0,114.0 664.0,186.0 690.0,174.0 534.0,102.0" fill="#e9d5ff"/>
+<polygon points="430.0,150.0 456.0,162.0 482.0,150.0 456.0,138.0" fill="#f3e8ff"/>
+<polygon points="456.0,162.0 482.0,174.0 508.0,162.0 482.0,150.0" fill="#d8b4fe"/>
+<polygon points="482.0,174.0 508.0,186.0 534.0,174.0 508.0,162.0" fill="#f3e8ff"/>
+<polygon points="508.0,186.0 534.0,198.0 560.0,186.0 534.0,174.0" fill="#d8b4fe"/>
+<polygon points="534.0,198.0 560.0,210.0 586.0,198.0 560.0,186.0" fill="#f3e8ff"/>
+<polygon points="560.0,210.0 586.0,222.0 612.0,210.0 586.0,198.0" fill="#d8b4fe"/>
+<polygon points="456.0,138.0 482.0,150.0 508.0,138.0 482.0,126.0" fill="#d8b4fe"/>
+<polygon points="482.0,150.0 508.0,162.0 534.0,150.0 508.0,138.0" fill="#f3e8ff"/>
+<polygon points="508.0,162.0 534.0,174.0 560.0,162.0 534.0,150.0" fill="#d8b4fe"/>
+<polygon points="534.0,174.0 560.0,186.0 586.0,174.0 560.0,162.0" fill="#f3e8ff"/>
+<polygon points="560.0,186.0 586.0,198.0 612.0,186.0 586.0,174.0" fill="#d8b4fe"/>
+<polygon points="586.0,198.0 612.0,210.0 638.0,198.0 612.0,186.0" fill="#f3e8ff"/>
+<polygon points="482.0,126.0 508.0,138.0 534.0,126.0 508.0,114.0" fill="#f3e8ff"/>
+<polygon points="508.0,138.0 534.0,150.0 560.0,138.0 534.0,126.0" fill="#d8b4fe"/>
+<polygon points="534.0,150.0 560.0,162.0 586.0,150.0 560.0,138.0" fill="#f3e8ff"/>
+<polygon points="560.0,162.0 586.0,174.0 612.0,162.0 586.0,150.0" fill="#d8b4fe"/>
+<polygon points="586.0,174.0 612.0,186.0 638.0,174.0 612.0,162.0" fill="#f3e8ff"/>
+<polygon points="612.0,186.0 638.0,198.0 664.0,186.0 638.0,174.0" fill="#d8b4fe"/>
+<polygon points="508.0,114.0 534.0,126.0 560.0,114.0 534.0,102.0" fill="#d8b4fe"/>
+<polygon points="534.0,126.0 560.0,138.0 586.0,126.0 560.0,114.0" fill="#f3e8ff"/>
+<polygon points="560.0,138.0 586.0,150.0 612.0,138.0 586.0,126.0" fill="#d8b4fe"/>
+<polygon points="586.0,150.0 612.0,162.0 638.0,150.0 612.0,138.0" fill="#f3e8ff"/>
+<polygon points="612.0,162.0 638.0,174.0 664.0,162.0 638.0,150.0" fill="#d8b4fe"/>
+<polygon points="638.0,174.0 664.0,186.0 690.0,174.0 664.0,162.0" fill="#f3e8ff"/>
+<line x1="430.0" y1="150.0" x2="534.0" y2="102.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="162.0" x2="560.0" y2="114.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="174.0" x2="586.0" y2="126.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="186.0" x2="612.0" y2="138.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="198.0" x2="638.0" y2="150.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="560.0" y1="210.0" x2="664.0" y2="162.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="586.0" y1="222.0" x2="690.0" y2="174.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="430.0" y1="150.0" x2="586.0" y2="222.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="138.0" x2="612.0" y2="210.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="126.0" x2="638.0" y2="198.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="114.0" x2="664.0" y2="186.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="102.0" x2="690.0" y2="174.0" stroke="#334155" stroke-width="0.7"/>
+<polygon points="430.0,150.0 586.0,222.0 586.0,236.0 430.0,164.0" fill="#a799b7" stroke="#334155" stroke-width="0.8"/>
+<polygon points="586.0,222.0 690.0,174.0 690.0,188.0 586.0,236.0" fill="#877b93" stroke="#334155" stroke-width="0.8"/>
+<polygon points="430.0,150.0 586.0,222.0 690.0,174.0 534.0,102.0" fill="none" stroke="#1e293b" stroke-width="1.1"/>
+<text x="700" y="168" font-size="14" font-weight="700" fill="#6b21a8">x  입력  [C, T]  ∈ {-1,+1}</text>
+<text x="700" y="186" font-size="11.5" fill="#64748b">AFE 출력 또는 이전 블록의 sign. 1-bit.</text>
+<rect x="90" y="264" width="440" height="46" rx="9" fill="#eef2ff" stroke="#6366f1" stroke-width="1.2"/>
+<text x="104" y="284" font-size="13.5" font-weight="700" fill="#312e81">① Depthwise (채널별 시간축 이진 conv, k)</text>
+<text x="104" y="302" font-size="11" fill="#475569">채널마다 독립 conv. 곱셈 없음: XNOR + popcount.</text>
+<line x1="460" y1="314" x2="460" y2="340" stroke="#dc2626" stroke-width="2.4" marker-end="url(#ar)"/>
+<polygon points="430.0,380.0 586.0,452.0 612.0,440.0 456.0,368.0" fill="#fde68a"/>
+<polygon points="456.0,368.0 612.0,440.0 638.0,428.0 482.0,356.0" fill="#fde68a"/>
+<polygon points="482.0,356.0 638.0,428.0 664.0,416.0 508.0,344.0" fill="#fde68a"/>
+<polygon points="508.0,344.0 664.0,416.0 690.0,404.0 534.0,332.0" fill="#fde68a"/>
+<line x1="430.0" y1="380.0" x2="534.0" y2="332.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="392.0" x2="560.0" y2="344.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="404.0" x2="586.0" y2="356.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="416.0" x2="612.0" y2="368.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="428.0" x2="638.0" y2="380.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="560.0" y1="440.0" x2="664.0" y2="392.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="586.0" y1="452.0" x2="690.0" y2="404.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="430.0" y1="380.0" x2="586.0" y2="452.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="368.0" x2="612.0" y2="440.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="356.0" x2="638.0" y2="428.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="344.0" x2="664.0" y2="416.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="332.0" x2="690.0" y2="404.0" stroke="#334155" stroke-width="0.7"/>
+<polygon points="430.0,380.0 586.0,452.0 586.0,466.0 430.0,394.0" fill="#b6a563" stroke="#334155" stroke-width="0.8"/>
+<polygon points="586.0,452.0 690.0,404.0 690.0,418.0 586.0,466.0" fill="#928550" stroke="#334155" stroke-width="0.8"/>
+<polygon points="430.0,380.0 586.0,452.0 690.0,404.0 534.0,332.0" fill="none" stroke="#1e293b" stroke-width="1.1"/>
+<text x="700" y="398" font-size="14" font-weight="700" fill="#92400e">depthwise 출력 [C,T] (정수)</text>
+<text x="700" y="416" font-size="11.5" fill="#64748b">채널별 2·popcount−N. 아직 크기(α) 미반영.</text>
+<rect x="90" y="494" width="440" height="46" rx="9" fill="#fef9c3" stroke="#f59e0b" stroke-width="1.2"/>
+<text x="104" y="514" font-size="13.5" font-weight="700" fill="#312e81">② ⊙ α  (채널별 스칼라 곱)</text>
+<text x="104" y="532" font-size="11" fill="#475569">αₒ=mean|Wₒ|. 채널마다 다른 스칼라. ↓확대 패널.</text>
+<line x1="460" y1="544" x2="460" y2="570" stroke="#dc2626" stroke-width="2.4" marker-end="url(#ar)"/>
+<polygon points="430.0,610.0 586.0,682.0 612.0,670.0 456.0,598.0" fill="#fef9c3"/>
+<polygon points="456.0,598.0 612.0,670.0 638.0,658.0 482.0,586.0" fill="#fcd34d"/>
+<polygon points="482.0,586.0 638.0,658.0 664.0,646.0 508.0,574.0" fill="#f59e0b"/>
+<polygon points="508.0,574.0 664.0,646.0 690.0,634.0 534.0,562.0" fill="#b45309"/>
+<line x1="430.0" y1="610.0" x2="534.0" y2="562.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="622.0" x2="560.0" y2="574.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="634.0" x2="586.0" y2="586.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="646.0" x2="612.0" y2="598.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="658.0" x2="638.0" y2="610.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="560.0" y1="670.0" x2="664.0" y2="622.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="586.0" y1="682.0" x2="690.0" y2="634.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="430.0" y1="610.0" x2="586.0" y2="682.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="598.0" x2="612.0" y2="670.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="586.0" x2="638.0" y2="658.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="574.0" x2="664.0" y2="646.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="562.0" x2="690.0" y2="634.0" stroke="#334155" stroke-width="0.7"/>
+<polygon points="430.0,610.0 586.0,682.0 586.0,696.0 430.0,624.0" fill="#9da8b6" stroke="#334155" stroke-width="0.8"/>
+<polygon points="586.0,682.0 690.0,634.0 690.0,648.0 586.0,696.0" fill="#7f8793" stroke="#334155" stroke-width="0.8"/>
+<polygon points="430.0,610.0 586.0,682.0 690.0,634.0 534.0,562.0" fill="none" stroke="#1e293b" stroke-width="1.1"/>
+<text x="700" y="628" font-size="14" font-weight="700" fill="#b45309">α 반영 [C,T]</text>
+<text x="700" y="646" font-size="11.5" fill="#64748b">채널마다 다른 밝기 = 다른 αₒ (금색 그라데이션).</text>
+<rect x="90" y="724" width="440" height="46" rx="9" fill="#e2e8f0" stroke="#64748b" stroke-width="1.2"/>
+<text x="104" y="744" font-size="13.5" font-weight="700" fill="#312e81">③ BN  →  ④ sign</text>
+<text x="104" y="762" font-size="11" fill="#475569">BN이 채널별 양수 α를 흡수→α 소멸. 이어 sign.</text>
+<line x1="460" y1="774" x2="460" y2="800" stroke="#dc2626" stroke-width="2.4" marker-end="url(#ar)"/>
+<polygon points="430.0,840.0 586.0,912.0 612.0,900.0 456.0,828.0" fill="#c7d2fe"/>
+<polygon points="456.0,828.0 612.0,900.0 638.0,888.0 482.0,816.0" fill="#c7d2fe"/>
+<polygon points="482.0,816.0 638.0,888.0 664.0,876.0 508.0,804.0" fill="#c7d2fe"/>
+<polygon points="508.0,804.0 664.0,876.0 690.0,864.0 534.0,792.0" fill="#c7d2fe"/>
+<polygon points="430.0,840.0 456.0,852.0 482.0,840.0 456.0,828.0" fill="#e0e7ff"/>
+<polygon points="456.0,852.0 482.0,864.0 508.0,852.0 482.0,840.0" fill="#a5b4fc"/>
+<polygon points="482.0,864.0 508.0,876.0 534.0,864.0 508.0,852.0" fill="#e0e7ff"/>
+<polygon points="508.0,876.0 534.0,888.0 560.0,876.0 534.0,864.0" fill="#a5b4fc"/>
+<polygon points="534.0,888.0 560.0,900.0 586.0,888.0 560.0,876.0" fill="#e0e7ff"/>
+<polygon points="560.0,900.0 586.0,912.0 612.0,900.0 586.0,888.0" fill="#a5b4fc"/>
+<polygon points="456.0,828.0 482.0,840.0 508.0,828.0 482.0,816.0" fill="#a5b4fc"/>
+<polygon points="482.0,840.0 508.0,852.0 534.0,840.0 508.0,828.0" fill="#e0e7ff"/>
+<polygon points="508.0,852.0 534.0,864.0 560.0,852.0 534.0,840.0" fill="#a5b4fc"/>
+<polygon points="534.0,864.0 560.0,876.0 586.0,864.0 560.0,852.0" fill="#e0e7ff"/>
+<polygon points="560.0,876.0 586.0,888.0 612.0,876.0 586.0,864.0" fill="#a5b4fc"/>
+<polygon points="586.0,888.0 612.0,900.0 638.0,888.0 612.0,876.0" fill="#e0e7ff"/>
+<polygon points="482.0,816.0 508.0,828.0 534.0,816.0 508.0,804.0" fill="#e0e7ff"/>
+<polygon points="508.0,828.0 534.0,840.0 560.0,828.0 534.0,816.0" fill="#a5b4fc"/>
+<polygon points="534.0,840.0 560.0,852.0 586.0,840.0 560.0,828.0" fill="#e0e7ff"/>
+<polygon points="560.0,852.0 586.0,864.0 612.0,852.0 586.0,840.0" fill="#a5b4fc"/>
+<polygon points="586.0,864.0 612.0,876.0 638.0,864.0 612.0,852.0" fill="#e0e7ff"/>
+<polygon points="612.0,876.0 638.0,888.0 664.0,876.0 638.0,864.0" fill="#a5b4fc"/>
+<polygon points="508.0,804.0 534.0,816.0 560.0,804.0 534.0,792.0" fill="#a5b4fc"/>
+<polygon points="534.0,816.0 560.0,828.0 586.0,816.0 560.0,804.0" fill="#e0e7ff"/>
+<polygon points="560.0,828.0 586.0,840.0 612.0,828.0 586.0,816.0" fill="#a5b4fc"/>
+<polygon points="586.0,840.0 612.0,852.0 638.0,840.0 612.0,828.0" fill="#e0e7ff"/>
+<polygon points="612.0,852.0 638.0,864.0 664.0,852.0 638.0,840.0" fill="#a5b4fc"/>
+<polygon points="638.0,864.0 664.0,876.0 690.0,864.0 664.0,852.0" fill="#e0e7ff"/>
+<line x1="430.0" y1="840.0" x2="534.0" y2="792.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="852.0" x2="560.0" y2="804.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="864.0" x2="586.0" y2="816.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="876.0" x2="612.0" y2="828.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="888.0" x2="638.0" y2="840.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="560.0" y1="900.0" x2="664.0" y2="852.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="586.0" y1="912.0" x2="690.0" y2="864.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="430.0" y1="840.0" x2="586.0" y2="912.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="828.0" x2="612.0" y2="900.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="816.0" x2="638.0" y2="888.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="804.0" x2="664.0" y2="876.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="792.0" x2="690.0" y2="864.0" stroke="#334155" stroke-width="0.7"/>
+<polygon points="430.0,840.0 586.0,912.0 586.0,926.0 430.0,854.0" fill="#8f97b6" stroke="#334155" stroke-width="0.8"/>
+<polygon points="586.0,912.0 690.0,864.0 690.0,878.0 586.0,926.0" fill="#737993" stroke="#334155" stroke-width="0.8"/>
+<polygon points="430.0,840.0 586.0,912.0 690.0,864.0 534.0,792.0" fill="none" stroke="#1e293b" stroke-width="1.1"/>
+<text x="700" y="858" font-size="14" font-weight="700" fill="#3730a3">[C,T] ∈ {-1,+1}</text>
+<text x="700" y="876" font-size="11.5" fill="#64748b">다시 1-bit → pointwise의 XNOR 입력.</text>
+<rect x="90" y="954" width="440" height="46" rx="9" fill="#dcfce7" stroke="#16a34a" stroke-width="1.2"/>
+<text x="104" y="974" font-size="13.5" font-weight="700" fill="#312e81">⑤ Pointwise 1×1 (채널 믹싱, 이진)</text>
+<text x="104" y="992" font-size="11" fill="#475569">채널 방향 XNOR. 입력이 {-1,+1}이라 성립.</text>
+<line x1="460" y1="1004" x2="460" y2="1030" stroke="#dc2626" stroke-width="2.4" marker-end="url(#ar)"/>
+<polygon points="430.0,1070.0 586.0,1142.0 612.0,1130.0 456.0,1058.0" fill="#fed7aa"/>
+<polygon points="456.0,1058.0 612.0,1130.0 638.0,1118.0 482.0,1046.0" fill="#fed7aa"/>
+<polygon points="482.0,1046.0 638.0,1118.0 664.0,1106.0 508.0,1034.0" fill="#fed7aa"/>
+<polygon points="508.0,1034.0 664.0,1106.0 690.0,1094.0 534.0,1022.0" fill="#fed7aa"/>
+<line x1="430.0" y1="1070.0" x2="534.0" y2="1022.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="1082.0" x2="560.0" y2="1034.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="1094.0" x2="586.0" y2="1046.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="1106.0" x2="612.0" y2="1058.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="1118.0" x2="638.0" y2="1070.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="560.0" y1="1130.0" x2="664.0" y2="1082.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="586.0" y1="1142.0" x2="690.0" y2="1094.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="430.0" y1="1070.0" x2="586.0" y2="1142.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="1058.0" x2="612.0" y2="1130.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="1046.0" x2="638.0" y2="1118.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="1034.0" x2="664.0" y2="1106.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="1022.0" x2="690.0" y2="1094.0" stroke="#334155" stroke-width="0.7"/>
+<polygon points="430.0,1070.0 586.0,1142.0 586.0,1156.0 430.0,1084.0" fill="#b69a7a" stroke="#334155" stroke-width="0.8"/>
+<polygon points="586.0,1142.0 690.0,1094.0 690.0,1108.0 586.0,1156.0" fill="#937c62" stroke="#334155" stroke-width="0.8"/>
+<polygon points="430.0,1070.0 586.0,1142.0 690.0,1094.0 534.0,1022.0" fill="none" stroke="#1e293b" stroke-width="1.1"/>
+<text x="700" y="1078" font-size="14" font-weight="700" fill="#9a3412">⑥ popcount 정수 누산기 [C,T]</text>
+<text x="700" y="1096" font-size="11.5" fill="#64748b">2·popcount−N. residual을 여기서 정수 가산(+).</text>
+<text x="700" y="1114" font-size="11" fill="#b91c1c">←마지막 sub-block이면 skip을 정수로 더함</text>
+<rect x="90" y="1184" width="440" height="46" rx="9" fill="#e2e8f0" stroke="#64748b" stroke-width="1.2"/>
+<text x="104" y="1204" font-size="13.5" font-weight="700" fill="#312e81">⑦ BN  →  ⑧ sign</text>
+<text x="104" y="1222" font-size="11" fill="#475569">정수 누산+residual 후 BN→sign 한 번. export시 정수 threshold 1개.</text>
+<line x1="460" y1="1234" x2="460" y2="1260" stroke="#dc2626" stroke-width="2.4" marker-end="url(#ar)"/>
+<polygon points="430.0,1300.0 586.0,1372.0 612.0,1360.0 456.0,1288.0" fill="#c7d2fe"/>
+<polygon points="456.0,1288.0 612.0,1360.0 638.0,1348.0 482.0,1276.0" fill="#c7d2fe"/>
+<polygon points="482.0,1276.0 638.0,1348.0 664.0,1336.0 508.0,1264.0" fill="#c7d2fe"/>
+<polygon points="508.0,1264.0 664.0,1336.0 690.0,1324.0 534.0,1252.0" fill="#c7d2fe"/>
+<polygon points="430.0,1300.0 456.0,1312.0 482.0,1300.0 456.0,1288.0" fill="#e0e7ff"/>
+<polygon points="456.0,1312.0 482.0,1324.0 508.0,1312.0 482.0,1300.0" fill="#a5b4fc"/>
+<polygon points="482.0,1324.0 508.0,1336.0 534.0,1324.0 508.0,1312.0" fill="#e0e7ff"/>
+<polygon points="508.0,1336.0 534.0,1348.0 560.0,1336.0 534.0,1324.0" fill="#a5b4fc"/>
+<polygon points="534.0,1348.0 560.0,1360.0 586.0,1348.0 560.0,1336.0" fill="#e0e7ff"/>
+<polygon points="560.0,1360.0 586.0,1372.0 612.0,1360.0 586.0,1348.0" fill="#a5b4fc"/>
+<polygon points="456.0,1288.0 482.0,1300.0 508.0,1288.0 482.0,1276.0" fill="#a5b4fc"/>
+<polygon points="482.0,1300.0 508.0,1312.0 534.0,1300.0 508.0,1288.0" fill="#e0e7ff"/>
+<polygon points="508.0,1312.0 534.0,1324.0 560.0,1312.0 534.0,1300.0" fill="#a5b4fc"/>
+<polygon points="534.0,1324.0 560.0,1336.0 586.0,1324.0 560.0,1312.0" fill="#e0e7ff"/>
+<polygon points="560.0,1336.0 586.0,1348.0 612.0,1336.0 586.0,1324.0" fill="#a5b4fc"/>
+<polygon points="586.0,1348.0 612.0,1360.0 638.0,1348.0 612.0,1336.0" fill="#e0e7ff"/>
+<polygon points="482.0,1276.0 508.0,1288.0 534.0,1276.0 508.0,1264.0" fill="#e0e7ff"/>
+<polygon points="508.0,1288.0 534.0,1300.0 560.0,1288.0 534.0,1276.0" fill="#a5b4fc"/>
+<polygon points="534.0,1300.0 560.0,1312.0 586.0,1300.0 560.0,1288.0" fill="#e0e7ff"/>
+<polygon points="560.0,1312.0 586.0,1324.0 612.0,1312.0 586.0,1300.0" fill="#a5b4fc"/>
+<polygon points="586.0,1324.0 612.0,1336.0 638.0,1324.0 612.0,1312.0" fill="#e0e7ff"/>
+<polygon points="612.0,1336.0 638.0,1348.0 664.0,1336.0 638.0,1324.0" fill="#a5b4fc"/>
+<polygon points="508.0,1264.0 534.0,1276.0 560.0,1264.0 534.0,1252.0" fill="#a5b4fc"/>
+<polygon points="534.0,1276.0 560.0,1288.0 586.0,1276.0 560.0,1264.0" fill="#e0e7ff"/>
+<polygon points="560.0,1288.0 586.0,1300.0 612.0,1288.0 586.0,1276.0" fill="#a5b4fc"/>
+<polygon points="586.0,1300.0 612.0,1312.0 638.0,1300.0 612.0,1288.0" fill="#e0e7ff"/>
+<polygon points="612.0,1312.0 638.0,1324.0 664.0,1312.0 638.0,1300.0" fill="#a5b4fc"/>
+<polygon points="638.0,1324.0 664.0,1336.0 690.0,1324.0 664.0,1312.0" fill="#e0e7ff"/>
+<line x1="430.0" y1="1300.0" x2="534.0" y2="1252.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="1312.0" x2="560.0" y2="1264.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="1324.0" x2="586.0" y2="1276.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="1336.0" x2="612.0" y2="1288.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="1348.0" x2="638.0" y2="1300.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="560.0" y1="1360.0" x2="664.0" y2="1312.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="586.0" y1="1372.0" x2="690.0" y2="1324.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="430.0" y1="1300.0" x2="586.0" y2="1372.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="456.0" y1="1288.0" x2="612.0" y2="1360.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="482.0" y1="1276.0" x2="638.0" y2="1348.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="508.0" y1="1264.0" x2="664.0" y2="1336.0" stroke="#334155" stroke-width="0.7"/>
+<line x1="534.0" y1="1252.0" x2="690.0" y2="1324.0" stroke="#334155" stroke-width="0.7"/>
+<polygon points="430.0,1300.0 586.0,1372.0 586.0,1386.0 430.0,1314.0" fill="#8f97b6" stroke="#334155" stroke-width="0.8"/>
+<polygon points="586.0,1372.0 690.0,1324.0 690.0,1338.0 586.0,1386.0" fill="#737993" stroke="#334155" stroke-width="0.8"/>
+<polygon points="430.0,1300.0 586.0,1372.0 690.0,1324.0 534.0,1252.0" fill="none" stroke="#1e293b" stroke-width="1.1"/>
+<text x="700" y="1318" font-size="14" font-weight="700" fill="#3730a3">출력 [C,T] ∈ {-1,+1}</text>
+<text x="700" y="1336" font-size="11.5" fill="#64748b">다음 sub-block / 스테이지로.</text>
+<rect x="60" y="1420" width="890" height="300" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.4"/>
+<text x="80" y="1448" font-size="15" font-weight="700" fill="#92400e">확대: ② ⊙ α — 채널별 스칼라 곱 (첨부 그림 스타일)</text>
+<text x="80" y="1470" font-size="12" fill="#78350f">채널맵(정수) ⊙ 채널별 α = 채널마다 밝기가 다른 스케일된 맵. α는 곱한 뒤 BN이 흡수.</text>
+<rect x="90" y="1498" width="150" height="32" rx="4" fill="#93c5fd" stroke="#334155"/>
+<text x="165" y="1519" text-anchor="middle" font-size="11" fill="#1e293b">ch0 정수맵</text>
+<text x="258" y="1521" font-size="18" fill="#b45309">⊙</text>
+<rect x="286" y="1499" width="66" height="30" rx="4" fill="#fef9c3" stroke="#b45309"/>
+<text x="319" y="1519" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">α0</text>
+<text x="368" y="1521" font-size="16" fill="#64748b">=</text>
+<rect x="394" y="1498" width="150" height="32" rx="4" fill="#fef9c3" stroke="#334155"/>
+<text x="469" y="1519" text-anchor="middle" font-size="11" fill="#1e293b">ch0 × α0</text>
+<rect x="90" y="1543" width="150" height="32" rx="4" fill="#86efac" stroke="#334155"/>
+<text x="165" y="1564" text-anchor="middle" font-size="11" fill="#1e293b">ch1 정수맵</text>
+<text x="258" y="1566" font-size="18" fill="#b45309">⊙</text>
+<rect x="286" y="1544" width="66" height="30" rx="4" fill="#fcd34d" stroke="#b45309"/>
+<text x="319" y="1564" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">α1</text>
+<text x="368" y="1566" font-size="16" fill="#64748b">=</text>
+<rect x="394" y="1543" width="150" height="32" rx="4" fill="#fcd34d" stroke="#334155"/>
+<text x="469" y="1564" text-anchor="middle" font-size="11" fill="#1e293b">ch1 × α1</text>
+<rect x="90" y="1588" width="150" height="32" rx="4" fill="#fca5a5" stroke="#334155"/>
+<text x="165" y="1609" text-anchor="middle" font-size="11" fill="#1e293b">ch2 정수맵</text>
+<text x="258" y="1611" font-size="18" fill="#b45309">⊙</text>
+<rect x="286" y="1589" width="66" height="30" rx="4" fill="#f59e0b" stroke="#b45309"/>
+<text x="319" y="1609" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">α2</text>
+<text x="368" y="1611" font-size="16" fill="#64748b">=</text>
+<rect x="394" y="1588" width="150" height="32" rx="4" fill="#f59e0b" stroke="#334155"/>
+<text x="469" y="1609" text-anchor="middle" font-size="11" fill="#1e293b">ch2 × α2</text>
+<rect x="90" y="1633" width="150" height="32" rx="4" fill="#c4b5fd" stroke="#334155"/>
+<text x="165" y="1654" text-anchor="middle" font-size="11" fill="#1e293b">ch3 정수맵</text>
+<text x="258" y="1656" font-size="18" fill="#b45309">⊙</text>
+<rect x="286" y="1634" width="66" height="30" rx="4" fill="#b45309" stroke="#b45309"/>
+<text x="319" y="1654" text-anchor="middle" font-size="12" font-weight="700" fill="#7c2d12">α3</text>
+<text x="368" y="1656" font-size="16" fill="#64748b">=</text>
+<rect x="394" y="1633" width="150" height="32" rx="4" fill="#b45309" stroke="#334155"/>
+<text x="469" y="1654" text-anchor="middle" font-size="11" fill="#1e293b">ch3 × α3</text>
+<text x="590" y="1512" font-size="12.5" font-weight="700" fill="#92400e">αₒ = mean|Wₒ|  (출력채널별 스칼라)</text>
+<text x="590" y="1532" font-size="12" fill="#78350f">sign(W)이 버린 필터 크기를 복원 (XNOR-Net).</text>
+<text x="590" y="1560" font-size="12.5" font-weight="700" fill="#059669">학습: PyTorch binary_weight()에서 계산·곱셈</text>
+<text x="590" y="1580" font-size="12" fill="#065f46">순수 소프트웨어. 하드웨어 아님.</text>
+<text x="590" y="1608" font-size="12.5" font-weight="700" fill="#b91c1c">추론/FPGA: α 자체가 없음</text>
+<text x="590" y="1628" font-size="12" fill="#7f1d1d">BN·α → export시 정수 threshold 1개로 융합.</text>
+<text x="590" y="1648" font-size="12" fill="#7f1d1d">하드웨어=popcount→정수비교. 곱셈기·α저장 0개.</text>
+<text x="590" y="1676" font-size="11" fill="#94a3b8">threshold = (μ − β·σ/γ)/α  (Cerutti 식3, floor)</text>
+</svg>

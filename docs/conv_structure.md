@@ -11,6 +11,7 @@
 | 이진 dot product (XNOR/popcount) | [`03_binary_conv_primitive.svg`](diagrams/03_binary_conv_primitive.svg) |
 | INT8 fake-quant 층 | [`04_int8_conv.svg`](diagrams/04_int8_conv.svg) |
 | α(가중치 스케일) 적용 위치 지도 | [`05_alpha_scaling_map.svg`](diagrams/05_alpha_scaling_map.svg) |
+| sub-block 전 과정 (아이소메트릭, 채널별 α) | [`06_subblock_pipeline.svg`](diagrams/06_subblock_pipeline.svg) |
 
 근거: `models/binary_ops.py`, `models/quant_ops.py`, `models/binary_matchboxnet.py`,
 `data/afe.py`, `configs/base.yaml`. 논문 근거는 `CLAUDE.md`와 두 PDF.
@@ -139,6 +140,15 @@ pointwise(`subs.1.pw`)만 정수 누산기로 들어가 `scale=False`(§4).
 
 `scale` 플래그 위치: `_TCSSub`(마지막 pw = `scale_binary_weights and not final`),
 `BinaryTCSBlock`(skip = 항상 `scale=False`).
+
+### α는 하드웨어 연산이 아니다 (그림 06 확대 패널)
+
+- **계산·곱셈은 학습 소프트웨어에만 존재**: `binary_weight()`에서 `α=mean|W|`를 latent
+  실수 가중치로부터 계산해 `sign(W)`에 곱함. latent 가중치는 학습 중에만 존재.
+- **추론/FPGA에는 α가 없음**: 한 채널에서 `sign(bn(α·acc))`이 뒤집히는 지점은
+  `acc ≷ (μ − β·σ/γ)/α`. 즉 α는 BN의 γ,β와 함께 export 시 **정수 threshold 하나로
+  융합**(Cerutti 식 3). 하드웨어는 `popcount → 정수 비교`만 하며, α 곱셈기도 α 저장도
+  없다(비용 0). (이 융합=export 단계는 아직 미구현, `export/`는 다음 마일스톤용 자리.)
 
 ---
 
