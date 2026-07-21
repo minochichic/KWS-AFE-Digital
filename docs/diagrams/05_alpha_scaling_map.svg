@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="800" viewBox="0 0 1040 800" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="a" markerWidth="11" markerHeight="11" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#334155"/></marker>
+    <marker id="ar" markerWidth="11" markerHeight="11" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#dc2626"/></marker>
+  </defs>
+  <rect width="1040" height="800" fill="#ffffff"/>
+  <text x="520" y="34" text-anchor="middle" font-size="23" font-weight="700" fill="#0f172a">α (가중치 스케일) 적용 위치 지도 — 이진 TCS 블록</text>
+  <text x="520" y="58" text-anchor="middle" font-size="13" fill="#64748b">규칙: 출력을 바로 뒤 BN이 정규화하면 α 적용(공짜). 출력이 정수 residual 누산기로 가면 α 끔.</text>
+
+  <!-- input pill -->
+  <rect x="410" y="76" width="220" height="26" rx="13" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="520" y="94" text-anchor="middle" font-size="12.5" font-weight="600" fill="#065f46">입력 x  [B,128,64]  {-1,+1}</text>
+  <line x1="520" y1="102" x2="520" y2="120" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ===== sub-block 1 ===== -->
+  <rect x="40" y="122" width="960" height="138" rx="12" fill="#f6fefb" stroke="#059669" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <text x="60" y="145" font-size="14" font-weight="700" fill="#065f46">Sub-block 1  —  모든 이진 conv에 α 적용</text>
+
+  <!-- dw a✓ -->
+  <rect x="60" y="160" width="150" height="64" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="135" y="185" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Depthwise</text>
+  <text x="135" y="203" text-anchor="middle" font-size="11" fill="#065f46">이진 conv k=13</text>
+  <rect x="150" y="166" width="52" height="20" rx="10" fill="#059669"/><text x="176" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">α ✓</text>
+  <text x="135" y="219" text-anchor="middle" font-size="10" fill="#047857">뒤 BN이 흡수</text>
+  <line x1="210" y1="192" x2="228" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="230" y="168" width="60" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="260" y="196" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <line x1="290" y1="192" x2="308" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="310" y="168" width="60" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="340" y="196" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+  <line x1="370" y1="192" x2="388" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- pw a✓ -->
+  <rect x="390" y="160" width="150" height="64" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="465" y="185" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Pointwise</text>
+  <text x="465" y="203" text-anchor="middle" font-size="11" fill="#065f46">이진 1×1 128→64</text>
+  <rect x="480" y="166" width="52" height="20" rx="10" fill="#059669"/><text x="506" y="180" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">α ✓</text>
+  <text x="465" y="219" text-anchor="middle" font-size="10" fill="#047857">뒤 BN이 흡수</text>
+  <line x1="540" y1="192" x2="558" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="560" y="172" width="96" height="40" rx="8" fill="#fff7ed" stroke="#ea580c"/><text x="608" y="189" text-anchor="middle" font-size="11" font-weight="700" fill="#9a3412">정수 누산기</text><text x="608" y="203" text-anchor="middle" font-size="9" fill="#c2410c">2·popcnt−N</text>
+  <line x1="656" y1="192" x2="674" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="676" y="168" width="58" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="705" y="196" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <line x1="734" y1="192" x2="752" y2="192" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="754" y="168" width="58" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="783" y="196" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+  <text x="900" y="188" text-anchor="middle" font-size="11" fill="#047857">non-final</text>
+  <text x="900" y="204" text-anchor="middle" font-size="11" fill="#047857">pw는 α✓</text>
+
+  <line x1="520" y1="260" x2="520" y2="278" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="410" y="280" width="220" height="24" rx="12" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="520" y="297" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">중간 [B,64,64] {-1,+1}</text>
+  <line x1="520" y1="304" x2="520" y2="322" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ===== sub-block 2 ===== -->
+  <rect x="40" y="324" width="960" height="150" rx="12" fill="#f6fefb" stroke="#059669" stroke-width="1.4" stroke-dasharray="6 4"/>
+  <text x="60" y="347" font-size="14" font-weight="700" fill="#065f46">Sub-block 2 (마지막)  —  depthwise만 α✓,  마지막 pointwise·skip은 α✗</text>
+
+  <!-- dw a✓ -->
+  <rect x="60" y="362" width="150" height="64" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="135" y="387" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Depthwise</text>
+  <text x="135" y="405" text-anchor="middle" font-size="11" fill="#065f46">이진 conv k=13</text>
+  <rect x="150" y="368" width="52" height="20" rx="10" fill="#059669"/><text x="176" y="382" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">α ✓</text>
+  <text x="135" y="421" text-anchor="middle" font-size="10" fill="#047857">내부 BN이 흡수</text>
+  <line x1="210" y1="394" x2="228" y2="394" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="230" y="370" width="60" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="260" y="398" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <line x1="290" y1="394" x2="308" y2="394" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="310" y="370" width="60" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="340" y="398" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+  <line x1="370" y1="394" x2="388" y2="394" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- pw a✗ -->
+  <rect x="390" y="362" width="150" height="64" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.8"/>
+  <text x="465" y="387" text-anchor="middle" font-size="13" font-weight="700" fill="#991b1b">Pointwise</text>
+  <text x="465" y="405" text-anchor="middle" font-size="11" fill="#991b1b">이진 1×1 64→64</text>
+  <rect x="480" y="368" width="52" height="20" rx="10" fill="#dc2626"/><text x="506" y="382" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">α ✗</text>
+  <text x="465" y="421" text-anchor="middle" font-size="10" fill="#b91c1c">정수 유지 필요</text>
+  <line x1="540" y1="394" x2="556" y2="394" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- add -->
+  <circle cx="600" cy="394" r="22" fill="#fee2e2" stroke="#dc2626" stroke-width="1.8"/><text x="600" y="400" text-anchor="middle" font-size="20" font-weight="700" fill="#dc2626">+</text>
+  <text x="600" y="432" text-anchor="middle" font-size="10" font-weight="600" fill="#b91c1c">정수+정수</text>
+  <line x1="622" y1="394" x2="640" y2="394" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="642" y="370" width="58" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="671" y="398" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <line x1="700" y1="394" x2="718" y2="394" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="720" y="370" width="58" height="48" rx="8" fill="#e2e8f0" stroke="#64748b"/><text x="749" y="398" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+
+  <!-- skip a✗ -->
+  <rect x="820" y="362" width="150" height="64" rx="8" fill="#fee2e2" stroke="#dc2626" stroke-width="1.8"/>
+  <text x="895" y="384" text-anchor="middle" font-size="12.5" font-weight="700" fill="#991b1b">skip 투영</text>
+  <text x="895" y="401" text-anchor="middle" font-size="10.5" fill="#991b1b">이진 1×1 (B1: 128→64)</text>
+  <rect x="908" y="367" width="52" height="19" rx="9" fill="#dc2626"/><text x="934" y="381" text-anchor="middle" font-size="11" font-weight="700" fill="#fff">α ✗</text>
+  <text x="895" y="418" text-anchor="middle" font-size="9.5" fill="#b91c1c">B2·B3는 identity</text>
+  <path d="M895,362 L895,344 L600,344 L600,372" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+
+  <line x1="520" y1="474" x2="520" y2="492" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="410" y="494" width="220" height="26" rx="13" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="520" y="512" text-anchor="middle" font-size="12.5" font-weight="600" fill="#065f46">출력 [B,64,64] {-1,+1}</text>
+
+  <!-- residual skip from input -->
+  <path d="M410,89 L25,89 L25,394 L576,394" fill="none" stroke="#dc2626" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+
+  <!-- ===== bottom: rule + inventory ===== -->
+  <rect x="40" y="546" width="470" height="228" rx="10" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.2"/>
+  <text x="60" y="570" font-size="14" font-weight="700" fill="#334155">지배 규칙</text>
+  <rect x="60" y="582" width="18" height="18" rx="4" fill="#059669"/><text x="86" y="596" font-size="12.5" fill="#334155">α ✓ : 출력을 바로 뒤 BN이 정규화 → 흡수됨.</text>
+  <text x="86" y="614" font-size="12" fill="#64748b">export 시 정수 threshold로 융합되어 소멸 → 하드웨어 비용 0.</text>
+  <rect x="60" y="628" width="18" height="18" rx="4" fill="#dc2626"/><text x="86" y="642" font-size="12.5" fill="#334155">α ✗ : 출력이 정수 residual 누산기로 들어감.</text>
+  <text x="86" y="660" font-size="12" fill="#64748b">α를 곱하면 누산기가 비정수 → 정수 덧셈·threshold 1회 융합이 깨짐.</text>
+  <text x="60" y="690" font-size="12.5" font-weight="700" fill="#7c3aed">핵심: 마지막 sub-block도 depthwise는 α✓.</text>
+  <text x="60" y="708" font-size="12" fill="#5b21b6">dw 출력은 residual로 직행하지 않고 (내부 BN→sign→pw)를</text>
+  <text x="60" y="724" font-size="12" fill="#5b21b6">거치므로 내부 BN이 흡수. 오직 마지막 pw만 누산기로 감.</text>
+  <text x="60" y="750" font-size="11.5" fill="#94a3b8">코드: BinaryConv1d.binary_weight() 에서 w = sign(W)·α (scale=True일 때).</text>
+  <text x="60" y="766" font-size="11.5" fill="#94a3b8">scale 플래그: _TCSSub(마지막 pw = not final), BinaryTCSBlock(skip=False).</text>
+
+  <rect x="530" y="546" width="470" height="228" rx="10" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.2"/>
+  <text x="550" y="570" font-size="14" font-weight="700" fill="#334155">전체 이진 conv 15개 인벤토리 (base)</text>
+  <rect x="550" y="582" width="14" height="14" rx="3" fill="#059669"/><text x="572" y="594" font-size="12.5" font-weight="700" fill="#065f46">α 적용 — 11개</text>
+  <text x="566" y="614" font-size="12" fill="#334155">b1·b2·b3 각각:  subs.0.dw,  subs.0.pw,  subs.1.dw</text>
+  <text x="566" y="632" font-size="12" fill="#334155">conv2:  dw,  pw   (뒤 BN→ReLU가 흡수)</text>
+  <rect x="550" y="646" width="14" height="14" rx="3" fill="#dc2626"/><text x="572" y="658" font-size="12.5" font-weight="700" fill="#991b1b">α 없음 (scale=False) — 4개</text>
+  <text x="566" y="678" font-size="12" fill="#334155">b1·b2·b3:  subs.1.pw  (각 블록 마지막 pointwise)</text>
+  <text x="566" y="696" font-size="12" fill="#334155">b1.skip  (128→64 투영).  B2·B3 skip은 identity(conv 없음)</text>
+  <rect x="550" y="710" width="14" height="14" rx="3" fill="#94a3b8"/><text x="572" y="722" font-size="12.5" font-weight="700" fill="#475569">무관 (이진 아님)</text>
+  <text x="566" y="742" font-size="12" fill="#334155">conv1·conv3: INT8 (자체 s=max|W|/127, α 아님)</text>
+  <text x="566" y="760" font-size="12" fill="#334155">conv4: fixed-point.   AFE threshold: conv 가중치 아님</text>
+</svg>

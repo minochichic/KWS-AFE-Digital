@@ -10,6 +10,7 @@
 | 이진 TCS 블록 내부 | [`02_tcs_block.svg`](diagrams/02_tcs_block.svg) |
 | 이진 dot product (XNOR/popcount) | [`03_binary_conv_primitive.svg`](diagrams/03_binary_conv_primitive.svg) |
 | INT8 fake-quant 층 | [`04_int8_conv.svg`](diagrams/04_int8_conv.svg) |
+| α(가중치 스케일) 적용 위치 지도 | [`05_alpha_scaling_map.svg`](diagrams/05_alpha_scaling_map.svg) |
 
 근거: `models/binary_ops.py`, `models/quant_ops.py`, `models/binary_matchboxnet.py`,
 `data/afe.py`, `configs/base.yaml`. 논문 근거는 `CLAUDE.md`와 두 PDF.
@@ -117,14 +118,27 @@ x̂ = (x+1)/2 ∈ {0,1}                      # -1을 0으로 인코딩
   `tests/test_binary_ops.py`가 bool/popcount 레퍼런스와 dense·depthwise·pointwise
   모두 일치함을 검증 → 학습된 SW 모델과 FPGA가 어긋나지 않음을 보장.
 
-### 가중치 스케일 α (선택)
+### 가중치 스케일 α (선택) — 그림 05
 
 `sign()`이 버린 크기를 보정. `α = mean|W|`(출력채널별)이 `‖W − α·sign(W)‖²`를
 최소화하는 최적값(XNOR-Net). 전체 출력 = `α · (2·popcount − N)`.
 
-- **내부 conv는 α 적용** → 뒤따르는 BN이 양수 채널 스케일을 흡수 → export 시 소멸.
-- **residual에 들어가는 마지막 pointwise·skip은 α 미적용**(`scale=False`) → 누산기를
-  정수로 유지해야 residual과 정수 덧셈이 가능(§4).
+**지배 규칙**: 출력을 바로 뒤 BN이 정규화하면 α 적용(BN이 흡수 → export 시 소멸, 공짜);
+출력이 정수 residual 누산기로 가면 α 끔(정수 유지 필요).
+
+base 모델의 이진 conv 15개 중 (그림 05):
+
+- **α 적용 (11)**: `b1/b2/b3` 각 `subs.0.dw`, `subs.0.pw`, `subs.1.dw` + `conv2.dw`, `conv2.pw`
+- **α 없음 (4)**: `b1/b2/b3` `subs.1.pw`(각 블록 마지막 pointwise) + `b1.skip`(투영).
+  B2·B3 skip은 identity라 conv 없음.
+- **무관**: `conv1`·`conv3`(INT8, 자체 스케일 `s=max|W|/127`은 α와 별개), `conv4`(fixed).
+
+**핵심**: 마지막 sub-block에서도 depthwise(`subs.1.dw`)는 α 적용. dw 출력은 residual로
+직행하지 않고 `내부 BN→sign→pw`를 거치므로 내부 BN이 흡수하기 때문. 오직 마지막
+pointwise(`subs.1.pw`)만 정수 누산기로 들어가 `scale=False`(§4).
+
+`scale` 플래그 위치: `_TCSSub`(마지막 pw = `scale_binary_weights and not final`),
+`BinaryTCSBlock`(skip = 항상 `scale=False`).
 
 ---
 
