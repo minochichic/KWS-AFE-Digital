@@ -16,7 +16,7 @@ Cerutti et al.의 아날로그 프론트엔드(AFE)가 만드는 **이진 시간
 | 3 | AFE 이진화 모듈 (학습 가능 threshold) | ✅ 완료 |
 | 4 | BinaryMatchboxNet 조립 | ✅ 완료 |
 | 5 | 학습 루프 + 합성 데이터 오버핏 검증 | ✅ 완료 |
-| 6 | Speech Commands v2 파이프라인, (C, T) sweep | ⬜ |
+| 6 | Speech Commands v2 파이프라인, (C, T) sweep | ✅ 코드 완료 (Colab 실행 대기) |
 
 ## 개발 환경
 
@@ -30,9 +30,24 @@ python3 -m pytest
 **Colab Pro** — 실제 학습. [`docs/colab_setup.md`](docs/colab_setup.md)의
 GitHub PAT + Colab 시크릿 셋팅을 한 번 끝낸 뒤
 [`notebooks/colab_bootstrap.ipynb`](notebooks/colab_bootstrap.ipynb)를 연다.
+셀을 위에서부터 실행하면 clone/sync → 의존성 → 테스트 → 데이터셋 다운로드
+(~2.3GB, `/content`) → 학습 → (C,T) sweep 순으로 진행된다.
 
 흐름: **로컬에서 수정 → push → Colab에서 부트스트랩 셀 재실행 → 학습.**
 Colab 워킹 카피는 매 실행마다 `git reset --hard` 되므로 거기서 소스를 고치지 않는다.
+
+주요 명령 (Colab, `data.root`은 dotted override로 전달):
+
+```bash
+# 단일 학습 (base config, C=64 T=128)
+python -m train.train --config configs/base.yaml \
+    data.root=/content/datasets/speech_commands_v2 --tag sc_v2
+
+# (C, T) sweep — 85% 넘기는 최소 (C,T) 탐색
+python -m experiments.sweep --config configs/base.yaml \
+    --C 16 32 48 64 --T 40 64 96 128 --epochs 100 \
+    data.root=/content/datasets/speech_commands_v2
+```
 
 ## 디렉터리
 

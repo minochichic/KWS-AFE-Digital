@@ -229,24 +229,37 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default="configs/base.yaml")
     ap.add_argument("--overfit-smoke", action="store_true",
-                    help="train on synthetic tones to verify the loop "
-                         "(the only mode until step 6 lands)")
+                    help="train on synthetic tones to verify the loop (no "
+                         "dataset needed)")
     ap.add_argument("--epochs", type=int, default=None)
+    ap.add_argument("--tag", default=None)
+    ap.add_argument("overrides", nargs="*",
+                    help="dotted config overrides, e.g. data.root=/content/ds "
+                         "model.C=32")
     args = ap.parse_args()
 
-    if not args.overfit_smoke:
-        raise SystemExit("real-dataset training arrives with step 6; "
-                         "run with --overfit-smoke for now")
+    if args.overfit_smoke:
+        _run_overfit_smoke(args)
+    else:
+        _run_speech_commands(args)
 
+
+def _base_overrides(args, default_tag: str) -> dict:
+    from experiments.inspect_config import _parse_overrides
+    overrides = _parse_overrides(args.overrides)
+    overrides["tag"] = args.tag or default_tag
+    if args.epochs:
+        overrides["train.epochs"] = args.epochs
+    return overrides
+
+
+def _run_overfit_smoke(args) -> None:
     from data.afe import AFEFrontend
     from models.binary_matchboxnet import BinaryMatchboxNet
     from train.synthetic import make_tone_dataset
     from torch.utils.data import DataLoader, TensorDataset
 
-    overrides = {"tag": "overfit_smoke"}
-    if args.epochs:
-        overrides["train.epochs"] = args.epochs
-    cfg = load_config(args.config, overrides)
+    cfg = load_config(args.config, _base_overrides(args, "overfit_smoke"))
 
     set_seed(cfg.train.seed)
     afe = AFEFrontend(cfg.afe)
@@ -262,6 +275,31 @@ def main() -> None:
     trainer.fit(loader)
     final = trainer.evaluate(loader)
     print(f"\nfinal: loss {final['loss']:.4f}  acc {final['acc']:.3f}")
+
+
+def _run_speech_commands(args) -> None:
+    """Real Speech Commands v2 training (Colab: downloads on first call)."""
+    from data.afe import AFEFrontend
+    from data.speech_commands import build_dataloaders
+    from models.binary_matchboxnet import BinaryMatchboxNet
+
+    cfg = load_config(args.config, _base_overrides(args, "sc_v2"))
+
+    set_seed(cfg.train.seed)
+    afe = AFEFrontend(cfg.afe)
+    model = BinaryMatchboxNet(cfg.model)
+
+    train_loader, val_loader, test_loader = build_dataloaders(
+        cfg.data, cfg.train.batch_size, cfg.afe.sample_rate, seed=cfg.train.seed)
+
+    waves, _ = next(iter(train_loader))
+    afe.init_thresholds(waves)                       # Cerutti IV-A
+
+    trainer = Trainer(cfg, model, afe=afe)
+    trainer.fit(train_loader, val_loader)
+    test = trainer.evaluate(test_loader)
+    print(f"\ntest: loss {test['loss']:.4f}  acc {test['acc']:.3f}  "
+          f"({'MEETS' if test['acc'] >= 0.85 else 'below'} 85% target)")
 
 
 if __name__ == "__main__":
