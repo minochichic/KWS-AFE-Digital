@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="940" height="560" viewBox="0 0 940 560" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="940" height="560" fill="#ffffff"/>
+<text x="470.0" y="34" text-anchor="middle" font-size="20" font-weight="700" fill="#0f172a">sc_v2 학습 곡선 (C=64, T=128, 100 epoch, T4 3.3h)</text>
+<text x="470.0" y="54" text-anchor="middle" font-size="12" fill="#64748b">test 0.809 = 최종(epoch100) 모델을 test split에서 평가.  best val 0.840(ep64), 목표 0.85.</text>
+<line x1="70" y1="500.0" x2="900" y2="500.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="504.0" text-anchor="end" font-size="11" fill="#64748b">0.30</text>
+<line x1="70" y1="428.3" x2="900" y2="428.3" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="432.3" text-anchor="end" font-size="11" fill="#64748b">0.40</text>
+<line x1="70" y1="356.7" x2="900" y2="356.7" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="360.7" text-anchor="end" font-size="11" fill="#64748b">0.50</text>
+<line x1="70" y1="285.0" x2="900" y2="285.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="289.0" text-anchor="end" font-size="11" fill="#64748b">0.60</text>
+<line x1="70" y1="213.3" x2="900" y2="213.3" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="217.3" text-anchor="end" font-size="11" fill="#64748b">0.70</text>
+<line x1="70" y1="141.7" x2="900" y2="141.7" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="145.7" text-anchor="end" font-size="11" fill="#64748b">0.80</text>
+<line x1="70" y1="105.8" x2="900" y2="105.8" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="109.8" text-anchor="end" font-size="11" fill="#64748b">0.85</text>
+<line x1="70" y1="70.0" x2="900" y2="70.0" stroke="#e2e8f0" stroke-width="1"/>
+<text x="62" y="74.0" text-anchor="end" font-size="11" fill="#64748b">0.90</text>
+<line x1="70" y1="105.8" x2="900" y2="105.8" stroke="#16a34a" stroke-width="1.4" stroke-dasharray="6 4"/>
+<text x="896" y="99.8" text-anchor="end" font-size="11" font-weight="700" fill="#16a34a">목표 0.85</text>
+<line x1="70" y1="135.2" x2="900" y2="135.2" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="3 3"/>
+<text x="76" y="129.2" font-size="11" font-weight="700" fill="#dc2626">test 0.809</text>
+<line x1="70.0" y1="70" x2="70.0" y2="500" stroke="#f1f5f9" stroke-width="1"/>
+<text x="70.0" y="520" text-anchor="middle" font-size="11" fill="#64748b">1</text>
+<line x1="229.3" y1="70" x2="229.3" y2="500" stroke="#f1f5f9" stroke-width="1"/>
+<text x="229.3" y="520" text-anchor="middle" font-size="11" fill="#64748b">20</text>
+<line x1="397.0" y1="70" x2="397.0" y2="500" stroke="#f1f5f9" stroke-width="1"/>
+<text x="397.0" y="520" text-anchor="middle" font-size="11" fill="#64748b">40</text>
+<line x1="564.6" y1="70" x2="564.6" y2="500" stroke="#f1f5f9" stroke-width="1"/>
+<text x="564.6" y="520" text-anchor="middle" font-size="11" fill="#64748b">60</text>
+<line x1="732.3" y1="70" x2="732.3" y2="500" stroke="#f1f5f9" stroke-width="1"/>
+<text x="732.3" y="520" text-anchor="middle" font-size="11" fill="#64748b">80</text>
+<line x1="900.0" y1="70" x2="900.0" y2="500" stroke="#f1f5f9" stroke-width="1"/>
+<text x="900.0" y="520" text-anchor="middle" font-size="11" fill="#64748b">100</text>
+<text x="485.0" y="546" text-anchor="middle" font-size="12" fill="#334155">epoch</text>
+<line x1="489.2" y1="70" x2="489.2" y2="500" stroke="#a78bfa" stroke-width="1.3" stroke-dasharray="4 3"/>
+<text x="493.2" y="86" font-size="10" fill="#7c3aed">lr↓ ep51</text>
+<line x1="598.2" y1="70" x2="598.2" y2="500" stroke="#a78bfa" stroke-width="1.3" stroke-dasharray="4 3"/>
+<text x="602.2" y="86" font-size="10" fill="#7c3aed">lr↓ ep64</text>
+<path d="M70.0,469.2 L78.4,334.5 L86.8,279.4 L95.2,249.9 L103.5,230.3 L111.9,215.2 L120.3,203.3 L128.7,201.1 L137.1,196.3 L145.5,186.7 L153.8,184.0 L162.2,180.7 L170.6,176.2 L179.0,174.6 L187.4,170.8 L195.8,169.2 L204.1,164.1 L212.5,164.9 L220.9,162.2 L229.3,158.9 L237.7,157.6 L246.1,158.5 L254.4,154.6 L262.8,154.8 L271.2,150.5 L279.6,150.6 L288.0,146.9 L296.4,144.8 L304.7,144.9 L313.1,144.1 L321.5,142.7 L329.9,140.7 L338.3,140.5 L346.7,140.4 L355.1,138.6 L363.4,139.0 L371.8,138.5 L380.2,139.4 L388.6,139.4 L397.0,138.1 L405.4,138.6 L413.7,136.9 L422.1,137.0 L430.5,136.0 L438.9,135.1 L447.3,134.0 L455.7,133.6 L464.0,134.0 L472.4,132.9 L480.8,132.4 L489.2,118.7 L497.6,114.0 L506.0,112.3 L514.3,112.5 L522.7,112.3 L531.1,112.7 L539.5,112.1 L547.9,112.2 L556.3,112.9 L564.6,111.6 L573.0,110.9 L581.4,112.5 L589.8,113.3 L598.2,106.3 L606.6,106.6 L614.9,106.7 L623.3,106.3 L631.7,106.7 L640.1,105.9 L648.5,106.9 L656.9,106.2 L665.3,104.9 L673.6,107.1 L682.0,107.6 L690.4,105.4 L698.8,107.4 L707.2,106.4 L715.6,105.8 L723.9,107.6 L732.3,106.8 L740.7,106.8 L749.1,106.7 L757.5,106.9 L765.9,106.7 L774.2,105.1 L782.6,107.0 L791.0,106.8 L799.4,105.7 L807.8,105.9 L816.2,106.7 L824.5,106.7 L832.9,106.8 L841.3,106.6 L849.7,106.9 L858.1,105.5 L866.5,106.6 L874.8,107.6 L883.2,109.2 L891.6,107.4 L900.0,106.3" fill="none" stroke="#2563eb" stroke-width="2.2"/>
+<path d="M70.0,370.0 L78.4,292.4 L86.8,279.0 L95.2,252.5 L103.5,222.9 L111.9,209.2 L120.3,195.1 L128.7,202.9 L137.1,198.0 L145.5,180.8 L153.8,185.6 L162.2,176.4 L170.6,166.1 L179.0,169.5 L187.4,173.3 L195.8,166.9 L204.1,177.1 L212.5,167.4 L220.9,156.1 L229.3,155.8 L237.7,151.2 L246.1,159.3 L254.4,173.5 L262.8,172.5 L271.2,164.8 L279.6,143.5 L288.0,146.7 L296.4,147.4 L304.7,149.0 L313.1,153.2 L321.5,141.2 L329.9,145.0 L338.3,137.4 L346.7,141.1 L355.1,150.9 L363.4,149.2 L371.8,139.8 L380.2,139.6 L388.6,132.5 L397.0,137.7 L405.4,139.6 L413.7,143.8 L422.1,142.2 L430.5,147.5 L438.9,145.1 L447.3,147.2 L455.7,137.4 L464.0,143.7 L472.4,148.2 L480.8,138.5 L489.2,120.1 L497.6,121.4 L506.0,118.3 L514.3,121.9 L522.7,121.9 L531.1,117.7 L539.5,123.0 L547.9,124.1 L556.3,122.4 L564.6,124.5 L573.0,123.3 L581.4,122.5 L589.8,123.8 L598.2,113.2 L606.6,122.1 L614.9,119.6 L623.3,116.6 L631.7,117.9 L640.1,118.2 L648.5,116.1 L656.9,119.1 L665.3,119.1 L673.6,122.5 L682.0,125.3 L690.4,116.4 L698.8,119.6 L707.2,122.1 L715.6,123.2 L723.9,118.3 L732.3,119.5 L740.7,120.6 L749.1,122.5 L757.5,119.5 L765.9,119.3 L774.2,121.1 L782.6,122.7 L791.0,117.4 L799.4,124.0 L807.8,121.4 L816.2,119.3 L824.5,117.9 L832.9,115.3 L841.3,118.5 L849.7,117.7 L858.1,117.1 L866.5,118.5 L874.8,116.9 L883.2,116.4 L891.6,121.1 L900.0,118.2" fill="none" stroke="#f59e0b" stroke-width="2.2"/>
+<circle cx="598.2" cy="113.2" r="4.5" fill="#f59e0b" stroke="#7c2d12"/>
+<text x="598.2" y="103.2" text-anchor="middle" font-size="10" font-weight="700" fill="#b45309">best 0.840</text>
+<rect x="80" y="444" width="180" height="48" rx="6" fill="#ffffff" stroke="#cbd5e1"/>
+<line x1="92" y1="460" x2="118" y2="460" stroke="#2563eb" stroke-width="2.2"/><text x="124" y="464" font-size="11" fill="#334155">train acc</text>
+<line x1="92" y1="480" x2="118" y2="480" stroke="#f59e0b" stroke-width="2.2"/><text x="124" y="484" font-size="11" fill="#334155">val acc</text>
+</svg>

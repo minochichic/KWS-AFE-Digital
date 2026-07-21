@@ -112,7 +112,11 @@ data:
   name: speech_commands_v2
   root: datasets/speech_commands_v2
   version: v0.02
-  keywords: [yes, no, up, down, left, right, on, off, stop, go]
+  # QUOTE these: unquoted yes/no/on/off parse as YAML booleans (the "Norway
+  # problem"), corrupting the list to [true, false, ...]. The data pipeline
+  # actually labels via the KEYWORDS constant in data/speech_commands.py, so
+  # this field was cosmetic, but a corrupted config is a footgun.
+  keywords: ["yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go"]
   split: official
   silence_fraction: 0.1
   unknown_fraction: 0.1

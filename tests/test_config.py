@@ -18,6 +18,15 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "configs" / "base.yaml"
 
 
+def test_keywords_are_strings_not_yaml_booleans() -> None:
+    """Regression: unquoted yes/no/on/off parse as booleans (YAML Norway
+    problem). They must stay strings."""
+    cfg = load_config(BASE)
+    assert cfg.data.keywords == ["yes", "no", "up", "down", "left", "right",
+                                 "on", "off", "stop", "go"]
+    assert all(isinstance(k, str) for k in cfg.data.keywords)
+
+
 def test_base_config_loads_and_validates() -> None:
     cfg = load_config(BASE)
     assert cfg.model.C == 64
