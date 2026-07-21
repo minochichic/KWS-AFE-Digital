@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="760" viewBox="0 0 1000 760" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <rect width="1000" height="760" fill="#ffffff"/>
+  <text x="500" y="36" text-anchor="middle" font-size="23" font-weight="700" fill="#0f172a">이진 dot product = 2·popcount(XNOR) − N  (곱셈·누산기 없이)</text>
+  <text x="500" y="60" text-anchor="middle" font-size="13" fill="#64748b">x, w ∈ {-1,+1}.  −1을 0으로 인코딩(x̂=(x+1)/2)하면 곱셈이 XNOR, 누산이 popcount가 된다 (Cerutti IV-B).</text>
+
+  <!-- identity box -->
+  <rect x="150" y="80" width="700" height="52" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="500" y="113" text-anchor="middle" font-size="20" font-weight="700" fill="#1e3a8a">Σ xᵢ·wᵢ   ≡   2·popcount( XNOR(x̂, ŵ) ) − N</text>
+
+  <text x="120" y="168" font-size="14" font-weight="700" fill="#334155">예시 (N = 5 탭):</text>
+
+  <!-- table -->
+  <!-- label column x=120..250, value cells x=260..610 (5 cells, w70) -->
+  <g font-size="13">
+    <!-- header -->
+    <text x="185" y="205" text-anchor="middle" font-size="11" fill="#64748b"></text>
+    <text x="295" y="205" text-anchor="middle" font-size="11" fill="#94a3b8">탭1</text>
+    <text x="365" y="205" text-anchor="middle" font-size="11" fill="#94a3b8">탭2</text>
+    <text x="435" y="205" text-anchor="middle" font-size="11" fill="#94a3b8">탭3</text>
+    <text x="505" y="205" text-anchor="middle" font-size="11" fill="#94a3b8">탭4</text>
+    <text x="575" y="205" text-anchor="middle" font-size="11" fill="#94a3b8">탭5</text>
+
+    <!-- row x -->
+    <text x="245" y="230" text-anchor="end" font-weight="700" fill="#0f172a">입력 x</text>
+    <rect x="262" y="214" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="295" y="231" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="332" y="214" width="66" height="24" rx="4" fill="#fee2e2" stroke="#ef4444"/><text x="365" y="231" text-anchor="middle" fill="#991b1b">−1</text>
+    <rect x="402" y="214" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="435" y="231" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="472" y="214" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="505" y="231" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="542" y="214" width="66" height="24" rx="4" fill="#fee2e2" stroke="#ef4444"/><text x="575" y="231" text-anchor="middle" fill="#991b1b">−1</text>
+
+    <!-- row w -->
+    <text x="245" y="260" text-anchor="end" font-weight="700" fill="#0f172a">가중치 w</text>
+    <rect x="262" y="244" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="295" y="261" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="332" y="244" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="365" y="261" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="402" y="244" width="66" height="24" rx="4" fill="#fee2e2" stroke="#ef4444"/><text x="435" y="261" text-anchor="middle" fill="#991b1b">−1</text>
+    <rect x="472" y="244" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="505" y="261" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="542" y="244" width="66" height="24" rx="4" fill="#fee2e2" stroke="#ef4444"/><text x="575" y="261" text-anchor="middle" fill="#991b1b">−1</text>
+
+    <!-- row x*w -->
+    <text x="245" y="290" text-anchor="end" font-weight="700" fill="#0f172a">x·w</text>
+    <rect x="262" y="274" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="295" y="291" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="332" y="274" width="66" height="24" rx="4" fill="#fee2e2" stroke="#ef4444"/><text x="365" y="291" text-anchor="middle" fill="#991b1b">−1</text>
+    <rect x="402" y="274" width="66" height="24" rx="4" fill="#fee2e2" stroke="#ef4444"/><text x="435" y="291" text-anchor="middle" fill="#991b1b">−1</text>
+    <rect x="472" y="274" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="505" y="291" text-anchor="middle" fill="#166534">+1</text>
+    <rect x="542" y="274" width="66" height="24" rx="4" fill="#dcfce7" stroke="#22c55e"/><text x="575" y="291" text-anchor="middle" fill="#166534">+1</text>
+    <text x="640" y="291" font-size="13" font-weight="700" fill="#1e3a8a">Σ = +1</text>
+
+    <line x1="120" y1="306" x2="700" y2="306" stroke="#cbd5e1" stroke-dasharray="3 3"/>
+
+    <!-- encoded -->
+    <text x="245" y="332" text-anchor="end" font-weight="700" fill="#475569">x̂ = (x+1)/2</text>
+    <rect x="262" y="316" width="66" height="24" rx="4" fill="#1e293b"/><text x="295" y="333" text-anchor="middle" fill="#fff">1</text>
+    <rect x="332" y="316" width="66" height="24" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="365" y="333" text-anchor="middle" fill="#475569">0</text>
+    <rect x="402" y="316" width="66" height="24" rx="4" fill="#1e293b"/><text x="435" y="333" text-anchor="middle" fill="#fff">1</text>
+    <rect x="472" y="316" width="66" height="24" rx="4" fill="#1e293b"/><text x="505" y="333" text-anchor="middle" fill="#fff">1</text>
+    <rect x="542" y="316" width="66" height="24" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="575" y="333" text-anchor="middle" fill="#475569">0</text>
+
+    <text x="245" y="362" text-anchor="end" font-weight="700" fill="#475569">ŵ</text>
+    <rect x="262" y="346" width="66" height="24" rx="4" fill="#1e293b"/><text x="295" y="363" text-anchor="middle" fill="#fff">1</text>
+    <rect x="332" y="346" width="66" height="24" rx="4" fill="#1e293b"/><text x="365" y="363" text-anchor="middle" fill="#fff">1</text>
+    <rect x="402" y="346" width="66" height="24" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="435" y="363" text-anchor="middle" fill="#475569">0</text>
+    <rect x="472" y="346" width="66" height="24" rx="4" fill="#1e293b"/><text x="505" y="363" text-anchor="middle" fill="#fff">1</text>
+    <rect x="542" y="346" width="66" height="24" rx="4" fill="#f1f5f9" stroke="#cbd5e1"/><text x="575" y="363" text-anchor="middle" fill="#475569">0</text>
+
+    <text x="245" y="392" text-anchor="end" font-weight="700" fill="#7c3aed">XNOR(x̂,ŵ)</text>
+    <rect x="262" y="376" width="66" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/><text x="295" y="393" text-anchor="middle" fill="#5b21b6">1</text>
+    <rect x="332" y="376" width="66" height="24" rx="4" fill="#faf5ff" stroke="#d8b4fe"/><text x="365" y="393" text-anchor="middle" fill="#a78bfa">0</text>
+    <rect x="402" y="376" width="66" height="24" rx="4" fill="#faf5ff" stroke="#d8b4fe"/><text x="435" y="393" text-anchor="middle" fill="#a78bfa">0</text>
+    <rect x="472" y="376" width="66" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/><text x="505" y="393" text-anchor="middle" fill="#5b21b6">1</text>
+    <rect x="542" y="376" width="66" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/><text x="575" y="393" text-anchor="middle" fill="#5b21b6">1</text>
+    <text x="640" y="393" font-size="13" font-weight="700" fill="#5b21b6">popcount = 3</text>
+  </g>
+
+  <!-- result -->
+  <rect x="150" y="420" width="700" height="48" rx="10" fill="#f0fdf4" stroke="#059669" stroke-width="1.5"/>
+  <text x="500" y="450" text-anchor="middle" font-size="17" font-weight="700" fill="#065f46">2·popcount − N  =  2·3 − 5  =  +1   ✓  (일반 ±1 내적과 정확히 일치)</text>
+
+  <!-- alpha -->
+  <rect x="60" y="500" width="430" height="150" rx="10" fill="#ecfdf5" stroke="#10b981" stroke-width="1.2"/>
+  <text x="80" y="524" font-size="14" font-weight="700" fill="#065f46">가중치 스케일 α (선택)</text>
+  <text x="80" y="548" font-size="12" fill="#065f46">전체 출력 = α · (2·popcount − N)</text>
+  <text x="80" y="570" font-size="12" fill="#065f46">α = mean|W| (출력채널별), sign이 버린 크기 보정 (XNOR-Net).</text>
+  <text x="80" y="592" font-size="12" fill="#047857">· 내부 conv: α 적용 → 뒤 BN이 흡수 → export시 소멸.</text>
+  <text x="80" y="612" font-size="12" fill="#b91c1c">· residual에 들어가는 마지막 pw·skip: α 미적용(정수 유지).</text>
+  <text x="80" y="636" font-size="11" fill="#059669">→ 하드웨어엔 α 흔적 없음 (자세히: 이진 가중치 스케일링 설명).</text>
+
+  <!-- hardware packing -->
+  <rect x="510" y="500" width="430" height="150" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.2"/>
+  <text x="530" y="524" font-size="14" font-weight="700" fill="#075985">하드웨어 구현</text>
+  <text x="530" y="548" font-size="12" fill="#0c4a6e">· 32채널을 32-bit 정수 하나로 팩킹.</text>
+  <text x="530" y="570" font-size="12" fill="#0c4a6e">· XNOR 미지원 플랫폼: XOR 후 반전 →</text>
+  <text x="545" y="590" font-size="12" fill="#0c4a6e">32 − 2·popcnt(x̂ ⊕ ŵ).</text>
+  <text x="530" y="614" font-size="12" fill="#0c4a6e">· FPGA 완전 펼침: 곱셈기 0, LUT popcount + 비교기.</text>
+  <text x="530" y="636" font-size="11" fill="#0369a1">SW 모델은 F.conv1d(float)로 계산하되 값은 비트-정확 동일.</text>
+
+  <text x="500" y="690" text-anchor="middle" font-size="12" fill="#64748b">검증: tests/test_binary_ops.py — bool/popcount 레퍼런스와 dense·depthwise·pointwise 모두 비트-정확 일치 확인.</text>
+  <text x="500" y="712" text-anchor="middle" font-size="12" fill="#64748b">이 등식이 학습된 소프트웨어 모델과 FPGA가 어긋나지 않음을 보장한다.</text>
+</svg>

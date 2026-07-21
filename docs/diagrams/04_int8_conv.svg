@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="640" viewBox="0 0 980 640" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="a8" markerWidth="11" markerHeight="11" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#334155"/></marker>
+  </defs>
+  <rect width="980" height="640" fill="#ffffff"/>
+  <text x="490" y="36" text-anchor="middle" font-size="23" font-weight="700" fill="#0f172a">INT8 fake-quant 층 (Conv1·Conv3) — 이진화 금지 층</text>
+  <text x="490" y="60" text-anchor="middle" font-size="13" fill="#64748b">QAT: latent 실수 가중치를 유지하고 forward에서만 채널별 대칭 int8로 양자화. backward는 round-STE.</text>
+
+  <!-- pipeline -->
+  <rect x="40" y="92" width="150" height="70" rx="10" fill="#f1f5f9" stroke="#64748b" stroke-width="1.5"/>
+  <text x="115" y="122" text-anchor="middle" font-size="14" font-weight="700" fill="#334155">latent W</text>
+  <text x="115" y="142" text-anchor="middle" font-size="11" fill="#475569">실수(fp32), 연속</text>
+  <line x1="190" y1="127" x2="214" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#a8)"/>
+
+  <rect x="216" y="92" width="170" height="70" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="301" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">채널별 스케일</text>
+  <text x="301" y="138" text-anchor="middle" font-size="12" fill="#92400e">s = max|Wₒ| / 127</text>
+  <text x="301" y="154" text-anchor="middle" font-size="10" fill="#b45309">출력채널마다 하나</text>
+  <line x1="386" y1="127" x2="410" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#a8)"/>
+
+  <rect x="412" y="92" width="200" height="70" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="512" y="115" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">round → clamp</text>
+  <text x="512" y="135" text-anchor="middle" font-size="12" fill="#92400e">q = clip(round(W/s), ±127)</text>
+  <text x="512" y="152" text-anchor="middle" font-size="10" fill="#b45309">8-bit 정수 격자, 255 레벨</text>
+  <line x1="612" y1="127" x2="636" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#a8)"/>
+
+  <rect x="638" y="92" width="150" height="70" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="1.5"/>
+  <text x="713" y="118" text-anchor="middle" font-size="13" font-weight="700" fill="#92400e">역양자화</text>
+  <text x="713" y="138" text-anchor="middle" font-size="12" fill="#92400e">W_q = q · s</text>
+  <line x1="788" y1="127" x2="812" y2="127" stroke="#334155" stroke-width="1.5" marker-end="url(#a8)"/>
+
+  <rect x="814" y="92" width="130" height="70" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="1.5"/>
+  <text x="879" y="122" text-anchor="middle" font-size="13" font-weight="700" fill="#075985">conv(x, W_q)</text>
+  <text x="879" y="142" text-anchor="middle" font-size="10" fill="#0c4a6e">연속 출력</text>
+
+  <!-- STE note -->
+  <path d="M500,162 C500,185 300,185 301,162" fill="none" stroke="#7c3aed" stroke-width="1.4" stroke-dasharray="4 3"/>
+  <text x="400" y="205" text-anchor="middle" font-size="12" fill="#7c3aed">backward: round-STE (round을 항등으로 통과) → latent W는 연속으로 유지되어 미세 갱신 누적</text>
+
+  <!-- numeric example -->
+  <rect x="40" y="228" width="900" height="150" rx="10" fill="#fffbeb" stroke="#f59e0b" stroke-width="1.2"/>
+  <text x="60" y="252" font-size="14" font-weight="700" fill="#92400e">예시 (한 출력채널, 4개 가중치)</text>
+  <text x="60" y="278" font-size="13" fill="#78350f">W  = [ 0.80,  −0.30,  0.50,  −0.60 ]     →   max|W| = 0.80,   s = 0.80 / 127 = 0.006299</text>
+  <text x="60" y="302" font-size="13" fill="#78350f">W/s = [ 127,  −47.6,  79.4,  −95.2 ]     →   round·clamp   q = [ 127, −48, 79, −95 ]</text>
+  <text x="60" y="326" font-size="13" fill="#78350f">W_q = q·s = [ 0.800,  −0.302,  0.498,  −0.599 ]     (≈ W, 오차 ≤ s/2 = 0.0031)</text>
+  <text x="60" y="356" font-size="12" fill="#b45309">→ 1-bit(이진)이 아니라 8-bit로 두어 정보 손실을 크게 줄인다. 검증: tests/test_quant_ops.py (정수격자·오차상한·STE).</text>
+
+  <!-- conv1 role -->
+  <rect x="40" y="398" width="440" height="210" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.2"/>
+  <text x="60" y="422" font-size="14" font-weight="700" fill="#075985">Conv1 (prologue) — 왜 INT8인가</text>
+  <text x="60" y="448" font-size="12" fill="#0c4a6e">입력이 이미 1-bit {-1,+1}이라, 첫 층까지</text>
+  <text x="60" y="466" font-size="12" fill="#0c4a6e">이진화하면 정보가 급락(Cerutti Fig.5: 93→86%).</text>
+  <text x="60" y="490" font-size="12" fill="#0c4a6e">그래서 INT8 가중치로:</text>
+  <text x="72" y="512" font-size="12" fill="#0c4a6e">[B,16,128] {-1,+1}  →  conv(k=11,s2,int8)</text>
+  <text x="72" y="532" font-size="12" fill="#0c4a6e">→ [B,128,64] <tspan font-weight="700">연속</tspan>  →  BN  →  sign</text>
+  <text x="72" y="552" font-size="12" fill="#0c4a6e">→ [B,128,64] {-1,+1}  (B1로 전달)</text>
+  <text x="60" y="578" font-size="11.5" fill="#0369a1">16채널을 128채널 연속공간으로 펼쳐 완충한</text>
+  <text x="60" y="595" font-size="11.5" fill="#0369a1">뒤 다시 이진화 → 손실 최소화.</text>
+
+  <!-- conv3 role -->
+  <rect x="500" y="398" width="440" height="210" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.2"/>
+  <text x="520" y="422" font-size="14" font-weight="700" fill="#5b21b6">Conv3 &amp; 끝단 정밀도 배치</text>
+  <text x="520" y="448" font-size="12" fill="#4c1d95">Conv3: 1×1 int8, 128→128, BN→ReLU.</text>
+  <text x="520" y="470" font-size="12" fill="#4c1d95">이진 conv2의 연속 출력을 받아 특징을</text>
+  <text x="520" y="488" font-size="12" fill="#4c1d95">섞어 마지막 분류기에 전달.</text>
+  <text x="520" y="514" font-size="12" fill="#4c1d95">Conv4: <tspan font-weight="700">fixed-point</tspan> (학습 중 full-precision),</text>
+  <text x="520" y="532" font-size="12" fill="#4c1d95">1×1 → 12 클래스. 마지막 층 이진화 금지.</text>
+  <text x="520" y="558" font-size="11.5" fill="#6d28d9">규칙(CLAUDE.md 2.2): 첫 층·마지막 층은 절대</text>
+  <text x="520" y="575" font-size="11.5" fill="#6d28d9">이진화하지 않는다. 가운데 B1~B3+conv2만 이진.</text>
+  <text x="520" y="596" font-size="11.5" fill="#6d28d9">config의 validate()가 이를 강제(로드시 에러).</text>
+</svg>
