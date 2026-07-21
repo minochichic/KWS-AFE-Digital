@@ -172,7 +172,14 @@ class SpeechCommands12(Dataset):
 
         split in {"training","validation","testing"}. Downloads on first call.
         """
+        import os
+
         import torchaudio  # local import: not needed for the pure-logic path
+
+        # torchaudio downloads the tarball straight into `root` and assumes it
+        # already exists -- create it, otherwise the .partial temp file fails
+        # with FileNotFoundError.
+        os.makedirs(cfg.root, exist_ok=True)
 
         subset = {"train": "training", "val": "validation",
                   "test": "testing"}.get(split, split)
