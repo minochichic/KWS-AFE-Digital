@@ -165,14 +165,34 @@ class Trainer:
 
     # ------------------------------------------------------------------ #
     def fit(self, train_loader: DataLoader,
-            val_loader: Optional[DataLoader] = None) -> List[Dict]:
+            val_loader: Optional[DataLoader] = None,
+            resume: bool = False) -> List[Dict]:
         cfg = self.cfg
         self.run_dir.mkdir(parents=True, exist_ok=True)
         cfg.save(self.run_dir / "config.yaml")
 
-        best_acc = -1.0
+        # Resume from the per-epoch last.pt if asked and present. Colab drops
+        # long runs; re-running the same command with --resume continues from
+        # the last completed epoch instead of restarting. Checkpoints are
+        # device-agnostic, so a T4 run resumes on an A100 unchanged.
+        start_epoch, best_acc, prev_wall = 1, -1.0, 0.0
+        last_path = self.run_dir / "last.pt"
+        if resume and last_path.exists():
+            ck = self.load_checkpoint(last_path)
+            start_epoch = ck["epoch"] + 1
+            best_acc = ck.get("best_acc", -1.0)
+            prev_wall = ck.get("wall_time_s", 0.0)
+            self.history = ck.get("history", [])
+            print(f"resuming '{cfg.tag}' from epoch {ck['epoch']} "
+                  f"-> {start_epoch}/{cfg.train.epochs} on {self.device}")
+
+        if start_epoch > cfg.train.epochs:
+            print(f"'{cfg.tag}' already trained {cfg.train.epochs} epochs; "
+                  f"nothing to do (change --tag or delete last.pt to retrain)")
+            return self.history
+
         t0 = time.time()
-        for epoch in range(1, cfg.train.epochs + 1):
+        for epoch in range(start_epoch, cfg.train.epochs + 1):
             tr = self.train_epoch(train_loader, epoch)
             row: Dict = {"epoch": epoch, "train_loss": tr["loss"],
                          "train_acc": tr["acc"],
@@ -183,14 +203,23 @@ class Trainer:
                 va = self.evaluate(val_loader)
                 row.update(val_loss=va["loss"], val_acc=va["acc"])
                 monitor = va["loss"]
-                if va["acc"] > best_acc:
-                    best_acc = va["acc"]
-                    self.save_checkpoint(self.run_dir / "best.pt", epoch)
 
             if self.scheduler is not None:
                 self.scheduler.step(monitor)
 
             self.history.append(row)
+            wall = prev_wall + (time.time() - t0)
+
+            # best.pt when val improves; last.pt EVERY epoch so a crash between
+            # epochs loses at most one epoch of work.
+            if val_loader is not None and row.get("val_acc", -1.0) > best_acc:
+                best_acc = row["val_acc"]
+                self.save_checkpoint(self.run_dir / "best.pt", epoch,
+                                     best_acc=best_acc, wall_time_s=wall)
+            self.save_checkpoint(last_path, epoch, best_acc=best_acc,
+                                 wall_time_s=wall)
+            self._write_history(wall)
+
             if cfg.train.log_every:
                 msg = (f"epoch {epoch:3d}/{cfg.train.epochs}  "
                        f"loss {row['train_loss']:.4f}  acc {row['train_acc']:.3f}")
@@ -198,30 +227,49 @@ class Trainer:
                     msg += f"  val_acc {row['val_acc']:.3f}"
                 print(msg)
 
-        self.save_checkpoint(self.run_dir / "last.pt", cfg.train.epochs)
-        with (self.run_dir / "history.json").open("w") as f:
-            json.dump({"history": self.history,
-                       "wall_time_s": round(time.time() - t0, 1),
-                       "device": str(self.device)}, f, indent=2)
         return self.history
 
+    def _write_history(self, wall: float) -> None:
+        with (self.run_dir / "history.json").open("w") as f:
+            json.dump({"history": self.history,
+                       "wall_time_s": round(wall, 1),
+                       "device": str(self.device)}, f, indent=2)
+
     # ------------------------------------------------------------------ #
-    def save_checkpoint(self, path: Path, epoch: int) -> None:
+    def save_checkpoint(self, path: Path, epoch: int, best_acc: float = -1.0,
+                        wall_time_s: float = 0.0) -> None:
         state = {"epoch": epoch,
+                 "best_acc": best_acc,
+                 "wall_time_s": wall_time_s,
+                 "history": self.history,
                  "model": self.model.state_dict(),
                  "optimizer": self.optimizer.state_dict(),
+                 "scheduler": (self.scheduler.state_dict()
+                               if self.scheduler is not None else None),
+                 "scaler": self.scaler.state_dict(),
                  "config": self.cfg.to_dict()}
         if self.afe is not None:
             state["afe"] = self.afe.state_dict()
-        torch.save(state, path)
+        # atomic write: a disconnect mid-save must not corrupt last.pt
+        tmp = path.with_suffix(path.suffix + ".tmp")
+        torch.save(state, tmp)
+        tmp.replace(path)
 
-    def load_checkpoint(self, path) -> int:
+    def load_checkpoint(self, path) -> Dict:
+        """Restore full training state; returns the saved metadata dict.
+
+        Tolerant of older checkpoints missing scheduler/scaler/history keys.
+        """
         state = torch.load(path, map_location=self.device, weights_only=True)
         self.model.load_state_dict(state["model"])
         if self.afe is not None and "afe" in state:
             self.afe.load_state_dict(state["afe"])
         self.optimizer.load_state_dict(state["optimizer"])
-        return state["epoch"]
+        if self.scheduler is not None and state.get("scheduler") is not None:
+            self.scheduler.load_state_dict(state["scheduler"])
+        if state.get("scaler") is not None:
+            self.scaler.load_state_dict(state["scaler"])
+        return state
 
 
 # --------------------------------------------------------------------------- #
@@ -233,6 +281,9 @@ def main() -> None:
                          "dataset needed)")
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--tag", default=None)
+    ap.add_argument("--resume", action="store_true",
+                    help="continue from runs/<tag>/last.pt if it exists "
+                         "(safe on a fresh run: just starts from epoch 1)")
     ap.add_argument("overrides", nargs="*",
                     help="dotted config overrides, e.g. data.root=/content/ds "
                          "model.C=32")
@@ -296,7 +347,7 @@ def _run_speech_commands(args) -> None:
     afe.init_thresholds(waves)                       # Cerutti IV-A
 
     trainer = Trainer(cfg, model, afe=afe)
-    trainer.fit(train_loader, val_loader)
+    trainer.fit(train_loader, val_loader, resume=args.resume)
     test = trainer.evaluate(test_loader)
     print(f"\ntest: loss {test['loss']:.4f}  acc {test['acc']:.3f}  "
           f"({'MEETS' if test['acc'] >= 0.85 else 'below'} 85% target)")

@@ -100,8 +100,15 @@ def main() -> None:
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"sweep on {device}: C={args.C} T={args.T} epochs={args.epochs}\n")
 
+    # point-level resume: a (C,T) already in the results file is skipped, so
+    # re-running the sweep after a Colab disconnect continues where it stopped.
+    done = {(r["C"], r["T"]) for r in results}
+
     for C in args.C:
         for T in args.T:
+            if (C, T) in done:
+                print(f"=== C={C} T={T}: already in {out.name}, skipping ===\n")
+                continue
             env = envelope_ms_for_T(T, args.envelope_ms)
             print(f"=== C={C} T={T} (envelope {env:.0f} ms) ===")
             row = run_point(args.config, C, T, args.epochs, env, args.seed,

@@ -144,6 +144,66 @@ def test_checkpoint_roundtrip(tmp_path) -> None:
 
 
 # --------------------------------------------------------------------------- #
+# resume (Colab disconnect / T4->A100 safety)
+# --------------------------------------------------------------------------- #
+def test_last_checkpoint_saved_every_epoch(tmp_path) -> None:
+    cfg = tiny_cfg(tmp_path, **{"train.epochs": 3})
+    trainer = build_trainer(cfg)
+    trainer.fit(tone_loader(cfg))
+    ck = trainer.load_checkpoint(Path(cfg.train.out_dir) / cfg.tag / "last.pt")
+    assert ck["epoch"] == 3                            # last completed epoch
+    assert len(ck["history"]) == 3                     # per-epoch history saved
+    assert ck["scheduler"] is not None                 # scheduler state persisted
+
+
+def test_resume_continues_from_saved_epoch(tmp_path) -> None:
+    # phase 1: train 3 epochs
+    cfg = tiny_cfg(tmp_path, **{"train.epochs": 3})
+    build_trainer(cfg).fit(tone_loader(cfg), tone_loader(cfg))
+
+    # phase 2: same tag, more epochs, resume -> continues at 4, not 1
+    cfg2 = tiny_cfg(tmp_path, **{"train.epochs": 6})
+    trainer2 = build_trainer(cfg2)
+    history = trainer2.fit(tone_loader(cfg2), tone_loader(cfg2), resume=True)
+
+    assert [r["epoch"] for r in history] == [1, 2, 3, 4, 5, 6]   # contiguous
+    ck = trainer2.load_checkpoint(Path(cfg2.train.out_dir) / cfg2.tag / "last.pt")
+    assert ck["epoch"] == 6
+
+
+def test_resume_without_checkpoint_starts_fresh(tmp_path) -> None:
+    cfg = tiny_cfg(tmp_path, **{"train.epochs": 2})
+    trainer = build_trainer(cfg)
+    history = trainer.fit(tone_loader(cfg), resume=True)    # no last.pt yet
+    assert [r["epoch"] for r in history] == [1, 2]
+
+
+def test_resume_when_already_complete_is_noop(tmp_path) -> None:
+    cfg = tiny_cfg(tmp_path, **{"train.epochs": 2})
+    build_trainer(cfg).fit(tone_loader(cfg))
+    # resume with the same epoch budget -> nothing left to do
+    trainer2 = build_trainer(cfg)
+    history = trainer2.fit(tone_loader(cfg), resume=True)
+    assert len(history) == 2                            # loaded, not re-trained
+    assert all(k in history[0] for k in ("epoch", "train_loss"))
+
+
+def test_resume_restores_lr_schedule_state(tmp_path) -> None:
+    """The plateau scheduler's internal counters must survive resume, else the
+    LR schedule silently restarts on an A100."""
+    cfg = tiny_cfg(tmp_path, **{"train.epochs": 3})
+    t1 = build_trainer(cfg)
+    t1.fit(tone_loader(cfg), tone_loader(cfg))
+    lr_state = t1.scheduler.state_dict()
+
+    cfg2 = tiny_cfg(tmp_path, **{"train.epochs": 3})       # already complete
+    t2 = build_trainer(cfg2)
+    t2.load_checkpoint(Path(cfg.train.out_dir) / cfg.tag / "last.pt")
+    assert t2.scheduler.state_dict()["num_bad_epochs"] == lr_state["num_bad_epochs"]
+    assert t2.scheduler.state_dict()["best"] == lr_state["best"]
+
+
+# --------------------------------------------------------------------------- #
 # THE step-5 check: overfit to 100%
 # --------------------------------------------------------------------------- #
 def test_overfit_synthetic_tones(tmp_path) -> None:
