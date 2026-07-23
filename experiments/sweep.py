@@ -35,8 +35,8 @@ def envelope_ms_for_T(T: int, override: float) -> float:
     return 25.0 if T <= 40 else 10.0
 
 
-def run_point(config_path: str, C: int, T: int, epochs: int,
-              envelope_ms: float, seed: int, extra: Dict = None) -> Dict:
+def _point_overrides(C: int, T: int, envelope_ms: float, epochs: int,
+                     seed: int, extra: Dict = None) -> Dict:
     overrides = {
         "model.C": C, "model.T": T,
         "afe.envelope_win_ms": envelope_ms,
@@ -44,7 +44,27 @@ def run_point(config_path: str, C: int, T: int, epochs: int,
         "tag": f"sweep_C{C}_T{T}",
     }
     overrides.update(extra or {})                    # e.g. data.root
-    cfg = load_config(config_path, overrides)
+    return overrides
+
+
+def time_axis_broken(config_path: str, C: int, T: int, envelope_ms: float,
+                     extra: Dict = None) -> List[str]:
+    """Kernel-span violations for this (C, T), or [] if the config is sound.
+
+    Small T (e.g. 96) shrinks the time axis below conv2's dilated span (57),
+    so conv2 convolves mostly over padding -> the model can't learn. Training
+    such a point wastes ~hours for a ~random result, so the sweep skips it.
+    """
+    cfg = load_config(config_path,
+                      _point_overrides(C, T, envelope_ms, 1, 0, extra))
+    _, notes = cfg.time_axis_report()
+    return notes
+
+
+def run_point(config_path: str, C: int, T: int, epochs: int,
+              envelope_ms: float, seed: int, extra: Dict = None) -> Dict:
+    cfg = load_config(config_path,
+                      _point_overrides(C, T, envelope_ms, epochs, seed, extra))
 
     set_seed(seed)
     afe = AFEFrontend(cfg.afe)
@@ -60,7 +80,9 @@ def run_point(config_path: str, C: int, T: int, epochs: int,
 
     trainer = Trainer(cfg, model, afe=afe)
     t0 = time.time()
-    trainer.fit(train_loader, val_loader)
+    # resume=True: an interrupted point continues from its per-epoch last.pt
+    # (runs/<tag>/ is symlinked to Drive on Colab) instead of restarting.
+    trainer.fit(train_loader, val_loader, resume=True)
     test = trainer.evaluate(test_loader)
 
     return {
@@ -83,7 +105,9 @@ def main() -> None:
     ap.add_argument("--envelope-ms", type=float, default=0.0,
                     help="override; default 25 ms for T<=40 else 10 ms")
     ap.add_argument("--seed", type=int, default=1234)
-    ap.add_argument("--out", default="experiments/results/sweep.json")
+    ap.add_argument("--out", default=None,
+                    help="results JSON; default = Drive if mounted, else "
+                         "experiments/results/sweep.json")
     ap.add_argument("overrides", nargs="*",
                     help="dotted config overrides, e.g. data.root=/content/ds")
     args = ap.parse_args()
@@ -91,8 +115,9 @@ def main() -> None:
     from experiments.inspect_config import _parse_overrides
     extra = _parse_overrides(args.overrides)
 
-    out = Path(args.out)
+    out = Path(args.out or _default_out())
     out.parent.mkdir(parents=True, exist_ok=True)
+    print(f"results -> {out}")
     results: List[Dict] = []
     if out.exists():
         results = json.loads(out.read_text()).get("results", [])
@@ -110,6 +135,13 @@ def main() -> None:
                 print(f"=== C={C} T={T}: already in {out.name}, skipping ===\n")
                 continue
             env = envelope_ms_for_T(T, args.envelope_ms)
+            broken = time_axis_broken(args.config, C, T, env, extra)
+            if broken:
+                print(f"=== C={C} T={T}: SKIP (설계상 무효 — 학습 안 함) ===")
+                for n in broken:
+                    print(f"    {n}")
+                print()
+                continue
             print(f"=== C={C} T={T} (envelope {env:.0f} ms) ===")
             row = run_point(args.config, C, T, args.epochs, env, args.seed,
                             extra=extra)
@@ -120,6 +152,14 @@ def main() -> None:
                 {"classes": class_names(), "results": results}, indent=2))
 
     print_summary(results)
+
+
+def _default_out() -> str:
+    """Save to Drive when mounted (survives Colab disconnects), else locally."""
+    drive = Path("/content/drive/MyDrive/kws_runs")
+    if drive.is_dir():
+        return str(drive / "sweep.json")
+    return "experiments/results/sweep.json"
 
 
 def print_summary(results: List[Dict]) -> None:

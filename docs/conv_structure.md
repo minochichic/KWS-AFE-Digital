@@ -12,6 +12,7 @@
 | INT8 fake-quant 층 | [`04_int8_conv.svg`](diagrams/04_int8_conv.svg) |
 | α(가중치 스케일) 적용 위치 지도 | [`05_alpha_scaling_map.svg`](diagrams/05_alpha_scaling_map.svg) |
 | sub-block 전 과정 (아이소메트릭, 채널별 α) | [`06_subblock_pipeline.svg`](diagrams/06_subblock_pipeline.svg) |
+| conv2 span=57 / dilation / 작은 T가 깨지는 이유 | [`08_dilation_span.svg`](diagrams/08_dilation_span.svg) |
 
 근거: `models/binary_ops.py`, `models/quant_ops.py`, `models/binary_matchboxnet.py`,
 `data/afe.py`, `configs/base.yaml`. 논문 근거는 `CLAUDE.md`와 두 PDF.

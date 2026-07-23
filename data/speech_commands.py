@@ -225,6 +225,61 @@ def _load_noise_waves(base) -> List[torch.Tensor]:
     return waves
 
 
+def ensure_dataset(root: str, cache_tar: Optional[str] = None) -> str:
+    """Make the extracted Speech Commands tree available at `root`.
+
+    Order of preference:
+      1. `root` already extracted -> use it.
+      2. `cache_tar` exists (e.g. on Drive) -> extract it onto local disk.
+      3. otherwise download via torchaudio, then (if cache_tar given) pack the
+         extracted tree into cache_tar for next session.
+
+    The cache is a SINGLE tar, extracted onto local `root`, not read in place:
+    reading 105k tiny wavs from Drive during training is slow, but streaming
+    one big tar is fine. Note Colab's download is ~25 s, so the main win is
+    avoiding torchaudio's re-extraction and network dependence, not raw speed.
+    """
+    import os
+    import shutil
+    import subprocess
+    import tarfile
+
+    marker = os.path.join(root, "SpeechCommands")
+    if os.path.isdir(marker):
+        return root
+    os.makedirs(root, exist_ok=True)
+
+    def _untar(src: str, dst: str) -> None:
+        if shutil.which("tar"):
+            subprocess.run(["tar", "xf", src, "-C", dst], check=True)
+        else:
+            with tarfile.open(src) as t:
+                t.extractall(dst)
+
+    def _mktar(src_dir: str, arcname: str, dst: str) -> None:
+        if shutil.which("tar"):
+            subprocess.run(["tar", "cf", dst, "-C", os.path.dirname(src_dir),
+                            arcname], check=True)
+        else:
+            with tarfile.open(dst, "w") as t:
+                t.add(src_dir, arcname=arcname)
+
+    if cache_tar and os.path.exists(cache_tar):
+        print(f"[dataset] Drive 캐시에서 복원: {cache_tar}")
+        _untar(cache_tar, root)
+        return root
+
+    import torchaudio
+    print("[dataset] Speech Commands v2 다운로드 (최초 1회)")
+    torchaudio.datasets.SPEECHCOMMANDS(
+        root=root, url="speech_commands_v0.02", download=True)
+    if cache_tar:
+        os.makedirs(os.path.dirname(cache_tar), exist_ok=True)
+        print(f"[dataset] 다음 세션을 위해 Drive에 캐시 저장: {cache_tar}")
+        _mktar(marker, "SpeechCommands", cache_tar)
+    return root
+
+
 def build_dataloaders(cfg: DataConfig, batch_size: int, sample_rate: int = 16000,
                       num_workers: Optional[int] = None, seed: int = 0
                       ) -> Tuple[DataLoader, DataLoader, DataLoader]:
