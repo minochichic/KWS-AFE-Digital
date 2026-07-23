@@ -8,32 +8,51 @@
 
 tag: base
 
+# AFE (analog front-end simulation). Full per-variable reference: docs/afe_config.md
 afe:
-  n_channels: 16
-  sample_rate: 16000
-  clip_ms: 1000.0
+  # --- input definition ---
+  n_channels: 16       # AFE output channels = Mel filter count = model input rows.
+                       #   Sets the hardware filterbank size. THE key sweep axis.
+  sample_rate: 16000   # audio sample rate (Hz). 1 s clip = 16000 samples.
+  clip_ms: 1000.0      # clip length (ms). shorter -> zero-pad, longer -> crop.
 
-  stft_win_ms: 25.0
-  stft_hop_ms: 10.0
-  n_fft: 512
+  # --- STFT ---
+  stft_win_ms: 25.0    # STFT window length (ms); 25 ms = 400 samples.
+  stft_hop_ms: 10.0    # window step (ms); 10 ms = 160 samples -> ~100 frames/s.
+  n_fft: 512           # FFT size (freq resolution); must be >= win_length.
 
-  n_mels: 64          # full-precision baseline only; AFE builds its own
-                      # n_channels-filter bank (see data/afe.py)
-  f_min: 50.0         # Cerutti Fig.6: 50 Hz - 8 kHz was the best 8-filter range
-  f_max: 7500.0
+  # --- Mel filterbank ---
+  n_mels: 64           # NOT USED by the AFE path. The AFE builds its own bank of
+                       #   n_channels(16) filters (data/afe.py sets MelSpectrogram
+                       #   n_mels=n_channels). This 64 is a placeholder for a future
+                       #   full-precision Mel baseline (Cerutti VI-A) and is ignored
+                       #   until that is implemented. Do not confuse with n_channels.
+  f_min: 50.0          # filterbank lowest corner freq (Hz).
+  f_max: 8000.0        # filterbank highest corner freq (Hz); must be <= Nyquist
+                       #   (sample_rate/2 = 8000). Cerutti Fig.6: 50 Hz - 8 kHz was
+                       #   the best 8-filter range. NOTE: the sc_v2 baseline run
+                       #   (test 0.809) used 7500; raised to 8000 to match Cerutti.
 
-  # 10 ms -> native T = 100, zero-padded to T = 128 exactly as MatchboxNet 4.1.
-  # 25 ms (native T = 40) is a sweep point, not the baseline: after conv1's
-  # stride 2 it leaves 20 frames, which is shorter than conv2's kernel span of
-  # 57. See Config.time_axis_report().
+  # --- envelope: sets the output time length T ---
+  # native_T = clip_ms / envelope_win_ms = 1000/10 = 100, zero-padded to T=128
+  # exactly as MatchboxNet 4.1. Do NOT use 25 ms (native_T=40): after conv1's
+  # stride 2 that leaves 20 frames, shorter than conv2's kernel span of 57, so
+  # conv2 convolves over padding and the model collapses (see docs/diagrams/
+  # 08_dilation_span.svg and Config.time_axis_report()).
   envelope_win_ms: 10.0
-  envelope_reduce: max
+  envelope_reduce: max   # summarize each window by its max (Cerutti IV-A); or mean.
 
-  normalize: minmax
-  threshold_init: channel_mean
-  threshold_trainable: true
-  ste: hardtanh
-  ste_clip: 1.0
+  # --- binarization (comparator + learnable threshold) ---
+  normalize: minmax         # scale envelopes to [0,1] per clip, GLOBAL across
+                            #   channels (not per-channel) so inter-channel level
+                            #   differences survive for the thresholds to absorb.
+  threshold_init: channel_mean  # init the 16 thresholds to per-channel mean
+                                #   envelope (Cerutti IV-A); see init_thresholds().
+  threshold_trainable: true # learn the thresholds end-to-end with the net (2.4).
+  ste: hardtanh             # straight-through estimator for the step comparison
+                            #   (sign has zero gradient; STE lets it train).
+  ste_clip: 1.0             # STE gradient passes where |env - thr| <= ste_clip.
+                            #   Envelopes are in [0,1], so every element is inside.
 
 model:
   C: 64
