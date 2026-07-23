@@ -59,9 +59,11 @@ class AFEConfig:
 
     # Mel filterbank. n_mels is the *analysis* resolution; n_channels is the
     # AFE filter count. These are deliberately different (CLAUDE.md 3).
-    n_mels: int = 64
+    n_mels: int = 64          # NOT used by the AFE path (it builds n_channels
+                              # filters); placeholder for a full-precision Mel
+                              # baseline. See docs/afe_config.md.
     f_min: float = 50.0
-    f_max: float = 7500.0
+    f_max: float = 8000.0     # <= Nyquist; Cerutti's best range is 50 Hz-8 kHz
 
     # AFE envelope window: 10 ms or 25 ms (Cerutti IV-A). Sets the native T.
     envelope_win_ms: float = 25.0
