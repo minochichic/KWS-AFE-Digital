@@ -54,14 +54,29 @@ silence는 background noise에서 합성.
 
 ## 3. 결과
 
-**test acc 0.809** (loss 0.583). 최종(epoch 100) 모델 기준.
+### 🎯 목표 달성: f_max=8000에서 test 0.850 (85% 돌파)
 
-| 지표 | 값 |
+`f_max`를 7500→8000으로 올린 것만으로 **test 0.809 → 0.850 (+4.1%p)**, 목표 85%
+돌파. seed 동일(1234), f_max만 다름 → 순수 f_max 효과. 16-filter AFE에서는 필터
+배치가 정확도를 크게 좌우한다는 Cerutti Fig.6(8-filter에서 범위만 바꿔 53.9→76.3%)와
+일치.
+
+| 지표 | f_max=7500 (sc_v2) | **f_max=8000** |
+|---|---|---|
+| test (last, ep100) | 0.809 | **0.850  ✓ MEETS** |
+| test (best.pt) | 0.8236 (ep64) | — |
+| final train acc | 0.849 | 0.872 |
+| best val | 0.840 (ep64) | 0.862 (ep79) |
+| final val | 0.833 | 0.858 |
+
+이하 상세 곡선/분석은 sc_v2(7500) 기준. wall ≈ 3.3 h (T4).
+
+| 지표 | 값 (sc_v2, f_max=7500) |
 |---|---|
 | best val | 0.8397 (epoch 64) |
 | final val | 0.8328 (epoch 100) |
 | final train | 0.8493 |
-| test (last 모델) | **0.809** |
+| test (last 모델) | 0.809 |
 | wall time | 11,820 s ≈ 3.28 h (T4) |
 
 곡선: [`diagrams/07_sc_v2_training_curve.svg`](diagrams/07_sc_v2_training_curve.svg)
@@ -81,22 +96,22 @@ silence는 background noise에서 합성.
 | Cerutti BNN(binary-input, Mel) | 85.6% |
 | AFE 방식 상한(논문) | ~85% |
 
-→ 16채널에서 80.9%는 8ch~64ch 사이의 합리적 위치. **증강·튜닝 없는 첫 baseline**
-치고 튼튼함.
+→ 16채널에서 80.9%(7500)/**85.0%(8000)**. f_max=8000이 64ch(86.0%)에 근접 —
+소수 필터에선 배치가 채널 수만큼 중요함을 보여줌.
 
 ---
 
-## 4. 목표(85%)까지 — 다음 레버 (우선순위)
+## 4. 다음 단계 (85% 돌파 이후)
 
-train_acc가 0.85에서 막힘(용량·최적화 병목) → 용량↑이 1순위:
+이제 85%를 넘겼으므로 순서가 바뀐다:
 
-1. **conv2 dense** (`separable: false`, 10K→238K) — 기록된 1순위 ablation.
-2. **더 긴/공격적 스케줄** — 논문 레시피(NovoGrad + Warmup-Hold-Decay, 200ep).
-3. **증강** (SpecAugment + time-shift) — val-test 갭 축소.
-4. **채널/폭 확대** (C↑ 또는 AFE 채널↑, 헌장 변경 사안).
+1. **best.pt로 f_max=8000 test 재평가** (best val 0.862 ep79 → test ~0.855 예상).
+2. **재현 확인** — 다른 seed 1회로 0.850이 우연이 아님을 확인(권장).
+3. **(C, T) sweep** — 이제 85% 넘는 설정이 있으니 "**최소** 크기" 탐색이 의미 있음.
+   T=128 고정, C를 16/32/48로 낮춰 어디까지 85%가 유지되는지 (broken-T 자동 skip됨).
+4. 더 밀어올리기: conv2 dense, 증강(SpecAugment), f_min도 함께 탐색.
 
-효율 메모: 수렴이 ~67 epoch에서 끝나므로 sweep은 65~70 epoch로 단축 가능
-(16-point × 100ep ≈ 53h → 과함).
+효율 메모: 수렴이 ~67 epoch에서 끝나므로 sweep은 65~70 epoch로 단축 가능.
 
 ---
 
