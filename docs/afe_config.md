@@ -120,6 +120,13 @@ STE gradient가 흐르는 창 폭. `|env - thr| <= ste_clip`이면 gradient 통�
 
 ---
 
+## 개념 그림 (STFT 위치 / 이산화)
+
+- [`09_stft_two_paths.svg`](diagrams/09_stft_two_paths.svg) — STFT가 개념(하드웨어)
+  에선 경로 B에 없지만, 우리 소프트웨어 시뮬에선 두 경로가 공유하는 이유.
+- [`10_discretization.svg`](diagrams/10_discretization.svg) — 연속 이벤트를 10 ms
+  칸으로 묶는 max 규칙과 정보 손실, 그리고 테스트 설계.
+
 ## 실험에서 만질 만한 것
 
 | 변수 | 효과 | 비고 |
