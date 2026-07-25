@@ -244,9 +244,23 @@ def ensure_dataset(root: str, cache_tar: Optional[str] = None) -> str:
     import subprocess
     import tarfile
 
-    marker = os.path.join(root, "SpeechCommands")
-    if os.path.isdir(marker):
+    sc = os.path.join(root, "SpeechCommands")
+    leaf = os.path.join(sc, "speech_commands_v0.02")
+
+    def _ready() -> bool:
+        # A key list file the loader needs; presence of the SpeechCommands dir
+        # alone is NOT enough (a partial/interrupted extract has the dir but
+        # not this file, which then fails deep inside torchaudio).
+        return os.path.isfile(os.path.join(leaf, "testing_list.txt"))
+
+    def _clean_partial() -> None:
+        if os.path.isdir(sc):
+            print(f"[dataset] 불완전한 추출 감지 -> 삭제: {sc}")
+            shutil.rmtree(sc, ignore_errors=True)
+
+    if _ready():
         return root
+    _clean_partial()
     os.makedirs(root, exist_ok=True)
 
     def _untar(src: str, dst: str) -> None:
@@ -267,16 +281,22 @@ def ensure_dataset(root: str, cache_tar: Optional[str] = None) -> str:
     if cache_tar and os.path.exists(cache_tar):
         print(f"[dataset] Drive 캐시에서 복원: {cache_tar}")
         _untar(cache_tar, root)
-        return root
+        if _ready():
+            return root
+        print("[dataset] 캐시가 불완전 -> 삭제하고 재다운로드")
+        _clean_partial()
 
     import torchaudio
-    print("[dataset] Speech Commands v2 다운로드 (최초 1회)")
+    print("[dataset] Speech Commands v2 다운로드")
     torchaudio.datasets.SPEECHCOMMANDS(
         root=root, url="speech_commands_v0.02", download=True)
+    if not _ready():
+        raise RuntimeError(
+            f"dataset extract incomplete: {leaf}/testing_list.txt missing")
     if cache_tar:
         os.makedirs(os.path.dirname(cache_tar), exist_ok=True)
         print(f"[dataset] 다음 세션을 위해 Drive에 캐시 저장: {cache_tar}")
-        _mktar(marker, "SpeechCommands", cache_tar)
+        _mktar(sc, "SpeechCommands", cache_tar)
     return root
 
 
