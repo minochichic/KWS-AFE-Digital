@@ -16,31 +16,45 @@ afe:
   sample_rate: 16000   # audio sample rate (Hz). 1 s clip = 16000 samples.
   clip_ms: 1000.0      # clip length (ms). shorter -> zero-pad, longer -> crop.
 
-  # --- STFT ---
+  # --- STFT front-end (SHARED by both paths in our software sim) ---
+  # CLAUDE.md 2.9/2.10: the real AFE has no STFT (analog filters split freq),
+  # but our sim fakes the analog filterbank with STFT+mel, so these are used by
+  # BOTH the baseline (path A, n_mels) AND the AFE path (path B, n_channels).
+  # NOT "path A only". stft_hop_ms and envelope_win_ms are independent.
   stft_win_ms: 25.0    # STFT window length (ms); 25 ms = 400 samples.
   stft_hop_ms: 10.0    # window step (ms); 10 ms = 160 samples -> ~100 frames/s.
   n_fft: 512           # FFT size (freq resolution); must be >= win_length.
 
   # --- Mel filterbank ---
-  n_mels: 64           # NOT USED by the AFE path. The AFE builds its own bank of
-                       #   n_channels(16) filters (data/afe.py sets MelSpectrogram
-                       #   n_mels=n_channels). This 64 is a placeholder for a future
-                       #   full-precision Mel baseline (Cerutti VI-A) and is ignored
-                       #   until that is implemented. Do not confuse with n_channels.
+  n_mels: 64           # NOT USED by the AFE path (path B). It is the mel filter
+                       #   count for the full-precision baseline (path A, Cerutti
+                       #   VI-A), which is not implemented yet. The AFE builds its
+                       #   own bank of n_channels(16) filters (data/afe.py sets
+                       #   MelSpectrogram n_mels=n_channels). Don't confuse the two.
   f_min: 50.0          # filterbank lowest corner freq (Hz).
   f_max: 8000.0        # filterbank highest corner freq (Hz); must be <= Nyquist
                        #   (sample_rate/2 = 8000). Cerutti Fig.6: 50 Hz - 8 kHz was
                        #   the best 8-filter range. NOTE: the sc_v2 baseline run
                        #   (test 0.809) used 7500; raised to 8000 to match Cerutti.
 
-  # --- envelope: sets the output time length T ---
+  # --- envelope: AFE path (B) only. sets the output time length T ---
   # native_T = clip_ms / envelope_win_ms = 1000/10 = 100, zero-padded to T=128
-  # exactly as MatchboxNet 4.1. Do NOT use 25 ms (native_T=40): after conv1's
-  # stride 2 that leaves 20 frames, shorter than conv2's kernel span of 57, so
-  # conv2 convolves over padding and the model collapses (see docs/diagrams/
-  # 08_dilation_span.svg and Config.time_axis_report()).
+  # exactly as MatchboxNet 4.1. CLAUDE.md 3.1: with the current conv2 (k=29,
+  # dilation=2, span 57), only T=128 (->64 frames after conv1) is valid; smaller
+  # T (25 ms/T=40, or 10 ms cropped to 96/64) leaves <57 frames and conv2
+  # convolves over padding -> collapse. See 08_dilation_span.svg and
+  # Config.time_axis_report(). Independent of stft_hop_ms.
   envelope_win_ms: 10.0
-  envelope_reduce: max   # summarize each window by its max (Cerutti IV-A); or mean.
+  envelope_reduce: max   # window summary. max = "any pulse in window -> 1"
+                         #   (Cerutti IV-A). max-then-threshold == threshold-then-OR.
+                         #   Alternatives count/mean break binary-ness (CLAUDE.md 2.8).
+
+  # --- envelope smoothing (active-detector C3 모사) ---
+  # CLAUDE.md 3.2: baseline is OFF (0.0). tau has NO paper value -- it is a
+  # design DOF / ablation axis, not a reproduction parameter. 0.0 must make the
+  # smoothing step an exact identity (no-op). >0 applies EMA over STFT frames
+  # (a software approximation of the analog C3 sawtooth), before discretization.
+  envelope_tau_ms: 0.0
 
   # --- binarization (comparator + learnable threshold) ---
   normalize: minmax         # scale envelopes to [0,1] per clip, GLOBAL across

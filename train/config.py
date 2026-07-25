@@ -69,6 +69,12 @@ class AFEConfig:
     envelope_win_ms: float = 25.0
     envelope_reduce: str = "max"  # "max" | "mean"
 
+    # Envelope smoothing time constant (active-detector C3 model). CLAUDE.md 3.2:
+    # baseline OFF (0.0 = exact no-op). NOT a paper value -- a design DOF for a
+    # future ablation. The smoothing step (EMA over STFT frames) is not yet
+    # implemented in data/afe.py; this field only reserves the interface.
+    envelope_tau_ms: float = 0.0
+
     # Binarization
     normalize: str = "minmax"           # matches Cerutti's min-max scaling
     threshold_init: str = "channel_mean"
