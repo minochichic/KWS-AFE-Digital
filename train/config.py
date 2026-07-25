@@ -160,12 +160,13 @@ class DataConfig:
     num_workers: int = 2
     cache_features: bool = True
 
-    # Augmentation. Off by default -- CLAUDE.md 3 says introduce only if we
-    # miss 85%. Kept in config so turning it on is a YAML edit.
-    aug_time_shift_ms: float = 0.0
-    aug_specaug_time_masks: int = 0
+    # Augmentation (waveform, train split only). OFF by default so the base
+    # config reproduces the no-aug baseline byte-for-byte; turn on via override.
+    aug_time_shift_ms: float = 0.0     # random shift in +/- this (0 = off)
+    aug_noise_prob: float = 0.0        # per-sample prob of adding background noise
+    aug_noise_snr_db: List[float] = field(default_factory=lambda: [5.0, 30.0])
+    aug_specaug_time_masks: int = 0    # SpecAugment: deferred (not implemented)
     aug_specaug_freq_masks: int = 0
-    aug_noise_prob: float = 0.0
 
 
 @dataclass

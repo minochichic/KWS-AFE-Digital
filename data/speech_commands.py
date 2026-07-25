@@ -125,11 +125,24 @@ class SpeechCommands12(Dataset):
 
     def __init__(self, items: Sequence[Tuple[torch.Tensor, str]],
                  noise_waves: Sequence[torch.Tensor], cfg: DataConfig,
-                 split: str, seed: int = 0, sample_rate: int = 16000) -> None:
+                 split: str, seed: int = 0, sample_rate: int = 16000,
+                 augment: bool = False) -> None:
         self.cfg = cfg
         self.split = split
         self.sample_rate = sample_rate
         self._noise = list(noise_waves)
+
+        # Waveform augment, TRAIN split only. Built from cfg + this split's
+        # noise pool; bypassed entirely when all knobs are off so the no-aug
+        # baseline is preserved exactly.
+        self._augment = None
+        if augment:
+            from data.augment import WaveformAugment
+            aug = WaveformAugment(
+                sample_rate, cfg.aug_time_shift_ms, cfg.aug_noise_prob,
+                tuple(cfg.aug_noise_snr_db), self._noise)
+            if not aug.is_noop():
+                self._augment = aug
 
         keyword: List[int] = []
         unknown: List[int] = []
@@ -157,7 +170,10 @@ class SpeechCommands12(Dataset):
     def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
         if idx < len(self._real):
             wave, word = self._items[self._real[idx]]
-            return wave.reshape(-1), label_to_index(word)
+            wave = wave.reshape(-1)
+            if self._augment is not None:        # real utterances only
+                wave = self._augment(wave)
+            return wave, label_to_index(word)
         # silence: generated on demand, deterministic per (split, position)
         s = idx - len(self._real)
         clip = synthesize_silence(self._noise, 1, self.sample_rate,
@@ -166,11 +182,12 @@ class SpeechCommands12(Dataset):
 
     # ------------------------------------------------------------------ #
     @classmethod
-    def from_torchaudio(cls, cfg: DataConfig, split: str, seed: int = 0
-                        ) -> "SpeechCommands12":
+    def from_torchaudio(cls, cfg: DataConfig, split: str, seed: int = 0,
+                        augment: bool = False) -> "SpeechCommands12":
         """Build from the downloaded torchaudio dataset (Colab path).
 
         split in {"training","validation","testing"}. Downloads on first call.
+        `augment` should be True only for the training split.
         """
         import os
 
@@ -191,7 +208,7 @@ class SpeechCommands12(Dataset):
         # (wave, sr, label, speaker_id, utterance_number).
         items = _LazyTorchaudioItems(base)
         noise = _load_noise_waves(base)
-        return cls(items, noise, cfg, split=split, seed=seed)
+        return cls(items, noise, cfg, split=split, seed=seed, augment=augment)
 
 
 class _LazyTorchaudioItems(Sequence):
@@ -308,7 +325,9 @@ def build_dataloaders(cfg: DataConfig, batch_size: int, sample_rate: int = 16000
     collate = FixedLengthCollate(sample_rate)
 
     def loader(split: str, shuffle: bool) -> DataLoader:
-        ds = SpeechCommands12.from_torchaudio(cfg, split, seed=seed)
+        # augment the training split only (val/test stay clean for fair eval)
+        ds = SpeechCommands12.from_torchaudio(
+            cfg, split, seed=seed, augment=(split == "training"))
         return DataLoader(ds, batch_size=batch_size, shuffle=shuffle,
                           num_workers=nw, collate_fn=collate,
                           pin_memory=True, drop_last=shuffle)

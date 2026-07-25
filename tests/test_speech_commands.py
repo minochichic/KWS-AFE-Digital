@@ -149,10 +149,40 @@ def fake_items():
     return items
 
 
-def make_dataset(split="training", **cfg_kw):
+def make_dataset(split="training", augment=False, **cfg_kw):
     cfg = DataConfig(**cfg_kw)
     noise = [torch.randn(40000)]
-    return SpeechCommands12(fake_items(), noise, cfg, split=split, seed=0)
+    return SpeechCommands12(fake_items(), noise, cfg, split=split, seed=0,
+                            augment=augment)
+
+
+def test_augment_flag_off_by_default() -> None:
+    ds = make_dataset(aug_time_shift_ms=5.0, aug_noise_prob=1.0)  # cfg on...
+    assert ds._augment is None                          # ...but augment=False
+
+
+def test_augment_active_only_when_enabled_and_on() -> None:
+    on = make_dataset(augment=True, aug_time_shift_ms=5.0)
+    off = make_dataset(augment=True, aug_time_shift_ms=0.0, aug_noise_prob=0.0)
+    assert on._augment is not None                      # enabled + knob on
+    assert off._augment is None                         # enabled but all-off -> no-op
+
+
+def test_augment_does_not_change_labels_or_length() -> None:
+    ds = make_dataset(augment=True, aug_time_shift_ms=5.0, aug_noise_prob=1.0)
+    wave, label = ds[0]
+    assert wave.shape[-1] == 16000 and 0 <= label < 12
+
+
+def test_augment_leaves_silence_untouched() -> None:
+    """Silence clips are synthesized, not real utterances -> never augmented."""
+    ds = make_dataset(augment=True, aug_noise_prob=1.0, silence_fraction=0.3)
+    # first silence index
+    from data.speech_commands import SILENCE_INDEX
+    sil = next(i for i in range(len(ds)) if ds[i][1] == SILENCE_INDEX)
+    a = ds[sil][0]
+    b = ds[sil][0]
+    assert torch.equal(a, b)                            # deterministic (no aug)
 
 
 def test_dataset_has_all_12_classes_represented() -> None:

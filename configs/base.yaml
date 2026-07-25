@@ -156,10 +156,14 @@ data:
   num_workers: 2
   cache_features: true
   # Augmentation off for the first reproducible run (CLAUDE.md 3).
+  # Waveform augmentation (train split only). OFF here so base = no-aug
+  # baseline. Turn on via override, e.g. data.aug_time_shift_ms=5
+  # data.aug_noise_prob=0.3. SNR range applies when noise fires.
   aug_time_shift_ms: 0.0
-  aug_specaug_time_masks: 0
-  aug_specaug_freq_masks: 0
   aug_noise_prob: 0.0
+  aug_noise_snr_db: [5.0, 30.0]
+  aug_specaug_time_masks: 0     # SpecAugment deferred
+  aug_specaug_freq_masks: 0
 
 train:
   epochs: 100
