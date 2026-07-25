@@ -33,6 +33,7 @@ Design decisions, and why:
 
 from __future__ import annotations
 
+import math
 from typing import Optional
 
 import torch
@@ -44,6 +45,35 @@ from models.binary_ops import sign_ste
 from train.config import AFEConfig
 
 _EPS = 1e-6
+
+
+def discretize(pulse_times_ms, window_ms: float, n_windows: int,
+               reduce: str = "max"):
+    """Reference implementation of the AFE discretization rule (CLAUDE.md 2.8).
+
+    Continuous comparator events (pulse times, sub-ms) -> [n_windows] bins.
+    This is executable documentation, NOT the production path: the real AFE
+    sim max-pools continuous log-mel envelopes, which is EQUIVALENT for
+    reduce='max' (max-then-threshold == threshold-then-OR). It exists so the
+    2.8 table can be unit-tested directly, since the full STFT pipeline works
+    at 10 ms frame resolution and cannot ingest a sub-ms pulse train.
+
+    reduce:
+      "max"   -> 1 if any pulse fell in the window (the baseline rule).
+      "count" -> number of pulses (preserves info; breaks binary-ness).
+    ('mean'/activity-fraction would need pulse durations, which we don't model.)
+    """
+    counts = [0] * n_windows
+    for t in pulse_times_ms:
+        i = int(t // window_ms)
+        if 0 <= i < n_windows:
+            counts[i] += 1
+    if reduce == "max":
+        return [1 if c > 0 else 0 for c in counts]
+    if reduce == "count":
+        return counts
+    raise ValueError(
+        f"reduce {reduce!r} unsupported by this reference (max/count only)")
 
 
 def pad_or_crop(x: torch.Tensor, target_T: int,
@@ -116,6 +146,11 @@ class AFEFrontend(nn.Module):
         mel = self.melspec(wave)                       # [B, C, frames]
         mel = torch.log(mel + _EPS)
 
+        # Optional tau smoothing (active-detector C3 model, CLAUDE.md 2.10/3.2).
+        # Applied on the log-mel FRAMES, BEFORE discretization (do not reorder).
+        # tau=0 is an exact no-op (baseline). Software approximation only.
+        mel = self._smooth(mel)
+
         # Envelope over 10/25 ms windows. adaptive pooling to native_T bins is
         # exactly "max of the spectrogram in windows of X ms" and stays correct
         # when the STFT frame grid does not divide the envelope window.
@@ -133,6 +168,32 @@ class AFEFrontend(nn.Module):
         elif self.cfg.normalize != "none":
             raise ValueError(f"unknown normalize {self.cfg.normalize!r}")
         return env
+
+    def _smooth(self, mel: torch.Tensor) -> torch.Tensor:
+        """Causal exponential (EMA) smoothing along the STFT-frame axis.
+
+        Models the analog active detector's C3 (fast charge / slow discharge)
+        as a software approximation on log-mel frames. For a frame interval
+        dt = stft_hop_ms and time constant tau, the discrete EMA coefficient is
+        `alpha = 1 - exp(-dt/tau)`; the recurrence is
+            y[t] = alpha * x[t] + (1 - alpha) * y[t-1].
+        As tau -> 0, alpha -> 1 and y == x. tau == 0.0 is treated as an EXACT
+        no-op (returns mel unchanged) -- CLAUDE.md 3.2 requires the baseline to
+        be untouched, and this also avoids a div-by-zero.
+        """
+        tau = self.cfg.envelope_tau_ms
+        if tau <= 0.0:
+            return mel                                   # exact identity (baseline)
+        dt = self.cfg.stft_hop_ms                        # frame interval (ms)
+        alpha = 1.0 - math.exp(-dt / tau)
+        # sequential scan over frames (~100); autograd-friendly.
+        frames = mel.unbind(dim=2)
+        y = frames[0]
+        out = [y]
+        for x in frames[1:]:
+            y = alpha * x + (1.0 - alpha) * y
+            out.append(y)
+        return torch.stack(out, dim=2)
 
     def forward(self, wave: torch.Tensor,
                 target_T: Optional[int] = None) -> torch.Tensor:

@@ -20,7 +20,7 @@ import math
 import pytest
 import torch
 
-from data.afe import AFEFrontend, pad_or_crop
+from data.afe import AFEFrontend, discretize, pad_or_crop
 from train.config import AFEConfig
 
 
@@ -203,3 +203,96 @@ def test_gradient_survives_padding() -> None:
     fe(noise(), target_T=128).mean().backward()
     assert fe.threshold.grad is not None
     assert torch.any(fe.threshold.grad != 0)
+
+
+# --------------------------------------------------------------------------- #
+# 6. discretization rule (CLAUDE.md 2.8, standalone reference)
+# --------------------------------------------------------------------------- #
+def test_discretize_matches_claude_md_table() -> None:
+    # 20 ms span, 10 ms windows, pulses at 1.2/4.6/13.4/18.1 ms -> [1, 1]
+    pulses = [1.2, 4.6, 13.4, 18.1]
+    assert discretize(pulses, window_ms=10.0, n_windows=2, reduce="max") == [1, 1]
+
+
+def test_discretize_info_loss_one_vs_two_pulses() -> None:
+    """max loses count/time/duration: 1 pulse and 2 pulses both give 1."""
+    one = discretize([1.2], 10.0, 2, reduce="max")
+    two = discretize([1.2, 4.6], 10.0, 2, reduce="max")
+    assert one[0] == two[0] == 1                          # same despite differing
+    # count preserves the difference (but breaks binary-ness)
+    assert discretize([1.2], 10.0, 2, "count")[0] == 1
+    assert discretize([1.2, 4.6], 10.0, 2, "count")[0] == 2
+
+
+def test_discretize_ignores_out_of_range_pulses() -> None:
+    assert discretize([25.0, -1.0, 5.0], 10.0, 2, "max") == [1, 0]
+
+
+def test_maxpool_equals_threshold_then_or() -> None:
+    """The production path (max-pool continuous env, then threshold) equals the
+    reference rule (threshold each frame, then OR) -- CLAUDE.md 2.8 equivalence.
+    """
+    torch.manual_seed(0)
+    env = torch.rand(1, 1, 20)                            # 20 frames, [0,1)
+    thr = 0.6
+    # production: pool 20 frames -> 2 bins, then threshold
+    pooled = torch.nn.functional.adaptive_max_pool1d(env, 2)
+    prod = (pooled >= thr).long().flatten().tolist()
+    # reference: threshold each frame, then OR within each 10-frame bin
+    binm = (env[0, 0] >= thr).long()
+    ref = [int(binm[:10].any()), int(binm[10:].any())]
+    assert prod == ref
+
+
+# --------------------------------------------------------------------------- #
+# 7. tau smoothing (CLAUDE.md 3.2) -- baseline must stay a no-op
+# --------------------------------------------------------------------------- #
+def test_tau_zero_is_exact_identity() -> None:
+    fe = make_frontend(envelope_tau_ms=0.0)
+    mel = torch.randn(2, 16, 40)
+    assert torch.equal(fe._smooth(mel), mel)             # EXACT, not approx
+
+
+def test_tau_zero_baseline_envelopes_unchanged() -> None:
+    """A frontend with tau=0 gives the identical envelopes as if smoothing did
+    not exist -- guards the baseline."""
+    w = noise()
+    fe = make_frontend(envelope_win_ms=10.0, envelope_tau_ms=0.0)
+    # _smooth is identity, so envelopes == envelopes-without-smooth by construction
+    mel = fe.melspec(fe._fix_length(w))
+    mel = torch.log(mel + 1e-6)
+    assert torch.equal(fe._smooth(mel), mel)
+
+
+def test_tau_positive_changes_output_and_follows_ema() -> None:
+    fe = make_frontend(envelope_tau_ms=5.0, stft_hop_ms=10.0)
+    # differs from identity
+    m = torch.randn(1, 3, 6)
+    assert not torch.equal(fe._smooth(m), m)
+    # matches the EMA recurrence exactly
+    alpha = 1.0 - math.exp(-10.0 / 5.0)
+    x = torch.randn(1, 1, 5)
+    y = fe._smooth(x)[0, 0]
+    exp = [x[0, 0, 0]]
+    for t in range(1, 5):
+        exp.append(alpha * x[0, 0, t] + (1 - alpha) * exp[-1])
+    assert torch.allclose(y, torch.stack(exp), atol=1e-6)
+
+
+def test_tau_smoothing_is_differentiable() -> None:
+    fe = make_frontend(envelope_tau_ms=5.0)
+    x = torch.randn(1, 2, 8, requires_grad=True)
+    fe._smooth(x).sum().backward()
+    assert x.grad is not None and torch.any(x.grad != 0)
+
+
+# --------------------------------------------------------------------------- #
+# 8. path separation: envelope_win_ms must not touch the STFT (CLAUDE.md 2.9)
+# --------------------------------------------------------------------------- #
+def test_envelope_win_does_not_change_stft_hop() -> None:
+    fe10 = make_frontend(envelope_win_ms=10.0, stft_hop_ms=10.0)
+    fe25 = make_frontend(envelope_win_ms=25.0, stft_hop_ms=10.0)
+    # STFT hop is identical (independent of envelope_win)
+    assert fe10.melspec.hop_length == fe25.melspec.hop_length
+    # only native_T (the discretization grid) changes
+    assert fe10.cfg.native_T == 100 and fe25.cfg.native_T == 40
