@@ -1,0 +1,60 @@
+* Full AFE, one channel: GIC filter -> active detector -> comparator.
+* Transient (.tran) -- nonlinear (diodes + comparator), reproduces the paper's
+* V_in / V_filt / V_+ (envelope) / V_out waveforms.
+*
+* Node map:  in -> Vin   vfilt -> GIC out   da/dk -> detector diode nodes
+*            vdet -> V_+ (rectified+smoothed envelope)   vout -> comparator
+*
+* Input is a PWL file written by scripts/run_transient.py (speech clip, biased
+* at 0.9 V). VREF is the comparator threshold, tuned to the envelope's range
+* (real hardware: R7/R8 divider -- must be set to the V_+ swing, not 0.92 V).
+
+.include ../models/OPA379.LIB
+* BAT54 Schottky as a clean 2-terminal .model (the vendor subckt uses a
+* parametric 'mfg=Diotec' that ngspice rejects). Standard BAT54 params.
+.model DBAT54 D(Is=2.2n Rs=2 N=1.03 Cjo=10p M=0.4 Vj=0.4 Bv=30 Ibv=10u Eg=0.69 Xti=2)
+* NOTE: the LPV7215 PSpice model uses if()/switch syntax ngspice can't parse,
+* so the comparator is behavioral here (steep tanh: 0->1.8 V at V_+ = VREF).
+* Faithful enough for the waveform demo; real comparator non-idealities
+* (offset/delay/hysteresis) can be checked later in LTspice/PSpice.
+
+.param RA=12.05k CVAL=9.38n R1v=53.3k R2v=100k
+.param VREF=0.9004
+
+V1   mid  0 DC 0.9
+Vpos vpos 0 DC 1.8
+Vref vref 0 DC {VREF}
+Vin  in   0 PWL file="sim/input.pwl"
+
+* --- GIC bandpass (designed channel) ---
+R1   in   np   {R1v}
+C1   mid  np   {CVAL}
+RA1  c2p  np   {RA}
+XU1  np   nn   vpos 0 vfilt OPA379
+RA2  nn   vfilt {RA}
+C2   c2p  nn   {CVAL}
+XU2  u2p  nn   vpos 0 c2p   OPA379
+R2   u2p  vfilt {R2v}
+R3   mid  u2p  {R2v}
+
+* --- active detector: precision rectifier + C3 smoothing ---
+R4   vfilt da   10k
+XU3  u3p  da    vpos 0 dk   OPA379
+R6   mid  u3p   8.25k
+R5   da   vdet  47k
+D1   da   dk    DBAT54
+D2   dk   vdet  DBAT54
+C3   vdet 0     100n
+
+* --- comparator (behavioral): V_out ~ 1.8 V when V_+ > VREF, else ~0 ---
+Bcomp vout 0 V = 0.9 + 0.9*tanh(2e4*(v(vdet) - v(vref)))
+
+.control
+  tran 2u 40m
+  wrdata sim/tran.csv v(in) v(vfilt) v(vdet) v(vout)
+  * measure the envelope range on the settled portion (skip first 8 ms)
+  meas tran vdmin MIN v(vdet) from=8m to=40m
+  meas tran vdmax MAX v(vdet) from=8m to=40m
+  print vdmin vdmax
+.endc
+.end
