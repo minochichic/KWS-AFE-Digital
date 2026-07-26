@@ -49,11 +49,30 @@ python scripts/sweep_filterbank.py           # 필터뱅크 스윕(ngspice 반�
    고Q(28 dB) 지점. **깨끗한 등Q 필터뱅크가 아니다** → 채널별로 `(RA, C, R1)`를
    **공동 설계**해 목표 f_c에 Q·이득을 맞춰야 한다(다음 단계).
 
-## 다음 단계
-- **B-a. 2-파라미터 채널 설계**: 목표 f_c(50–8000 Hz, mel 등간격)마다 `(RA, C, R1)`를
-  잡아 f_c·Q·peak-gain을 SPICE로 맞춘다. 저주파=큰 RA, 고주파=작은 C.
-- **B-b. 필터뱅크 행렬 export**: 각 채널 `.ac` 응답 `H_k(f)`를 STFT 주파수 그리드에
-  보간해 `filterbank_matrix[16, n_freq]` CSV 생성 → ML(`AFEConfig.filterbank_source="spice"`).
-- **B-c. transient 교차검증**: 순음·GSC 클립을 PWL로 주입, 비교기 펄스열을 확인
-  (BAT54/LPV7215 모델 필요 — 일반 Schottky + 거동 비교기로 대체 가능).
-- **B-d. 편차 강건 학습**: `(f_c, Q, gain)` perturbation을 ML 증강으로.
+## 16채널 필터뱅크 설계 (mel 매칭) — 완료
+
+**제어 구조(검증됨)**: `RA → f_c`, `R1 → Q`(Q ≈ R1/RA, f_c와 독립), C는 채널별로
+RA를 적정 범위(~10 kΩ)에 두도록 선택. 이 분리 덕에 채널별 설계가 빠르고 안정적이다
+(`scripts/design_filterbank.py`).
+
+**결과** (`artifacts/`):
+- **f_c 오차: 평균 0.9%, 최대 2.0%** — RA 이분법이 mel 센터에 정밀 정렬.
+- **Q도 목표에 일치** (R1=Q·RA 제어), 이득 6~7.8 dB로 균일.
+- 컴포넌트값 `(RA, C, R1)` × 16채널 → `filterbank_design.csv`.
+- `H_k(f)`를 ML STFT 그리드(0–8000 Hz, 257 bin)에 보간 → `filterbank_matrix.csv [16,257]`.
+
+**이상 mel과 비교** (`scripts/compare_mel.py`, `artifacts/filterbank_vs_mel.png`):
+- **평균 cosine 유사도 0.831** (ch15는 0.913). **피크는 완벽 정렬**(f_c 일치).
+- 차이는 **2차 밴드패스의 넓은 스커트** vs mel 삼각형의 직선변 — 형상 자체의 한계.
+  이는 **Cerutti 논문 Fig.3의 "Simulation vs Mel" 특성을 그대로 재현**한 것. 스커트를
+  좁히려면 고차 필터(채널당 opamp↑, 전력↑)가 필요 → 2차 GIC는 저전력 선택의 결과.
+- **함의**: SPICE 뱅크는 mel보다 채널 간 겹침이 크다(선택도↓). 이 행렬로 ML을 재학습하면
+  정확도가 소폭 변할 수 있다(Phase B 현실). ← 다음 단계.
+
+## 남은 단계
+- **transient 풀체인 교차검증**: 순음·GSC 클립 PWL 주입 → 검출기(BAT54)+비교기(LPV7215)
+  펄스열 확인. 모델은 `models/bat54.lib`, `models/lpv7215.lib` 확보됨. (BAT54는 3핀
+  subckt `A N.C. K`이므로 2핀 다이오드로 쓰려면 내부 `.model Diode` 사용.)
+- **ML 연동**: `AFEConfig`에 `filterbank_source: "mel"|"spice"` + `spice_matrix_path`
+  추가 → `artifacts/filterbank_matrix.csv`를 필터로 써서 재학습, 이상 mel 대비 정확도 비교.
+- **편차 강건 학습**: `(f_c, Q, gain)` perturbation + E12/E24 스냅을 ML 증강으로.

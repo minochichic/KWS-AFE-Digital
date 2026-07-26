@@ -1,0 +1,38 @@
+* SPICE model bridge rectifier ***BAT54***
+* Use with symbol file ***bat54.asy***
+*
+* (c) Diotec Semiconductor AG
+* www.diotec.com
+* 2017-12-05
+*
+*********************************************************
+* This model is for simulation purposes only. It does   *
+* not replace reviewing of the data sheet nor real life *
+* testing of the part inside the application.           *
+*********************************************************
+*
+.subckt BAT54 A N.C. K  params: Vrrm=30 Vrsm=30 Ir=2u Irsm=2u Vf=1.0 Ifav=0.1 Rs=0.125 trr=5n Cj=10p Eg=0.69 Xti=2
+
+* Above values are an example for the ***BAT54***. Using the
+* above symbol file allows for direct insertion of other values
+* according to these data sheet parameters:
+*
+* Vrrm    	Repetitive peak reverse voltage
+* Ir		Leakage current
+* Vrsm    	Surge peak reverse voltage / Reverse avalanche breakdown voltage
+* Irsm		Defined at avalanche diodes, otherwise set Irsm = Ir
+* Vf		Forward voltage
+* Ifav		Test current for Vf, usually equal to average forward rectified current
+* trr		Reverse recovery time; for Schottky, set trr=5n
+* Cj		Junction capacitance at 0V
+*
+* Activation energy: Eg=1.11 for Si (pn) rectifier, Eg=.69 for Schottky (metal barrier) rectifier
+* Series resistance: Rs=(Vf@3*Ifav - Vf@Ifav)/(3*Ifav - Ifav) from data sheet curve
+* Sat.-current temp. exp: Xti=3 for Si (pn) rectifier, Xti=2 for Schottky (metal barrier) rectifier
+
+D1 A K Diode
+
+
+.model Diode D(Is={Ir/20} Bv={Vrsm*1.05} Ibv={Ir} Vpk={Vrrm} N={.8*Vf/25m/(ln(Ifav)-ln(Ir/20))} Rs={Rs} Eg={Eg} Xti={Xti} Iave={Ifav} Cjo={Cj} M=.33 Tt={trr} Vp=.5 mfg=Diotec)
+
+.ends
