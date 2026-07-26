@@ -7,10 +7,14 @@ range, then with the comparator threshold set to its midpoint (real hardware:
 the R7/R8 divider, which must be tuned to this range -- not the 0.92 V it
 computes to as drawn).
 
-Run from repo root:  .venv/bin/python AFE/scripts/run_transient.py
+Pick any of the 16 designed channels with --ch (reads RA/C/R1 from
+artifacts/filterbank_design.csv); default is channel 6 (~1.36 kHz).
+
+Run from repo root:  .venv/bin/python AFE/scripts/run_transient.py --ch 3
 """
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 from pathlib import Path
@@ -67,8 +71,23 @@ def pwl_block(sig):
     return f"Vin in 0 PWL(\n{body}\n)"
 
 
-def run(vref, pwl):
-    net = re.sub(r"\.param VREF=\S+", f".param VREF={vref:.6g}", NET)
+def channel_params(ch):
+    """Read (RA, C, R1, f_c) for channel `ch` from the design table."""
+    d = np.loadtxt(AFE / "artifacts" / "filterbank_design.csv",
+                   delimiter=",", skiprows=1)
+    r = d[int(ch)]                      # cols: ch,fc_t,fc_sim,Q_t,Q_sim,gain,RA,C,R1
+    return r[6], r[7], r[8], r[2]       # RA, C, R1, f_c_sim
+
+
+def apply_channel(net, RA, C, R1):
+    net = re.sub(r"\.param RA\s*=\s*\S+",   f".param RA={RA:.6g}", net)
+    net = re.sub(r"\.param CVAL\s*=\s*\S+", f".param CVAL={C:.6g}", net)
+    net = re.sub(r"\.param R1v\s*=\s*\S+",  f".param R1v={R1:.6g}", net)
+    return net
+
+
+def run(vref, pwl, net_base):
+    net = re.sub(r"\.param VREF=\S+", f".param VREF={vref:.6g}", net_base)
     net = re.sub(r"Vin\s+in\s+0\s+PWL[^\n]*", pwl, net)
     (AFE / "sim").mkdir(exist_ok=True)
     (AFE / "sim" / "tmp_full.cir").write_text(net)
@@ -85,11 +104,21 @@ def read_tran():
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--ch", type=int, default=6,
+                    help="channel index 0..15 (RA/C/R1 from design CSV)")
+    args = ap.parse_args()
+
+    RA, C, R1, fc = channel_params(args.ch)
+    net_base = apply_channel(NET, RA, C, R1)
+    print(f"channel {args.ch}: f_c={fc:.0f} Hz  RA={RA/1e3:.2f}k  "
+          f"C={C*1e9:.2f}n  R1={R1/1e3:.1f}k")
+
     sig = load_or_synth()
     pwl = pwl_block(sig)
 
     print("[pass 1] measure envelope V_+ range ...")
-    out = run(0.9004, pwl)
+    out = run(0.9004, pwl, net_base)
     m = {k: float(v) for k, v in re.findall(r"(vdmin|vdmax)\s*=\s*(\S+)", out)}
     if "vdmin" not in m:
         print(out[-1500:]); raise SystemExit("pass 1 failed")
@@ -97,7 +126,7 @@ def main():
     print(f"  V_+ range {m['vdmin']:.5f}..{m['vdmax']:.5f} V -> VREF={vref:.5f}")
 
     print("[pass 2] run with tuned threshold ...")
-    run(vref, pwl)
+    run(vref, pwl, net_base)
     t, vin, vfilt, vdet, vout = read_tran()
     keep = t >= 8e-3                              # drop the startup settling
     t, vin, vfilt, vdet, vout = (a[keep] for a in (t, vin, vfilt, vdet, vout))
@@ -112,9 +141,10 @@ def main():
     ax[2].legend(loc="upper right", fontsize=8)
     ax[3].plot(t * 1e3, vout, "tab:red", lw=1.3)
     ax[3].set_ylabel("V_out [V]"); ax[3].set_xlabel("time [ms]"); ax[3].grid(alpha=0.3)
-    ax[0].set_title("AFE full-chain transient (one channel, ~1.36 kHz)")
+    ax[0].set_title(f"AFE full-chain transient -- channel {args.ch} "
+                    f"(f_c = {fc:.0f} Hz)")
     fig.tight_layout()
-    out_png = AFE / "artifacts" / "afe_transient.png"
+    out_png = AFE / "artifacts" / f"afe_transient_ch{args.ch}.png"
     (AFE / "artifacts").mkdir(exist_ok=True)
     fig.savefig(out_png, dpi=130)
     n_pulse = int(np.sum((vout[1:] > 0.9) & (vout[:-1] <= 0.9)))

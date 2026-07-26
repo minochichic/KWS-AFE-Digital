@@ -18,7 +18,13 @@
 * Faithful enough for the waveform demo; real comparator non-idealities
 * (offset/delay/hysteresis) can be checked later in LTspice/PSpice.
 
-.param RA=12.05k CVAL=9.38n R1v=53.3k R2v=100k
+* GIC channel params -- DEFAULTS (channel 6, ~1.36 kHz). run_transient.py
+* overrides RA/CVAL/R1v per --ch from artifacts/filterbank_design.csv, and
+* overrides VREF by the two-pass envelope tuning.
+.param RA=12.05k
+.param CVAL=9.38n
+.param R1v=53.3k
+.param R2v=100k
 .param VREF=0.9004
 
 V1   mid  0 DC 0.9

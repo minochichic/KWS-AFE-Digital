@@ -73,7 +73,7 @@ RA를 적정 범위(~10 kΩ)에 두도록 선택. 이 분리 덕에 채널별 �
 
 `scripts/run_transient.py` + `netlists/full_chain.cir`. 음성 클립을 PWL로 주입해
 `.tran`으로 V_in → V_filt → V_+(엔벨로프) → V_out(펄스) 4단을 재현
-(`artifacts/afe_transient.png`).
+(`artifacts/afe_transient_ch6.png`).
 
 - **결과**: V_filt는 채널 주파수(~1.36kHz) 진동(진폭변조), V_+는 **톱니 엔벨로프**
   (빠른 충전+느린 방전), V_out은 임계 교차 펄스 — **논문 Fig.1과 정성적으로 동일**.
@@ -82,6 +82,9 @@ RA를 적정 범위(~10 kΩ)에 두도록 선택. 이 분리 덕에 채널별 �
 - **비교기 임계는 엔벨로프 범위에 튜닝 필수**: V_+가 이 신호(입력 4mV)에서 0.915~0.934V
   → 임계 0.924V. 친구 넷리스트의 R7/R8 분압(0.9216V)은 마침 이 범위에 가깝지만, 임계는
   **입력 레벨·채널마다 달라지는** 값(= ML의 학습 threshold, 하드웨어의 분압 튜닝).
+- **채널 선택**: `python AFE/scripts/run_transient.py --ch 3` 처럼 16채널 중
+  아무거나 (RA/C/R1을 `filterbank_design.csv`에서 읽음). 기본 ch6(~1.36kHz).
+- **부품값 표**: 16채널 RA/C/R1 + 공통 부품 → `artifacts/component_table.md`.
 - **입력**: `AFE/audio/`에 GSC `.wav`를 넣으면 그걸(가장 큰 40ms 창) 자동 사용,
   없으면 음성 유사 합성신호로 데모.
 
