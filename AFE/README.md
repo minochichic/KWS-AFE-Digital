@@ -123,11 +123,43 @@ RA를 적정 범위(~10 kΩ)에 두도록 선택. 이 분리 덕에 채널별 �
    (넓은 스커트·겹침↑)로 재학습하면 threshold 16개가 다른 값으로 수렴한다.
 
 ### 결론 / 다음
-가장 충실한 길은 하드웨어에 맞춘 프론트엔드로 **재학습**: SPICE 필터뱅크 +
-√압축(또는 log-amp 명시) + `normalize` 재고(none이면 절대 threshold라 V+로 단조
-매핑, 단 라우드니스 불변성 상실). 이때 GLOBAL/LOCAL/OFF 딜레마가 사라진다.
+가장 충실한 길은 하드웨어에 맞춘 프론트엔드로 **재학습**하는 것 → 아래 로드맵.
 (논문은 log-mel + global min-max로 소프트웨어 시뮬 → 실제 아날로그 V+와의 압축
 간극은 논문에 명시 없음: **확인 필요**.)
+
+## 로드맵: 회로-정합 재학습 (계획, 결정됨)
+
+**목표**: GIC 필터 + 능동검출기 + 비교기 회로에 정합된 프론트엔드로 NN을 재학습하고,
+그 위에서 threshold·R7/R8·비교기를 재조정한다. 그러면 log-vs-√ 불일치(→HF OFF)가
+학습 단계에서 흡수된다(threshold가 √압축 V+ 도메인에서 공적응).
+
+**결정 (사용자):**
+- **global min-max 정규화는 유지한다.** 채널 간 스펙트럼 형상 + 라우드니스 불변성을
+  보존하기 위함(버리면 열등). `normalize="none"`은 채택하지 않는다.
+- 따라서 이진화 직전의 이 정규화는 하드웨어에서 **비교기 앞 공유 AGC/정규화 단**
+  (또는 이벤트 수집 후 디지털 정규화)에 대응하고, **R7/R8은 그 정규화 스케일 기준**으로
+  설정한다. 이 단을 아키텍처에 명시할 것.
+
+**구조 (미분가능 대리모델 — ngspice는 학습 루프에 못 넣음, `.tran`이 수 초):**
+```
+audio
+ → SPICE 필터뱅크 (artifacts/filterbank_matrix.csv, 추출 완료)   ← mel 대체
+ → 검출기 모델: 정류 + √압축 + EMA(τ≈4.7ms, 회로서 측정)          ← 미분가능 근사
+ → global min-max (유지)
+ → 채널별 학습 threshold(STE) = 비교기                            ← 학습 대상
+ → binary [16,T] → NN  (end-to-end)
+후처리: 학습 threshold → R7/R8 환산 → SPICE 풀체인으로 교차검증,
+        비교기 behavioral(tanh) → 실제 LPV7215(offset/hysteresis) 재조정
+```
+SPICE는 **학습 루프가 아니라 특성화(필터행렬·τ·압축곡선)와 사후 검증**에만 쓴다.
+
+**단계:**
+1. 검출기 √압축·τ 곡선을 SPICE에서 정량 추출(입력 진폭 sweep → V+ 응답).
+2. `data/afe.py`에 `filterbank_source: mel|spice` + 검출기 압축 모델 추가(격리 벗어남 →
+   착수 전 승인). global min-max·STE threshold는 그대로.
+3. 재학습 → 정확도(이상 mel baseline 대비) + 새 threshold 16개 확보.
+4. 새 threshold → R7/R8(정규화 스케일 기준) → SPICE 풀체인 교차검증.
+5. 비교기 실모델(LPV7215)·편차(E12/E24, f_c/Q perturb) 강건화.
 
 ## 남은 단계
 - **ML 연동**: `AFEConfig`에 `filterbank_source: "mel"|"spice"` + `spice_matrix_path`
