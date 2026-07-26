@@ -1,0 +1,46 @@
+* One AFE channel -- GIC bandpass filter only (Cerutti Fig.1 "GIC filter" stage).
+* Self-contained: uses the real OPA379 model (finite GBW -> captures the
+* high-frequency gain/Q droop that idealized triangular mel filters miss).
+* This stage is LINEAR, so .ac gives the true channel response H_k(f) that
+* becomes one row of the AFE filterbank. (The nonlinear detector + comparator
+* are NOT needed to characterize the filter shape.)
+*
+* Node map vs the friend's KiCad netlist:
+*   in -> input(0.9V bias, AC 1)   np -> U1(+)   nn -> U1(-)/U2(-)
+*   c2p -> U2 out (C2/RA1 node)     vgic -> U1 out = channel output
+*   u2p -> U2(+)   mid -> 0.9V mid-rail   vpos -> 1.8V rail
+*
+* Corner freq (Cerutti):  f_c = 1 / (2*pi*RA*C).  Sweep RA to move the channel.
+
+.include ../models/OPA379.LIB
+
+.param RA   = 2.32k     ; corner-setting resistor (RA1=RA2)
+.param CVAL = 10n       ; GIC caps (C1=C2)
+.param R1v  = 14.7k     ; input R -> sets Q with RA (diagram: Q = R1/RA)
+.param R2v  = 100k      ; feedback pair (R2=R3)
+
+* --- supplies / bias (single 1.8 V supply, signals around 0.9 V) ---
+V1   mid  0    DC 0.9
+Vpos vpos 0    DC 1.8
+Vin  in   0    DC 0.9  AC 1
+
+* --- GIC bandpass ---
+R1   in   np   {R1v}
+C1   mid  np   {CVAL}
+RA1  c2p  np   {RA}
+XU1  np   nn   vpos 0 vgic  OPA379
+RA2  nn   vgic {RA}
+C2   c2p  nn   {CVAL}
+XU2  u2p  nn   vpos 0 c2p   OPA379
+R2   u2p  vgic {R2v}
+R3   mid  u2p  {R2v}
+
+.control
+  ac dec 200 10 100k
+  let g = vdb(vgic)                         ; gain in dB (input AC=1)
+  meas ac gpk  MAX g                        ; peak gain
+  meas ac fpk  MAX_AT g                     ; frequency of peak = f_c
+  wrdata sim/gic_ac.csv vdb(vgic) vp(vgic)
+  print gpk fpk
+.endc
+.end
