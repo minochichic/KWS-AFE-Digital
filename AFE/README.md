@@ -95,6 +95,17 @@ RA를 적정 범위(~10 kΩ)에 두도록 선택. 이 분리 덕에 채널별 �
   모델로 대체. 실제 비교기 비이상성(offset/delay/hysteresis)은 LTspice/PSpice에서 검증 가능.
 - **OPA379**는 ngspice 호환 → 필터·검출기에 실모델 그대로 사용.
 
+## 회로도 · 16채널 스펙트로그램 (시각화)
+
+- **회로도** `artifacts/afe_schematic.svg` — `full_chain.cir` 기반 1채널 회로도
+  (GIC 밴드패스 → 능동검출기 → 비교기). 값은 **변수명**(RA=RA1=RA2, CVAL=C1=C2,
+  R1v, R2v=R2=R3, VREF)과 지정자(R4/R5/R6/C3)로만 표기(상수 숫자 없음). 16채널은 이
+  회로의 **채널별 RA/CVAL/R1v 복제**.
+- **16채널 스펙트로그램** `artifacts/afe_spectrogram16.png` — 실제 SPICE 풀체인을 GSC
+  단어에 **16채널 모두** 돌려 만든 시간-주파수 이미지(`scripts/spectrogram16.py --wav <이름>`).
+  상단 = V+ 엔벨로프(연속), 하단 = 이진 AFE 출력(NN 입력, 채널별 학습 threshold로 이진화).
+  'six'에서 **/s/ 마찰음(HF) + 모음(LF) 분리**가 뚜렷 → 회로가 유의미한 T-F 특징을 만든다.
+
 ## 비교기 임계 R7/R8 (학습 threshold 매핑) — 진행
 
 비교기 기준 V- = 1.8·R8/(R7+R8)를 채널마다 정한다. 두 근거로 표를 만든다.

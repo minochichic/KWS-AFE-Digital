@@ -1,0 +1,227 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 720" font-family="Menlo, Consolas, monospace" font-size="14">
+  <style>
+    .wire{stroke:#222;stroke-width:2;fill:none}
+    .sym{stroke:#222;stroke-width:2;fill:none}
+    .fill{fill:#222}
+    .box{stroke:#888;stroke-width:1.5;fill:none;stroke-dasharray:6 4}
+    .net{fill:#0057b8;font-size:12px}
+    .des{fill:#b30000;font-size:13px}
+    .lbl{fill:#222}
+    .title{fill:#111;font-size:20px;font-weight:bold}
+    .stage{fill:#555;font-size:15px;font-weight:bold}
+    .note{fill:#444;font-size:12px}
+  </style>
+
+  <rect x="0" y="0" width="1240" height="720" fill="#ffffff"/>
+  <text x="24" y="34" class="title">AFE one channel — GIC band-pass → active detector → comparator  (from full_chain.cir)</text>
+
+  <!-- ============ stage boxes ============ -->
+  <rect x="24"  y="58" width="600" height="530" class="box"/>
+  <text x="34"  y="80" class="stage">1. GIC band-pass  (V_in → V_filt)</text>
+  <rect x="648" y="58" width="360" height="530" class="box"/>
+  <text x="658" y="80" class="stage">2. Active detector  (→ V_+ envelope)</text>
+  <rect x="1032" y="58" width="184" height="530" class="box"/>
+  <text x="1042" y="80" class="stage">3. Comparator</text>
+
+  <!-- ============ INPUT ============ -->
+  <circle cx="40" cy="150" r="4" class="fill"/>
+  <text x="18" y="140" class="net">in</text>
+  <text x="8" y="172" class="note">V_in (mic, ~0.9V bias)</text>
+  <line x1="40" y1="150" x2="90" y2="150" class="wire"/>
+
+  <!-- ===== GIC passives (net-label grid) ===== -->
+  <!-- R1: in - np -->
+  <g transform="translate(150,150)">
+    <line x1="-60" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="60" y2="0" class="wire"/>
+    <text x="-8" y="-14" class="des">R1</text><text x="-14" y="26" class="lbl">=R1v</text>
+    <text x="-78" y="4" class="net">in</text><text x="62" y="4" class="net">np</text>
+  </g>
+  <!-- C1: mid - np -->
+  <g transform="translate(360,150)">
+    <line x1="-70" y1="0" x2="-8" y2="0" class="wire"/>
+    <line x1="-8" y1="-14" x2="-8" y2="14" class="sym"/>
+    <line x1="8" y1="-14" x2="8" y2="14" class="sym"/>
+    <line x1="8" y1="0" x2="70" y2="0" class="wire"/>
+    <text x="-8" y="-20" class="des">C1</text><text x="16" y="-16" class="lbl">=CVAL</text>
+    <text x="-92" y="4" class="net">mid</text><text x="72" y="4" class="net">np</text>
+  </g>
+  <!-- RA1: c2p - np -->
+  <g transform="translate(150,210)">
+    <line x1="-60" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="60" y2="0" class="wire"/>
+    <text x="-12" y="-14" class="des">RA1</text><text x="-10" y="26" class="lbl">=RA</text>
+    <text x="-90" y="4" class="net">c2p</text><text x="62" y="4" class="net">np</text>
+  </g>
+  <!-- C2: c2p - nn -->
+  <g transform="translate(360,210)">
+    <line x1="-70" y1="0" x2="-8" y2="0" class="wire"/>
+    <line x1="-8" y1="-14" x2="-8" y2="14" class="sym"/>
+    <line x1="8" y1="-14" x2="8" y2="14" class="sym"/>
+    <line x1="8" y1="0" x2="70" y2="0" class="wire"/>
+    <text x="-8" y="-20" class="des">C2</text><text x="16" y="-16" class="lbl">=CVAL</text>
+    <text x="-92" y="4" class="net">c2p</text><text x="72" y="4" class="net">nn</text>
+  </g>
+  <!-- RA2: nn - vfilt -->
+  <g transform="translate(150,270)">
+    <line x1="-60" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="60" y2="0" class="wire"/>
+    <text x="-12" y="-14" class="des">RA2</text><text x="-10" y="26" class="lbl">=RA</text>
+    <text x="-88" y="4" class="net">nn</text><text x="62" y="4" class="net">vfilt</text>
+  </g>
+  <!-- R2: u2p - vfilt -->
+  <g transform="translate(360,270)">
+    <line x1="-70" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="70" y2="0" class="wire"/>
+    <text x="-10" y="-14" class="des">R2</text><text x="-14" y="26" class="lbl">=R2v</text>
+    <text x="-92" y="4" class="net">u2p</text><text x="72" y="4" class="net">vfilt</text>
+  </g>
+  <!-- R3: mid - u2p -->
+  <g transform="translate(150,330)">
+    <line x1="-60" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="60" y2="0" class="wire"/>
+    <text x="-10" y="-14" class="des">R3</text><text x="-14" y="26" class="lbl">=R2v</text>
+    <text x="-90" y="4" class="net">mid</text><text x="62" y="4" class="net">u2p</text>
+  </g>
+
+  <!-- ===== GIC opamps ===== -->
+  <!-- U1: +np -nn out vfilt -->
+  <g transform="translate(300,430)">
+    <polygon points="0,-40 0,40 80,0" class="sym"/>
+    <text x="8" y="-16" class="fill" font-size="16">+</text>
+    <text x="8" y="24" class="fill" font-size="16">–</text>
+    <line x1="-40" y1="-20" x2="0" y2="-20" class="wire"/><text x="-70" y="-16" class="net">np</text>
+    <line x1="-40" y1="20" x2="0" y2="20" class="wire"/><text x="-70" y="24" class="net">nn</text>
+    <line x1="80" y1="0" x2="130" y2="0" class="wire"/><text x="132" y="4" class="net">vfilt</text>
+    <text x="18" y="4" class="des">U1</text><text x="6" y="56" class="lbl">OPA379</text>
+  </g>
+  <!-- U2: +u2p -nn out c2p -->
+  <g transform="translate(300,530)">
+    <polygon points="0,-40 0,40 80,0" class="sym"/>
+    <text x="8" y="-16" class="fill" font-size="16">+</text>
+    <text x="8" y="24" class="fill" font-size="16">–</text>
+    <line x1="-40" y1="-20" x2="0" y2="-20" class="wire"/><text x="-72" y="-16" class="net">u2p</text>
+    <line x1="-40" y1="20" x2="0" y2="20" class="wire"/><text x="-70" y="24" class="net">nn</text>
+    <line x1="80" y1="0" x2="130" y2="0" class="wire"/><text x="132" y="4" class="net">c2p</text>
+    <text x="18" y="4" class="des">U2</text><text x="6" y="56" class="lbl">OPA379</text>
+  </g>
+
+  <!-- vfilt tap to stage 2 -->
+  <line x1="430" y1="430" x2="470" y2="430" class="wire"/>
+  <line x1="470" y1="430" x2="470" y2="150" class="wire"/>
+  <line x1="470" y1="150" x2="648" y2="150" class="wire"/>
+  <circle cx="470" cy="430" r="3" class="fill"/>
+  <text x="486" y="144" class="net">vfilt</text>
+
+  <!-- ============ STAGE 2 detector ============ -->
+  <!-- R4: vfilt - da -->
+  <g transform="translate(720,150)">
+    <line x1="-72" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="60" y2="0" class="wire"/>
+    <text x="-10" y="-14" class="des">R4</text>
+    <text x="-96" y="-6" class="net">vfilt</text><text x="62" y="4" class="net">da</text>
+  </g>
+  <!-- U3: +u3p -da out dk -->
+  <g transform="translate(780,300)">
+    <polygon points="0,-40 0,40 80,0" class="sym"/>
+    <text x="8" y="-16" class="fill" font-size="16">+</text>
+    <text x="8" y="24" class="fill" font-size="16">–</text>
+    <line x1="-40" y1="-20" x2="0" y2="-20" class="wire"/><text x="-72" y="-16" class="net">u3p</text>
+    <line x1="-40" y1="20" x2="0" y2="20" class="wire"/><text x="-66" y="24" class="net">da</text>
+    <line x1="80" y1="0" x2="120" y2="0" class="wire"/><text x="122" y="4" class="net">dk</text>
+    <text x="18" y="4" class="des">U3</text><text x="6" y="56" class="lbl">OPA379</text>
+  </g>
+  <!-- R6: mid - u3p -->
+  <g transform="translate(700,230)">
+    <line x1="-30" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="40" y2="0" class="wire"/>
+    <text x="-10" y="-14" class="des">R6</text>
+    <text x="-58" y="4" class="net">mid</text><text x="42" y="4" class="net">u3p</text>
+  </g>
+  <!-- R5: da - vdet (feedback) -->
+  <g transform="translate(870,150)">
+    <line x1="-40" y1="0" x2="-24" y2="0" class="wire"/>
+    <rect x="-24" y="-9" width="48" height="18" class="sym"/>
+    <line x1="24" y1="0" x2="50" y2="0" class="wire"/>
+    <text x="-10" y="-14" class="des">R5</text>
+    <text x="-64" y="4" class="net">da</text><text x="52" y="4" class="net">vdet</text>
+  </g>
+  <!-- D1: da -> dk -->
+  <g transform="translate(760,390)">
+    <line x1="-40" y1="0" x2="-14" y2="0" class="wire"/>
+    <polygon points="-14,-11 -14,11 8,0" class="sym"/>
+    <line x1="8" y1="-11" x2="8" y2="11" class="sym"/>
+    <line x1="8" y1="0" x2="40" y2="0" class="wire"/>
+    <text x="-8" y="-16" class="des">D1</text><text x="-2" y="30" class="lbl">BAT54</text>
+    <text x="-66" y="4" class="net">da</text>
+  </g>
+  <!-- D2: dk -> vdet -->
+  <g transform="translate(880,390)">
+    <line x1="-40" y1="0" x2="-14" y2="0" class="wire"/>
+    <polygon points="-14,-11 -14,11 8,0" class="sym"/>
+    <line x1="8" y1="-11" x2="8" y2="11" class="sym"/>
+    <line x1="8" y1="0" x2="40" y2="0" class="wire"/>
+    <text x="-8" y="-16" class="des">D2</text><text x="-2" y="30" class="lbl">BAT54</text>
+    <text x="42" y="4" class="net">vdet</text>
+  </g>
+  <!-- shared dk node between D1 and D2 -->
+  <line x1="800" y1="390" x2="840" y2="390" class="wire"/>
+  <text x="808" y="384" class="net">dk</text>
+  <!-- C3: vdet - gnd -->
+  <g transform="translate(950,300)">
+    <line x1="0" y1="-40" x2="0" y2="-8" class="wire"/>
+    <line x1="-14" y1="-8" x2="14" y2="-8" class="sym"/>
+    <line x1="-14" y1="8" x2="14" y2="8" class="sym"/>
+    <line x1="0" y1="8" x2="0" y2="34" class="wire"/>
+    <text x="18" y="-4" class="des">C3</text><text x="-6" y="-46" class="net">vdet</text>
+    <!-- gnd -->
+    <line x1="-12" y1="34" x2="12" y2="34" class="sym"/>
+    <line x1="-7" y1="40" x2="7" y2="40" class="sym"/>
+    <line x1="-3" y1="46" x2="3" y2="46" class="sym"/>
+  </g>
+  <text x="654" y="470" class="note">precision rectifier: D1/D2 inside U3 feedback</text>
+  <text x="654" y="490" class="note">C3 smoothing → τ ≈ R5·C3 (sawtooth V_+)</text>
+
+  <!-- vdet tap to comparator -->
+  <line x1="990" y1="150" x2="1010" y2="150" class="wire"/>
+  <line x1="1010" y1="150" x2="1010" y2="300" class="wire"/>
+  <line x1="1010" y1="300" x2="1052" y2="300" class="wire"/>
+  <circle cx="1010" cy="150" r="3" class="fill"/>
+
+  <!-- ============ STAGE 3 comparator ============ -->
+  <g transform="translate(1052,320)">
+    <polygon points="0,-46 0,46 84,0" class="sym"/>
+    <text x="10" y="-16" class="fill" font-size="16">+</text>
+    <text x="10" y="26" class="fill" font-size="16">–</text>
+    <line x1="-42" y1="-22" x2="0" y2="-22" class="wire"/><text x="-46" y="-28" class="net">vdet</text>
+    <line x1="-42" y1="22" x2="0" y2="22" class="wire"/><text x="-46" y="40" class="net">vref</text>
+    <line x1="84" y1="0" x2="150" y2="0" class="wire"/>
+    <circle cx="150" cy="0" r="4" class="fill"/>
+    <text x="120" y="-10" class="net">vout</text>
+    <text x="20" y="4" class="des">CMP</text><text x="2" y="64" class="lbl">LPV7215</text>
+  </g>
+  <!-- vref source -->
+  <g transform="translate(1052,470)">
+    <text x="-40" y="4" class="net">vref</text>
+    <line x1="-20" y1="0" x2="-8" y2="0" class="wire"/>
+    <circle cx="0" cy="0" r="14" class="sym"/>
+    <text x="-6" y="5" class="fill" font-size="13">V</text>
+    <text x="-14" y="34" class="lbl">=VREF</text>
+    <text x="-40" y="-16" class="note">(R7/R8 divider)</text>
+  </g>
+  <line x1="1052" y1="342" x2="1052" y2="470" class="wire"/>
+
+  <!-- ============ rails / notes ============ -->
+  <rect x="24" y="602" width="1192" height="102" class="box" stroke-dasharray="0"/>
+  <text x="34" y="624" class="stage">Rails &amp; nets  (single-supply)</text>
+  <text x="34"  y="648" class="note">vpos — positive supply rail (U1/U2/U3 V+ pin)      mid — mid-rail bias      0 — GND</text>
+  <text x="34"  y="670" class="note">Per-channel design vars:  RA (=RA1=RA2) sets f_c ·  CVAL (=C1=C2)  ·  R1v (=R1) ·  R2v (=R2=R3) sets Q  ·  VREF = comparator threshold</text>
+  <text x="34"  y="690" class="note">Fixed per stage: R4, R5, R6, C3 (detector).   Devices: OPA379 (opamps), BAT54 (D1/D2), LPV7215 (comparator).   16 channels = 16 copies with per-channel RA/CVAL/R1v.</text>
+</svg>
