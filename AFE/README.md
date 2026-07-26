@@ -95,6 +95,40 @@ RA를 적정 범위(~10 kΩ)에 두도록 선택. 이 분리 덕에 채널별 �
   모델로 대체. 실제 비교기 비이상성(offset/delay/hysteresis)은 LTspice/PSpice에서 검증 가능.
 - **OPA379**는 ngspice 호환 → 필터·검출기에 실모델 그대로 사용.
 
+## 비교기 임계 R7/R8 (학습 threshold 매핑) — 진행
+
+비교기 기준 V- = 1.8·R8/(R7+R8)를 채널마다 정한다. 두 근거로 표를 만든다.
+
+- **중간지점**(`scripts/threshold_table.py` → `artifacts/threshold_table.md`):
+  각 채널 엔벨로프 V+ 범위의 중앙. 캘리브레이션은 `AFE/audio/`의 실제 GSC wav
+  여러 개(없으면 광대역 합성)를 집계. 순진한 기본값.
+- **학습 threshold**(`scripts/learned_r7r8.py` → `artifacts/threshold_learned_r7r8.md`):
+  best.pt(sc_v2_dense, val 0.8715)의 채널별 학습 threshold t_k∈[0,1]를 V+로 매핑.
+  실제 GSC 12단어(마찰음+모음)로 전역/채널별 V+ 스윙 측정.
+
+**두 매핑 철학**:
+- **GLOBAL** — ML의 전역 min-max에 충실. t_k를 공유 [V_LO,V_HI]에 배치.
+- **LOCAL** — 하드웨어(채널별 독립 R7/R8)에 충실. t_k를 채널 자기 스윙에 배치.
+
+### 핵심 발견 (중요)
+1. **GLOBAL에선 HF 채널(12~15)이 OFF로 뜬다.** 원인은 전역 vs 로컬이 **아니라**
+   **압축 도메인 불일치**: ML은 `log(power)` 위에서 threshold를 학습하는데(afe.py:147),
+   아날로그 검출기 V+는 진폭(∝√power)이라 압축이 훨씬 약하다. log가 약한 HF를
+   크게 끌어올리지만 √는 못 해서, HF 정규화 위치가 학습 threshold에 못 미친다.
+   → **A(전역 유지)로 가도 비교기 앞에 log-amp가 없으면 OFF는 남는다.**
+2. **LOCAL은 채널 간 상대 라우드니스(=스펙트럼 형상) 정보를 버린다.** 전역 min-max가
+   보존하던 "지금 어느 채널이 센가"가 사라지므로, 전 채널이 활성이 되는 대신 대비가
+   뭉개진다. 그래서 LOCAL은 실용적 근사일 뿐 의미상 열등.
+3. **threshold는 프론트엔드에 공적응한다.** 이상 mel(현재)이 아니라 SPICE 필터뱅크
+   (넓은 스커트·겹침↑)로 재학습하면 threshold 16개가 다른 값으로 수렴한다.
+
+### 결론 / 다음
+가장 충실한 길은 하드웨어에 맞춘 프론트엔드로 **재학습**: SPICE 필터뱅크 +
+√압축(또는 log-amp 명시) + `normalize` 재고(none이면 절대 threshold라 V+로 단조
+매핑, 단 라우드니스 불변성 상실). 이때 GLOBAL/LOCAL/OFF 딜레마가 사라진다.
+(논문은 log-mel + global min-max로 소프트웨어 시뮬 → 실제 아날로그 V+와의 압축
+간극은 논문에 명시 없음: **확인 필요**.)
+
 ## 남은 단계
 - **ML 연동**: `AFEConfig`에 `filterbank_source: "mel"|"spice"` + `spice_matrix_path`
   추가 → `artifacts/filterbank_matrix.csv`를 필터로 써서 재학습, 이상 mel 대비 정확도 비교.

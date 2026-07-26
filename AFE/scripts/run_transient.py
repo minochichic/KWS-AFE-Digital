@@ -32,35 +32,62 @@ BIAS = 0.9                  # mid-rail
 AMP = 4e-3                  # input amplitude around bias (small, like the mic)
 
 
-def load_or_synth():
-    """Return a mono signal in [-1,1] at FS. Real wav if present, else synth."""
+def _load_wav_window(path):
+    """Loudest DUR window of a wav, resampled to FS, normalized to [-1,1].
+
+    Uses stdlib `wave` (GSC is standard PCM 16 kHz/16-bit) -- no soundfile/sox
+    backend needed.
+    """
+    import wave
+    with wave.open(str(path), "rb") as wf:
+        sr, nch, sw = wf.getframerate(), wf.getnchannels(), wf.getsampwidth()
+        raw = wf.readframes(wf.getnframes())
+    dtype = {1: np.int8, 2: np.int16, 4: np.int32}[sw]
+    x = np.frombuffer(raw, dtype=dtype).astype(np.float64)
+    if nch > 1:
+        x = x.reshape(-1, nch).mean(axis=1)
+    x = x / (np.iinfo(dtype).max + 1.0)
+    w = int(DUR * sr)
+    if len(x) > w:
+        e = np.convolve(x ** 2, np.ones(w), "valid")  # pick loudest DUR window
+        s = int(np.argmax(e))
+        x = x[s:s + w]
+    t_new = np.arange(int(DUR * FS)) / FS
+    y = np.interp(t_new, np.arange(len(x)) / sr, x)
+    return y / (np.abs(y).max() + 1e-9)
+
+
+def synth_broadband(seed=0):
+    """Broadband speech-shaped calibration signal that excites EVERY channel.
+
+    A log sweep 120 Hz -> 7 kHz gives each channel a strong burst as it crosses
+    that channel's passband (so per-channel V+ swing is well defined and no
+    channel is starved), plus a noise floor. Not real speech -- a real GSC wav
+    in AFE/audio/ overrides this. Used only when no wav is present.
+    """
+    rng = np.random.default_rng(seed)
+    t = np.arange(int(DUR * FS)) / FS
+    f0, f1 = 120.0, 7000.0
+    k = (f1 / f0) ** (1.0 / DUR)
+    sweep = np.sin(2 * np.pi * f0 * (k ** t - 1.0) / np.log(k))
+    y = 0.7 * sweep + 0.5 * rng.standard_normal(len(t))
+    return y / (np.abs(y).max() + 1e-9)
+
+
+def calib_signals():
+    """List of (name, signal) for calibration. All wavs in AFE/audio/ if any,
+    else one broadband synth. Calibration scripts aggregate over these."""
     wavs = sorted((AFE / "audio").glob("*.wav")) if (AFE / "audio").is_dir() else []
     if wavs:
-        import soundfile as sf
-        x, sr = sf.read(wavs[0])
-        if x.ndim > 1:
-            x = x[:, 0]
-        # resample to FS (linear) and take a voiced-looking DUR window
-        t_new = np.arange(int(DUR * FS)) / FS
-        t_old = np.arange(len(x)) / sr
-        # pick the loudest 40 ms window
-        w = int(DUR * sr)
-        e = np.convolve(x ** 2, np.ones(w), "valid")
-        s = int(np.argmax(e))
-        seg = x[s:s + w]
-        y = np.interp(t_new, np.arange(len(seg)) / sr, seg)
-        print(f"[audio] {wavs[0].name} (loudest {DUR*1e3:.0f} ms window)")
-        return y / (np.abs(y).max() + 1e-9)
-    # synthetic voiced speech-like: pitch-modulated carrier near ~1.3 kHz + formants
-    t = np.arange(int(DUR * FS)) / FS
-    pitch = 130.0
-    glottal = (np.sin(2 * np.pi * pitch * t) > 0).astype(float)   # pulse train-ish
-    glottal = np.maximum(0, np.sin(2 * np.pi * pitch * t)) ** 2
-    car = (np.sin(2 * np.pi * 1300 * t) + 0.6 * np.sin(2 * np.pi * 800 * t)
-           + 0.4 * np.sin(2 * np.pi * 2400 * t))
-    y = glottal * car + 0.03 * np.random.default_rng(0).standard_normal(len(t))
-    print("[audio] synthetic voiced speech-like signal (no wav in AFE/audio/)")
-    return y / (np.abs(y).max() + 1e-9)
+        print(f"[audio] {len(wavs)} wav(s) in AFE/audio/ (loudest {DUR*1e3:.0f} ms each)")
+        return [(p.name, _load_wav_window(p)) for p in wavs]
+    print("[audio] no wav in AFE/audio/ -> broadband synth (excites all channels)")
+    return [("synth_broadband", synth_broadband())]
+
+
+def load_or_synth():
+    """Single signal for the transient PLOT: first wav if present, else synth."""
+    return calib_signals()[0][1]
 
 
 def pwl_block(sig):
