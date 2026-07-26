@@ -174,6 +174,22 @@ SPICE는 **학습 루프가 아니라 특성화(필터행렬·τ·압축곡선)�
 4. 새 threshold → R7/R8(정규화 스케일 기준) → SPICE 풀체인 교차검증.
 5. 비교기 실모델(LPV7215)·편차(E12/E24, f_c/Q perturb) 강건화.
 
+## 검출기 특성화 (부품값 근거) — 완료 [로드맵 step 1]
+
+검출기 상수(R4/R5/R6/C3)를 주장하는 대신 **그 값이 만드는 응답을 SPICE로 실측**
+(`scripts/characterize_detector.py` + `netlists/detector.cir`, 검출기 단독 구동).
+결과 `artifacts/detector_characterization.png`, `detector_char.md`.
+
+- **τ 방전 = 4.62 ms ≈ 공칭 R5·C3(4.70 ms)** — C3/R5 값의 근거 **확립**.
+  충전 t90 ≈ 0.65 ms → **빠른 충전 / 느린 방전** 톱니 확인(비대칭 ~7배).
+- **압축은 선형(R5/R4)이 아니다**: 데드존 무릎 + 초선형(p≈1.3~1.9) + 완만한 포화.
+  gain@100mV ≈ 3~4 (공칭 4.7보다 낮음).
+- **주파수 의존 데드존**: 250 Hz 5.9 mV → 1 kHz 7.3 mV → 4 kHz 12.1 mV.
+  저GBW OPA379의 크로스오버 왜곡이 **저신호·고주파를 못 정류** → 앞서 HF 채널이
+  약했던 물리적 원인 중 하나. **R4(이득)·OPA379(GBW)가 재검토 대상**임을 정량 확인.
+- **함의**: 재학습용 검출기 모델은 단순 √/선형이 아니라 **(데드존+무릎+포화, 주파수
+  의존) 곡선**을 재현해야 한다(위 곡선을 룩업/파라메트릭으로). τ는 EMA로.
+
 ## 남은 단계
 - **ML 연동**: `AFEConfig`에 `filterbank_source: "mel"|"spice"` + `spice_matrix_path`
   추가 → `artifacts/filterbank_matrix.csv`를 필터로 써서 재학습, 이상 mel 대비 정확도 비교.

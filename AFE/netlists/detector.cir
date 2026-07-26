@@ -1,0 +1,31 @@
+* Active detector ALONE (precision rectifier + C3), for characterization.
+* Drive node vfilt directly with a controlled sine (bypassing the GIC filter)
+* so we can measure the detector's own gain / compression / time constant.
+*
+* Vsig is replaced by scripts/characterize_detector.py:
+*   - amplitude sweep: SIN(0.9 {AMP} {FREQ})  (override AMP)
+*   - burst (for tau): an inline PWL gated sine
+.include ../models/OPA379.LIB
+.model DBAT54 D(Is=2.2n Rs=2 N=1.03 Cjo=10p M=0.4 Vj=0.4 Bv=30 Ibv=10u Eg=0.69 Xti=2)
+
+.param AMP=1m
+.param FREQ=1k
+
+V1   mid  0 DC 0.9
+Vpos vpos 0 DC 1.8
+Vsig vfilt 0 SIN(0.9 {AMP} {FREQ})
+
+* --- active detector: precision rectifier + C3 smoothing (values under test) ---
+R4   vfilt da   10k
+XU3  u3p  da    vpos 0 dk   OPA379
+R6   mid  u3p   8.25k
+R5   da   vdet  47k
+D1   da   dk    DBAT54
+D2   dk   vdet  DBAT54
+C3   vdet 0     100n
+
+.control
+  tran 2u 40m
+  wrdata sim/det.csv v(vfilt) v(vdet)
+.endc
+.end
