@@ -206,6 +206,23 @@ G=R5/R4를 R4로 조절(R5·C3 고정 → τ 불변). 비교기 Vos≈5mV, 레�
 - **다음 검증**: 확정 R4로 full_chain·threshold 재캘리브레이션 + **비교기 오프셋/히스테리시스
   모델**을 넣어 채널별 펄스 생존 재평가(behavioral tanh는 이 문제를 가림).
 
+## 비교기 마진 검증 (R4 10k vs 1k + 오프셋) — 완료
+
+`scripts/verify_comparator_margin.py` → `artifacts/comparator_margin.png/.md`.
+`full_chain.cir`에 `R4v`·`VOS`(비교기 입력 오프셋) 파라미터 추가(기본 10k/0 = 기존과 동일).
+클립 `six.wav`, Vos=5mV.
+
+- **Part A**: R4=10k에선 **16채널 중 다수가 V+ 스윙 ≤ Vos(5mV)** → 마진 없음.
+  R4=1k로 바꾸면 대부분 15–53mV로 상승(그림). 단 **최상위 HF(5.7/6.8kHz)는 1k에서도
+  4–5mV로 애매** — 데드존/OPA379 GBW 한계라 R4로는 안 풀림(더 빠른 opamp 필요).
+- **Part B (오프셋 플립)**: 마진 애매한 ch2(447Hz)에서 임계=엔벨로프 중앙, ±5mV 주입:
+  - R4=10k: 출력 듀티 **−5mV→100%, +5mV→0%** = 오프셋이 0/1을 완전히 뒤집음(센싱 붕괴).
+  - R4=1k: 듀티 65% vs 41%(펄스 13/14) = **채널이 살아 실제 신호를 감지**(마진 회복).
+  - (rising-edge 카운트는 '항상 ON'을 0으로 오독 → **듀티사이클**로 측정.)
+- **결론**: R4↓(이득↑)이 비교기 마진 문제를 실제로 완화함을 정량 확인. behavioral tanh
+  (Vos=0)로는 안 보이던 문제. **채택 시** `R4v` 기본값을 1k로 바꾸고 component/threshold/
+  spectrogram 아티팩트를 재생성해야 함(현재 기본값은 원본 10k 유지).
+
 ## 남은 단계
 - **ML 연동**: `AFEConfig`에 `filterbank_source: "mel"|"spice"` + `spice_matrix_path`
   추가 → `artifacts/filterbank_matrix.csv`를 필터로 써서 재학습, 이상 mel 대비 정확도 비교.
