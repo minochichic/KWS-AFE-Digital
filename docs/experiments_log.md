@@ -63,6 +63,27 @@
 
 ---
 
+## Phase B: 회로-정합 프론트엔드 (mel→SPICE 필터, log→√ 압축)
+
+이상 mel 대신 **SPICE 추출 GIC 필터뱅크**(`AFE/artifacts/filterbank_matrix.csv`)와, log 대신
+**검출기 충실 √ 압축**(V+∝진폭=√power)을 `AFEConfig`로 선택. 전부 RTX, separable, f_max 8000,
+seed 1234, global min-max 유지. 앵커(mel+log+sep) = #7 test-best **0.8314** (Colab #2 0.8513).
+
+| front end | filterbank | comp | conv2 | test | best val | train | 비고 |
+|---|---|---|---|---|---|---|---|
+| **B0** mel+log (=#7) | mel | log | sep | 0.8314 (best) | 0.847 | 0.856 | 앵커 |
+| **B1** spice+log | spice | log | sep | **0.586** | — | — | log이 넓은 스커트 과증폭 → 채널 상관 0.89(중복) |
+| **B2** spice+√ | spice | sqrt | sep | **0.8016** (best) | 0.8195 | ~0.82 | √로 회복. 채널 상관 0.56 |
+| **B3** spice+√ dense | spice | sqrt | dense | 0.776 (last) | ~0.81 | 0.82 | dense 무효 → **입력 정보 천장**(용량 아님) |
+| **B4** mel+√ | mel | sqrt | sep | 0.846 (last) | 0.864 | 0.87 | **√ > log** (mel에서 0.831→0.846) |
+
+> **2×2로 원인 분리 완료.** (a) **√는 범인 아님 — 오히려 낫다**: mel에서 log→√ 0.831→0.846.
+> (b) **spice의 하락은 전부 필터뱅크**: 같은 √끼리 mel 0.846 → spice 0.802 = **−4.4pp**(2차 GIC
+> 넓은 스커트의 순수 대가). (c) **√는 spice 필터엔 필수**: log에선 필터 대가가 −24pp(0.831→0.586)
+> 참사인데 √가 −4.4pp로 낮춤. → **√ 채택 확정.** 남은 −4.4pp = 실제 아날로그 필터의 정직한 비용
+> (Cerutti AFE가 이상 mel보다 낮은 것과 동일 성격). 코드: `data/afe.py`(|H|² + compression),
+> `train/config.py`(filterbank_source/compression). 진단: 채널 상관 log 0.89 vs √ 0.56.
+
 ## 다음 레버 (우선순위)
 
 증강은 과소적합 국면에서 역효과(#8 확인) → 제외. 남은 순서:
