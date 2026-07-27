@@ -1,0 +1,55 @@
+* Bandwidth-preserved 4th order. Same netlist emits:
+*   vref = reference 2nd-order channel at the DESIGN Q (R1ref) -> target BW.
+*   v4   = 4th-order cascade whose two stages are BROADENED (lower Q via R1c)
+*          so the cascade -3 dB bandwidth returns to the 2nd-order target, while
+*          the skirts stay 4th-order (+-12 dB/oct). design_4th_bw.py tunes R1c.
+.include ../models/OPA379.LIB
+
+.param RA   = 12.05k
+.param CVAL = 9.38n
+.param R2v  = 100k
+.param R1ref = 53.3k        ; 2nd-order reference Q (~4.3)
+.param R1c   = 30k          ; cascade per-stage Q (tuned to preserve BW)
+
+V1   mid  0 DC 0.9
+Vpos vpos 0 DC 1.8
+Vin  in   0 DC 0.9 AC 1
+
+* --- reference 2nd order: in -> vref ---
+R1r  in    npr  {R1ref}
+C1r  mid   npr  {CVAL}
+RA1r c2pr  npr  {RA}
+XU1r npr   nnr  vpos 0 vref OPA379
+RA2r nnr   vref {RA}
+C2r  c2pr  nnr  {CVAL}
+XU2r u2pr  nnr  vpos 0 c2pr OPA379
+R2r  u2pr  vref {R2v}
+R3r  mid   u2pr {R2v}
+
+* --- cascade stage A: in -> va (broadened, R1c) ---
+R1a  in    npa  {R1c}
+C1a  mid   npa  {CVAL}
+RA1a c2pa  npa  {RA}
+XU1a npa   nna  vpos 0 va  OPA379
+RA2a nna   va   {RA}
+C2a  c2pa  nna  {CVAL}
+XU2a u2pa  nna  vpos 0 c2pa OPA379
+R2a  u2pa  va   {R2v}
+R3a  mid   u2pa {R2v}
+
+* --- cascade stage B: va -> v4 (broadened, R1c) ---
+R1b  va    npb  {R1c}
+C1b  mid   npb  {CVAL}
+RA1b c2pb  npb  {RA}
+XU1b npb   nnb  vpos 0 v4  OPA379
+RA2b nnb   v4   {RA}
+C2b  c2pb  nnb  {CVAL}
+XU2b u2pb  nnb  vpos 0 c2pb OPA379
+R2b  u2pb  v4   {R2v}
+R3b  mid   u2pb {R2v}
+
+.control
+  ac dec 300 20 40k
+  wrdata sim/gic4bw.csv vdb(vref) vdb(v4)
+.endc
+.end
