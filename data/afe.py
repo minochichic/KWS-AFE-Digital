@@ -132,6 +132,13 @@ class AFEFrontend(nn.Module):
                 raise ValueError(
                     f"SPICE filterbank {p} is {m.shape}, expected "
                     f"({cfg.n_channels}, {n_freqs}); regenerate on this STFT grid.")
+            if getattr(cfg, "spice_gain_restore", False):
+                # undo the per-channel peak-norm: weight |H| by the true linear
+                # passband gain (gain_dB col in the design table) -> restores the
+                # real cross-channel spectral tilt.
+                dp = p.parent / "filterbank_design.csv"
+                gdb = np.loadtxt(dp, delimiter=",", skiprows=1)[:, 5]   # gain_dB
+                m = m * (10.0 ** (gdb / 20.0))[:, None]                 # amplitude
             self.register_buffer("spice_fbank",
                                  torch.tensor(m, dtype=torch.float32))
         else:

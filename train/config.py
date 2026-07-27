@@ -75,6 +75,13 @@ class AFEConfig:
     # (6-7.8 dB spread) is equalized; a gain-weighted variant is a follow-up.
     filterbank_source: str = "mel"          # "mel" | "spice"
     spice_matrix_path: str = "AFE/artifacts/filterbank_matrix.csv"
+    # The SPICE matrix is per-channel peak-normalized (gain equalized). With
+    # this flag the "spice" bank re-weights each channel by its true linear
+    # passband gain (from AFE/artifacts/filterbank_design.csv gain_dB), so the
+    # real spectral tilt survives instead of every channel peaking at 1. NOTE:
+    # the gain spread is only ~1.8 dB (x1.23 amp), and per-channel learnable
+    # thresholds + global min-max absorb most of it, so expect a small effect.
+    spice_gain_restore: bool = False
 
     # Envelope compression. "log" = log-mel convention (baseline). "sqrt" =
     # amplitude (V+ ~ sqrt(power)), which is what the analog active detector

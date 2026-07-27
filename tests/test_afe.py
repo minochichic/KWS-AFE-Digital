@@ -344,3 +344,14 @@ def test_sqrt_compression_binary_and_trains() -> None:
     fl = make_frontend(filterbank_source="spice", compression="log",
                        envelope_win_ms=10.0)
     assert (fe.envelopes(wave) - fl.envelopes(wave)).abs().mean() > 1e-3
+
+
+def test_spice_gain_restore_scales_fbank() -> None:
+    off = make_frontend(filterbank_source="spice", envelope_win_ms=10.0)
+    on = make_frontend(filterbank_source="spice", spice_gain_restore=True,
+                       envelope_win_ms=10.0)
+    assert not torch.allclose(off.spice_fbank, on.spice_fbank)   # per-ch re-weighted
+    wave = torch.randn(2, 16000) * 0.05
+    out = on(wave, target_T=128)
+    assert out.shape == (2, 16, 128)
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
