@@ -65,6 +65,17 @@ class AFEConfig:
     f_min: float = 50.0
     f_max: float = 8000.0     # <= Nyquist; Cerutti's best range is 50 Hz-8 kHz
 
+    # Phase B (circuit-matched front end). filterbank_source selects the AFE
+    # filter shapes: "mel" = ideal triangular bank (baseline); "spice" = the
+    # SPICE-extracted GIC bank (AFE/artifacts/filterbank_matrix.csv, [n_channels,
+    # n_fft//2+1], per-channel peak-normalized). "spice" tests the REAL filter
+    # response (wider 2nd-order skirts / more channel overlap; cosine 0.83 vs
+    # mel) -- see AFE/README.md "16채널 필터뱅크". global min-max is kept either
+    # way. NOTE: the matrix is peak-normalized per channel, so per-channel gain
+    # (6-7.8 dB spread) is equalized; a gain-weighted variant is a follow-up.
+    filterbank_source: str = "mel"          # "mel" | "spice"
+    spice_matrix_path: str = "AFE/artifacts/filterbank_matrix.csv"
+
     # AFE envelope window: 10 ms or 25 ms (Cerutti IV-A). Sets the native T.
     envelope_win_ms: float = 25.0
     envelope_reduce: str = "max"  # "max" | "mean"

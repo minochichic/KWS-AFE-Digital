@@ -34,8 +34,10 @@ Design decisions, and why:
 from __future__ import annotations
 
 import math
+from pathlib import Path
 from typing import Optional
 
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -103,16 +105,37 @@ class AFEFrontend(nn.Module):
         sr = cfg.sample_rate
         self.clip_samples = int(round(sr * cfg.clip_ms / 1000.0))
 
-        self.melspec = torchaudio.transforms.MelSpectrogram(
-            sample_rate=sr,
-            n_fft=cfg.n_fft,
-            win_length=int(round(sr * cfg.stft_win_ms / 1000.0)),
-            hop_length=int(round(sr * cfg.stft_hop_ms / 1000.0)),
-            f_min=cfg.f_min,
-            f_max=cfg.f_max,
-            n_mels=cfg.n_channels,   # the AFE filterbank itself
-            power=2.0,
-        )
+        win = int(round(sr * cfg.stft_win_ms / 1000.0))
+        hop = int(round(sr * cfg.stft_hop_ms / 1000.0))
+        self.filterbank_source = getattr(cfg, "filterbank_source", "mel")
+        if self.filterbank_source == "mel":
+            self.melspec = torchaudio.transforms.MelSpectrogram(
+                sample_rate=sr,
+                n_fft=cfg.n_fft,
+                win_length=win,
+                hop_length=hop,
+                f_min=cfg.f_min,
+                f_max=cfg.f_max,
+                n_mels=cfg.n_channels,   # the AFE filterbank itself
+                power=2.0,
+            )
+        elif self.filterbank_source == "spice":
+            # power spectrogram + the SPICE-extracted GIC filterbank matrix.
+            self._spectro = torchaudio.transforms.Spectrogram(
+                n_fft=cfg.n_fft, win_length=win, hop_length=hop, power=2.0)
+            p = Path(cfg.spice_matrix_path)
+            if not p.is_absolute():
+                p = Path(__file__).resolve().parents[1] / p
+            m = np.loadtxt(p, delimiter=",")           # [C, n_fft//2+1]
+            n_freqs = cfg.n_fft // 2 + 1
+            if m.shape != (cfg.n_channels, n_freqs):
+                raise ValueError(
+                    f"SPICE filterbank {p} is {m.shape}, expected "
+                    f"({cfg.n_channels}, {n_freqs}); regenerate on this STFT grid.")
+            self.register_buffer("spice_fbank",
+                                 torch.tensor(m, dtype=torch.float32))
+        else:
+            raise ValueError(f"unknown filterbank_source {self.filterbank_source!r}")
 
         # One comparator reference per channel. 0.5 is a placeholder; call
         # init_thresholds() with training data before real training
@@ -136,6 +159,13 @@ class AFEFrontend(nn.Module):
             wave = wave[:, :self.clip_samples]
         return wave
 
+    def _bands(self, wave: torch.Tensor) -> torch.Tensor:
+        """Per-channel power spectrogram [B, C, frames] from the chosen bank."""
+        if self.filterbank_source == "spice":
+            spec = self._spectro(wave)                  # [B, n_freqs, frames]
+            return torch.einsum("cf,bft->bct", self.spice_fbank, spec)
+        return self.melspec(wave)                       # [B, C, frames]
+
     def envelopes(self, wave: torch.Tensor) -> torch.Tensor:
         """Normalized full-precision envelopes [B, C, native_T] in [0, 1].
 
@@ -143,7 +173,7 @@ class AFEFrontend(nn.Module):
         threshold initialization and for inspection plots.
         """
         wave = self._fix_length(wave)
-        mel = self.melspec(wave)                       # [B, C, frames]
+        mel = self._bands(wave)                         # [B, C, frames] power
         mel = torch.log(mel + _EPS)
 
         # Optional tau smoothing (active-detector C3 model, CLAUDE.md 2.10/3.2).

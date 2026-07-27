@@ -296,3 +296,35 @@ def test_envelope_win_does_not_change_stft_hop() -> None:
     assert fe10.melspec.hop_length == fe25.melspec.hop_length
     # only native_T (the discretization grid) changes
     assert fe10.cfg.native_T == 100 and fe25.cfg.native_T == 40
+
+
+# --------------------------------------------------------------------------- #
+# 9. Phase B: SPICE filterbank source (circuit-matched front end)
+# --------------------------------------------------------------------------- #
+def test_spice_filterbank_shapes_and_binary() -> None:
+    fe = make_frontend(filterbank_source="spice", envelope_win_ms=10.0)
+    assert tuple(fe.spice_fbank.shape) == (16, 512 // 2 + 1)   # [n_channels, n_freqs]
+    wave = torch.randn(3, 16000) * 0.05
+    env = fe.envelopes(wave)
+    assert env.shape == (3, 16, 100)
+    assert float(env.min()) >= 0.0 and float(env.max()) <= 1.0
+    out = fe(wave, target_T=128)
+    assert out.shape == (3, 16, 128)
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
+
+
+def test_spice_and_mel_differ() -> None:
+    wave = torch.randn(2, 16000) * 0.05
+    em = make_frontend(filterbank_source="mel", envelope_win_ms=10.0).envelopes(wave)
+    es = make_frontend(filterbank_source="spice", envelope_win_ms=10.0).envelopes(wave)
+    assert (em - es).abs().mean() > 1e-3      # genuinely different filter shapes
+
+
+def test_spice_thresholds_train() -> None:
+    fe = make_frontend(filterbank_source="spice", envelope_win_ms=10.0)
+    wave = torch.randn(4, 16000) * 0.05
+    before = fe.threshold.detach().clone()
+    opt = torch.optim.SGD(fe.parameters(), lr=1.0)
+    fe(wave, target_T=128).sum().backward()
+    opt.step()
+    assert not torch.allclose(before, fe.threshold)   # STE gradient reaches thr
