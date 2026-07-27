@@ -206,6 +206,19 @@ G=R5/R4를 R4로 조절(R5·C3 고정 → τ 불변). 비교기 Vos≈5mV, 레�
 - **다음 검증**: 확정 R4로 full_chain·threshold 재캘리브레이션 + **비교기 오프셋/히스테리시스
   모델**을 넣어 채널별 펄스 생존 재평가(behavioral tanh는 이 문제를 가림).
 
+## op-amp GBW sweep — 데드존의 진짜 레버 (SR)
+
+`scripts/sweep_opamp_gbw.py` + `netlists/detector_gbw.cir`(GBW 가변 단극 거동
+op-amp). → `artifacts/opamp_gbw_sweep.png/.md`. 1 kHz에서 GBW를 30k→10M sweep.
+
+- **데드존 ∝ 1/GBW 확인**: 저GBW 구간 로그-로그 기울기 ≈ −0.84 (이론 −1).
+- **반전 (중요)**: 단극 모델 @90kHz = 0.31 mV인데 **실측 OPA379 = 7.3 mV (~23배)**.
+  이론선 $2V_D f/GBW$ 위에 실측이 정확히 놓임 → 실제 데드존은 **SR(슬루레이트) 한계**가
+  지배(0 교차에서 출력이 2·Vd 슬루하는 시간). 단극 모델은 SR 무한이라 과소평가.
+- **결론**: op-amp를 빠르게 하면 데드존↓(방향 맞음), **단 진짜 병목은 GBW가 아니라 SR**.
+  HF 채널을 살리려면 GBW·SR 둘 다 높은 op-amp 필요 → 둘 다 **소비전류↑**(µW 예산과
+  트레이드오프). 다음: 거동모델에 SR 제한을 넣어 SR sweep으로 데드존↔전력 정량화.
+
 ## 비교기 마진 검증 (R4 10k vs 1k + 오프셋) — 완료
 
 `scripts/verify_comparator_margin.py` → `artifacts/comparator_margin.png/.md`.

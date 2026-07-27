@@ -1,0 +1,38 @@
+* Detector with a single-pole behavioral op-amp of SETTABLE GBW, to measure how
+* the precision-rectifier deadzone scales with op-amp bandwidth.
+* Model: A(f) = A0 / (1 + s/wp), unity-gain freq = GBW.  Predicted deadzone
+* V_dz ~ 2*Vd*f/GBW  (Vd = Schottky drop). Sweep GBW, check the 1/GBW slope.
+*
+* scripts/sweep_opamp_gbw.py overrides .param AMP / FREQ / GBW.
+.model DBAT54 D(Is=2.2n Rs=2 N=1.03 Cjo=10p M=0.4 Vj=0.4 Bv=30 Ibv=10u Eg=0.69 Xti=2)
+
+.param AMP=1m
+.param FREQ=1k
+.param GBW=90k
+
+* ---- single-pole op-amp: pins +IN -IN +V -V OUT (matches OPA379 order) ----
+.subckt OPAMP inp inn vcc vee out
+Rin  inp inn 1e12
+Bg   n1  0  V = 1e5*(V(inp)-V(inn))          ; A0 = 1e5 (100 dB)
+Rp   n1  n2 1
+Cp   n2  0  {1e5/(6.283185307*GBW)}          ; Rp*Cp = A0/(2*pi*GBW) -> fu=GBW
+Bout out 0  V = min(max(V(n2), V(vee)), V(vcc))   ; buffer + rail clamp
+.ends
+
+V1   mid  0 DC 0.9
+Vpos vpos 0 DC 1.8
+Vsig vfilt 0 SIN(0.9 {AMP} {FREQ})
+
+R4   vfilt da   10k
+XU3  u3p  da    vpos 0 dk   OPAMP
+R6   mid  u3p   8.25k
+R5   da   vdet  47k
+D1   da   dk    DBAT54
+D2   dk   vdet  DBAT54
+C3   vdet 0     100n
+
+.control
+  tran 2u 40m
+  wrdata sim/detg.csv v(vfilt) v(vdet)
+.endc
+.end
