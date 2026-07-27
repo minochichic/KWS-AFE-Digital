@@ -328,3 +328,19 @@ def test_spice_thresholds_train() -> None:
     fe(wave, target_T=128).sum().backward()
     opt.step()
     assert not torch.allclose(before, fe.threshold)   # STE gradient reaches thr
+
+
+def test_sqrt_compression_binary_and_trains() -> None:
+    fe = make_frontend(filterbank_source="spice", compression="sqrt",
+                       envelope_win_ms=10.0)
+    wave = torch.randn(3, 16000) * 0.05
+    env = fe.envelopes(wave)
+    assert env.shape == (3, 16, 100)
+    assert float(env.min()) >= 0.0 and float(env.max()) <= 1.0
+    out = fe(wave, target_T=128)
+    assert out.shape == (3, 16, 128)
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
+    # sqrt vs log give different envelopes (compression actually applied)
+    fl = make_frontend(filterbank_source="spice", compression="log",
+                       envelope_win_ms=10.0)
+    assert (fe.envelopes(wave) - fl.envelopes(wave)).abs().mean() > 1e-3

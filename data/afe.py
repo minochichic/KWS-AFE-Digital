@@ -162,8 +162,10 @@ class AFEFrontend(nn.Module):
     def _bands(self, wave: torch.Tensor) -> torch.Tensor:
         """Per-channel power spectrogram [B, C, frames] from the chosen bank."""
         if self.filterbank_source == "spice":
-            spec = self._spectro(wave)                  # [B, n_freqs, frames]
-            return torch.einsum("cf,bft->bct", self.spice_fbank, spec)
+            spec = self._spectro(wave)                  # [B, n_freqs, frames] POWER
+            # filter output power = |H(f)|^2 * input power. spice_fbank stores
+            # |H(f)| (voltage magnitude), so square it before applying to power.
+            return torch.einsum("cf,bft->bct", self.spice_fbank ** 2, spec)
         return self.melspec(wave)                       # [B, C, frames]
 
     def envelopes(self, wave: torch.Tensor) -> torch.Tensor:
@@ -174,7 +176,13 @@ class AFEFrontend(nn.Module):
         """
         wave = self._fix_length(wave)
         mel = self._bands(wave)                         # [B, C, frames] power
-        mel = torch.log(mel + _EPS)
+        comp = getattr(self.cfg, "compression", "log")
+        if comp == "log":
+            mel = torch.log(mel + _EPS)
+        elif comp == "sqrt":                            # V+ ~ amplitude = sqrt(power)
+            mel = torch.sqrt(mel + _EPS)                # circuit-faithful detector
+        else:
+            raise ValueError(f"unknown compression {comp!r}")
 
         # Optional tau smoothing (active-detector C3 model, CLAUDE.md 2.10/3.2).
         # Applied on the log-mel FRAMES, BEFORE discretization (do not reorder).

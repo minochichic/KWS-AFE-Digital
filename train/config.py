@@ -76,6 +76,14 @@ class AFEConfig:
     filterbank_source: str = "mel"          # "mel" | "spice"
     spice_matrix_path: str = "AFE/artifacts/filterbank_matrix.csv"
 
+    # Envelope compression. "log" = log-mel convention (baseline). "sqrt" =
+    # amplitude (V+ ~ sqrt(power)), which is what the analog active detector
+    # actually does. With the broad-skirt SPICE bank, "log" lifts the filter
+    # tails and makes channels ~0.9 correlated (redundant); "sqrt" is both
+    # circuit-faithful AND drops inter-channel correlation below mel (~0.56 vs
+    # 0.77). Recommended for filterbank_source="spice". See AFE/README.md.
+    compression: str = "log"                # "log" | "sqrt"
+
     # AFE envelope window: 10 ms or 25 ms (Cerutti IV-A). Sets the native T.
     envelope_win_ms: float = 25.0
     envelope_reduce: str = "max"  # "max" | "mean"
