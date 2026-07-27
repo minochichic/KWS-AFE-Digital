@@ -1,0 +1,43 @@
+* 4th-order GIC bandpass = two identical 2nd-order GIC stages cascaded.
+* Emits BOTH stage-1 output (vg1 = 2nd order) and stage-2 output (vg2 = 4th
+* order) in one .ac run so we can compare skirt steepness directly.
+* Cascading identical stages steepens the skirts (+-6 -> +-12 dB/oct) but also
+* NARROWS the -3 dB bandwidth -- the selectivity<->coverage tradeoff we measure.
+.include ../models/OPA379.LIB
+
+.param RA   = 12.05k    ; ch6 (~1.35 kHz) design values
+.param CVAL = 9.38n
+.param R1v  = 53.3k
+.param R2v  = 100k
+
+V1   mid  0    DC 0.9
+Vpos vpos 0    DC 1.8
+Vin  in   0    DC 0.9  AC 1
+
+* --- stage 1: in -> vg1 (2nd order) ---
+R1   in    np1  {R1v}
+C1   mid   np1  {CVAL}
+RA1  c2p1  np1  {RA}
+XU1  np1   nn1  vpos 0 vg1  OPA379
+RA2  nn1   vg1  {RA}
+C2   c2p1  nn1  {CVAL}
+XU2  u2p1  nn1  vpos 0 c2p1 OPA379
+R2   u2p1  vg1  {R2v}
+R3   mid   u2p1 {R2v}
+
+* --- stage 2: vg1 -> vg2 (cascade -> 4th order) ---
+R1b  vg1   np2  {R1v}
+C1b  mid   np2  {CVAL}
+RA1b c2p2  np2  {RA}
+XU3  np2   nn2  vpos 0 vg2  OPA379
+RA2b nn2   vg2  {RA}
+C2b  c2p2  nn2  {CVAL}
+XU4  u2p2  nn2  vpos 0 c2p2 OPA379
+R2b  u2p2  vg2  {R2v}
+R3b  mid   u2p2 {R2v}
+
+.control
+  ac dec 300 20 40k
+  wrdata sim/gic4.csv vdb(vg1) vdb(vg2)
+.endc
+.end
