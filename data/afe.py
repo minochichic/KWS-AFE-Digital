@@ -152,6 +152,11 @@ class AFEFrontend(nn.Module):
             requires_grad=cfg.threshold_trainable,
         )
 
+        # Stage-2: learnable per-channel detector deadzone (0 = no-op baseline).
+        self.use_deadzone = getattr(cfg, "spice_deadzone", False)
+        if self.use_deadzone:
+            self.deadzone = nn.Parameter(torch.zeros(cfg.n_channels))
+
     # ------------------------------------------------------------------ #
     def _fix_length(self, wave: torch.Tensor) -> torch.Tensor:
         """Accept [B, L] or [B, 1, L]; zero-pad/crop the wave to 1 clip."""
@@ -190,6 +195,12 @@ class AFEFrontend(nn.Module):
             mel = torch.sqrt(mel + _EPS)                # circuit-faithful detector
         else:
             raise ValueError(f"unknown compression {comp!r}")
+
+        # Stage-2 detector deadzone: cut each channel's low-amplitude tail
+        # (relu(amp - dz_c)); dz_c >= 0, learned end-to-end. Sharpens the broad
+        # SPICE filters. dz init 0 -> exact no-op.
+        if getattr(self, "use_deadzone", False):
+            mel = F.relu(mel - self.deadzone.clamp(min=0).view(1, -1, 1))
 
         # Optional tau smoothing (active-detector C3 model, CLAUDE.md 2.10/3.2).
         # Applied on the log-mel FRAMES, BEFORE discretization (do not reorder).

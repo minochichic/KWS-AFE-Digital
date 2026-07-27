@@ -355,3 +355,23 @@ def test_spice_gain_restore_scales_fbank() -> None:
     out = on(wave, target_T=128)
     assert out.shape == (2, 16, 128)
     assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
+
+
+def test_deadzone_noop_at_init_and_trains() -> None:
+    off = make_frontend(filterbank_source="spice", compression="sqrt",
+                        envelope_win_ms=10.0)
+    on = make_frontend(filterbank_source="spice", compression="sqrt",
+                       spice_deadzone=True, envelope_win_ms=10.0)
+    wave = torch.randn(3, 16000) * 0.05
+    # dz initialised to 0 -> exact no-op (baseline preserved)
+    assert torch.allclose(off.envelopes(wave), on.envelopes(wave), atol=1e-6)
+    # learnable: the deadzone moves under SGD
+    on.init_thresholds(wave)
+    before = on.deadzone.detach().clone()
+    opt = torch.optim.SGD(on.parameters(), lr=5.0)
+    on(wave, target_T=128).sum().backward()
+    opt.step()
+    assert not torch.allclose(before, on.deadzone)
+    out = on(wave, target_T=128)
+    assert out.shape == (3, 16, 128)
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}

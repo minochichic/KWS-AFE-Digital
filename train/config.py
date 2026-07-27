@@ -83,6 +83,16 @@ class AFEConfig:
     # thresholds + global min-max absorb most of it, so expect a small effect.
     spice_gain_restore: bool = False
 
+    # Stage-2 circuit fidelity: the analog detector has a DEADZONE (precision
+    # rectifier can't rectify signals below ~a few mV, slew-limited). Modeled as
+    # a learnable per-channel floor on the amplitude: relu(sqrt(power) - dz_c),
+    # applied after compression, before EMA/normalize. dz_c inits to 0 (exact
+    # no-op = baseline) and trains end-to-end, so the net learns how much of each
+    # channel's broad-skirt tail to cut. Local probe: a deadzone drops the
+    # inter-channel correlation 0.58->0.38 (sharpens the real 2nd-order filters).
+    # Use with compression="sqrt" (on log it would clip negative values).
+    spice_deadzone: bool = False
+
     # Envelope compression. "log" = log-mel convention (baseline). "sqrt" =
     # amplitude (V+ ~ sqrt(power)), which is what the analog active detector
     # actually does. With the broad-skirt SPICE bank, "log" lifts the filter
