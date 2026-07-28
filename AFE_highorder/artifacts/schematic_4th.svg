@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 460" font-family="Menlo, Consolas, monospace" font-size="13">
+  <style>
+    .wire{stroke:#222;stroke-width:2;fill:none}
+    .box{fill:#f4f7fb;stroke:#2b6cb0;stroke-width:1.5}
+    .op{fill:none;stroke:#444;stroke-width:1.2}
+    .curve{fill:none;stroke:#2b6cb0;stroke-width:1.6}
+    .lbl{fill:#222}.blue{fill:#2b6cb0}.mut{fill:#666;font-size:11px}
+    .title{fill:#111;font-size:18px;font-weight:bold}
+    .stage{fill:#1a4e8a;font-size:14px;font-weight:bold}
+  </style>
+  <rect x="0" y="0" width="1040" height="460" fill="#ffffff"/>
+  <text x="24" y="32" class="title">대역폭 보존 4차 GIC 채널 = 2차 GIC 밴드패스 2단 캐스케이드</text>
+  <text x="24" y="52" class="mut">각 스테이지 내부 = 2차 GIC(opamp 2개). 상세 배선은 AFE/artifacts/afe_schematic.svg 참조.</text>
+
+  <!-- Vin -->
+  <text x="30" y="205" class="lbl">V_in</text>
+  <text x="18" y="222" class="mut">(마이크)</text>
+  <line x1="70" y1="200" x2="130" y2="200" class="wire"/>
+
+  <!-- Stage A box -->
+  <rect x="130" y="120" width="270" height="160" rx="10" class="box"/>
+  <text x="150" y="146" class="stage">GIC 스테이지 A (2차 BP)</text>
+  <!-- two opamp triangles (hint) -->
+  <polygon points="175,175 175,215 215,195" class="op"/>
+  <polygon points="245,205 245,245 285,225" class="op"/>
+  <line x1="215" y1="195" x2="330" y2="195" class="wire"/>
+  <line x1="285" y1="225" x2="285" y2="195" class="op"/>
+  <!-- bandpass glyph -->
+  <path d="M310 260 C330 260 335 235 345 200 C350 185 356 185 361 200 C371 235 376 260 396 260" class="curve"/>
+  <text x="150" y="240" class="mut">RA1=RA2=12.05k</text>
+  <text x="150" y="256" class="mut">C1=C2=9.38n</text>
+  <text x="150" y="272" class="mut">R1c=35.1k · R2=R3=100k</text>
+
+  <!-- va wire -->
+  <line x1="400" y1="200" x2="470" y2="200" class="wire"/>
+  <text x="418" y="192" class="blue">va</text>
+
+  <!-- Stage B box -->
+  <rect x="470" y="120" width="270" height="160" rx="10" class="box"/>
+  <text x="490" y="146" class="stage">GIC 스테이지 B (동일)</text>
+  <polygon points="515,175 515,215 555,195" class="op"/>
+  <polygon points="585,205 585,245 625,225" class="op"/>
+  <line x1="555" y1="195" x2="670" y2="195" class="wire"/>
+  <line x1="625" y1="225" x2="625" y2="195" class="op"/>
+  <path d="M650 260 C670 260 675 235 685 200 C690 185 696 185 701 200 C711 235 716 260 736 260" class="curve"/>
+  <text x="490" y="240" class="mut">RA1=RA2=12.05k</text>
+  <text x="490" y="256" class="mut">C1=C2=9.38n</text>
+  <text x="490" y="272" class="mut">R1c=35.1k · R2=R3=100k</text>
+
+  <!-- v4 out -->
+  <line x1="740" y1="200" x2="820" y2="200" class="wire"/>
+  <text x="748" y="192" class="blue">v4</text>
+  <text x="826" y="196" class="lbl">→ 능동검출기</text>
+  <text x="826" y="213" class="mut">(→ 비교기, 기존과 동일)</text>
+
+  <!-- design note under boxes -->
+  <line x1="130" y1="300" x2="740" y2="300" stroke="#ccc" stroke-width="1"/>
+  <text x="130" y="325" class="stage">설계 요점</text>
+  <text x="130" y="348" class="lbl">· 각 스테이지 Q를 낮춤(R1c 53.3k→35.1k) → 캐스케이드 후 <tspan class="blue">-3dB 대역 = 2차와 동일(≈300 Hz)</tspan></text>
+  <text x="130" y="368" class="lbl">· 스커트 <tspan class="blue">±6 → ±12 dB/oct (2배 날카로움)</tspan> → 이웃 채널 겹침(블러) 감소</text>
+  <text x="130" y="388" class="lbl">· 동기동조 → 통과대역 약간 둥긂(±10%에서 ~2.7 dB), 큰 리플 없음</text>
+  <text x="130" y="408" class="lbl">· 대가: <tspan class="blue">채널당 opamp 2 → 4개</tspan> (필터 전력 ~2배), R·C 부품 수 2배</text>
+
+  <!-- response reference -->
+  <text x="790" y="348" class="stage">응답 비교</text>
+  <text x="790" y="372" class="mut">2차 vs 4차 크기응답:</text>
+  <text x="790" y="390" class="mut">order4_bw.png</text>
+  <text x="790" y="412" class="mut">(같은 -3dB 대역,</text>
+  <text x="790" y="428" class="mut"> 4차가 스커트 2배)</text>
+</svg>
