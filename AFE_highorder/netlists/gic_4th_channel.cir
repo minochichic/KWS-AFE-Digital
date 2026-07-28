@@ -1,0 +1,41 @@
+* Single bandwidth-preserved 4th-order channel (2x 2nd-order GIC cascade).
+* Emits linear |H| of v4 for one channel; design_bank_4th.py sets RA/CVAL/R1c
+* per channel (RA,C from the 2nd-order design; R1c tuned to preserve -3dB BW).
+.include ../models/OPA379.LIB
+
+.param RA   = 12.05k
+.param CVAL = 9.38n
+.param R1c  = 35.1k
+.param R2v  = 100k
+
+V1   mid  0 DC 0.9
+Vpos vpos 0 DC 1.8
+Vin  in   0 DC 0.9 AC 1
+
+* stage A: in -> va
+R1a  in    npa  {R1c}
+C1a  mid   npa  {CVAL}
+RA1a c2pa  npa  {RA}
+XU1a npa   nna  vpos 0 va  OPA379
+RA2a nna   va   {RA}
+C2a  c2pa  nna  {CVAL}
+XU2a u2pa  nna  vpos 0 c2pa OPA379
+R2a  u2pa  va   {R2v}
+R3a  mid   u2pa {R2v}
+
+* stage B: va -> v4
+R1b  va    npb  {R1c}
+C1b  mid   npb  {CVAL}
+RA1b c2pb  npb  {RA}
+XU1b npb   nnb  vpos 0 v4  OPA379
+RA2b nnb   v4   {RA}
+C2b  c2pb  nnb  {CVAL}
+XU2b u2pb  nnb  vpos 0 c2pb OPA379
+R2b  u2pb  v4   {R2v}
+R3b  mid   u2pb {R2v}
+
+.control
+  ac dec 400 20 9000
+  wrdata sim/ch4.csv vm(v4)
+.endc
+.end
