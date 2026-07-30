@@ -1,0 +1,29 @@
+* Single-supply AC-coupled non-inverting mic pre-amp. Gain G = 1 + Rf/Rg (AC).
+* DC gain = 1 (Ccm blocks DC through Rg) so the output sits at the 0.9 V bias.
+* OPA379 (GBW 90 kHz) -> at gain G the closed-loop BW ~ 90kHz/G; design_preamp.py
+* sweeps G to see where the 8 kHz band edge starts rolling off.
+.include ../models/OPA379.LIB
+
+.param G   = 10
+.param Rg  = 10k
+.param Rf  = {(G-1)*Rg}
+
+V1   mid  0 DC 0.9
+Vpos vpos 0 DC 1.8
+Vin  in   0 DC 0 AC 1            ; small-signal test source (mic)
+
+* AC-couple mic to + input; bias + at mid-rail via 2M/2M divider
+Cin  in  np  1u
+Rb1  vpos np 2Meg
+Rb2  np   0  2Meg
+* op-amp: + = np, - = nn, out = vout
+XU1  np  nn  vpos 0 vout OPA379
+Rf   vout nn {Rf}
+Rg   nn  ncm {Rg}
+Ccm  ncm mid 10u                ; AC ground at mid-rail (DC gain = 1)
+
+.control
+  ac dec 300 10 100k
+  wrdata sim/preamp.csv vdb(vout)
+.endc
+.end
