@@ -93,6 +93,15 @@ class AFEConfig:
     # Use with compression="sqrt" (on log it would clip negative values).
     spice_deadzone: bool = False
 
+    # Comparator input offset Vos, as a std in the normalized-envelope domain
+    # (the real LPV7215 has ~mV offset; the ideal sign() has none). Injected at
+    # the comparison so it jitters each channel's effective threshold. A channel
+    # whose normalized dynamic range is <~ vos gets corrupted -- the HF-margin
+    # problem the mic pre-amp fixes. Set vos ~ Vos/global_V+swing: e.g. no-preamp
+    # ~0.10, with-preamp ~0.035. 0.0 = exact baseline (ideal comparator).
+    comparator_vos: float = 0.0
+
+
     # Envelope compression. "log" = log-mel convention (baseline). "sqrt" =
     # amplitude (V+ ~ sqrt(power)), which is what the analog active detector
     # actually does. With the broad-skirt SPICE bank, "log" lifts the filter

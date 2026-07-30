@@ -375,3 +375,14 @@ def test_deadzone_noop_at_init_and_trains() -> None:
     out = on(wave, target_T=128)
     assert out.shape == (3, 16, 128)
     assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
+
+
+def test_comparator_vos_noop_and_perturbs() -> None:
+    wave = torch.randn(3, 16000) * 0.05
+    base = make_frontend()
+    off0 = make_frontend(comparator_vos=0.0)
+    assert torch.equal(base(wave, target_T=128), off0(wave, target_T=128))  # exact no-op
+    off = make_frontend(comparator_vos=0.1)
+    o = off(wave, target_T=128)
+    assert o.shape == (3, 16, 128)
+    assert set(torch.unique(o).tolist()) <= {-1.0, 1.0}

@@ -257,7 +257,15 @@ class AFEFrontend(nn.Module):
         # The comparator: sign(env - thr) with a straight-through gradient.
         # Gradient w.r.t. threshold is -1 * upstream inside the clip window,
         # which is how the thresholds learn (CLAUDE.md 2.4).
-        out = sign_ste(env - self.threshold.view(1, -1, 1), self.cfg.ste_clip)
+        thr = self.threshold.view(1, -1, 1)
+        # Optional comparator input offset Vos (real LPV7215 has ~mV; ideal
+        # sign() has none). Random per (clip, channel) -> eval Monte-Carlos over
+        # the offset distribution. vos=0 is an exact no-op (baseline unchanged).
+        vos = getattr(self.cfg, "comparator_vos", 0.0)
+        if vos > 0.0:
+            thr = thr + vos * torch.randn(env.shape[0], env.shape[1], 1,
+                                          device=env.device, dtype=env.dtype)
+        out = sign_ste(env - thr, self.cfg.ste_clip)
         if target_T is not None:
             out = pad_or_crop(out, target_T, pad_value=-1.0)
         return out
