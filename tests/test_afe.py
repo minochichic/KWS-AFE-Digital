@@ -386,3 +386,38 @@ def test_comparator_vos_noop_and_perturbs() -> None:
     o = off(wave, target_T=128)
     assert o.shape == (3, 16, 128)
     assert set(torch.unique(o).tolist()) <= {-1.0, 1.0}
+
+
+# --------------------------------------------------------------------------- #
+# 10. normalize="fixed": Cerutti's dataset-level min-max == absolute threshold
+# --------------------------------------------------------------------------- #
+def test_fixed_scale_is_absolute_threshold() -> None:
+    """A constant lo/hi is an affine map, so the binary decision is identical to
+    comparing raw envelopes against a rescaled absolute threshold -- which is what
+    a FIXED R7/R8 divider does in hardware."""
+    wave = noise(4)
+    fe = make_frontend(normalize="fixed", envelope_win_ms=10.0)
+    fe.init_fixed_scale(wave)
+    fe.init_thresholds(wave)
+    lo, hi = fe.fixed_lo.item(), fe.fixed_hi.item()
+    assert hi > lo                                     # scale actually measured
+    env = fe.envelopes(wave)
+    raw = fe.envelopes(wave, raw=True)
+    thr = fe.threshold.detach().view(1, -1, 1)
+    thr_abs = lo + thr * (hi - lo)                     # same threshold, raw units
+    assert torch.equal(env >= thr, raw >= thr_abs)
+    # envelopes stay ~[0,1] so ste_clip needs no retuning, and grads flow
+    assert float(env.min()) >= 0.0 and float(env.max()) <= 1.0 + 1e-6
+    fe(wave, target_T=128).mean().backward()
+    assert torch.all(fe.threshold.grad != 0)
+
+
+def test_fixed_scale_in_state_dict_and_noop_elsewhere() -> None:
+    wave = noise(2)
+    fe = make_frontend(normalize="fixed", envelope_win_ms=10.0)
+    fe.init_fixed_scale(wave)
+    assert "fixed_lo" in fe.state_dict() and "fixed_hi" in fe.state_dict()
+    # other modes: no buffers, init_fixed_scale is a no-op
+    mm = make_frontend(envelope_win_ms=10.0)
+    assert "fixed_lo" not in mm.state_dict()
+    mm.init_fixed_scale(wave)                          # must not raise

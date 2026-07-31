@@ -157,6 +157,12 @@ class AFEFrontend(nn.Module):
         if self.use_deadzone:
             self.deadzone = nn.Parameter(torch.zeros(cfg.n_channels))
 
+        # normalize="fixed": dataset-level lo/hi, set once by init_fixed_scale().
+        # Buffers (not params) so they land in the checkpoint and move with .to().
+        if cfg.normalize == "fixed":
+            self.register_buffer("fixed_lo", torch.zeros(1))
+            self.register_buffer("fixed_hi", torch.ones(1))
+
     # ------------------------------------------------------------------ #
     def _fix_length(self, wave: torch.Tensor) -> torch.Tensor:
         """Accept [B, L] or [B, 1, L]; zero-pad/crop the wave to 1 clip."""
@@ -180,8 +186,11 @@ class AFEFrontend(nn.Module):
             return torch.einsum("cf,bft->bct", self.spice_fbank ** 2, spec)
         return self.melspec(wave)                       # [B, C, frames]
 
-    def envelopes(self, wave: torch.Tensor) -> torch.Tensor:
+    def envelopes(self, wave: torch.Tensor, raw: bool = False) -> torch.Tensor:
         """Normalized full-precision envelopes [B, C, native_T] in [0, 1].
+
+        `raw=True` skips the normalization step (used by init_fixed_scale to
+        measure the dataset-level lo/hi before they exist).
 
         This is the value the comparator sees; exposed separately for
         threshold initialization and for inspection plots.
@@ -217,11 +226,16 @@ class AFEFrontend(nn.Module):
         else:
             raise ValueError(f"unknown envelope_reduce {self.cfg.envelope_reduce!r}")
 
+        if raw or self.cfg.normalize == "none":
+            return env
         if self.cfg.normalize == "minmax":
-            lo = env.amin(dim=(1, 2), keepdim=True)
+            lo = env.amin(dim=(1, 2), keepdim=True)   # per clip, channel-shared
             hi = env.amax(dim=(1, 2), keepdim=True)
             env = (env - lo) / (hi - lo + _EPS)
-        elif self.cfg.normalize != "none":
+        elif self.cfg.normalize == "fixed":
+            # dataset-level constants -> affine map == absolute threshold
+            env = (env - self.fixed_lo) / (self.fixed_hi - self.fixed_lo + _EPS)
+        else:
             raise ValueError(f"unknown normalize {self.cfg.normalize!r}")
         return env
 
@@ -271,6 +285,21 @@ class AFEFrontend(nn.Module):
         return out
 
     # ------------------------------------------------------------------ #
+    @torch.no_grad()
+    def init_fixed_scale(self, waves: torch.Tensor) -> None:
+        """Set the dataset-level lo/hi for normalize="fixed" (Cerutti IV-A).
+
+        Call ONCE with a representative training batch, BEFORE init_thresholds()
+        (which needs the scale to already exist). No-op for other normalize modes.
+        Since lo/hi are constants, the later `env >= thr` decision is an absolute
+        threshold -> maps straight to a fixed R7/R8 divider.
+        """
+        if self.cfg.normalize != "fixed":
+            return
+        env = self.envelopes(waves, raw=True)
+        self.fixed_lo.fill_(env.min())
+        self.fixed_hi.fill_(env.max())
+
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:
         """Set each threshold to its channel's mean envelope (Cerutti IV-A).

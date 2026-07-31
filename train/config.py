@@ -121,7 +121,21 @@ class AFEConfig:
     envelope_tau_ms: float = 0.0
 
     # Binarization
-    normalize: str = "minmax"           # matches Cerutti's min-max scaling
+    # "minmax" = per-clip, channel-shared (our original; an idealized non-causal
+    #            AGC -- no fixed-divider hardware counterpart).
+    # "fixed"  = dataset-level lo/hi computed ONCE (call init_fixed_scale()).
+    #            This is what Cerutti IV-A describes ("the same min-max values are
+    #            used to scale the initial thresholds ... adapted by selecting the
+    #            corresponding resistor divider"). Being an affine map it is
+    #            EQUIVALENT to an absolute threshold, so it maps directly to a
+    #            FIXED R7/R8 -- while keeping envelopes ~[0,1] so ste_clip and the
+    #            learning rate need no retuning. Values may exceed 1 on clips
+    #            louder than the calibration set; that is meaningful (absolute
+    #            scale) and is NOT clamped.
+    # "none"   = no scaling (absolute). Same decisions as "fixed" but envelopes
+    #            span ~[0.001, 69], so ste_clip MUST be raised (~4.0) or ~45% of
+    #            elements fall outside the STE window and get no gradient.
+    normalize: str = "minmax"           # "minmax" | "fixed" | "none"
     threshold_init: str = "channel_mean"
     threshold_trainable: bool = True
     ste: str = "hardtanh"               # STE flavor for the step function
