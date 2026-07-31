@@ -157,11 +157,23 @@ class AFEFrontend(nn.Module):
         if self.use_deadzone:
             self.deadzone = nn.Parameter(torch.zeros(cfg.n_channels))
 
-        # normalize="fixed": dataset-level lo/hi, set once by init_fixed_scale().
+        # normalize="fixed"/"agc": dataset-level lo/hi, set once by
+        # init_fixed_scale(). "fixed" uses them as the affine scale; "agc" uses
+        # fixed_hi as the reference for the max-gain floor.
         # Buffers (not params) so they land in the checkpoint and move with .to().
-        if cfg.normalize == "fixed":
+        if cfg.normalize in ("fixed", "agc"):
             self.register_buffer("fixed_lo", torch.zeros(1))
             self.register_buffer("fixed_hi", torch.ones(1))
+
+        # AGC divides by a running level, which is only meaningful in a
+        # multiplicative (amplitude) domain. Under log compression a gain is a
+        # SUBTRACTION and values go negative, so division is wrong there.
+        # compression="sqrt" is also the circuit-faithful choice (V+ ~ amplitude).
+        if cfg.normalize == "agc" and getattr(cfg, "compression", "log") != "sqrt":
+            raise ValueError(
+                'normalize="agc" requires compression="sqrt": AGC divides by a '
+                'level, but under log compression gain is additive and envelopes '
+                'can be negative.')
 
     # ------------------------------------------------------------------ #
     def _fix_length(self, wave: torch.Tensor) -> torch.Tensor:
@@ -235,9 +247,49 @@ class AFEFrontend(nn.Module):
         elif self.cfg.normalize == "fixed":
             # dataset-level constants -> affine map == absolute threshold
             env = (env - self.fixed_lo) / (self.fixed_hi - self.fixed_lo + _EPS)
+        elif self.cfg.normalize == "agc":
+            env = self._agc(env)
         else:
             raise ValueError(f"unknown normalize {self.cfg.normalize!r}")
         return env
+
+    def _agc(self, env: torch.Tensor) -> torch.Tensor:
+        """Causal, channel-shared AGC -- the hardware-realizable normalization.
+
+        per-clip min-max divides by the max over the WHOLE clip, i.e. it peeks at
+        the future; no analog circuit can do that. A real AGC tracks a running
+        level with fast attack / slow release and divides by it:
+
+            lev[t] = lev[t-1] + a * (x[t] - lev[t-1]),   a = a_att if rising
+                                                            a_rel otherwise
+            out[:, c, t] = env[:, c, t] / max(lev[t], floor)
+
+        Two properties that make it a faithful hardware model:
+        * `x[t] = max over CHANNELS` -> all 16 channels share ONE gain, so the
+          cross-channel spectrum shape survives (the whole point of using a
+          channel-shared min-max in the first place).
+        * `floor = fixed_hi / 10^(max_gain_db/20)` caps the gain, like a real
+          AGC's noise gate; without it silence would be amplified into noise.
+
+        Runs on the envelope grid (envelope_win_ms per step), so the loop is
+        ~100 steps -- same cost as the tau EMA above, and autograd-friendly.
+        """
+        cfg = self.cfg
+        dt = cfg.envelope_win_ms
+        a_att = 1.0 - math.exp(-dt / max(cfg.agc_attack_ms, 1e-6))
+        a_rel = 1.0 - math.exp(-dt / max(cfg.agc_release_ms, 1e-6))
+        x = env.amax(dim=1)                          # [B, T] channel-shared level
+        lev = x[:, 0]
+        levels = [lev]
+        for t in range(1, x.shape[1]):
+            xt = x[:, t]
+            rising = (xt > lev).to(env.dtype)        # fast up, slow down
+            a = a_rel + (a_att - a_rel) * rising
+            lev = lev + a * (xt - lev)
+            levels.append(lev)
+        floor = self.fixed_hi / (10.0 ** (cfg.agc_max_gain_db / 20.0))
+        gain_ref = torch.maximum(torch.stack(levels, dim=1), floor)   # [B, T]
+        return env / (gain_ref.unsqueeze(1) + _EPS)
 
     def _smooth(self, mel: torch.Tensor) -> torch.Tensor:
         """Causal exponential (EMA) smoothing along the STFT-frame axis.
@@ -294,7 +346,7 @@ class AFEFrontend(nn.Module):
         Since lo/hi are constants, the later `env >= thr` decision is an absolute
         threshold -> maps straight to a fixed R7/R8 divider.
         """
-        if self.cfg.normalize != "fixed":
+        if self.cfg.normalize not in ("fixed", "agc"):
             return
         env = self.envelopes(waves, raw=True)
         self.fixed_lo.fill_(env.min())

@@ -421,3 +421,64 @@ def test_fixed_scale_in_state_dict_and_noop_elsewhere() -> None:
     mm = make_frontend(envelope_win_ms=10.0)
     assert "fixed_lo" not in mm.state_dict()
     mm.init_fixed_scale(wave)                          # must not raise
+
+
+# --------------------------------------------------------------------------- #
+# 11. normalize="agc": causal, channel-shared gain (hardware-realizable)
+# --------------------------------------------------------------------------- #
+def _agc_frontend(**kw):
+    # AGC needs the multiplicative (amplitude) domain -> compression="sqrt"
+    fe = make_frontend(normalize="agc", compression="sqrt",
+                       envelope_win_ms=10.0, **kw)
+    w = noise(4)
+    fe.init_fixed_scale(w)
+    fe.init_thresholds(w)
+    return fe, w
+
+
+def test_agc_is_causal() -> None:
+    """Perturbing a LATE part of the wave must not change EARLY frames -- the
+    whole point of AGC over per-clip min-max (which peeks at the future)."""
+    fe, w = _agc_frontend()
+    w2 = w.clone()
+    w2[:, 14000:] *= 4.0                      # only the last ~125 ms
+    e1, e2 = fe.envelopes(w), fe.envelopes(w2)
+    assert torch.equal(e1[:, :, :60], e2[:, :, :60])       # early untouched
+    assert not torch.equal(e1[:, :, 80:], e2[:, :, 80:])   # late did change
+
+
+def test_agc_gain_is_channel_shared() -> None:
+    """One gain for all channels -> inter-channel ratios (the spectral shape)
+    survive, which is why min-max was channel-shared in the first place."""
+    fe, w = _agc_frontend()
+    raw = fe.envelopes(w, raw=True)
+    env = fe.envelopes(w)
+    r_raw = raw[:, 0] / (raw[:, 1] + 1e-9)
+    r_agc = env[:, 0] / (env[:, 1] + 1e-9)
+    assert torch.allclose(r_raw, r_agc, atol=1e-3)
+
+
+def test_agc_max_gain_floor_limits_silence_boost() -> None:
+    """A quiet clip must not be amplified without limit (noise gate)."""
+    fe, w = _agc_frontend(agc_max_gain_db=20.0)
+    quiet = w * 1e-3
+    env = fe.envelopes(quiet)
+    ref = fe.fixed_hi / (10.0 ** (20.0 / 20.0))       # the level floor
+    raw = fe.envelopes(quiet, raw=True)
+    assert float(env.max()) <= float((raw / ref).max()) + 1e-5   # gain capped
+
+
+def test_agc_trains_and_outputs_binary() -> None:
+    fe, w = _agc_frontend()
+    out = fe(w, target_T=128)
+    assert out.shape == (4, 16, 128)
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
+    fe(w, target_T=128).mean().backward()
+    assert torch.all(fe.threshold.grad != 0)
+
+
+def test_agc_rejects_log_compression() -> None:
+    """Division-based AGC is meaningless in the log domain (gain is additive
+    there and envelopes can go negative) -- must fail loudly, not silently."""
+    with pytest.raises(ValueError, match="sqrt"):
+        make_frontend(normalize="agc", compression="log", envelope_win_ms=10.0)

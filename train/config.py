@@ -135,7 +135,21 @@ class AFEConfig:
     # "none"   = no scaling (absolute). Same decisions as "fixed" but envelopes
     #            span ~[0.001, 69], so ste_clip MUST be raised (~4.0) or ~45% of
     #            elements fall outside the STE window and get no gradient.
-    normalize: str = "minmax"           # "minmax" | "fixed" | "none"
+    # "agc"    = causal, channel-shared automatic gain control: divide by a
+    #            running level (fast attack / slow release) instead of the
+    #            clip's future-peeking max. This is the HARDWARE-REALIZABLE
+    #            version of "minmax" -- a single shared gain control, which is
+    #            exactly what per-clip channel-shared min-max is an idealization
+    #            of. Needs init_fixed_scale() for the reference/floor.
+    normalize: str = "minmax"           # "minmax" | "fixed" | "agc" | "none"
+
+    # AGC loop (normalize="agc" only). Fast attack tracks onsets; slow release
+    # holds the level through a word. agc_max_gain_db caps the gain so silence
+    # does not get amplified into noise (a real AGC's noise gate): the level
+    # estimate is floored at fixed_hi / 10^(dB/20).
+    agc_attack_ms: float = 10.0
+    agc_release_ms: float = 250.0
+    agc_max_gain_db: float = 20.0
     threshold_init: str = "channel_mean"
     threshold_trainable: bool = True
     ste: str = "hardtanh"               # STE flavor for the step function
