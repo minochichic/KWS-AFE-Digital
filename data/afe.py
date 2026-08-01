@@ -348,6 +348,7 @@ class AFEFrontend(nn.Module):
         """
         if self.cfg.normalize not in ("fixed", "agc"):
             return
+        waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves, raw=True)
         self.fixed_lo.fill_(env.min())
         self.fixed_hi.fill_(env.max())
@@ -360,6 +361,7 @@ class AFEFrontend(nn.Module):
         inside envelopes() already applies the same min-max scaling to the
         features, so the mean is directly in threshold coordinates.
         """
+        waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves)
         self.threshold.copy_(env.mean(dim=(0, 2)))
 
