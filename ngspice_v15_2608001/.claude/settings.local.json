@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m unittest discover -s tests)",
+      "Bash(python \"C:/Temp/claude/C--Users-duyou-Desktop-Personal-10-Study-10-SemiContest-10-AI-Project-260801ngspice-channel-sweeper-modular-v15-active-detector--1--ngspice-channel-sweeper-modular-v15/d868be06-96fb-45e6-af22-20bf2051e741/scratchpad/verify_parser.py\" \".\")",
+      "Bash(python -c ' *)",
+      "Bash(python -X utf8 -c ' *)"
+    ]
+  }
+}
