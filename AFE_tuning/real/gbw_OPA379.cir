@@ -1,0 +1,16 @@
+.title gbw OPA379
+.include "../../ngspice_v15_2608001/lib/OPA379.LIB"
+V1 vcc 0 DC 1.8
+Vb mid 0 DC 0.9
+Vin inp mid DC 0 AC 1
+Xop inp inn vcc 0 out OPA379
+Rf out inn 9k
+Rg inn mid 1k
+.control
+  ac dec 100 10 5e6
+  meas ac gdc FIND vdb(out) AT=100
+  let g3 = gdc - 3
+  meas ac f3 WHEN vdb(out)=g3 FALL=1
+  print gdc f3
+.endc
+.end
