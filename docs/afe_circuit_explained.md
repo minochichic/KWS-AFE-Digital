@@ -435,3 +435,37 @@ v_filt의 DC = 890 mV      ← GIC op-amp 오차 (−10 mV)
 - 검출기 곡선: [`../AFE_tuning/artifacts/detector_curves.png`](../AFE_tuning/artifacts/detector_curves.png)
 - v15 회로 리뷰: [`../AFE_tuning/artifacts/v15_circuit_review.md`](../AFE_tuning/artifacts/v15_circuit_review.md)
 - 원 논문: `Sub-mW_Keyword_Spotting...pdf` (Cerutti et al.)
+
+---
+
+## 9. 그림 부록 (직관이 어려운 두 부분)
+
+- **GIC가 커패시터를 인덕터로 만드는 원리**:
+  [`diagrams/gic_as_inductor.svg`](diagrams/gic_as_inductor.svg)
+  — ① L·C는 거울상 → ② GIC = 임피던스 거울 `Z_in = R_A²/Z_C = jωL` →
+  ③ 입력 단자에서 저주파 통과·고주파 차단 → ④ 진짜 C1과 공진 = 밴드패스.
+- **검출기가 아래 반쪽만 재는 이유**:
+  [`diagrams/detector_halfwave.svg`](diagrams/detector_halfwave.svg)
+  — 신호가 0.9 V 기준 대칭이라 한쪽 반파만 봐도 진폭 정보는 그대로. 반파가 더 싸다.
+  느린 방전(τ=4.7 ms)이 반쪽 사이 빈틈을 메워 연속 엔벨로프가 된다.
+
+## 10. "v_env = 768 mV" 미스터리 (4채널 회로도 이미지)
+
+동료의 4채널 회로도 PNG에는 무신호 v_env가 **768 mV**로 찍혀 있었다. 그런데 검증된
+v15 단일채널 넷리스트(실제 벤더 모델)로 재현하면 **917.8 mV**다. 어느 쪽이 맞나?
+
+실제 벤더 모델로 검출기를 3가지로 돌려봤다:
+
+| 검출기 버전 | 정지 v_env |
+|---|---|
+| 정상 (v15 그대로) | 917.8 mV |
+| 다이오드 뒤집기 | 895.6 mV |
+| 뒤집기 + 게인 12배 | 896.6 mV |
+
+**셋 다 894~918 mV.** 검출기 DC 전달곡선의 바닥이 894 mV이고 정지점이 918 mV라,
+**768 mV는 이 회로가 만들 수 없는 값**이다(바닥보다 낮음).
+
+**결론**: 768이 찍힌 4채널 회로도의 ENV 블록은 검증된 v15 단일채널 검출기와 **다른
+회로**다(옛 버전이거나, 신호가 인가된 채 캡처됐거나, 다른 변형). 동료의 `VALIDATION_ko.md`가
+실제 모델로 측정해 확정한 값은 **917.83 mV**이고 우리도 그대로 재현했으므로, **권위 있는
+값은 918 mV**다. 768을 확정 설명하려면 `ENV_0.kicad_sch`(또는 그 넷리스트)가 필요하다.

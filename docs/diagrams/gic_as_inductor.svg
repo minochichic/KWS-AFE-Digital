@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 1180" font-family="sans-serif" font-size="15">
+<style>
+  .t{fill:#111} .b{fill:#1a4e8a} .r{fill:#b22} .g{fill:#237a3a} .m{fill:#666;font-size:13px}
+  .hd{font-size:19px;font-weight:bold;fill:#111}
+  .box{fill:#f2f7fc;stroke:#2b6cb0;stroke-width:2}
+  .w{stroke:#333;stroke-width:2;fill:none} .axis{stroke:#888;stroke-width:1.5}
+  .cap{stroke:#b22;stroke-width:3;fill:none} .ind{stroke:#237a3a;stroke-width:3;fill:none}
+</style>
+<rect width="1040" height="1180" fill="#fff"/>
+<text x="30" y="40" class="hd">GIC는 어떻게 커패시터를 인덕터로 만드나</text>
+
+<!-- ============ PANEL A: L and C are mirror opposites ============ -->
+<text x="30" y="86" class="hd" font-size="16">① 인덕터와 커패시터는 "거울상"이다</text>
+<text x="30" y="110" class="m">부품의 정체는 "주파수에 따라 임피던스(=신호를 막는 정도)가 어떻게 변하나"로 정해진다.</text>
+
+<!-- axes -->
+<line x1="90" y1="330" x2="470" y2="330" class="axis"/>
+<line x1="90" y1="150" x2="90" y2="330" class="axis"/>
+<text x="250" y="356" class="m" text-anchor="middle">주파수 →</text>
+<text x="60" y="245" class="m" text-anchor="middle" transform="rotate(-90 60 245)">|임피던스|</text>
+<!-- cap curve: falls -->
+<path d="M110 165 Q160 300 460 322" class="cap"/>
+<text x="330" y="315" class="r" font-size="14">커패시터  |Z| = 1/(ωC)  ↓ 떨어짐</text>
+<text x="120" y="175" class="r" font-size="13">저주파: 잘 막음</text>
+<!-- ind curve: rises -->
+<path d="M110 322 Q160 300 460 165" class="ind"/>
+<text x="300" y="180" class="g" font-size="14">인덕터  |Z| = ωL  ↑ 올라감</text>
+<text x="360" y="315" class="g" font-size="13">고주파: 잘 막음</text>
+<line x1="90" y1="243" x2="470" y2="243" stroke="#bbb" stroke-dasharray="4 4"/>
+<text x="480" y="247" class="m">← 이 선을 축으로</text>
+<text x="480" y="266" class="m">   위아래가 뒤집힌</text>
+<text x="480" y="285" class="m">   완전한 거울상</text>
+
+<text x="600" y="200" class="t" font-size="15" font-weight="bold">핵심:</text>
+<text x="600" y="228" class="t">커패시터는 <tspan class="r">고주파를 통과</tspan>시키고</text>
+<text x="600" y="252" class="t">인덕터는 <tspan class="g">고주파를 막는다.</tspan></text>
+<text x="600" y="284" class="t">정반대다. 그래서 커패시터의</text>
+<text x="600" y="308" class="t">곡선을 "위아래로 뒤집으면"</text>
+<text x="600" y="332" class="t">인덕터 곡선이 된다.</text>
+
+<line x1="30" y1="390" x2="1010" y2="390" stroke="#ddd"/>
+
+<!-- ============ PANEL B: the gyrator = impedance mirror ============ -->
+<text x="30" y="428" class="hd" font-size="16">② GIC = "임피던스 거울" (수학적 정체)</text>
+<text x="30" y="452" class="m">GIC(op-amp 2개+저항)는 안에 든 부품의 임피던스를 뒤집어서 입력에 보여준다.</text>
+
+<!-- input port -->
+<line x1="70" y1="560" x2="150" y2="560" class="w"/>
+<text x="70" y="548" class="m">입력에서 본 임피던스</text>
+<text x="70" y="595" class="b" font-size="15">Z_in</text>
+<!-- GIC box -->
+<rect x="150" y="500" width="230" height="120" rx="10" class="box"/>
+<text x="265" y="540" text-anchor="middle" class="b" font-size="17" font-weight="bold">GIC</text>
+<text x="265" y="565" text-anchor="middle" class="m">op-amp 2개</text>
+<text x="265" y="583" text-anchor="middle" class="m">+ 저항 R_A</text>
+<text x="265" y="605" text-anchor="middle" class="m">(임피던스 뒤집개)</text>
+<!-- cap inside/right -->
+<line x1="380" y1="560" x2="440" y2="560" class="w"/>
+<line x1="440" y1="540" x2="440" y2="580" class="cap"/>
+<line x1="452" y1="540" x2="452" y2="580" class="cap"/>
+<text x="446" y="605" text-anchor="middle" class="r" font-size="14">C</text>
+<text x="430" y="530" class="r" font-size="13">진짜 커패시터</text>
+
+<!-- equation chain -->
+<text x="540" y="530" class="t" font-size="15">뒤집개의 공식:</text>
+<text x="540" y="565" class="b" font-size="18">Z_in = R_A² / Z_C</text>
+<text x="540" y="600" class="t" font-size="15">커패시터를 <tspan class="r">분모</tspan>에 넣으면 →</text>
+
+<text x="150" y="672" class="t" font-size="17">Z_in = R_A² / (1/jωC) = jω·(R_A²C) = jω<tspan class="g" font-weight="bold">L</tspan>,</text>
+<text x="640" y="672" class="g" font-size="17" font-weight="bold">L = R_A²·C</text>
+<rect x="140" y="650" width="770" height="34" rx="6" fill="none" stroke="#237a3a" stroke-width="1.5"/>
+<text x="150" y="712" class="m">"떨어지는 곡선(1/ω)"으로 나누면 "올라가는 곡선(ω)"이 된다 = 인덕터. 이게 ①의 거울 뒤집기다.</text>
+<text x="150" y="740" class="t">그리고 <tspan class="g" font-weight="bold">R_A²</tspan>이 곱해지므로, 작은 커패시터(76 nF)로도 거대한 인덕터(11.7 H)를 만든다.</text>
+
+<line x1="30" y1="772" x2="1010" y2="772" stroke="#ddd"/>
+
+<!-- ============ PANEL C: why it works — impedance at the port ============ -->
+<text x="30" y="810" class="hd" font-size="16">③ 그래서 입력 단자에서 실제로 벌어지는 일</text>
+
+<!-- low freq case -->
+<rect x="60" y="835" width="420" height="150" rx="8" fill="#f3f7f2" stroke="#237a3a" stroke-width="1.5"/>
+<text x="80" y="863" class="g" font-weight="bold">저주파 신호 (느린 흔들림)</text>
+<text x="80" y="890" class="t" font-size="14">· 안의 커패시터: 임피던스 큼 (1/ωC ↑)</text>
+<text x="80" y="913" class="t" font-size="14">· 거울로 뒤집힘 → 입력 임피던스 <tspan class="g" font-weight="bold">작음</tspan></text>
+<text x="80" y="936" class="t" font-size="14">· → 신호가 <tspan class="g" font-weight="bold">잘 통과</tspan></text>
+<text x="80" y="966" class="g" font-size="13">인덕터와 똑같다 (저주파 통과)</text>
+
+<!-- high freq case -->
+<rect x="560" y="835" width="420" height="150" rx="8" fill="#fbf3f3" stroke="#b22" stroke-width="1.5"/>
+<text x="580" y="863" class="r" font-weight="bold">고주파 신호 (빠른 흔들림)</text>
+<text x="580" y="890" class="t" font-size="14">· 안의 커패시터: 임피던스 작음 (1/ωC ↓)</text>
+<text x="580" y="913" class="t" font-size="14">· 거울로 뒤집힘 → 입력 임피던스 <tspan class="r" font-weight="bold">큼</tspan></text>
+<text x="580" y="936" class="t" font-size="14">· → 신호가 <tspan class="r" font-weight="bold">막힘</tspan></text>
+<text x="580" y="966" class="r" font-size="13">인덕터와 똑같다 (고주파 차단)</text>
+
+<!-- resonance note -->
+<rect x="60" y="1005" width="920" height="140" rx="8" fill="#fffdf0" stroke="#a06a1b" stroke-width="1.5"/>
+<text x="80" y="1033" class="hd" font-size="15" fill="#8a5410">④ 그 다음: 가짜 인덕터 + 진짜 커패시터 = 밴드패스</text>
+<text x="80" y="1062" class="t" font-size="14">이제 입력 노드에 <tspan class="g">GIC가 만든 가짜 인덕터 L</tspan> 과 <tspan class="r">진짜 커패시터 C1</tspan> 이 나란히 붙어 있다.</text>
+<text x="80" y="1088" class="t" font-size="14">둘은 ①의 거울상이라, 딱 한 주파수 <tspan font-weight="bold">f_c = 1/(2π√(LC))</tspan> 에서 서로 상쇄(공진)한다.</text>
+<text x="80" y="1114" class="t" font-size="14">→ 그 주파수만 크게 통과, 나머지는 막힘 = <tspan font-weight="bold">"그네의 고유 리듬"</tspan> 을 전자회로로 만든 것.</text>
+<text x="80" y="1136" class="m">RA로 f_c를 맞추고(L=R_A²C), R1로 폭(Q)을 조절한다.</text>
+</svg>

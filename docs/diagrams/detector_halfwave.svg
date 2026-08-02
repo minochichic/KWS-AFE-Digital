@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 900" font-family="sans-serif" font-size="15">
+<style>
+  .t{fill:#111} .b{fill:#1a4e8a} .r{fill:#b22} .g{fill:#237a3a} .m{fill:#666;font-size:13px}
+  .hd{font-size:19px;font-weight:bold;fill:#111}
+  .axis{stroke:#888;stroke-width:1.5} .w{stroke:#333;stroke-width:2;fill:none}
+</style>
+<rect width="1040" height="900" fill="#fff"/>
+<text x="30" y="38" class="hd">검출기는 왜 "아래로 내려가는 반쪽만" 재나</text>
+
+<!-- ============ TOP: v_filt with half-cycles marked ============ -->
+<text x="30" y="78" class="hd" font-size="16">① 필터 출력 v_filt — 0.9 V를 중심으로 위아래 대칭 진동</text>
+<line x1="80" y1="130" x2="960" y2="130" class="axis" stroke-dasharray="5 4"/>
+<text x="965" y="135" class="m">0.9 V (기준)</text>
+<!-- sine wave around y=130, amplitude 55 -->
+<path d="M80 130 Q117 75 155 130 T230 130 T305 130 T380 130 T455 130 T530 130 T605 130 T680 130 T755 130 T830 130 T905 130"
+      fill="none" stroke="#1a4e8a" stroke-width="2.5"/>
+<text x="70" y="90" class="b" font-size="13">위 반쪽</text>
+<text x="70" y="185" class="r" font-size="13">아래 반쪽</text>
+<!-- shade the downward halves -->
+<path d="M117 130 Q155 185 192 130 Z" fill="#b22" opacity="0.18"/>
+<path d="M267 130 Q305 185 342 130 Z" fill="#b22" opacity="0.18"/>
+<path d="M417 130 Q455 185 492 130 Z" fill="#b22" opacity="0.18"/>
+<path d="M567 130 Q605 185 642 130 Z" fill="#b22" opacity="0.18"/>
+<path d="M717 130 Q755 185 792 130 Z" fill="#b22" opacity="0.18"/>
+<text x="120" y="215" class="r" font-size="12">↑ 이 반쪽들만 검출기가 "잡는다"</text>
+
+<!-- ============ MIDDLE: the two cases ============ -->
+<text x="30" y="270" class="hd" font-size="16">② 다이오드 D1·D2가 반주기마다 번갈아 일한다</text>
+
+<!-- case A: downward -->
+<rect x="60" y="290" width="440" height="180" rx="8" fill="#fbf3f3" stroke="#b22" stroke-width="1.5"/>
+<text x="80" y="318" class="r" font-weight="bold">v_filt가 0.9 V 아래로 (아래 반쪽)</text>
+<text x="80" y="346" class="t" font-size="14">· op-amp가 출력을 올림 → <tspan class="r" font-weight="bold">D2 도통</tspan></text>
+<text x="80" y="371" class="t" font-size="14">· 커패시터 C3를 <tspan class="r" font-weight="bold">충전</tspan> (v_env ↑)</text>
+<text x="80" y="396" class="t" font-size="14">· 내려간 만큼 ×4.7 증폭해서 저장</text>
+<text x="80" y="428" class="t" font-size="13.5">v_env = 0.9 + 4.7 × (0.9 − v_filt)</text>
+<text x="80" y="455" class="r" font-size="13">→ "지금 이 대역에 에너지가 있다"를 기록</text>
+
+<!-- case B: upward -->
+<rect x="540" y="290" width="440" height="180" rx="8" fill="#f2f7fc" stroke="#2b6cb0" stroke-width="1.5"/>
+<text x="560" y="318" class="b" font-weight="bold">v_filt가 0.9 V 위로 (위 반쪽)</text>
+<text x="560" y="346" class="t" font-size="14">· op-amp가 출력을 내림 → <tspan class="b" font-weight="bold">D1 도통</tspan></text>
+<text x="560" y="371" class="t" font-size="14">· <tspan class="b" font-weight="bold">D2 차단</tspan> → C3가 분리됨</text>
+<text x="560" y="396" class="t" font-size="14">· C3는 R5로 <tspan font-weight="bold">천천히 방전</tspan>만</text>
+<text x="560" y="428" class="t" font-size="13.5">v_env = 방금 값에서 서서히 감소 (τ=4.7ms)</text>
+<text x="560" y="455" class="b" font-size="13">→ 위 반쪽은 "무시", 대신 기억을 유지</text>
+
+<!-- ============ BOTTOM: resulting envelope ============ -->
+<text x="30" y="520" class="hd" font-size="16">③ 결과: 톱니 모양 엔벨로프 (빠른 충전 / 느린 방전)</text>
+<line x1="80" y1="640" x2="960" y2="640" class="axis"/>
+<text x="965" y="645" class="m">바닥</text>
+<!-- sawtooth: sharp up on each downward half, slow decay between -->
+<path d="M80 640
+         L117 640 L155 560 L230 610
+         L267 610 L305 545 L380 600
+         L417 600 L455 540 L530 598
+         L567 598 L605 542 L680 600
+         L717 600 L755 548 L830 605 L905 625"
+      fill="none" stroke="#237a3a" stroke-width="2.8"/>
+<!-- markers -->
+<text x="150" y="548" class="g" font-size="12">빠른 충전 ↑</text>
+<text x="530" y="590" class="g" font-size="12">느린 방전 ↘</text>
+<text x="80" y="690" class="t" font-size="14">아래 반쪽마다 <tspan class="g" font-weight="bold">뾰족하게 충전</tspan>되고, 사이사이 <tspan class="g" font-weight="bold">천천히 방전</tspan>하며 이어진다.</text>
+<text x="80" y="714" class="t" font-size="14">방전이 느려서(τ=4.7ms) 반쪽 사이 빈틈이 메워져 <tspan font-weight="bold">연속적인 에너지 윤곽</tspan>이 된다.</text>
+
+<!-- WHY only one half is fine -->
+<rect x="60" y="740" width="920" height="130" rx="8" fill="#fffdf0" stroke="#a06a1b" stroke-width="1.5"/>
+<text x="80" y="768" class="hd" font-size="15" fill="#8a5410">왜 반쪽만 재도 괜찮은가?</text>
+<text x="80" y="796" class="t" font-size="14">신호는 0.9 V 기준으로 <tspan font-weight="bold">위아래가 대칭</tspan>이다 (①). 위 반쪽의 크기 = 아래 반쪽의 크기.</text>
+<text x="80" y="822" class="t" font-size="14">→ 아래 반쪽만 봐도 <tspan font-weight="bold">진폭(에너지) 정보는 그대로</tspan> 다. 반쪽을 버려도 손해 없음.</text>
+<text x="80" y="848" class="m">전파(양쪽 다) 정류는 부품이 더 들고 복잡하다. 반파(한쪽만)가 더 싸고, 엔벨로프 목적엔 충분하다.</text>
+</svg>
