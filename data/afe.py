@@ -351,7 +351,19 @@ class AFEFrontend(nn.Module):
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves, raw=True)
         self.fixed_lo.fill_(env.min())
-        self.fixed_hi.fill_(env.max())
+        q = getattr(self.cfg, "fixed_scale_quantile", 1.0)
+        if q >= 1.0:
+            self.fixed_hi.fill_(env.max())
+        else:
+            # Quantile over PER-CLIP maxima instead of the global max. The global
+            # max is one outlier clip, which squeezes every typical clip into a
+            # sliver of [0,1]: measured env std 0.034 vs 0.138 for per-clip
+            # min-max, so the learned thresholds land at 0.002-0.025 and a single
+            # Adam step (lr 1e-3) moves them ~15% instead of ~3%. The achievable
+            # optimum is unchanged (an affine scale is absorbed by the learnable
+            # thresholds) -- this only fixes the CONDITIONING of that optimization.
+            # Still a constant, so it remains an absolute threshold -> fixed R7/R8.
+            self.fixed_hi.fill_(env.amax(dim=(1, 2)).quantile(q))
 
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:

@@ -147,6 +147,15 @@ class AFEConfig:
     # holds the level through a word. agc_max_gain_db caps the gain so silence
     # does not get amplified into noise (a real AGC's noise gate): the level
     # estimate is floored at fixed_hi / 10^(dB/20).
+    # normalize="fixed"/"agc" scale reference, set by init_fixed_scale().
+    # 1.0 = global max (original behaviour). <1.0 = that quantile of the
+    # PER-CLIP maxima, which is outlier-robust: the global max is a single loud
+    # clip that compresses typical clips into a sliver of [0,1] and leaves the
+    # learned thresholds too small for the shared learning rate. Does not change
+    # the achievable optimum (affine scale absorbed by the thresholds), only the
+    # optimization conditioning. ~0.75 matches per-clip min-max's spread.
+    fixed_scale_quantile: float = 1.0
+
     agc_attack_ms: float = 10.0
     agc_release_ms: float = 250.0
     agc_max_gain_db: float = 20.0

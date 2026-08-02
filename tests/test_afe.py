@@ -482,3 +482,23 @@ def test_agc_rejects_log_compression() -> None:
     there and envelopes can go negative) -- must fail loudly, not silently."""
     with pytest.raises(ValueError, match="sqrt"):
         make_frontend(normalize="agc", compression="log", envelope_win_ms=10.0)
+
+
+def test_fixed_scale_quantile_is_outlier_robust_and_still_affine() -> None:
+    """A quantile scale must (a) shrink fixed_hi vs the global max and (b) keep
+    the binary decision identical for the same ABSOLUTE threshold -- it only
+    reconditions the optimization, it cannot change what is representable."""
+    wave = noise(6)
+    fe_max = make_frontend(normalize="fixed", envelope_win_ms=10.0)
+    fe_q = make_frontend(normalize="fixed", envelope_win_ms=10.0,
+                         fixed_scale_quantile=0.75)
+    fe_max.init_fixed_scale(wave)
+    fe_q.init_fixed_scale(wave)
+    assert float(fe_q.fixed_hi) < float(fe_max.fixed_hi)     # outlier dropped
+
+    raw = fe_max.envelopes(wave, raw=True)
+    abs_thr = raw.median()                                   # one absolute threshold
+    def binar(fe):
+        t = (abs_thr - fe.fixed_lo) / (fe.fixed_hi - fe.fixed_lo)
+        return fe.envelopes(wave) >= t
+    assert torch.equal(binar(fe_max), binar(fe_q))           # same decisions
