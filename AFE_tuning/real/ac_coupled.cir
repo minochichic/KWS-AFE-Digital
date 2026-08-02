@@ -1,0 +1,29 @@
+.title KiCad schematic
+* All model libraries come from one folder so the selectable detector op-amp
+* and the fixed models can never drift to different versions.  This folder is
+* MODEL_LIBRARY_DIR in sweeper/constants.py; change both together.
+.include "../../ngspice_v15_2608001/lib/BAT54WT.lib"
+.include "../../ngspice_v15_2608001/lib/LPV7215.lib"
+.include "../../ngspice_v15_2608001/lib/OPA379.LIB"
+.param RA=10.61k R1=53.4k R2=100k R4=10k R5=47k R6=8.25k R7=500k R8=500k
+.param C1=1.86n C3=100n
+
+V2 1.8V 0.9V DC 0.9
+V1 0.9V GND DC 0.9
+R6 0.9V Net-_U3-+_ {R6}
+Cac /v_filt nfilt 1u
+R4 nfilt Net-_D1-A_ {R4}
+R5 Net-_D1-A_ /v_env {R5}
+D1 Net-_D1-A_ Net-_D1-K_ Dbat54wt1
+XU3 Net-_U3-+_ Net-_D1-A_ 1.8V GND Net-_D1-K_ OPA379
+D2 Net-_D1-K_ /v_env Dbat54wt1
+R7 /v_thr 1.8V {R7}
+R8 GND /v_thr {R8}
+C3 /v_env GND {C3}
+XU4 /v_env /v_thr 1.8V GND /v_comp LPV7215
+Vfilt /v_filt 0 DC 0.89
+.control
+  dc Vfilt 0.86 0.92 0.01
+  print v(/v_filt) v(/v_env)
+.endc
+.end

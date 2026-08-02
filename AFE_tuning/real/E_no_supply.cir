@@ -1,0 +1,38 @@
+.title KiCad schematic
+* All model libraries come from one folder so the selectable detector op-amp
+* and the fixed models can never drift to different versions.  This folder is
+* MODEL_LIBRARY_DIR in sweeper/constants.py; change both together.
+.include "../../ngspice_v15_2608001/lib/BAT54WT.lib"
+.include "../../ngspice_v15_2608001/lib/LPV7215.lib"
+.include "../../ngspice_v15_2608001/lib/OPA379.LIB"
+.param RA=10.61k R1=53.4k R2=100k R4=10k R5=47k R6=8.25k R7=500k R8=500k
+.param C1=1.86n C3=100n
+
+XU2 Net-_U2-+_ Net-_U1--_ 1.8V GND Net-_C2-Pad1_ OPA379
+R3 0.9V Net-_U2-+_ {R2}
+R2 Net-_U2-+_ /v_filt {R2}
+V2 1.8V 0.9V DC 0
+V3 Net-_V3-Pad1_ GND DC 0.9
+V1 0.9V GND DC 0.9
+R6 0.9V Net-_U3-+_ {R6}
+R4 /v_filt Net-_D1-A_ {R4}
+R5 Net-_D1-A_ /v_env {R5}
+D1 Net-_D1-A_ Net-_D1-K_ Dbat54wt1
+XU3 Net-_U3-+_ Net-_D1-A_ 1.8V GND Net-_D1-K_ OPA379
+D2 Net-_D1-K_ /v_env Dbat54wt1
+R7 /v_thr 1.8V {R7}
+R8 GND /v_thr {R8}
+C3 /v_env GND {C3}
+XU4 /v_env /v_thr 1.8V GND /v_comp LPV7215
+RA2 Net-_U1--_ /v_filt {RA}
+XU1 Net-_U1-+_ Net-_U1--_ 1.8v GND /v_filt OPA379
+C2 Net-_C2-Pad1_ Net-_U1--_ {C1}
+R1 /vin Net-_U1-+_ {R1}
+C1 0.9V Net-_U1-+_ {C1}
+RA1 Net-_C2-Pad1_ Net-_U1-+_ {RA}
+V4 /vin Net-_V3-Pad1_ DC -0.19
+.control
+  op
+  print v(/vin) v(/v_filt) v(/v_env)
+.endc
+.end
