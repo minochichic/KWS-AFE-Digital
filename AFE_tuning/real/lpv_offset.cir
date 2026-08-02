@@ -1,0 +1,12 @@
+.title LPV7215 offset
+.include "../../ngspice_v15_2608001/lib/LPV7215.lib"
+V1 vcc 0 DC 1.8
+Vref refn 0 DC 0.9
+Vp inp 0 DC 0.9
+X1 inp refn vcc 0 outp LPV7215
+.control
+  dc Vp 0.895 0.905 0.00002
+  meas dc vflip WHEN v(outp)=0.9 RISE=1
+  print vflip
+.endc
+.end
