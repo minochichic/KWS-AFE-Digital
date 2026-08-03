@@ -153,3 +153,24 @@ def test_defaults_alone_are_incomplete() -> None:
     """A bare Config() has no stages -- YAML is mandatory, by design."""
     with pytest.raises(ValueError, match="stages is empty"):
         Config().validate()
+
+
+def test_non_paper_envelope_window_warns_but_is_allowed() -> None:
+    """Shrinking the envelope window raises the input bit count without touching
+    the analog front end, so it must stay reachable -- warn, do not block."""
+    import warnings
+    from train.config import load_config
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        cfg = load_config("configs/base.yaml",
+                          {"afe.envelope_win_ms": 5.0, "model.T": 256})
+    assert cfg.afe.envelope_win_ms == 5.0
+    assert any("not a paper value" in str(x.message) for x in w)
+
+    with warnings.catch_warnings(record=True) as w2:      # 10 ms = paper value
+        warnings.simplefilter("always")
+        load_config("configs/base.yaml")
+    assert not any("not a paper value" in str(x.message) for x in w2)
+
+    with pytest.raises(ValueError, match="positive"):      # still guarded
+        load_config("configs/base.yaml", {"afe.envelope_win_ms": 0.0})

@@ -18,6 +18,7 @@ Python 3.9-compatible (Colab is newer, but local dev here is 3.9).
 from __future__ import annotations
 
 import dataclasses
+import warnings
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -289,10 +290,23 @@ class Config:
                 f"model.in_channels ({m.in_channels}) must equal "
                 f"afe.n_channels ({a.n_channels})"
             )
-        if a.envelope_win_ms not in (10.0, 25.0):
+        if a.envelope_win_ms <= 0:
             raise ValueError(
-                f"afe.envelope_win_ms must be 10 or 25 ms (Cerutti IV-A), "
-                f"got {a.envelope_win_ms}"
+                f"afe.envelope_win_ms must be positive, got {a.envelope_win_ms}"
+            )
+        if a.envelope_win_ms not in (10.0, 25.0):
+            # 10/25 ms are the paper's values (Cerutti IV-A); anything else is a
+            # deliberate deviation. Shrinking the window is a real lever -- it
+            # raises the input bit count without touching the analog front end
+            # (the comparator events already have sub-ms resolution) -- so warn
+            # instead of blocking, and let time_axis_report() catch a T that
+            # starves conv2.
+            warnings.warn(
+                f"afe.envelope_win_ms={a.envelope_win_ms} is not a paper value "
+                f"(Cerutti IV-A uses 10 or 25 ms). Intentional deviation? "
+                f"native_T = clip_ms/envelope_win_ms = "
+                f"{a.clip_ms / a.envelope_win_ms:.0f}; set model.T to match.",
+                stacklevel=2,
             )
         if a.f_max > a.sample_rate / 2:
             raise ValueError(
