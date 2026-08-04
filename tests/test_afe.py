@@ -502,3 +502,59 @@ def test_fixed_scale_quantile_is_outlier_robust_and_still_affine() -> None:
         t = (abs_thr - fe.fixed_lo) / (fe.fixed_hi - fe.fixed_lo)
         return fe.envelopes(wave) >= t
     assert torch.equal(binar(fe_max), binar(fe_q))           # same decisions
+
+
+# --------------------------------------------------------------------------- #
+# 12. normalize="xmax": cross-channel relative threshold (gain-invariant)
+# --------------------------------------------------------------------------- #
+def _xmax_frontend(**kw):
+    fe = make_frontend(normalize="xmax", compression="sqrt",
+                       envelope_win_ms=10.0, **kw)
+    w = noise(6)
+    fe.init_fixed_scale(w)
+    fe.init_thresholds(w)
+    return fe, w
+
+
+def test_xmax_is_gain_invariant_above_the_floor() -> None:
+    """The whole point: an input gain cancels between numerator and denominator,
+    so the binary image is unchanged -- level invariance is structural here, not
+    something the network has to learn."""
+    fe, w = _xmax_frontend(xmax_floor_frac=0.0)      # no floor -> exact
+    b = fe(w, target_T=128)
+    for g in (0.5, 2.0, 4.0):
+        assert torch.equal(fe(g * w, target_T=128), b)
+
+
+def test_xmax_floor_restores_an_absolute_comparison_when_quiet() -> None:
+    """Below the floor the denominator stops tracking, so the envelope shrinks
+    with the input instead of being renormalized -- that is what stops silence
+    from dividing noise by noise and firing at random. (Checked on the envelope,
+    not the binary output: once everything is under threshold both are all -1.)"""
+    fe, w = _xmax_frontend(xmax_floor_frac=0.9)      # floor binds almost always
+    quiet = 1e-3 * w
+    e1 = fe.envelopes(quiet)
+    e2 = fe.envelopes(0.1 * quiet)
+    assert float(e2.max()) < 0.5 * float(e1.max())   # scaled down, NOT invariant
+
+    # Same signals with NO floor stay renormalized (ratio ~1). Not exact here
+    # because the _EPS guard in the denominator is not negligible at 1e-3 scale;
+    # invariance at real signal levels is asserted by the test above.
+    nofloor = _xmax_frontend(xmax_floor_frac=0.0)[0]
+    r = float(nofloor.envelopes(0.1 * quiet).max()
+              / nofloor.envelopes(quiet).max())
+    assert 0.99 < r < 1.01
+
+
+def test_xmax_outputs_binary_and_trains() -> None:
+    fe, w = _xmax_frontend()
+    out = fe(w, target_T=128)
+    assert out.shape == (6, 16, 128)
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
+    out.mean().backward()
+    assert torch.all(fe.threshold.grad != 0)
+
+
+def test_xmax_rejects_log_compression() -> None:
+    with pytest.raises(ValueError, match="sqrt"):
+        make_frontend(normalize="xmax", compression="log", envelope_win_ms=10.0)

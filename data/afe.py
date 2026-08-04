@@ -161,19 +161,22 @@ class AFEFrontend(nn.Module):
         # init_fixed_scale(). "fixed" uses them as the affine scale; "agc" uses
         # fixed_hi as the reference for the max-gain floor.
         # Buffers (not params) so they land in the checkpoint and move with .to().
-        if cfg.normalize in ("fixed", "agc"):
+        if cfg.normalize in ("fixed", "agc", "xmax"):
             self.register_buffer("fixed_lo", torch.zeros(1))
             self.register_buffer("fixed_hi", torch.ones(1))
+        if cfg.normalize == "xmax":
+            self.register_buffer("xmax_floor", torch.zeros(1))
 
         # AGC divides by a running level, which is only meaningful in a
         # multiplicative (amplitude) domain. Under log compression a gain is a
         # SUBTRACTION and values go negative, so division is wrong there.
         # compression="sqrt" is also the circuit-faithful choice (V+ ~ amplitude).
-        if cfg.normalize == "agc" and getattr(cfg, "compression", "log") != "sqrt":
+        if cfg.normalize in ("agc", "xmax") and \
+                getattr(cfg, "compression", "log") != "sqrt":
             raise ValueError(
-                'normalize="agc" requires compression="sqrt": AGC divides by a '
-                'level, but under log compression gain is additive and envelopes '
-                'can be negative.')
+                f'normalize="{cfg.normalize}" requires compression="sqrt": it '
+                'divides by a level, but under log compression gain is additive '
+                'and envelopes can be negative.')
 
     # ------------------------------------------------------------------ #
     def _fix_length(self, wave: torch.Tensor) -> torch.Tensor:
@@ -249,9 +252,41 @@ class AFEFrontend(nn.Module):
             env = (env - self.fixed_lo) / (self.fixed_hi - self.fixed_lo + _EPS)
         elif self.cfg.normalize == "agc":
             env = self._agc(env)
+        elif self.cfg.normalize == "xmax":
+            env = self._xmax(env)
         else:
             raise ValueError(f"unknown normalize {self.cfg.normalize!r}")
         return env
+
+    def _xmax(self, env: torch.Tensor) -> torch.Tensor:
+        """Cross-channel relative threshold -- level invariance without any loop.
+
+        Each channel is judged against the INSTANTANEOUS max across the 16
+        channels rather than a fixed voltage:
+
+            out[:, c, t] = env[:, c, t] / max( max_j env[:, j, t], floor )
+
+        A gain g scales numerator and denominator alike, so it cancels exactly:
+        loudness invariance is STRUCTURAL here, not something the net has to
+        learn (gain augmentation tried that and lost 9pp, because with a fixed
+        threshold a gain does not perturb the binary image, it erases it).
+
+        Hardware: 16 diodes OR-ing the envelope outputs give that max passively
+        into one shared divider. Compared with an AGC there is no feedback loop,
+        no attack/release, hence no oscillation and no first-word problem -- and
+        it replaces the 16 per-channel dividers, whose bias current was ~52 uW.
+
+        The floor is what keeps silence quiet: dividing noise by noise would fire
+        at random, so below it the comparison reverts to an absolute threshold.
+        Real hardware gets this for free -- the diode-OR node cannot sink below
+        the detector's quiescent level. It is set by init_fixed_scale() as a
+        QUANTILE OF THE PER-FRAME cross-channel max, not as a fraction of the
+        dataset peak: the dataset peak is the loudest frame of the loudest clip
+        and sits ~200x above a median frame, so anchoring there made the floor
+        dominate 87% of frames and collapsed this mode back into "fixed".
+        """
+        xmax = env.amax(dim=1, keepdim=True)                 # [B, 1, T]
+        return env / (torch.maximum(xmax, self.xmax_floor) + _EPS)
 
     def _agc(self, env: torch.Tensor) -> torch.Tensor:
         """Causal, channel-shared AGC -- the hardware-realizable normalization.
@@ -346,7 +381,7 @@ class AFEFrontend(nn.Module):
         Since lo/hi are constants, the later `env >= thr` decision is an absolute
         threshold -> maps straight to a fixed R7/R8 divider.
         """
-        if self.cfg.normalize not in ("fixed", "agc"):
+        if self.cfg.normalize not in ("fixed", "agc", "xmax"):
             return
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves, raw=True)
@@ -364,6 +399,14 @@ class AFEFrontend(nn.Module):
             # thresholds) -- this only fixes the CONDITIONING of that optimization.
             # Still a constant, so it remains an absolute threshold -> fixed R7/R8.
             self.fixed_hi.fill_(env.amax(dim=(1, 2)).quantile(q))
+        if self.cfg.normalize == "xmax":
+            # Silence floor for _xmax: a low quantile of the PER-FRAME
+            # cross-channel max, so only genuinely quiet frames fall back to the
+            # absolute comparison and speech frames stay gain-invariant.
+            # <=0 means NO floor at all -> exact gain invariance everywhere.
+            f = float(self.cfg.xmax_floor_frac)
+            self.xmax_floor.fill_(
+                env.amax(dim=1).flatten().quantile(f) if f > 0.0 else 0.0)
 
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:

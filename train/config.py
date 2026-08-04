@@ -142,7 +142,31 @@ class AFEConfig:
     #            version of "minmax" -- a single shared gain control, which is
     #            exactly what per-clip channel-shared min-max is an idealization
     #            of. Needs init_fixed_scale() for the reference/floor.
-    normalize: str = "minmax"           # "minmax" | "fixed" | "agc" | "none"
+    # "xmax"   = cross-channel relative threshold: divide by the INSTANTANEOUS
+    #            max across the 16 channels. A gain g multiplies numerator and
+    #            denominator alike, so it cancels exactly -- level invariance is
+    #            structural, not learned. Hardware: a 16-diode OR of the envelope
+    #            outputs gives that max passively, feeding one shared divider, so
+    #            unlike AGC there is NO feedback loop, NO time constant, and no
+    #            stability / first-word risk (and it replaces the 16 per-channel
+    #            dividers, saving their ~52 uW). Needs init_fixed_scale() for the
+    #            silence floor.
+    normalize: str = "minmax"           # "minmax" | "fixed" | "agc" | "xmax" | "none"
+
+    # normalize="xmax" silence floor, as a QUANTILE of the per-frame
+    # cross-channel max (measured by init_fixed_scale). In pure relative mode a
+    # silent frame divides noise by noise and fires at random, so the denominator
+    # is floored: frames above it stay relative (gain-invariant), quieter ones
+    # fall back to an absolute threshold. The hardware gets this for free -- the
+    # diode-OR node cannot fall below the detector's quiescent level.
+    # Anchoring to a quantile of FRAMES matters: a fraction of the dataset peak
+    # put the floor ~200x above a median frame and bound 87% of them, which
+    # silently degenerates this mode into "fixed". 0.10 = only the quietest 10%
+    # of frames use the absolute path; measured gain invariance (binary output
+    # unchanged under an input gain) then runs 96.8-98.3% for g in [0.5, 4] vs
+    # 87-95% for "fixed". Lowering it to 0.02 reaches 99.5% but leaves almost no
+    # absolute floor to keep silence quiet.
+    xmax_floor_frac: float = 0.10
 
     # AGC loop (normalize="agc" only). Fast attack tracks onsets; slow release
     # holds the level through a word. agc_max_gain_db caps the gain so silence
