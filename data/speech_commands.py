@@ -140,7 +140,8 @@ class SpeechCommands12(Dataset):
             from data.augment import WaveformAugment
             aug = WaveformAugment(
                 sample_rate, cfg.aug_time_shift_ms, cfg.aug_noise_prob,
-                tuple(cfg.aug_noise_snr_db), self._noise)
+                tuple(cfg.aug_noise_snr_db), self._noise,
+                tuple(getattr(cfg, "aug_gain_db", (0.0, 0.0))))
             if not aug.is_noop():
                 self._augment = aug
 

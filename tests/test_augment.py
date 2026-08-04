@@ -87,3 +87,29 @@ def test_short_noise_clip_is_tiled() -> None:
                           noise_waves=[torch.randn(4000)])   # shorter than clip
     out = aug(torch.randn(16000))
     assert out.shape == (16000,)                       # no crash, right length
+
+
+def test_gain_augment_scales_only_and_is_off_by_default() -> None:
+    """Loudness augment: a pure scalar scale, and a no-op unless asked for.
+
+    This one is not from MatchboxNet -- it exists because a FIXED comparator
+    threshold cannot absorb clip loudness the way MFCC normalization does.
+    """
+    torch.manual_seed(0)
+    w = 0.1 * torch.randn(16000)
+
+    off = WaveformAugment(16000)
+    assert off.is_noop()
+    assert torch.equal(off(w.clone()), w)          # baseline byte-identical
+
+    aug = WaveformAugment(16000, gain_db=(-10.0, 10.0))
+    assert not aug.is_noop()
+
+    out = aug(w.clone())
+    ratio = (out / w)[w.abs() > 1e-3]
+    assert float(ratio.std()) < 1e-5               # one scalar, shape preserved
+    g = float(ratio.median())
+    assert 10 ** (-10 / 20) - 1e-3 <= g <= 10 ** (10 / 20) + 1e-3
+
+    gains = [float((aug(w.clone()) / w)[w.abs() > 1e-3].median()) for _ in range(50)]
+    assert max(gains) / min(gains) > 2.0           # actually varies per call

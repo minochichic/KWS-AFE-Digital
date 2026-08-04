@@ -248,6 +248,13 @@ class DataConfig:
     aug_time_shift_ms: float = 0.0     # random shift in +/- this (0 = off)
     aug_noise_prob: float = 0.0        # per-sample prob of adding background noise
     aug_noise_snr_db: List[float] = field(default_factory=lambda: [5.0, 30.0])
+    # Random per-clip loudness, in dB, applied to the waveform (0,0 = off).
+    # NOT a MatchboxNet augmentation -- its MFCC pipeline absorbs level. Ours
+    # cannot: with normalize="fixed" the comparator threshold is a fixed
+    # voltage, so clip loudness leaks straight into the binary image (measured
+    # as the dominant loss, ~-8pp). Training across gains is the only
+    # purely-software lever against it. e.g. [-10, 10] = x0.32..x3.2.
+    aug_gain_db: List[float] = field(default_factory=lambda: [0.0, 0.0])
     aug_specaug_time_masks: int = 0    # SpecAugment: deferred (not implemented)
     aug_specaug_freq_masks: int = 0
 
