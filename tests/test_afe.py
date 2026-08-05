@@ -686,3 +686,24 @@ def test_binarize_true_is_the_unchanged_default() -> None:
 def test_xmax_rejects_log_compression() -> None:
     with pytest.raises(ValueError, match="sqrt"):
         make_frontend(normalize="xmax", compression="log", envelope_win_ms=10.0)
+
+
+# --------------------------------------------------------------------------- #
+# 14. spice_matrix_path survives the analog/ reorganization
+# --------------------------------------------------------------------------- #
+def test_spice_path_falls_back_to_the_pre_analog_layout() -> None:
+    """Runs and checkpoints recorded "AFE/artifacts/..." before the analog
+    folders moved under analog/. Those configs must keep loading -- otherwise a
+    repo reorganization silently breaks every saved run."""
+    from data.afe import _resolve_spice_path
+    good = _resolve_spice_path("analog/AFE/artifacts/filterbank_matrix.csv")
+    assert good.exists()
+    with pytest.warns(UserWarning, match="moved under analog/"):
+        old = _resolve_spice_path("AFE/artifacts/filterbank_matrix.csv")
+    assert old == good
+
+
+def test_spice_path_missing_says_how_to_fix_it() -> None:
+    from data.afe import _resolve_spice_path
+    with pytest.raises(FileNotFoundError, match="git pull"):
+        _resolve_spice_path("nowhere/filterbank_matrix.csv")

@@ -79,6 +79,37 @@ def discretize(pulse_times_ms, window_ms: float, n_windows: int,
         f"reduce {reduce!r} unsupported by this reference (max/count only)")
 
 
+def _resolve_spice_path(path: str) -> Path:
+    """Locate the SPICE filterbank, tolerating the pre-`analog/` layout.
+
+    The analog folders moved under analog/ after runs and checkpoints had
+    already recorded "AFE/artifacts/...". Those configs must keep loading, so
+    try the recorded path first and then the same path with analog/ added or
+    removed. Anything found this way is reported, because a config pointing at
+    a path that no longer exists means the tree and the config disagree.
+    """
+    root = Path(__file__).resolve().parents[1]
+    p = Path(path)
+    first = p if p.is_absolute() else root / p
+    if first.exists():
+        return first
+    parts = p.parts
+    alts = [root / Path("analog", *parts)]
+    if parts and parts[0] == "analog":
+        alts.append(root / Path(*parts[1:]))
+    for a in alts:
+        if a.exists():
+            warnings.warn(
+                f"spice_matrix_path={path!r} does not exist; using {a} instead. "
+                f"The analog folders moved under analog/ -- update the config "
+                f"(train/config.py: spice_matrix_path) to silence this.")
+            return a
+    raise FileNotFoundError(
+        f"SPICE filterbank not found. Tried {first} and {[str(a) for a in alts]}. "
+        f"If the repo was just reorganized, `git pull`; the file lives at "
+        f"analog/AFE/artifacts/filterbank_matrix.csv.")
+
+
 def pad_or_crop(x: torch.Tensor, target_T: int,
                 pad_value: float = -1.0) -> torch.Tensor:
     """Symmetrically pad (with `pad_value`) or center-crop the time axis.
@@ -124,9 +155,7 @@ class AFEFrontend(nn.Module):
             # power spectrogram + the SPICE-extracted GIC filterbank matrix.
             self._spectro = torchaudio.transforms.Spectrogram(
                 n_fft=cfg.n_fft, win_length=win, hop_length=hop, power=2.0)
-            p = Path(cfg.spice_matrix_path)
-            if not p.is_absolute():
-                p = Path(__file__).resolve().parents[1] / p
+            p = _resolve_spice_path(cfg.spice_matrix_path)
             m = np.loadtxt(p, delimiter=",")           # [C, n_fft//2+1]
             n_freqs = cfg.n_fft // 2 + 1
             if m.shape != (cfg.n_channels, n_freqs):

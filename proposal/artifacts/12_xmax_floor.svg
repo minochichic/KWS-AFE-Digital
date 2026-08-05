@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="660" viewBox="0 0 1040 660" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1040" height="660" fill="#ffffff"/>
+<text x="520.0" y="34" text-anchor="middle" font-size="22" fill="#0f172a" font-weight="700">floor — 상대 모드와 절대 모드의 경계, 그리고 그 함정</text>
+<text x="520.0" y="58" text-anchor="middle" font-size="13" fill="#64748b">프레임별 채널간 max의 실측 분포 (144클립 × 100프레임 = 14,400 프레임, 로그 스케일)</text>
+<rect x="105" y="166" width="188.6" height="190" fill="#eff6ff"/>
+<rect x="293.6" y="166" width="666.4" height="190" fill="#fef9f3"/>
+<rect x="148.6" y="273.8" width="19.8" height="82.2" fill="#dc2626" stroke="#991b1b" stroke-width="0.7"/>
+<rect x="169.9" y="355.5" width="19.8" height="0.5" fill="#93c5fd" stroke="#1e3a8a" stroke-width="0.7"/>
+<rect x="255.4" y="349.1" width="19.8" height="6.9" fill="#93c5fd" stroke="#1e3a8a" stroke-width="0.7"/>
+<rect x="276.8" y="314.6" width="19.8" height="41.4" fill="#93c5fd" stroke="#1e3a8a" stroke-width="0.7"/>
+<rect x="298.2" y="300.8" width="19.8" height="55.2" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="319.6" y="310.8" width="19.8" height="45.2" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="340.9" y="308.2" width="19.8" height="47.8" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="362.3" y="299.4" width="19.8" height="56.6" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="383.7" y="304.1" width="19.8" height="51.9" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="405.1" y="304.1" width="19.8" height="51.9" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="426.4" y="295.7" width="19.8" height="60.3" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="447.8" y="289.8" width="19.8" height="66.2" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="469.2" y="264.0" width="19.8" height="92.0" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="490.6" y="265.7" width="19.8" height="90.3" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="511.9" y="268.3" width="19.8" height="87.7" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="533.3" y="281.6" width="19.8" height="74.4" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="554.7" y="266.8" width="19.8" height="89.2" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="576.0" y="291.2" width="19.8" height="64.8" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="597.4" y="314.7" width="19.8" height="41.3" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="618.8" y="314.4" width="19.8" height="41.6" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="640.2" y="313.7" width="19.8" height="42.3" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="661.5" y="315.1" width="19.8" height="40.9" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="682.9" y="263.2" width="19.8" height="92.8" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="704.3" y="220.5" width="19.8" height="135.5" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="725.7" y="267.3" width="19.8" height="88.7" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="747.0" y="264.4" width="19.8" height="91.6" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="768.4" y="257.0" width="19.8" height="99.0" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="789.8" y="264.7" width="19.8" height="91.3" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="811.2" y="190.8" width="19.8" height="165.2" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="832.5" y="264.6" width="19.8" height="91.4" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="853.9" y="307.0" width="19.8" height="49.0" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="875.3" y="280.2" width="19.8" height="75.8" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="896.7" y="241.2" width="19.8" height="114.8" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="918.0" y="240.3" width="19.8" height="115.7" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<rect x="939.4" y="322.0" width="19.8" height="34.0" fill="#fdba74" stroke="#9a3412" stroke-width="0.7"/>
+<text x="201" y="134" text-anchor="middle" font-size="13" fill="#dc2626" font-weight="700">√(1e-6) = 1e-3</text>
+<text x="201" y="151" text-anchor="middle" font-size="11" fill="#dc2626">sqrt 수치 가드</text>
+<text x="156.4761292585408" y="266" text-anchor="middle" font-size="14" fill="#dc2626" font-weight="700">3.3%</text>
+<line x1="170.0" y1="312" x2="253.6" y2="312" stroke="#64748b" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="211.82737320334076" y="304" text-anchor="middle" font-size="10" fill="#64748b">빈 구간</text>
+<text x="211.82737320334076" y="332" text-anchor="middle" font-size="9" fill="#64748b">↑ 가드는 신호와</text>
+<text x="211.82737320334076" y="343" text-anchor="middle" font-size="9" fill="#64748b">완전히 분리돼 있다</text>
+<text x="199.31669617815857" y="188" text-anchor="middle" font-size="13" fill="#1e3a8a" font-weight="700">절대 모드</text>
+<text x="199.31669617815857" y="206" text-anchor="middle" font-size="10" fill="#1e3a8a">분모 = floor</text>
+<text x="626.8166961781585" y="188" text-anchor="middle" font-size="15" fill="#9a3412" font-weight="700">상대 모드 — 음성은 전부 여기</text>
+<text x="626.8166961781585" y="208" text-anchor="middle" font-size="11" fill="#9a3412">분모 = 채널간 max  →  게인이 분자·분모에서 상쇄 → 음량 불변</text>
+<line x1="293.6" y1="166" x2="293.6" y2="364" stroke="#15803d" stroke-width="2.2"/>
+<text x="293.63339235631713" y="151" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">floor (q=0.05)</text>
+<line x1="105" y1="356" x2="960" y2="356" stroke="#334155" stroke-width="1.6"/>
+<line x1="156.5" y1="356" x2="156.5" y2="362" stroke="#334155" stroke-width="1"/>
+<text x="156.4761292585408" y="376" text-anchor="middle" font-size="10" fill="#64748b">1e-3</text>
+<line x1="327.5" y1="356" x2="327.5" y2="362" stroke="#334155" stroke-width="1"/>
+<text x="327.4761292585408" y="376" text-anchor="middle" font-size="10" fill="#64748b">1e-2</text>
+<line x1="498.5" y1="356" x2="498.5" y2="362" stroke="#334155" stroke-width="1"/>
+<text x="498.4761292585408" y="376" text-anchor="middle" font-size="10" fill="#64748b">1e-1</text>
+<line x1="669.5" y1="356" x2="669.5" y2="362" stroke="#334155" stroke-width="1"/>
+<text x="669.4761292585407" y="376" text-anchor="middle" font-size="10" fill="#64748b">1e0</text>
+<line x1="840.5" y1="356" x2="840.5" y2="362" stroke="#334155" stroke-width="1"/>
+<text x="840.4761292585408" y="376" text-anchor="middle" font-size="10" fill="#64748b">1e1</text>
+<text x="960" y="376" text-anchor="end" font-size="10" fill="#64748b">채널간 max</text>
+<rect x="105" y="420" width="405" height="176" rx="7" fill="#fee2e2" stroke="#dc2626" stroke-width="1.4"/>
+<text x="307" y="446" text-anchor="middle" font-size="14" fill="#dc2626" font-weight="700">함정: floor_frac = 0.02</text>
+<text x="307" y="465" text-anchor="middle" font-size="11" fill="#dc2626">→ floor가 가드 위에 정확히 착지</text>
+<text x="123" y="492" text-anchor="start" font-size="10.5" fill="#0f172a">무음 프레임은 16채널이 전부 1e-3으로 같다</text>
+<text x="123" y="507" text-anchor="start" font-size="10.5" fill="#0f172a">xmax = 1e-3 / 1e-3 = 1.0   (전 채널)</text>
+<text x="123" y="522" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700">무신호가 '가장 활발한 이미지'가 된다</text>
+<text x="123" y="552" text-anchor="start" font-size="10.5" fill="#0f172a">실측: 제로 클립 발화율 100%,</text>
+<text x="123" y="567" text-anchor="start" font-size="10.5" fill="#0f172a">×0.01 조용한 클립이 음성보다 더 발화</text>
+<text x="123" y="582" text-anchor="start" font-size="10.5" fill="#0f172a">(0.538 &gt; 0.386) — 하드웨어는 이럴 수 없다</text>
+<rect x="535" y="420" width="425" height="176" rx="7" fill="#dcfce7" stroke="#15803d" stroke-width="1.4"/>
+<text x="747" y="446" text-anchor="middle" font-size="14" fill="#15803d" font-weight="700">해결: floor_frac = 0.05 → 가드의 6.3배</text>
+<text x="555" y="476" text-anchor="start" font-size="11" fill="#64748b" font-weight="700">floor_frac</text>
+<text x="660" y="476" text-anchor="start" font-size="11" fill="#64748b" font-weight="700">floor</text>
+<text x="765" y="476" text-anchor="start" font-size="11" fill="#64748b" font-weight="700">제로 발화</text>
+<text x="870" y="476" text-anchor="start" font-size="11" fill="#64748b" font-weight="700">음성 발화</text>
+<text x="555" y="497" text-anchor="start" font-size="11" fill="#0f172a">0.02</text>
+<text x="660" y="497" text-anchor="start" font-size="11" fill="#0f172a">0.00100</text>
+<text x="765" y="497" text-anchor="start" font-size="11" fill="#0f172a">1.000  ✗</text>
+<text x="870" y="497" text-anchor="start" font-size="11" fill="#0f172a">0.386</text>
+<text x="555" y="518" text-anchor="start" font-size="11" fill="#0f172a">0.05</text>
+<text x="660" y="518" text-anchor="start" font-size="11" fill="#0f172a">0.00634</text>
+<text x="765" y="518" text-anchor="start" font-size="11" fill="#0f172a">0.000  ✓</text>
+<text x="870" y="518" text-anchor="start" font-size="11" fill="#0f172a">0.366</text>
+<text x="555" y="539" text-anchor="start" font-size="11" fill="#0f172a">0.10</text>
+<text x="660" y="539" text-anchor="start" font-size="11" fill="#0f172a">0.01311</text>
+<text x="765" y="539" text-anchor="start" font-size="11" fill="#0f172a">0.000  ✓</text>
+<text x="870" y="539" text-anchor="start" font-size="11" fill="#0f172a">0.341</text>
+<text x="747" y="578" text-anchor="middle" font-size="10.5" fill="#64748b">무음은 막고 음성 발화율은 거의 그대로 (0.366 vs 0.386)</text>
+<text x="105" y="646" text-anchor="start" font-size="10.5" fill="#64748b">floor는 분포의 분위수로 정해진다 — 데이터셋 최댓값의 비율로 잡으면 87%의 프레임을 지배해 fixed로 퇴화한다.</text>
+</svg>

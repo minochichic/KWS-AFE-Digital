@@ -1,0 +1,167 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="Menlo, Consolas, monospace" font-size="12.5">
+<style>
+  .w{stroke:#222;stroke-width:1.8;fill:none}
+  .sym{stroke:#333;stroke-width:1.4;fill:none}
+  .blk{fill:#f2f7fc;stroke:#2b6cb0;stroke-width:1.5}
+  .blk2{fill:#f7f4ec;stroke:#a06a1b;stroke-width:1.5}
+  .blk3{fill:#f3f7f2;stroke:#2f7a43;stroke-width:1.5}
+  .t{fill:#111}.b{fill:#1a4e8a}.o{fill:#8a5410}.g{fill:#22683a}
+  .m{fill:#666;font-size:11px}.mm{fill:#666;font-size:10px}
+  .ti{fill:#111;font-size:17px;font-weight:bold}
+  .hd{font-size:13.5px;font-weight:bold}
+  .new{fill:#c0392b;font-size:11px;font-weight:bold}
+</style>
+<rect width="1200" height="720" fill="#fff"/>
+<text x="22" y="30" class="ti">최종 AFE 시스템 — 2차 GIC ×16 + 마이크 프리앰프 + 캘리브레이션 임계</text>
+<text x="22" y="50" class="m">검증 완료 설계. 붉은 <tspan class="new">NEW</tspan> = 이번 세션에서 추가/변경. 단일 1.8 V 공급, 바이어스 0.9 V.</text>
+
+<!-- ================= MIC ================= -->
+<circle cx="60" cy="150" r="20" class="sym"/>
+<text x="47" y="155" class="t">MIC</text>
+<text x="30" y="192" class="m">~10 mVpp</text>
+<text x="30" y="207" class="mm">16 µA @0.9V</text>
+<line x1="80" y1="150" x2="130" y2="150" class="w"/>
+
+<!-- ================= PREAMP (NEW) ================= -->
+<rect x="130" y="88" width="230" height="126" rx="9" class="blk2"/>
+<text x="142" y="108" class="hd o">1. 마이크 프리앰프 <tspan class="new">NEW</tspan></text>
+<!-- opamp -->
+<polygon points="196,140 196,186 240,163" class="sym"/>
+<text x="200" y="152" class="t">+</text><text x="200" y="180" class="t">−</text>
+<text x="203" y="167" class="m">U0</text>
+<line x1="150" y1="150" x2="196" y2="150" class="w"/>
+<text x="152" y="144" class="mm">Cin 1µ</text>
+<line x1="240" y1="163" x2="290" y2="163" class="w"/>
+<!-- feedback -->
+<line x1="265" y1="163" x2="265" y2="200" class="w"/>
+<line x1="265" y1="200" x2="215" y2="200" class="w"/>
+<text x="212" y="214" class="mm">Rf 90k / Rg 10k</text>
+<text x="142" y="126" class="m"><tspan class="b">G = 1 + Rf/Rg = 10</tspan> (20 dB)</text>
+<text x="142" y="234" class="m">· OPA379 GBW 90k → G≈10이 상한</text>
+<text x="142" y="249" class="mm">  (G=20이면 8 kHz에서 4.8 dB 처짐)</text>
+<text x="142" y="266" class="m">· 오프셋 <b>and</b> 데드존 동시 해결</text>
+<text x="142" y="281" class="mm">  HF V+ 스윙 0.5–1.4 → 20–58 mV (×25–40)</text>
+<line x1="290" y1="163" x2="290" y2="150" class="w"/>
+<line x1="290" y1="150" x2="360" y2="150" class="w"/>
+
+<!-- optional AGC -->
+<rect x="150" y="300" width="200" height="52" rx="7" fill="#fff" stroke="#a06a1b" stroke-width="1" stroke-dasharray="5 3"/>
+<text x="160" y="318" class="o" font-size="11.5">선택: 느린 AGC (이산 3–4단)</text>
+<text x="160" y="334" class="mm">attack ~10 ms / release ~250 ms</text>
+<text x="160" y="347" class="mm">Cerutti는 고정 스케일 사용 → 필수 아님</text>
+<line x1="250" y1="300" x2="250" y2="214" class="sym" stroke-dasharray="4 3"/>
+
+<!-- ================= 16 CHANNELS ================= -->
+<text x="382" y="72" class="hd b">2. 16 채널 (동일 구조, 채널별 RA/C/R1만 다름)</text>
+<rect x="378" y="84" width="470" height="290" rx="9" class="blk"/>
+
+<!-- GIC block -->
+<rect x="396" y="104" width="200" height="120" rx="7" fill="#fff" stroke="#2b6cb0" stroke-width="1.2"/>
+<text x="406" y="122" class="hd b" font-size="12">2차 GIC 밴드패스</text>
+<polygon points="430,146 430,180 464,163" class="sym"/>
+<polygon points="500,168 500,202 534,185" class="sym"/>
+<text x="434" y="158" class="t" font-size="11">+</text><text x="434" y="177" class="t" font-size="11">−</text>
+<text x="437" y="196" class="mm">U1</text><text x="507" y="216" class="mm">U2</text>
+<line x1="406" y1="163" x2="430" y2="163" class="w"/>
+<line x1="464" y1="163" x2="580" y2="163" class="w"/>
+<line x1="534" y1="185" x2="534" y2="163" class="sym"/>
+<text x="406" y="240" class="m">RA1=RA2=<tspan class="b">RA</tspan>, C1=C2=<tspan class="b">C</tspan>, R1</text>
+<text x="406" y="255" class="mm">R2=R3=100k · 채널별 값 = filterbank_design.csv</text>
+<text x="406" y="270" class="mm">RA 10.6–12.5k / C 1.86–76.6n / R1 16.5–59k</text>
+<text x="406" y="288" class="m"><tspan class="b">변경 금지</tspan> (mel 매칭 f_c/Q)</text>
+<text x="600" y="158" class="mm">V_filt</text>
+
+<!-- Detector block -->
+<rect x="620" y="104" width="210" height="120" rx="7" fill="#fff" stroke="#2b6cb0" stroke-width="1.2"/>
+<text x="630" y="122" class="hd b" font-size="12">능동 검출기 (정밀정류)</text>
+<polygon points="664,146 664,180 698,163" class="sym"/>
+<text x="668" y="158" class="t" font-size="11">−</text><text x="668" y="177" class="t" font-size="11">+</text>
+<text x="670" y="196" class="mm">U3</text>
+<line x1="630" y1="163" x2="664" y2="163" class="w"/>
+<text x="632" y="156" class="mm">R4</text>
+<!-- diodes -->
+<polygon points="712,150 712,164 726,157" class="sym"/>
+<line x1="726" y1="150" x2="726" y2="164" class="sym"/>
+<text x="710" y="144" class="mm">D1/D2 BAT54</text>
+<line x1="698" y1="163" x2="712" y2="157" class="w"/>
+<line x1="726" y1="157" x2="770" y2="163" class="w"/>
+<!-- C3 -->
+<line x1="756" y1="163" x2="756" y2="196" class="w"/>
+<line x1="748" y1="196" x2="764" y2="196" class="sym"/>
+<line x1="748" y1="203" x2="764" y2="203" class="sym"/>
+<text x="768" y="200" class="mm">C3</text>
+<text x="630" y="240" class="m"><tspan class="b">R4=10k</tspan> (유지!) · R5=47k · R6=8.25k</text>
+<text x="630" y="255" class="mm">C3=100n → <tspan class="b">τ = R5·C3 = 4.7 ms</tspan> (실측 4.62)</text>
+<text x="630" y="272" class="new">R4를 내리지 말 것 — 프리앰프와 이득예산 공유</text>
+<text x="630" y="287" class="mm">G10 + R4≤2.2k → V+ 1.97–3.25 V = 레일 포화</text>
+<text x="786" y="158" class="mm">V+</text>
+
+<!-- Comparator -->
+<rect x="866" y="104" width="180" height="120" rx="7" class="blk3"/>
+<text x="876" y="122" class="hd g" font-size="12">비교기 + 캘리브레이션</text>
+<polygon points="900,146 900,186 942,166" class="sym"/>
+<text x="904" y="158" class="t" font-size="11">+</text><text x="904" y="182" class="t" font-size="11">−</text>
+<text x="906" y="172" class="mm">CMP</text>
+<line x1="876" y1="154" x2="900" y2="154" class="w"/>
+<line x1="876" y1="178" x2="900" y2="178" class="w"/>
+<line x1="942" y1="166" x2="1000" y2="166" class="w"/>
+<text x="946" y="160" class="mm">이벤트</text>
+<text x="876" y="204" class="mm">LPV7215 (580 nA)</text>
+<text x="876" y="240" class="m"><tspan class="g">R7/R8 채널별 캘리브레이션</tspan> <tspan class="new">NEW</tspan></text>
+<text x="876" y="255" class="mm">V− = 1.8·R8/(R7+R8)</text>
+<text x="876" y="272" class="mm">≈ 373–382k / 618–627k</text>
+<text x="876" y="287" class="mm">또는 6–8 bit DAC / OTP 트림</text>
+
+<line x1="848" y1="150" x2="866" y2="150" class="w"/>
+<text x="390" y="330" class="m">↑ 위 3단이 <tspan class="b">채널 0..15</tspan> 로 16회 반복 (프리앰프는 <tspan class="o">공유 1개</tspan>)</text>
+<text x="390" y="352" class="mm">채널당 opamp 3개 + 비교기 1개 → 16채널 = opamp 48 + 비교기 16 + 프리앰프 1</text>
+
+<!-- ================= DIGITAL ================= -->
+<rect x="1000" y="88" width="180" height="286" rx="9" fill="#f6f2f7" stroke="#6b3fa0" stroke-width="1.5"/>
+<text x="1012" y="108" class="hd" fill="#5a2f8f">3. 디지털</text>
+<text x="1012" y="132" class="m">이벤트 → 타임스탬프</text>
+<text x="1012" y="148" class="mm">LPTIM 32 kHz (샘플링 아님)</text>
+<text x="1012" y="172" class="m">10 ms 창 OR → [16×128]</text>
+<text x="1012" y="188" class="mm">= 2 kbit 섀도 레지스터</text>
+<text x="1012" y="212" class="m">BinaryMatchboxNet</text>
+<text x="1012" y="228" class="mm">C=64, T=128, 96.5k</text>
+<text x="1012" y="244" class="mm">XNOR-popcount + BN융합</text>
+<text x="1012" y="268" class="m">12-class softmax</text>
+<text x="1012" y="300" class="new">절대 임계 학습</text>
+<text x="1012" y="315" class="mm">normalize=none</text>
+<text x="1012" y="329" class="mm">(=Cerutti 고정 스케일)</text>
+<text x="1012" y="350" class="mm">고정 오프셋 + 캘리브</text>
+
+<!-- ================= POWER TABLE ================= -->
+<rect x="22" y="400" width="560" height="290" rx="9" fill="#fafafa" stroke="#ccc"/>
+<text x="34" y="422" class="hd">전력 추정 (opamp/비교기 정지전류 기준)</text>
+<text x="34" y="446" class="m">OPA379 2.9 µA@1.8V = 5.22 µW · LPV7215 0.58 µA = 1.04 µW</text>
+<line x1="34" y1="456" x2="570" y2="456" stroke="#ddd"/>
+<text x="34" y="476" class="m">프리앰프 (공유 1개)</text><text x="470" y="476" class="m">5.2 µW</text>
+<text x="34" y="496" class="m">GIC 필터 opamp ×2 ×16ch</text><text x="470" y="496" class="m">167 µW</text>
+<text x="34" y="516" class="m">검출기 opamp ×1 ×16ch</text><text x="470" y="516" class="m">83 µW</text>
+<text x="34" y="536" class="m">비교기 ×16ch</text><text x="470" y="536" class="m">17 µW</text>
+<line x1="34" y1="548" x2="570" y2="548" stroke="#ddd"/>
+<text x="34" y="568" class="hd">아날로그 합계</text><text x="462" y="568" class="hd b">≈ 272 µW</text>
+<text x="34" y="592" class="mm">· 4차 필터 채택 시 +167 µW (기각: ML 0.79 &lt; 0.80)</text>
+<text x="34" y="609" class="mm">· 프리앰프는 +5.2 µW로 전체의 2% — 가장 값싼 개선</text>
+<text x="34" y="626" class="mm">· 바이어스 저항 전류·마이크·디지털 미포함</text>
+<text x="34" y="650" class="m"><tspan class="b">정확도</tspan> sim 0.80 (2차 spice+√) · 이상 mel 0.85</text>
+<text x="34" y="668" class="mm">−4.4pp = 실제 2차 필터의 물리적 대가(후처리로 복구 불가)</text>
+
+<!-- ================= DECISIONS ================= -->
+<rect x="600" y="400" width="580" height="290" rx="9" fill="#fafafa" stroke="#ccc"/>
+<text x="612" y="422" class="hd">검증된 결정 (모두 SPICE/ML 실측 근거)</text>
+<text x="612" y="448" class="m">✅ <tspan class="b">2차 GIC 유지</tspan> — 4차는 블러 −49%인데 ML 0.79↓ → 기각</text>
+<text x="612" y="470" class="m">✅ <tspan class="b">√ 압축</tspan> — mel에서도 log 우위(0.831→0.846), spice엔 필수</text>
+<text x="612" y="492" class="m">✅ <tspan class="b">프리앰프 G≈10</tspan> — 오프셋+데드존 동시 해결, +5 µW</text>
+<text x="612" y="514" class="m">✅ <tspan class="b">R4=10k 유지</tspan> — 프리앰프와 예산 공유(둘 다 올리면 포화)</text>
+<text x="612" y="536" class="m">✅ <tspan class="b">τ=4.7 ms 유지</tspan> — R5·C3, 회로 실측 4.62 ms</text>
+<text x="612" y="558" class="m">✅ <tspan class="b">C=64 유지</tspan> — C-sweep: 줄이면 급락(이진 입력이 폭을 강제)</text>
+<text x="612" y="580" class="m">❌ 학습 데드존 / 이득 복원 / 4차 — 전부 무효 또는 하락</text>
+<line x1="612" y1="596" x2="1168" y2="596" stroke="#ddd"/>
+<text x="612" y="618" class="m"><tspan class="new">재검토 필요</tspan> per-clip min-max → <tspan class="b">고정 스케일(절대 임계)</tspan></text>
+<text x="612" y="636" class="mm">Cerutti IV-A: 같은 min-max로 threshold 스케일 → 고정 분압기 사상</text>
+<text x="612" y="651" class="mm">⇒ 고정 min-max는 아핀변환 = 절대 임계와 수학적 동일</text>
+<text x="612" y="668" class="mm">⇒ AGC 불필요. 우리 per-clip 구현이 논문에서 이탈한 이상화였음</text>
+</svg>

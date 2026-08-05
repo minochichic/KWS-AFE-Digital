@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1020" height="900" viewBox="0 0 1020 900" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+  <defs>
+    <marker id="a" markerWidth="11" markerHeight="11" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#334155"/></marker>
+    <marker id="ar" markerWidth="11" markerHeight="11" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#dc2626"/></marker>
+  </defs>
+  <rect width="1020" height="900" fill="#ffffff"/>
+
+  <text x="510" y="36" text-anchor="middle" font-size="23" font-weight="700" fill="#0f172a">이진 TCS 블록 내부 (B1 예시: R=2 sub-block, k=13, 128→64ch)</text>
+  <text x="510" y="60" text-anchor="middle" font-size="13" fill="#64748b">한 sub-block =  depthwise → BN → sign → pointwise → (마지막만 +residual) → BN → sign.   곱셈기 없음.</text>
+
+  <!-- input -->
+  <rect x="400" y="80" width="220" height="28" rx="14" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="510" y="99" text-anchor="middle" font-size="12.5" font-weight="600" fill="#065f46">입력 x  [B, 128, 64]  ∈ {-1,+1}</text>
+  <line x1="510" y1="108" x2="510" y2="128" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ===== sub-block 1 ===== -->
+  <rect x="50" y="130" width="920" height="150" rx="12" fill="#f6fefb" stroke="#059669" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="70" y="153" font-size="14" font-weight="700" fill="#065f46">Sub-block 1  (채널 변경: dw 128ch → pw 128→64)</text>
+
+  <!-- dw -->
+  <rect x="70" y="168" width="150" height="58" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="145" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Depthwise</text>
+  <text x="145" y="207" text-anchor="middle" font-size="11" fill="#065f46">이진 conv, k=13</text>
+  <text x="145" y="220" text-anchor="middle" font-size="10" fill="#047857">채널별(groups=128)</text>
+  <line x1="220" y1="197" x2="242" y2="197" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- BN -->
+  <rect x="244" y="172" width="74" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="281" y="195" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <text x="281" y="211" text-anchor="middle" font-size="9.5" fill="#475569">배치정규화</text>
+  <line x1="318" y1="197" x2="340" y2="197" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- sign -->
+  <rect x="342" y="172" width="74" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="379" y="195" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+  <text x="379" y="211" text-anchor="middle" font-size="9.5" fill="#475569">→ {-1,+1}</text>
+  <line x1="416" y1="197" x2="438" y2="197" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- pw -->
+  <rect x="440" y="168" width="150" height="58" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="515" y="190" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Pointwise</text>
+  <text x="515" y="207" text-anchor="middle" font-size="11" fill="#065f46">이진 1×1, 128→64</text>
+  <text x="515" y="220" text-anchor="middle" font-size="10" fill="#047857">채널 믹싱</text>
+  <line x1="590" y1="197" x2="612" y2="197" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- int acc -->
+  <rect x="614" y="176" width="96" height="42" rx="8" fill="#fff7ed" stroke="#ea580c"/>
+  <text x="662" y="194" text-anchor="middle" font-size="11" font-weight="700" fill="#9a3412">정수 누산기</text>
+  <text x="662" y="209" text-anchor="middle" font-size="9.5" fill="#c2410c">2·popcnt−N</text>
+  <line x1="710" y1="197" x2="732" y2="197" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- BN post -->
+  <rect x="734" y="172" width="70" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="769" y="195" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <text x="769" y="211" text-anchor="middle" font-size="9.5" fill="#475569">post</text>
+  <line x1="804" y1="197" x2="826" y2="197" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- sign post -->
+  <rect x="828" y="172" width="70" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="863" y="195" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+  <text x="863" y="211" text-anchor="middle" font-size="9.5" fill="#475569">→ ±1</text>
+  <text x="484" y="250" text-anchor="middle" font-size="11" fill="#047857">↑ dw·pw 모두 XNOR+popcount (곱셈 없음).  α=mean|W| 스케일은 뒤 BN이 흡수.</text>
+  <text x="769" y="250" text-anchor="middle" font-size="11" fill="#475569">BN→sign 쌍 = export시 정수</text>
+  <text x="769" y="264" text-anchor="middle" font-size="11" fill="#475569">threshold 1개 (Cerutti 식3)</text>
+
+  <line x1="510" y1="280" x2="510" y2="300" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="400" y="302" width="220" height="26" rx="13" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="510" y="320" text-anchor="middle" font-size="12" font-weight="600" fill="#065f46">중간 [B, 64, 64]  {-1,+1}</text>
+  <line x1="510" y1="328" x2="510" y2="348" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+
+  <!-- ===== sub-block 2 (final, with residual) ===== -->
+  <rect x="50" y="350" width="920" height="176" rx="12" fill="#f6fefb" stroke="#059669" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="70" y="373" font-size="14" font-weight="700" fill="#065f46">Sub-block 2  (마지막 → residual 합류: dw 64ch → pw 64→64)</text>
+
+  <rect x="70" y="388" width="150" height="58" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="145" y="410" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Depthwise</text>
+  <text x="145" y="427" text-anchor="middle" font-size="11" fill="#065f46">이진 conv, k=13</text>
+  <text x="145" y="440" text-anchor="middle" font-size="10" fill="#047857">채널별(groups=64)</text>
+  <line x1="220" y1="417" x2="242" y2="417" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="244" y="392" width="74" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="281" y="415" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <line x1="318" y1="417" x2="340" y2="417" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="342" y="392" width="74" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="379" y="415" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+  <line x1="416" y1="417" x2="438" y2="417" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="440" y="388" width="150" height="58" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="1.5"/>
+  <text x="515" y="410" text-anchor="middle" font-size="13" font-weight="700" fill="#065f46">Pointwise</text>
+  <text x="515" y="427" text-anchor="middle" font-size="11" fill="#065f46">이진 1×1, 64→64</text>
+  <text x="515" y="440" text-anchor="middle" font-size="10" fill="#b91c1c">scale = False</text>
+  <line x1="590" y1="417" x2="612" y2="417" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <!-- add node -->
+  <circle cx="662" cy="417" r="22" fill="#fee2e2" stroke="#dc2626" stroke-width="1.8"/>
+  <text x="662" y="423" text-anchor="middle" font-size="20" font-weight="700" fill="#dc2626">+</text>
+  <text x="662" y="458" text-anchor="middle" font-size="10" font-weight="600" fill="#b91c1c">정수+정수</text>
+  <line x1="684" y1="417" x2="706" y2="417" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="708" y="392" width="70" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="743" y="415" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">BN</text>
+  <line x1="778" y1="417" x2="800" y2="417" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="802" y="392" width="70" height="50" rx="8" fill="#e2e8f0" stroke="#64748b"/>
+  <text x="837" y="415" text-anchor="middle" font-size="12" font-weight="600" fill="#334155">sign</text>
+  <text x="470" y="486" text-anchor="middle" font-size="11" fill="#b91c1c">↑ 마지막 pw는 α 미적용(scale=False) → 누산기를 정수로 유지해야 residual과 정수 덧셈 가능</text>
+  <text x="470" y="502" text-anchor="middle" font-size="11" fill="#475569">residual은 "정수 누산 단계"에서 더해지고, 그 뒤 BN→sign 한 번만 → 하드웨어 threshold 1회 (CLAUDE.md 2.3)</text>
+
+  <line x1="510" y1="526" x2="510" y2="548" stroke="#334155" stroke-width="1.5" marker-end="url(#a)"/>
+  <rect x="400" y="550" width="220" height="28" rx="14" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="510" y="569" text-anchor="middle" font-size="12.5" font-weight="600" fill="#065f46">출력 [B, 64, 64]  ∈ {-1,+1}</text>
+
+  <!-- ===== skip path ===== -->
+  <path d="M400,94 L30,94 L30,417 L640,417" fill="none" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#ar)"/>
+  <rect x="150" y="600" width="720" height="120" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.2"/>
+  <text x="170" y="624" font-size="14" font-weight="700" fill="#b91c1c">Residual (skip) 경로</text>
+  <text x="170" y="648" font-size="12" fill="#7f1d1d">• 블록 입력에서 분기 → 마지막 sub-block의 <tspan font-weight="700">정수 누산기</tspan>에 합류.</text>
+  <text x="170" y="670" font-size="12" fill="#7f1d1d">• B1: 채널이 128→64로 바뀌므로 skip = <tspan font-weight="700">이진 1×1 투영(scale=False)</tspan> — 출력도 정수 popcount.</text>
+  <text x="170" y="692" font-size="12" fill="#7f1d1d">• B2·B3: 채널 동일(64→64) → skip = <tspan font-weight="700">identity</tspan> (원시 ±1을 정수로 그대로 가산).</text>
+  <text x="170" y="712" font-size="12" fill="#7f1d1d">• 정수 도메인에서 더한 뒤 <tspan font-weight="700">단 한 번</tspan> threshold(BN→sign) → 곱셈기·다중 threshold 불필요.</text>
+
+  <!-- hardware note -->
+  <rect x="150" y="740" width="720" height="120" rx="10" fill="#f0f9ff" stroke="#0284c7" stroke-width="1.2"/>
+  <text x="170" y="764" font-size="14" font-weight="700" fill="#075985">FPGA에서 이 블록 = (곱셈기 0개)</text>
+  <text x="170" y="788" font-size="12" fill="#0c4a6e">popcount(XNOR) → 정수 threshold → popcount(XNOR) → 정수 덧셈(+residual) → 정수 threshold</text>
+  <text x="170" y="810" font-size="12" fill="#0c4a6e">이진 dot product = 2·popcount(XNOR(x, w)) − N  (x, w ∈ {-1,+1}).  N = 누산 탭 수.</text>
+  <text x="170" y="832" font-size="12" fill="#0c4a6e">BN의 γ,β 와 α 스케일은 학습 후 <tspan font-weight="700">floor(β′/γ′)</tspan> 정수 threshold 하나로 융합되어 사라짐.</text>
+  <text x="170" y="852" font-size="11" fill="#0369a1">자세한 이진 dot product는 03_binary_conv_primitive.svg 참고.</text>
+</svg>
