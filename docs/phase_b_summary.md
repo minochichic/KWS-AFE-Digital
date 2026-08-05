@@ -2,10 +2,10 @@
 
 이 문서 하나로 Phase B 전체 맥락을 복원한다. 상세 표는
 [`experiments_log.md`](experiments_log.md)의 "Phase B" 절, 아날로그 근거는
-[`../AFE/README.md`](../AFE/README.md).
+[`../analog/AFE/README.md`](../analog/AFE/README.md).
 
 **복귀점(태그)**: `git checkout phase-b-2ndorder` → 이 상태(2차 GIC · 16채널 · Phase B
-완료)로 정확히 복귀. 이후 고차 필터 연구는 `../AFE_highorder/`에서 격리 진행(기존 결과 불변).
+완료)로 정확히 복귀. 이후 고차 필터 연구는 `../analog/AFE_highorder/`에서 격리 진행(기존 결과 불변).
 
 ---
 
@@ -65,4 +65,4 @@ cfg.data.root = DATA_ROOT
 
 - **①마무리**: 위 −4.4pp를 "아날로그 비용"으로 확정 리포트, export/하드웨어 추정으로.
 - **②채널 수 16→24/32**: 진짜 천장 돌파구지만 CLAUDE.md 고정 → 승인 필요.
-- **③고차/고Q 필터** ← *현재 진행 중*, `../AFE_highorder/`에서 격리 연구.
+- **③고차/고Q 필터** ← *현재 진행 중*, `../analog/AFE_highorder/`에서 격리 연구.

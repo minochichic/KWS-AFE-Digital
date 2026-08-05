@@ -299,7 +299,7 @@ $$\tau = R_5 \times C_3 = 47{,}000 \times 100 \times 10^{-9} = 4.7\ \text{ms}$$
 | 소리 있을 때 | 920.6 ~ 968.7 mV |
 | **흔들림 폭(swing)** | **48.0 mV** |
 
-그림: [`../AFE_tuning/artifacts/detector_curves.png`](../AFE_tuning/artifacts/detector_curves.png)
+그림: [`../analog/AFE_tuning/artifacts/detector_curves.png`](../analog/AFE_tuning/artifacts/detector_curves.png)
 
 ---
 
@@ -367,7 +367,7 @@ $$v_{thr} = 1.8 \times \frac{R_8}{R_7 + R_8}$$
 
 **고치는 법**: 기준을 무음값(917.8) **위로** 올린다.
 $$v_{thr} = 917.8\ \text{mV} + (\text{여유})$$
-자세한 표: [`../AFE_tuning/artifacts/r7r8_per_channel.md`](../AFE_tuning/artifacts/r7r8_per_channel.md)
+자세한 표: [`../analog/AFE_tuning/artifacts/r7r8_per_channel.md`](../analog/AFE_tuning/artifacts/r7r8_per_channel.md)
 
 ### 숙제 2: 무음일 때 v_env가 894가 아니라 918인 이유 (오프셋)
 
@@ -431,9 +431,9 @@ v_filt의 DC = 890 mV      ← GIC op-amp 오차 (−10 mV)
 
 ## 8. 더 알아보기
 
-- 회로도: [`../AFE_final/artifacts/afe_final_system.svg`](../AFE_final/artifacts/afe_final_system.svg)
-- 검출기 곡선: [`../AFE_tuning/artifacts/detector_curves.png`](../AFE_tuning/artifacts/detector_curves.png)
-- v15 회로 리뷰: [`../AFE_tuning/artifacts/v15_circuit_review.md`](../AFE_tuning/artifacts/v15_circuit_review.md)
+- 회로도: [`../analog/AFE_final/artifacts/afe_final_system.svg`](../analog/AFE_final/artifacts/afe_final_system.svg)
+- 검출기 곡선: [`../analog/AFE_tuning/artifacts/detector_curves.png`](../analog/AFE_tuning/artifacts/detector_curves.png)
+- v15 회로 리뷰: [`../analog/AFE_tuning/artifacts/v15_circuit_review.md`](../analog/AFE_tuning/artifacts/v15_circuit_review.md)
 - 원 논문: `Sub-mW_Keyword_Spotting...pdf` (Cerutti et al.)
 
 ---

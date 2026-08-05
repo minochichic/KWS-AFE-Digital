@@ -16,7 +16,21 @@ Cerutti et al.의 아날로그 프론트엔드(AFE)가 만드는 **이진 시간
 | 3 | AFE 이진화 모듈 (학습 가능 threshold) | ✅ 완료 |
 | 4 | BinaryMatchboxNet 조립 | ✅ 완료 |
 | 5 | 학습 루프 + 합성 데이터 오버핏 검증 | ✅ 완료 |
-| 6 | Speech Commands v2 파이프라인, (C, T) sweep | ✅ 코드 완료 (Colab 실행 대기) |
+| 6 | Speech Commands v2 파이프라인, (C, T) sweep | ✅ 완료 |
+| 7 | Phase B — SPICE 실측 필터뱅크 접목 | ✅ 완료 |
+| 8 | 정규화 확정 (`xmax` floor=0.05) + 손실 완전 분해 | ✅ 완료 — [Stage 3](docs/experiments_log.md) |
+| 9 | 채널당 비교기 2개(2비트)로 −8pp 비교기 손실 공략 | 🔜 다음 |
+
+**현재 정확도 (12-class test)**
+
+| 구성 | test | 비고 |
+|---|---:|---|
+| 64채널 **연속** log-mel | 0.920 | 네트워크 내부는 이진 — **모델은 문제없음** |
+| 16채널 **연속** spice+√+xmax | 0.862 | 연속값 16채널 **천장** |
+| **16채널 이진 = 실제 모델** | **0.781** | ← 현재. 목표 0.85 |
+
+16채널 78.1%는 Cerutti의 채널 수 곡선(8ch 76.3% → 64ch 86.0%)이 예측하는 값에서
+1.4pp 안쪽이다. **16채널이 부족한 것이지 구현이 틀린 게 아니다.**
 
 ## 개발 환경
 
@@ -51,15 +65,31 @@ python -m experiments.sweep --config configs/base.yaml \
 
 ## 디렉터리
 
+**소프트웨어 (PyTorch) — 현재 작업 중**
+
 ```
 configs/      YAML 설정. C, T, 커널, 정밀도 — 모든 크기의 단일 출처
-data/         데이터셋·전처리·AFE 이진화 파이프라인 (파이썬 패키지)
+data/         데이터셋·전처리·AFE 시뮬 + 이진화 파이프라인
 models/       BinaryMatchboxNet, 이진 레이어, STE, BN-threshold 융합
 train/        config 정의, 학습 루프, 로깅
-experiments/  (C, T) sweep 스크립트, 결과 집계
+experiments/  (C, T) sweep, 발화율 측정 등
 export/       정수 threshold + bit-packed 가중치 변환 (하드웨어 대비)
-tests/        단위 테스트
+tests/        단위 테스트 (165개)
 notebooks/    Colab 부트스트랩
+```
+
+**아날로그 / 문서 / 참고자료**
+
+```
+analog/       AFE 회로 설계·시뮬·튜닝 전부. 지도는 analog/README.md
+                ↳ analog/AFE/artifacts/filterbank_matrix.csv 를 학습이 직접 읽는다
+                  (아날로그↔ML 유일한 접점. 경로는 train/config.py 한 곳)
+docs/         설계 해설과 실험 기록 (아래 표)
+papers/       참고 논문 PDF
+troubleshooting/  ML·FPGA·아날로그 교차 검토 노트 + 연산량 추정 스크립트
+```
+
+```
 datasets/     (gitignore) 다운로드된 오디오
 runs/         (gitignore) 체크포인트·로그
 ```
@@ -68,11 +98,12 @@ runs/         (gitignore) 체크포인트·로그
 
 | 문서 | 내용 |
 |---|---|
+| [`docs/experiments_log.md`](docs/experiments_log.md) | **실험 기록 — 여기부터 읽으면 된다.** 무엇을 시도했고 무엇이 왜 실패했는가 |
+| [`analog/README.md`](analog/README.md) | 아날로그 폴더 지도 — 무엇이 확정이고 무엇이 기각된 탐색인가, 확정 실측값 표 |
 | [`docs/xmax_normalization.md`](docs/xmax_normalization.md) | **채널간 상대 임계(`xmax`)와 `floor`** — 음량 불변성을 회로 변경 없이 얻는 방법, 실측, 하드웨어 대응 |
 | [`docs/normalization.md`](docs/normalization.md) | global min-max 정규화가 정확히 무엇을 하는가 (그리고 왜 하드웨어로는 불가능한가) |
 | [`docs/afe_circuit_explained.md`](docs/afe_circuit_explained.md) | GIC 필터 → 능동 검출기 → 비교기, 기초부터. 모든 수치는 ngspice 실측 |
 | [`docs/afe_config.md`](docs/afe_config.md) | AFE 관련 config 필드 레퍼런스 |
-| [`docs/experiments_log.md`](docs/experiments_log.md) | 실험 기록 — 무엇을 시도했고 무엇이 실패했는가 |
 | [`docs/conv_structure.md`](docs/conv_structure.md) | 각 층의 커널·정밀도·수용 영역 |
 | [`docs/colab_setup.md`](docs/colab_setup.md) / [`docs/remote_gpu_setup.md`](docs/remote_gpu_setup.md) | 학습 환경 |
 
@@ -91,7 +122,7 @@ python3 experiments/inspect_config.py configs/base.yaml model.C=16 model.T=96 af
 
 ## 논문 근거 수치
 
-레포지토리 루트의 두 PDF에서 확인한 값. 인용 시 여기를 근거로 삼는다.
+[`papers/`](papers/)의 두 PDF에서 확인한 값. 인용 시 여기를 근거로 삼는다.
 
 | 항목 | 값 | 출처 |
 |---|---|---|

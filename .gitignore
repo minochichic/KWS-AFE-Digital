@@ -26,3 +26,8 @@ venv/
 .DS_Store
 .vscode/
 .idea/
+
+# --- local drafts / superseded copies (keep out of the tree, don't delete) ---
+CLAUDE_1.md
+TASK_afe_semantics_update.md
+*.docx

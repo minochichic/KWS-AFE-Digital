@@ -65,7 +65,7 @@
 
 ## Phase B: 회로-정합 프론트엔드 (mel→SPICE 필터, log→√ 압축)
 
-이상 mel 대신 **SPICE 추출 GIC 필터뱅크**(`AFE/artifacts/filterbank_matrix.csv`)와, log 대신
+이상 mel 대신 **SPICE 추출 GIC 필터뱅크**(`analog/AFE/artifacts/filterbank_matrix.csv`)와, log 대신
 **검출기 충실 √ 압축**(V+∝진폭=√power)을 `AFEConfig`로 선택. 전부 RTX, separable, f_max 8000,
 seed 1234, global min-max 유지. 앵커(mel+log+sep) = #7 test-best **0.8314** (Colab #2 0.8513).
 

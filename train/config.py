@@ -68,17 +68,17 @@ class AFEConfig:
 
     # Phase B (circuit-matched front end). filterbank_source selects the AFE
     # filter shapes: "mel" = ideal triangular bank (baseline); "spice" = the
-    # SPICE-extracted GIC bank (AFE/artifacts/filterbank_matrix.csv, [n_channels,
+    # SPICE-extracted GIC bank (analog/AFE/artifacts/filterbank_matrix.csv, [n_channels,
     # n_fft//2+1], per-channel peak-normalized). "spice" tests the REAL filter
     # response (wider 2nd-order skirts / more channel overlap; cosine 0.83 vs
-    # mel) -- see AFE/README.md "16채널 필터뱅크". global min-max is kept either
+    # mel) -- see analog/AFE/README.md "16채널 필터뱅크". global min-max is kept either
     # way. NOTE: the matrix is peak-normalized per channel, so per-channel gain
     # (6-7.8 dB spread) is equalized; a gain-weighted variant is a follow-up.
     filterbank_source: str = "mel"          # "mel" | "spice"
-    spice_matrix_path: str = "AFE/artifacts/filterbank_matrix.csv"
+    spice_matrix_path: str = "analog/AFE/artifacts/filterbank_matrix.csv"
     # The SPICE matrix is per-channel peak-normalized (gain equalized). With
     # this flag the "spice" bank re-weights each channel by its true linear
-    # passband gain (from AFE/artifacts/filterbank_design.csv gain_dB), so the
+    # passband gain (from analog/AFE/artifacts/filterbank_design.csv gain_dB), so the
     # real spectral tilt survives instead of every channel peaking at 1. NOTE:
     # the gain spread is only ~1.8 dB (x1.23 amp), and per-channel learnable
     # thresholds + global min-max absorb most of it, so expect a small effect.
@@ -108,7 +108,7 @@ class AFEConfig:
     # actually does. With the broad-skirt SPICE bank, "log" lifts the filter
     # tails and makes channels ~0.9 correlated (redundant); "sqrt" is both
     # circuit-faithful AND drops inter-channel correlation below mel (~0.56 vs
-    # 0.77). Recommended for filterbank_source="spice". See AFE/README.md.
+    # 0.77). Recommended for filterbank_source="spice". See analog/AFE/README.md.
     compression: str = "log"                # "log" | "sqrt"
 
     # AFE envelope window: 10 ms or 25 ms (Cerutti IV-A). Sets the native T.
