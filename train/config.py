@@ -100,6 +100,24 @@ class AFEConfig:
     # whose normalized dynamic range is <~ vos gets corrupted -- the HF-margin
     # problem the mic pre-amp fixes. Set vos ~ Vos/global_V+swing: e.g. no-preamp
     # ~0.10, with-preamp ~0.035. 0.0 = exact baseline (ideal comparator).
+    #
+    # !! NOT PHYSICAL for normalize="xmax"/"xmix" -- read before trusting a sweep.
+    # A real offset is an absolute voltage, and these modes divide by a
+    # PER-FRAME denominator, so the offset a channel actually sees is
+    # Vos/(S - delta): it grows on quiet frames. Injecting a constant here
+    # models an offset that scales with the signal, which flatters both modes.
+    # Measured with the physical form instead, an offset the size of delta keeps
+    # only 61% of the bits on the quietest quarter of frames, against 87%
+    # overall. It happens to be right for "fixed", whose denominator is a
+    # dataset constant.
+    # The earlier "vos 0->0.002 is flat, so offset is not the bottleneck" reading
+    # came from this injection and probed physical offsets ~0.07x delta, i.e.
+    # nowhere near a real comparator. Do not lean on it.
+    # Deliberately NOT fixed yet: Vos is measurable on the built board, and
+    # guessing it here would put an arbitrary value in the baseline (the same
+    # reason envelope_tau_ms stays 0, CLAUDE.md 3.2). Decide the pre-amp from
+    # the mic datasheet, build, measure, and only then train against a real
+    # number. See proposal/ANALOG.md.
     comparator_vos: float = 0.0
 
 
