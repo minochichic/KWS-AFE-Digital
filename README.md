@@ -74,7 +74,7 @@ models/       BinaryMatchboxNet, 이진 레이어, STE, BN-threshold 융합
 train/        config 정의, 학습 루프, 로깅
 experiments/  (C, T) sweep, 발화율 측정 등
 export/       정수 threshold + bit-packed 가중치 변환 (하드웨어 대비)
-tests/        단위 테스트 (165개)
+tests/        단위 테스트 (172개)
 notebooks/    Colab 부트스트랩
 ```
 
@@ -100,7 +100,7 @@ runs/         (gitignore) 체크포인트·로그
 | 문서 | 내용 |
 |---|---|
 | **[`proposal/`](proposal/)** | **⭐ 설계 확정안 — 여기부터 읽으면 된다.** 왜 이 방향인가, 아날로그 회로도, 디지털 모델, 채널별 수치, 재현 |
-| [`docs/experiments_log.md`](docs/experiments_log.md) | **실험 기록 — 여기부터 읽으면 된다.** 무엇을 시도했고 무엇이 왜 실패했는가 |
+| [`docs/experiments_log.md`](docs/experiments_log.md) | 실험 시계열 기록 — 무엇을 시도했고 무엇이 왜 실패했는가 |
 | [`analog/README.md`](analog/README.md) | 아날로그 폴더 지도 — 무엇이 확정이고 무엇이 기각된 탐색인가, 확정 실측값 표 |
 | [`docs/xmax_normalization.md`](docs/xmax_normalization.md) | **채널간 상대 임계(`xmax`)와 `floor`** — 음량 불변성을 회로 변경 없이 얻는 방법, 실측, 하드웨어 대응 |
 | [`docs/normalization.md`](docs/normalization.md) | global min-max 정규화가 정확히 무엇을 하는가 (그리고 왜 하드웨어로는 불가능한가) |
