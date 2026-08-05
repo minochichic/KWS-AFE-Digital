@@ -356,6 +356,12 @@ class AFEFrontend(nn.Module):
     def forward(self, wave: torch.Tensor,
                 target_T: Optional[int] = None) -> torch.Tensor:
         env = self.envelopes(wave)
+        if not getattr(self.cfg, "binarize", True):
+            # Diagnostic path: no comparator, so the network gets the continuous
+            # envelope. Measures what the 1-bit input costs, holding the
+            # filterbank, normalization and the network itself fixed.
+            return env if target_T is None else pad_or_crop(env, target_T,
+                                                            pad_value=0.0)
         # The comparator: sign(env - thr) with a straight-through gradient.
         # Gradient w.r.t. threshold is -1 * upstream inside the clip window,
         # which is how the thresholds learn (CLAUDE.md 2.4).

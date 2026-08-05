@@ -580,6 +580,28 @@ def test_xmax_warns_when_the_floor_lands_on_the_compression_guard() -> None:
         fe.init_fixed_scale(torch.zeros(6, fe.cfg.sample_rate))
 
 
+def test_binarize_false_passes_the_continuous_envelope() -> None:
+    """Diagnostic switch: without the comparator the network must see the real
+    envelope, so that "the network is weak" can be told apart from "the 1-bit
+    input is lossy". Everything else (filterbank, normalization) is untouched."""
+    fe = make_frontend(normalize="minmax", envelope_win_ms=10.0, binarize=False)
+    w = noise(4)
+    out = fe(w, target_T=128)
+    assert out.shape == (4, 16, 128)
+    assert len(torch.unique(out)) > 2                    # NOT binary
+    assert torch.allclose(fe(w), fe.envelopes(w))        # unpadded: passthrough
+    # No comparator means the threshold is unused, so the front end has no
+    # trainable parameter left -- it becomes a fixed feature extractor and only
+    # the network learns. That is the point: the network is the thing under test.
+    assert not out.requires_grad
+
+
+def test_binarize_true_is_the_unchanged_default() -> None:
+    fe = make_frontend(normalize="minmax", envelope_win_ms=10.0)
+    assert fe.cfg.binarize is True
+    assert set(torch.unique(fe(noise(4), target_T=128)).tolist()) <= {-1.0, 1.0}
+
+
 def test_xmax_rejects_log_compression() -> None:
     with pytest.raises(ValueError, match="sqrt"):
         make_frontend(normalize="xmax", compression="log", envelope_win_ms=10.0)

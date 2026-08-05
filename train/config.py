@@ -153,6 +153,14 @@ class AFEConfig:
     #            silence floor.
     normalize: str = "minmax"           # "minmax" | "fixed" | "agc" | "xmax" | "none"
 
+    # Diagnostic ONLY: False skips the comparator, so the network sees the
+    # continuous envelope instead of {-1,+1}. Not a hardware option (the AFE has
+    # no ADC -- that is its entire point); it exists to separate "the network is
+    # weak" from "the 1-bit input is lossy". With n_channels=64 + mel + log it
+    # reduces to the standard 64-log-mel MatchboxNet baseline, which is what the
+    # published numbers can be compared against.
+    binarize: bool = True
+
     # normalize="xmax" silence floor, as a QUANTILE of the per-frame
     # cross-channel max (measured by init_fixed_scale). In pure relative mode a
     # silent frame divides noise by noise and fires at random, so the denominator
