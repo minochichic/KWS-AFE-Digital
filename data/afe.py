@@ -34,6 +34,7 @@ Design decisions, and why:
 from __future__ import annotations
 
 import math
+import warnings
 from pathlib import Path
 from typing import Optional
 
@@ -407,6 +408,21 @@ class AFEFrontend(nn.Module):
             f = float(self.cfg.xmax_floor_frac)
             self.xmax_floor.fill_(
                 env.amax(dim=1).flatten().quantile(f) if f > 0.0 else 0.0)
+            # compression="sqrt" bottoms out at sqrt(_EPS), so a silent or
+            # zero-padded frame is NOT zero -- every channel sits on that guard
+            # together. Dividing that by itself gives 1.0 in all 16 channels, so
+            # xmax turns "no signal" into the MAXIMALLY ACTIVE image, which is
+            # backwards and unreproducible in hardware. Measured at
+            # xmax_floor_frac=0.02 the floor landed exactly on the guard: a
+            # zeroed clip fired 100% of bits and a x0.01 clip fired MORE than
+            # real speech (0.538 vs 0.386). The floor must sit clear of it.
+            guard = _EPS ** 0.5 if self.cfg.compression == "sqrt" else 0.0
+            if 0.0 < float(self.xmax_floor) < 2.0 * guard:
+                warnings.warn(
+                    f"afe.xmax_floor_frac={f} puts xmax_floor at "
+                    f"{float(self.xmax_floor):.2e}, at the compression guard "
+                    f"({guard:.2e}); silent/zero-padded frames will fire ALL "
+                    f"channels. Raise xmax_floor_frac (0.05 clears it).")
 
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:

@@ -555,6 +555,31 @@ def test_xmax_outputs_binary_and_trains() -> None:
     assert torch.all(fe.threshold.grad != 0)
 
 
+def test_xmax_silence_does_not_fire_every_channel() -> None:
+    """A zeroed clip must stay quiet, not saturate.
+
+    sqrt compression bottoms out at sqrt(_EPS)=1e-3, so silence puts all 16
+    channels on that guard TOGETHER; xmax divides it by itself and gets 1.0
+    everywhere, i.e. no signal becomes the maximally active image. Measured on
+    real Speech Commands at xmax_floor_frac=0.02 (floor == the guard exactly):
+    a zeroed clip fired 100% of bits and a x0.01 clip fired MORE than speech
+    (0.538 vs 0.386). A floor clear of the guard is what prevents it.
+    """
+    fe, _ = _xmax_frontend(xmax_floor_frac=0.5)
+    out = fe(torch.zeros(2, fe.cfg.sample_rate), target_T=128)
+    assert float((out > 0).float().mean()) == 0.0
+
+
+def test_xmax_warns_when_the_floor_lands_on_the_compression_guard() -> None:
+    """Guard the failure above: the floor is a quantile of real frames, so a
+    dataset with enough silent frames can put it right on sqrt(_EPS) and
+    silently disable the protection. That must be loud, not silent."""
+    fe = make_frontend(normalize="xmax", compression="sqrt",
+                       envelope_win_ms=10.0, xmax_floor_frac=0.1)
+    with pytest.warns(UserWarning, match="compression guard"):
+        fe.init_fixed_scale(torch.zeros(6, fe.cfg.sample_rate))
+
+
 def test_xmax_rejects_log_compression() -> None:
     with pytest.raises(ValueError, match="sqrt"):
         make_frontend(normalize="xmax", compression="log", envelope_win_ms=10.0)
