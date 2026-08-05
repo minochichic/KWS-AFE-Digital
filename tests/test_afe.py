@@ -580,6 +580,87 @@ def test_xmax_warns_when_the_floor_lands_on_the_compression_guard() -> None:
         fe.init_fixed_scale(torch.zeros(6, fe.cfg.sample_rate))
 
 
+# --------------------------------------------------------------------------- #
+# 12b. normalize="xmix": the same idea in the form the circuit produces
+# --------------------------------------------------------------------------- #
+def _xmix_frontend(**kw):
+    fe = make_frontend(normalize="xmix", compression="sqrt",
+                       envelope_win_ms=10.0, **kw)
+    w = noise(6)
+    fe.init_fixed_scale(w)
+    fe.init_thresholds(w)
+    return fe, w
+
+
+def test_xmix_matches_the_resistor_divider_algebra() -> None:
+    """The circuit can only mix V_max and V_ref linearly, so the firing rule is
+    env_c > a*S + (1-a)*d. Check the implementation is exactly that rearranged,
+    since a mismatch here is what would mis-set every divider on the board."""
+    fe, w = _xmix_frontend(xmax_floor_frac=0.1)
+    raw = fe.envelopes(w, raw=True)
+    s = raw.amax(dim=1, keepdim=True)
+    d = float(fe.xmax_floor)
+    a = fe.threshold.view(1, -1, 1)
+
+    fired = fe(w) > 0                                    # what the model does
+    hw = raw > (a * s + (1.0 - a) * d)                    # what the board does
+    # ties aside, the two rules must agree everywhere the denominator is valid
+    ok = (s > d).expand_as(fired)
+    assert torch.equal(fired[ok], hw[ok])
+
+
+def test_xmix_silence_threshold_depends_on_alpha_the_other_way() -> None:
+    """The whole reason this mode exists. Under xmax a silent frame's effective
+    threshold is a*floor (rises with alpha); in the circuit it is (1-a)*d (falls
+    with alpha). Alphas learned under xmax would therefore be mis-set per channel
+    once built -- the same class of trap as the R7/R8 mapping."""
+    fe, _ = _xmix_frontend(xmax_floor_frac=0.1)
+    d = float(fe.xmax_floor)
+    quiet = torch.full((1, fe.cfg.n_channels, 4), 0.5 * d)   # every channel < d
+    out = fe._xmix(quiet)
+    assert bool((out < 0).all())          # numerator negative -> firmly "off"
+
+
+def test_xmix_is_immune_to_the_sqrt_guard_degeneracy() -> None:
+    """xmax needed a floor because guard/guard = 1 fires everything. Subtracting
+    d instead makes the numerator negative there, so silence is off by
+    construction rather than by picking the floor correctly."""
+    fe, _ = _xmix_frontend(xmax_floor_frac=0.1)
+    out = fe(torch.zeros(2, fe.cfg.sample_rate), target_T=128)
+    assert float((out > 0).float().mean()) == 0.0
+
+
+def test_xmix_agrees_with_xmax_on_loud_frames() -> None:
+    """Both forms reduce to env/S once S >> d, so switching modes must not move
+    the binary image where the signal actually lives.
+
+    The floor has to be set explicitly rather than left at its quantile: white
+    noise has near-uniform frame energy, so a 10% quantile floor lands right on
+    the typical S and the S >> d regime this test is about never happens.
+    """
+    w = noise(6)
+    fes = {}
+    for mode in ("xmax", "xmix"):
+        fe = make_frontend(normalize=mode, compression="sqrt",
+                           envelope_win_ms=10.0, xmax_floor_frac=0.1)
+        fe.init_fixed_scale(w)
+        fe.init_thresholds(w)
+        fes[mode] = fe
+    typical_s = float(fes["xmax"].envelopes(w, raw=True).amax(dim=1).median())
+    for fe in fes.values():                              # d = S / 100 -> S >> d
+        fe.xmax_floor.fill_(typical_s / 100.0)
+    fes["xmix"].init_thresholds(w)
+    fes["xmax"].init_thresholds(w)
+    fes["xmix"].threshold.data.copy_(fes["xmax"].threshold.data)
+    agree = (fes["xmax"](w) == fes["xmix"](w)).float().mean()
+    assert float(agree) > 0.98
+
+
+def test_xmix_rejects_log_compression() -> None:
+    with pytest.raises(ValueError, match="sqrt"):
+        make_frontend(normalize="xmix", compression="log", envelope_win_ms=10.0)
+
+
 def test_binarize_false_passes_the_continuous_envelope() -> None:
     """Diagnostic switch: without the comparator the network must see the real
     envelope, so that "the network is weak" can be told apart from "the 1-bit

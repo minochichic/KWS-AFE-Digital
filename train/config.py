@@ -151,7 +151,15 @@ class AFEConfig:
     #            stability / first-word risk (and it replaces the 16 per-channel
     #            dividers, saving their ~52 uW). Needs init_fixed_scale() for the
     #            silence floor.
-    normalize: str = "minmax"           # "minmax" | "fixed" | "agc" | "xmax" | "none"
+    # "xmix"   = the SAME cross-channel idea in the form the CIRCUIT produces.
+    #            A resistor divider between the max node and a shared reference
+    #            mixes them LINEARLY -- it cannot take a max():
+    #                V_thr,c = a*V_max + (1-a)*V_ref  <=>  (env-d)/(S-d) > a
+    #            `xmax` and `xmix` agree while S >> d, but their SILENCE
+    #            thresholds depend on alpha in OPPOSITE directions (a*floor vs
+    #            (1-a)*d), so alphas learned under `xmax` would be mis-set per
+    #            channel once built. Use this one to fix the hardware.
+    normalize: str = "minmax"    # "minmax" | "fixed" | "agc" | "xmax" | "xmix" | "none"
 
     # Diagnostic ONLY: False skips the comparator, so the network sees the
     # continuous envelope instead of {-1,+1}. Not a hardware option (the AFE has
@@ -161,7 +169,7 @@ class AFEConfig:
     # published numbers can be compared against.
     binarize: bool = True
 
-    # normalize="xmax" silence floor, as a QUANTILE of the per-frame
+    # normalize="xmax"/"xmix" silence floor, as a QUANTILE of the per-frame
     # cross-channel max (measured by init_fixed_scale). In pure relative mode a
     # silent frame divides noise by noise and fires at random, so the denominator
     # is floored: frames above it stay relative (gain-invariant), quieter ones

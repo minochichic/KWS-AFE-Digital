@@ -162,17 +162,17 @@ class AFEFrontend(nn.Module):
         # init_fixed_scale(). "fixed" uses them as the affine scale; "agc" uses
         # fixed_hi as the reference for the max-gain floor.
         # Buffers (not params) so they land in the checkpoint and move with .to().
-        if cfg.normalize in ("fixed", "agc", "xmax"):
+        if cfg.normalize in ("fixed", "agc", "xmax", "xmix"):
             self.register_buffer("fixed_lo", torch.zeros(1))
             self.register_buffer("fixed_hi", torch.ones(1))
-        if cfg.normalize == "xmax":
+        if cfg.normalize in ("xmax", "xmix"):
             self.register_buffer("xmax_floor", torch.zeros(1))
 
         # AGC divides by a running level, which is only meaningful in a
         # multiplicative (amplitude) domain. Under log compression a gain is a
         # SUBTRACTION and values go negative, so division is wrong there.
         # compression="sqrt" is also the circuit-faithful choice (V+ ~ amplitude).
-        if cfg.normalize in ("agc", "xmax") and \
+        if cfg.normalize in ("agc", "xmax", "xmix") and \
                 getattr(cfg, "compression", "log") != "sqrt":
             raise ValueError(
                 f'normalize="{cfg.normalize}" requires compression="sqrt": it '
@@ -255,6 +255,8 @@ class AFEFrontend(nn.Module):
             env = self._agc(env)
         elif self.cfg.normalize == "xmax":
             env = self._xmax(env)
+        elif self.cfg.normalize == "xmix":
+            env = self._xmix(env)
         else:
             raise ValueError(f"unknown normalize {self.cfg.normalize!r}")
         return env
@@ -288,6 +290,56 @@ class AFEFrontend(nn.Module):
         """
         xmax = env.amax(dim=1, keepdim=True)                 # [B, 1, T]
         return env / (torch.maximum(xmax, self.xmax_floor) + _EPS)
+
+    def _xmix(self, env: torch.Tensor) -> torch.Tensor:
+        """`xmax` in the form the CIRCUIT actually produces.
+
+        A resistor divider between the cross-channel max node and a shared
+        reference cannot take a max(); it can only mix the two linearly:
+
+            V_thr,c = a_c * V_max + (1 - a_c) * V_ref
+              <=>   env_c > a_c * S + (1 - a_c) * d          (d = V_ref - quiescent)
+              <=>   (env_c - d) / (S - d) > a_c
+
+        so the comparison stays "normalized value > constant per-channel alpha"
+        and only the denominator changes: max(S, floor) -> (S - d). alpha is
+        still the divider ratio Rb/(Ra+Rb) and still lands in [0, 1].
+
+        Why this matters even though `xmax` scores well: the two forms agree
+        while S >> d but their SILENCE thresholds depend on alpha in opposite
+        directions -- a_c*floor here vs (1-a_c)*d in the circuit -- so thresholds
+        learned under `xmax` would be mis-set per channel once built. That is the
+        same class of trap as the R7/R8 mapping, caught before committing to
+        hardware rather than after.
+
+        Two consequences worth naming:
+          * invariance is now only approximate, because d does NOT scale with the
+            input -- which is exactly the circuit's own behaviour, so this is
+            fidelity, not regression;
+          * the sqrt-guard degeneracy cannot happen here. In silence every
+            channel sits on the guard, so the numerator goes NEGATIVE (guard - d)
+            while the clamped denominator stays positive -- strongly "off",
+            instead of `xmax` dividing the guard by itself and firing everything.
+        """
+        s = env.amax(dim=1, keepdim=True)                    # [B, 1, T] diode-OR
+        d = self.xmax_floor                                  # V_ref - quiescent
+        # S <= d is silence, and there the rearrangement is invalid: dividing by
+        # a non-positive (S - d) flips the inequality. Decide it directly
+        # instead. a*S + (1-a)*d is a convex combination of S and d, so with
+        # S <= d it is >= S >= env_c and NO channel can fire -- emit a constant
+        # "off" rather than a division blow-up. Clamping the denominator alone is
+        # not enough: it produced values near -6e3, which dragged the mean that
+        # init_thresholds() uses down to alpha ~ -200 and fired 93% of bits.
+        out = torch.where(s > d, (env - d) / (s - d).clamp_min(_EPS),
+                          torch.full_like(env, -1.0))
+        # Bound it. alpha is a divider ratio Rb/(Ra+Rb), so only [0, 1] is
+        # physical, and the comparator cannot tell "just below V_ref" from "far
+        # below" -- the tail carries nothing it can output. Left unbounded it
+        # reaches -59 (a frame whose S barely exceeds d has a tiny denominator),
+        # 89% of values go negative, and the channel mean init_thresholds() uses
+        # lands at alpha = -15, i.e. outside the range any resistor pair can
+        # build. Clamping costs no information and keeps alpha buildable.
+        return out.clamp(-1.0, 1.0)
 
     def _agc(self, env: torch.Tensor) -> torch.Tensor:
         """Causal, channel-shared AGC -- the hardware-realizable normalization.
@@ -388,7 +440,7 @@ class AFEFrontend(nn.Module):
         Since lo/hi are constants, the later `env >= thr` decision is an absolute
         threshold -> maps straight to a fixed R7/R8 divider.
         """
-        if self.cfg.normalize not in ("fixed", "agc", "xmax"):
+        if self.cfg.normalize not in ("fixed", "agc", "xmax", "xmix"):
             return
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves, raw=True)
@@ -406,7 +458,7 @@ class AFEFrontend(nn.Module):
             # thresholds) -- this only fixes the CONDITIONING of that optimization.
             # Still a constant, so it remains an absolute threshold -> fixed R7/R8.
             self.fixed_hi.fill_(env.amax(dim=(1, 2)).quantile(q))
-        if self.cfg.normalize == "xmax":
+        if self.cfg.normalize in ("xmax", "xmix"):
             # Silence floor for _xmax: a low quantile of the PER-FRAME
             # cross-channel max, so only genuinely quiet frames fall back to the
             # absolute comparison and speech frames stay gain-invariant.
@@ -422,8 +474,12 @@ class AFEFrontend(nn.Module):
             # xmax_floor_frac=0.02 the floor landed exactly on the guard: a
             # zeroed clip fired 100% of bits and a x0.01 clip fired MORE than
             # real speech (0.538 vs 0.386). The floor must sit clear of it.
-            guard = _EPS ** 0.5 if self.cfg.compression == "sqrt" else 0.0
-            if 0.0 < float(self.xmax_floor) < 2.0 * guard:
+            # "xmix" is immune: it SUBTRACTS d, so a frame sitting on the guard
+            # gives a non-positive numerator and stays off. Only "xmax", which
+            # divides the guard by itself, needs the warning.
+            guard = (_EPS ** 0.5 if self.cfg.compression == "sqrt" else 0.0)
+            if self.cfg.normalize == "xmax" and \
+                    0.0 < float(self.xmax_floor) < 2.0 * guard:
                 warnings.warn(
                     f"afe.xmax_floor_frac={f} puts xmax_floor at "
                     f"{float(self.xmax_floor):.2e}, at the compression guard "
@@ -440,7 +496,16 @@ class AFEFrontend(nn.Module):
         """
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves)
-        self.threshold.copy_(env.mean(dim=(0, 2)))
+        thr = env.mean(dim=(0, 2))
+        if self.cfg.normalize == "xmix":
+            # alpha is the divider ratio Rb/(Ra+Rb), so only [0, 1] is buildable.
+            # It also removes a degenerate start: a channel that never rose above
+            # V_ref in the init batch averages to exactly -1, the same value
+            # _xmix() emits for silence, and sign(0) is +1 -- that channel would
+            # fire on EVERY frame including digital silence (measured: one full
+            # row, 4.9% of all bits).
+            thr = thr.clamp(0.0, 1.0)
+        self.threshold.copy_(thr)
 
     def extra_repr(self) -> str:
         c = self.cfg
