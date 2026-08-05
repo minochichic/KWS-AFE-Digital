@@ -64,6 +64,18 @@ datasets/     (gitignore) 다운로드된 오디오
 runs/         (gitignore) 체크포인트·로그
 ```
 
+## 문서
+
+| 문서 | 내용 |
+|---|---|
+| [`docs/xmax_normalization.md`](docs/xmax_normalization.md) | **채널간 상대 임계(`xmax`)와 `floor`** — 음량 불변성을 회로 변경 없이 얻는 방법, 실측, 하드웨어 대응 |
+| [`docs/normalization.md`](docs/normalization.md) | global min-max 정규화가 정확히 무엇을 하는가 (그리고 왜 하드웨어로는 불가능한가) |
+| [`docs/afe_circuit_explained.md`](docs/afe_circuit_explained.md) | GIC 필터 → 능동 검출기 → 비교기, 기초부터. 모든 수치는 ngspice 실측 |
+| [`docs/afe_config.md`](docs/afe_config.md) | AFE 관련 config 필드 레퍼런스 |
+| [`docs/experiments_log.md`](docs/experiments_log.md) | 실험 기록 — 무엇을 시도했고 무엇이 실패했는가 |
+| [`docs/conv_structure.md`](docs/conv_structure.md) | 각 층의 커널·정밀도·수용 영역 |
+| [`docs/colab_setup.md`](docs/colab_setup.md) / [`docs/remote_gpu_setup.md`](docs/remote_gpu_setup.md) | 학습 환경 |
+
 ## 설정 다루기
 
 크기·정밀도는 **코드에 하드코딩하지 않는다**. 전부 `configs/base.yaml`에서 온다.
