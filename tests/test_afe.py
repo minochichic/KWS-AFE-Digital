@@ -707,3 +707,25 @@ def test_spice_path_missing_says_how_to_fix_it() -> None:
     from data.afe import _resolve_spice_path
     with pytest.raises(FileNotFoundError, match="git pull"):
         _resolve_spice_path("nowhere/filterbank_matrix.csv")
+
+
+def test_xmix_alpha_stays_buildable_during_training() -> None:
+    """alpha is a resistor ratio Rb/(Ra+Rb); outside [0,1] nothing can build it,
+    and above 1 the channel is dead because the normalized value cannot exceed 1.
+    Clamping at init was not enough -- a real run came back with alpha at 1.344.
+    """
+    fe = make_frontend(normalize="xmix", compression="sqrt", envelope_win_ms=10.0)
+    w = noise(4)
+    fe.init_fixed_scale(w)
+    fe.init_thresholds(w)
+    with torch.no_grad():                                # walk it out of range
+        fe.threshold.copy_(torch.linspace(-0.6, 1.6, fe.cfg.n_channels))
+    env = fe.envelopes(w)
+    eff = torch.where(env >= fe.threshold.view(1, -1, 1).clamp(0, 1), 1.0, -1.0)
+    assert torch.equal(fe(w), eff)                        # forward uses [0,1]
+
+    # and the gradient still reaches the out-of-range channels, so they can
+    # return -- a hard clamp would strand them on the boundary forever.
+    fe.threshold.grad = None
+    fe(w).mean().backward()
+    assert torch.all(fe.threshold.grad != 0)

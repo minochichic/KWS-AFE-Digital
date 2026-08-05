@@ -447,6 +447,17 @@ class AFEFrontend(nn.Module):
         # Gradient w.r.t. threshold is -1 * upstream inside the clip window,
         # which is how the thresholds learn (CLAUDE.md 2.4).
         thr = self.threshold.view(1, -1, 1)
+        if self.cfg.normalize == "xmix":
+            # alpha is a divider ratio Rb/(Ra+Rb): outside [0, 1] no resistor
+            # pair can build it, and above 1 the channel is simply dead, since
+            # the normalized value cannot exceed 1. Clamping only at init is not
+            # enough -- nothing stopped training from walking back out, and a run
+            # came back with alpha up to 1.344, i.e. a silently dead channel that
+            # also could not have been soldered.
+            # Straight-through: the forward pass uses the buildable value while
+            # the gradient passes unchanged, so a channel parked on a boundary
+            # can still walk back in instead of sticking there.
+            thr = thr + (thr.clamp(0.0, 1.0) - thr).detach()
         # Optional comparator input offset Vos (real LPV7215 has ~mV; ideal
         # sign() has none). Random per (clip, channel) -> eval Monte-Carlos over
         # the offset distribution. vos=0 is an exact no-op (baseline unchanged).
