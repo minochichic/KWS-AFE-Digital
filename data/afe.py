@@ -527,6 +527,20 @@ class AFEFrontend(nn.Module):
                     f"channels. Raise xmax_floor_frac (0.05 clears it).")
 
     @torch.no_grad()
+    @torch.no_grad()
+    def effective_alpha(self) -> torch.Tensor:
+        """The thresholds the comparator actually uses -- what gets soldered.
+
+        For normalize="xmix" forward() clamps alpha straight-through, so the raw
+        `threshold` parameter is free to sit outside [0, 1] while the circuit
+        only ever sees the clamped value. Reading the parameter directly made a
+        finished run look unbuildable (alpha 1.341) when it was in fact pinned at
+        1.0. Export and any per-channel report must go through here.
+        """
+        thr = self.threshold.detach()
+        return thr.clamp(0.0, 1.0) if self.cfg.normalize == "xmix" else thr
+
+    @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:
         """Set each threshold to its channel's mean envelope (Cerutti IV-A).
 

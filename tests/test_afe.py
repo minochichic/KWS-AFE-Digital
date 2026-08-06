@@ -729,3 +729,27 @@ def test_xmix_alpha_stays_buildable_during_training() -> None:
     fe.threshold.grad = None
     fe(w).mean().backward()
     assert torch.all(fe.threshold.grad != 0)
+
+
+def test_effective_alpha_is_what_the_comparator_uses() -> None:
+    """xmix clamps alpha straight-through, so the raw parameter drifts outside
+    [0,1] while the circuit only sees the clamped value. Reading the parameter
+    directly made a finished run look unbuildable (alpha 1.341) when it was
+    pinned at 1.0. Export must go through effective_alpha()."""
+    fe = make_frontend(normalize="xmix", compression="sqrt", envelope_win_ms=10.0)
+    w = noise(4)
+    fe.init_fixed_scale(w); fe.init_thresholds(w)
+    with torch.no_grad():
+        fe.threshold.copy_(torch.linspace(-0.6, 1.6, fe.cfg.n_channels))
+    a = fe.effective_alpha()
+    assert torch.all(a >= 0) and torch.all(a <= 1)
+    assert torch.equal(a, fe.threshold.detach().clamp(0, 1))
+    # and it matches the decision the model actually makes
+    env = fe.envelopes(w)
+    assert torch.equal(fe(w), torch.where(env >= a.view(1, -1, 1), 1.0, -1.0))
+
+
+def test_effective_alpha_is_a_passthrough_for_other_modes() -> None:
+    fe = make_frontend(normalize="minmax", envelope_win_ms=10.0)
+    fe.init_thresholds(noise(4))
+    assert torch.equal(fe.effective_alpha(), fe.threshold.detach())
