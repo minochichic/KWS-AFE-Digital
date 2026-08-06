@@ -53,7 +53,7 @@ s = [f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}" height="{H}" '
      f'orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="{RULE}"/></marker>'
      '<marker id="ar" markerWidth="9" markerHeight="7" refX="8" refY="3.5" '
      f'orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="{RED}"/></marker></defs>',
-     t(W / 2, 32, "AFE 시스템 — 채널간 상대 임계 (xmax / xmix)", 22, INK, weight="700"),
+     t(W / 2, 32, "AFE 시스템 — 채널간 상대 임계 + 채널당 비교기 2개", 22, INK, weight="700"),
      t(W / 2, 55, "붉은 부분만 새로 추가된다. 왼쪽 신호 체인은 ngspice 검증 완료, 변경 없음.",
        12.5, MUTE)]
 
@@ -88,11 +88,13 @@ s += [box(40, cy, 700, 118, BLUE_BG, BLUE_LN),
       t(400, cy + 85, "C3=100n → τ=4.7 ms · G=4.7", 9.5, MUTE),
       arrow(500, cy + 66, 545, cy + 66),
       t(524, cy + 56, "v_env,c", 9.5, ORNG_TX, weight="700"),
-      box(545, cy + 40, 120, 52, "#ffffff", BLUE_LN, sw=1.1),
-      t(605, cy + 62, "비교기", 12, INK, weight="700"),
-      t(605, cy + 78, "LPV7215 · 0.58 µA", 9.5, MUTE),
+      box(545, cy + 34, 120, 64, "#fff1f2", RED, sw=1.4),
+      t(605, cy + 52, "비교기 ×2", 12, RED, weight="700"),
+      t(605, cy + 68, "LPV7215 · 0.58 µA", 9.5, MUTE),
+      t(605, cy + 82, "α_c,0 / α_c,1", 9.5, RED, weight="700"),
       arrow(665, cy + 66, 720, cy + 66),
-      t(730, cy + 70, "0/1", 12, INK, weight="700")]
+      t(738, cy + 62, "2비트", 11, RED, weight="700"),
+      t(738, cy + 77, "온도계", 9.5, MUTE)]
 
 # tap from v_env down to the OR bus
 s += [line(524, cy + 78, 524, 330, RED, 1.8),
@@ -123,7 +125,7 @@ s += [box(285, ny + 55, 175, 82, "#ffffff", RED, sw=1.2),
       arrow(460, ny + 96, 500, ny + 96, RED)]
 # per-channel divider
 s += [box(500, ny + 48, 215, 100, "#ffffff", RED, sw=1.2),
-      t(607, ny + 68, "채널별 분압 ×16", 12, RED, weight="700"),
+      t(607, ny + 68, "채널별 분압 ×32  (채널당 2개)", 12, RED, weight="700"),
       t(607, ny + 88, "V_max ─[Ra]─┬─[Rb]─ V_ref", 11, INK),
       t(607, ny + 104, "│", 10, INK),
       t(607, ny + 118, "V_thr,c", 11, ORNG_TX, weight="700"),
@@ -145,11 +147,11 @@ s += [box(40, ny + 158, 700, 40, GRN_BG, GRN_LN, sw=1.2),
 rx = 770
 s += [box(rx, 88, 430, 205, ORNG_BG, ORNG_LN),
       t(rx + 215, 112, "α는 클립마다 변하지 않는다", 14, ORNG_TX, weight="700"),
-      t(rx + 16, 138, "학습이 끝나면 α는 16개의 상수다. PCB에 납땜되는 저항비이고,",
+      t(rx + 16, 138, "학습이 끝나면 α는 32개의 상수다. PCB에 납땜되는 저항비이고,",
         10.5, INK, anchor="start"),
       t(rx + 16, 154, "추론 중에는 절대 변하지 않는다.", 10.5, INK, anchor="start")]
 rows = [("", "무엇", "언제 정해지나", "회로"),
-        ("α_c", "채널당 1개 (16개)", "학습 중 1회 → 동결", "저항 2개"),
+        ("α_c", "채널당 2개 (32개)", "학습 중 1회 → 동결", "저항 4개"),
         ("V_max", "프레임마다 다름", "런타임, 매 순간", "다이오드-OR"),
         ("δ", "전체 공유 1개", "설계 시 1회", "V_ref 분압")]
 for i, r in enumerate(rows):
@@ -163,24 +165,26 @@ s.append(t(rx + 215, 278, "즉 클립마다 변하는 것은 분모(V_max)뿐이
 s += [box(rx, 310, 430, 240, GRN_BG, GRN_LN),
       t(rx + 215, 334, "전력 수지 — 순증이 거의 0", 14, GRN_TX, weight="700")]
 pw = [("항목", "전력", ""),
+      ("추가: 비교기 16개 (2비트화)", "+17 µW", "◆"),
       ("추가: 버퍼 op-amp ×1", "+13 µW", ""),
       ("추가: OR 다이오드 ×16 + 싱크", "+3 µW", ""),
-      ("절감: 채널별 분압", "−49 µW", "★"),
-      ("순증", "≈ −33 µW", "")]
+      ("추가: 새 분압 ×32", "+6 µW", ""),
+      ("절감: 기존 분압 ×16", "−52 µW", "★"),
+      ("순증", "≈ −13 µW", "")]
 for i, (a, b, c) in enumerate(pw):
-    y = 362 + i * 26
-    bold = "700" if i in (0, 4) else None
-    col = GRN_TX if i == 4 else (MUTE if i == 0 else INK)
-    if i == 4:
+    y = 344 + i * 21
+    bold = "700" if i in (0, len(pw) - 1) else None
+    col = GRN_TX if i == len(pw) - 1 else (MUTE if i == 0 else INK)
+    if i == len(pw) - 1:
         s.append(line(rx + 16, y - 16, rx + 400, y - 16, GRN_LN, 1.2))
     s += [t(rx + 16, y, a, 11, col, anchor="start", weight=bold),
           t(rx + 330, y, b, 11, col, anchor="end", weight=bold),
           t(rx + 350, y, c, 11, GRN_TX, anchor="start")]
-s.append(t(rx + 16, 492, "★ 기존 분압은 1.8 V 전체에 걸려 채널당 1.8 µA를 흘렸다.",
+s.append(t(rx + 16, 496, "◆ 비교기 2개 = 2비트 온도계 코드. 정확도 0.778 → 0.802 (+2.5pp).",
            10, MUTE, anchor="start"))
-s.append(t(rx + 16, 508, "   새 분압은 V_max와 V_ref의 차(~0.1 V)에만 걸려 18배 준다.",
+s.append(t(rx + 16, 512, "★ 기존 분압은 1.8 V 전체, 새 분압은 V_max−V_ref(~0.1 V)에만 걸린다.",
            10, MUTE, anchor="start"))
-s.append(t(rx + 16, 532, "AGC와 달리 피드백 루프가 없다 → 발진·어택/릴리즈·첫 단어 문제 없음.",
+s.append(t(rx + 16, 536, "AGC와 달리 피드백 루프가 없다 → 발진·어택/릴리즈·첫 단어 문제 없음.",
            10.5, GRN_TX, anchor="start", weight="700"))
 
 # ── bottom: what stays fixed vs what this replaces ─────────────────────────
