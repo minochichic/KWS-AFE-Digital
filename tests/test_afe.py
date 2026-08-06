@@ -753,3 +753,61 @@ def test_effective_alpha_is_a_passthrough_for_other_modes() -> None:
     fe = make_frontend(normalize="minmax", envelope_win_ms=10.0)
     fe.init_thresholds(noise(4))
     assert torch.equal(fe.effective_alpha(), fe.threshold.detach())
+
+
+# --------------------------------------------------------------------------- #
+# 15. k comparators per channel -> k-bit thermometer code
+# --------------------------------------------------------------------------- #
+def test_one_comparator_is_the_untouched_default() -> None:
+    """k=1 must be byte-identical to before this existed, including the
+    parameter shape, so every checkpoint already on disk still loads."""
+    fe = make_frontend(envelope_win_ms=10.0)
+    assert fe.cfg.comparators_per_channel == 1
+    assert fe.threshold.shape == (fe.cfg.n_channels,)
+    assert fe(noise()).shape == (2, 16, 100)
+
+
+def test_k_comparators_give_k_rows_per_channel() -> None:
+    fe = make_frontend(envelope_win_ms=10.0, comparators_per_channel=2)
+    out = fe(noise(), target_T=128)
+    assert out.shape == (2, 32, 128)                      # 16 channels x 2 bits
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}  # still 1-bit each
+    assert fe.threshold.shape == (32,)
+
+
+def test_comparator_rows_are_channel_major() -> None:
+    """A channel's bits must be adjacent (ch0_t0, ch0_t1, ch1_t0, ...), so the
+    two rows of one physical channel stay together for the FPGA and so the
+    per-channel view in export is a plain reshape(C, k)."""
+    fe = make_frontend(envelope_win_ms=10.0, comparators_per_channel=2)
+    w = noise()
+    with torch.no_grad():                                 # bit0 always on, bit1 off
+        fe.threshold.copy_(torch.tensor([-10.0, 10.0] * fe.cfg.n_channels))
+    out = fe(w)
+    assert torch.all(out[:, 0::2] == 1.0)
+    assert torch.all(out[:, 1::2] == -1.0)
+
+
+def test_two_comparators_do_not_start_on_top_of_each_other() -> None:
+    """Identical thresholds would encode one bit twice and waste the second
+    comparator (and its 1.04 uW). Init spreads them over the channel's own
+    distribution."""
+    fe = make_frontend(envelope_win_ms=10.0, comparators_per_channel=2)
+    fe.init_thresholds(noise(6))
+    per_ch = fe.threshold.detach().view(fe.cfg.n_channels, 2)
+    assert torch.all(per_ch[:, 1] > per_ch[:, 0])         # ordered, distinct
+
+
+def test_all_comparator_thresholds_receive_gradient() -> None:
+    fe = make_frontend(envelope_win_ms=10.0, comparators_per_channel=2)
+    fe.init_thresholds(noise(4))
+    fe(noise(4)).mean().backward()
+    assert torch.all(fe.threshold.grad != 0)
+
+
+def test_config_requires_in_channels_to_follow_comparator_count() -> None:
+    from train.config import Config, ModelConfig
+    import pytest as _pytest
+    with _pytest.raises(ValueError, match="comparators_per_channel"):
+        Config(afe=AFEConfig(n_channels=16, comparators_per_channel=2),
+               model=ModelConfig(in_channels=16)).validate()

@@ -120,6 +120,16 @@ class AFEConfig:
     # number. See proposal/ANALOG.md.
     comparator_vos: float = 0.0
 
+    # Comparators per channel. The 1-bit comparator is where the accuracy went:
+    # holding everything else fixed, the continuous 16-channel envelope scores
+    # 0.862 and binarizing it drops to 0.781, so the quantizer alone costs 8pp.
+    # k comparators on the same envelope give a thermometer code of k bits --
+    # k dividers and k LPV7215 per channel, +1.04 uW each (0.58 uA @ 1.8 V), so
+    # k=2 is +17 uW for the whole bank. That is the cheapest untried lever we
+    # have; adding channels costs a full GIC + detector each instead.
+    # The model then sees n_channels * k rows, so model.in_channels must follow.
+    comparators_per_channel: int = 1
+
 
     # Envelope compression. "log" = log-mel convention (baseline). "sqrt" =
     # amplitude (V+ ~ sqrt(power)), which is what the analog active detector
@@ -350,10 +360,14 @@ class Config:
     def validate(self) -> None:
         m, a = self.model, self.afe
 
-        if m.in_channels != a.n_channels:
+        k = getattr(a, "comparators_per_channel", 1)
+        if k < 1:
+            raise ValueError(f"afe.comparators_per_channel must be >= 1, got {k}")
+        if m.in_channels != a.n_channels * k:
             raise ValueError(
                 f"model.in_channels ({m.in_channels}) must equal "
-                f"afe.n_channels ({a.n_channels})"
+                f"afe.n_channels * afe.comparators_per_channel "
+                f"({a.n_channels} * {k} = {a.n_channels * k})"
             )
         if a.envelope_win_ms <= 0:
             raise ValueError(

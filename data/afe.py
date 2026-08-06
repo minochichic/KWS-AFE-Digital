@@ -177,8 +177,12 @@ class AFEFrontend(nn.Module):
         # One comparator reference per channel. 0.5 is a placeholder; call
         # init_thresholds() with training data before real training
         # (Cerutti IV-A initializes to the per-channel average).
+        # k comparators per channel -> a k-bit thermometer code. The parameter
+        # stays FLAT and channel-major (ch0_t0, ch0_t1, ch1_t0, ...) so k=1 is
+        # byte-identical to every checkpoint written before this existed.
+        self.n_comparators = max(1, getattr(cfg, "comparators_per_channel", 1))
         self.threshold = nn.Parameter(
-            torch.full((cfg.n_channels,), 0.5),
+            torch.full((cfg.n_channels * self.n_comparators,), 0.5),
             requires_grad=cfg.threshold_trainable,
         )
 
@@ -443,6 +447,13 @@ class AFEFrontend(nn.Module):
             # filterbank, normalization and the network itself fixed.
             return env if target_T is None else pad_or_crop(env, target_T,
                                                             pad_value=0.0)
+        # k comparators watch the SAME envelope through k different dividers, so
+        # each channel's row is repeated k times and compared against k
+        # thresholds -> a k-bit thermometer code, [B, C*k, T], still {-1,+1}.
+        # repeat_interleave keeps a channel's bits adjacent (ch0_t0, ch0_t1,
+        # ch1_t0, ...) and is an exact no-op at k=1.
+        if self.n_comparators > 1:
+            env = env.repeat_interleave(self.n_comparators, dim=1)
         # The comparator: sign(env - thr) with a straight-through gradient.
         # Gradient w.r.t. threshold is -1 * upstream inside the clip window,
         # which is how the thresholds learn (CLAUDE.md 2.4).
@@ -550,7 +561,18 @@ class AFEFrontend(nn.Module):
         """
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves)
-        thr = env.mean(dim=(0, 2))
+        if self.n_comparators == 1:
+            thr = env.mean(dim=(0, 2))
+        else:
+            # k comparators must NOT start on top of each other, or they encode
+            # one bit twice and the second one is wasted. Spread them over the
+            # channel's own distribution at quantiles i/(k+1), which for k=1
+            # would be the median -- close to the mean it replaces, but the k=1
+            # path keeps the mean exactly so the existing baseline is untouched.
+            flat = env.permute(1, 0, 2).reshape(self.cfg.n_channels, -1)
+            qs = torch.arange(1, self.n_comparators + 1, device=flat.device,
+                              dtype=flat.dtype) / (self.n_comparators + 1)
+            thr = torch.quantile(flat, qs, dim=1).T.reshape(-1)   # channel-major
         if self.cfg.normalize == "xmix":
             # alpha is the divider ratio Rb/(Ra+Rb), so only [0, 1] is buildable.
             # It also removes a degenerate start: a channel that never rose above
