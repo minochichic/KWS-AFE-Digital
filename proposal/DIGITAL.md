@@ -9,8 +9,8 @@ AFE가 만드는 `[16, 128]` 이진 이미지를 받아 12-class를 분류하는
 | 항목 | 값 |
 |---|---|
 | 모델 | **BinaryMatchboxNet-3x2x64** |
-| 파라미터 | **119,052** (16채널 × 2비트 = 32행 입력) |
-| 입력 | `[32, 128]`, 값 {−1, +1} — 16채널 × **비교기 2개** |
+| 파라미터 | **96,524** |
+| 입력 | `[16, 128]`, 값 {−1, +1} — 16채널 × 비교기 1개 |
 | 출력 | 12 class (키워드 10 + silence + unknown) |
 | 설정 파일 | [`configs/base.yaml`](../configs/base.yaml) — 모든 크기의 단일 출처 |
 | 코드 | [`models/binary_matchboxnet.py`](../models/binary_matchboxnet.py) |
@@ -58,7 +58,7 @@ afe:
   compression: sqrt             # 검출기가 진폭에 선형 → √이 회로 충실
   normalize: xmix               # 회로 형태의 채널간 상대 임계
   xmax_floor_frac: 0.02         # δ = 전형 음성 상승의 0.4%
-  comparators_per_channel: 2    # 2비트 온도계 → model.in_channels = 32
+  comparators_per_channel: 1    # 확정. 2로 올리면 +2.5pp, in_channels=32
   envelope_win_ms: 10.0         # native T = 100 → 제로패딩 128
   f_min: 50.0
   f_max: 8000.0

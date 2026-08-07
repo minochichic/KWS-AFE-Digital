@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1240" height="830" viewBox="0 0 1240 830" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
 <rect width="1240" height="830" fill="#ffffff"/>
 <defs><marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#334155"/></marker><marker id="ar" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#dc2626"/></marker></defs>
-<text x="620.0" y="32" text-anchor="middle" font-size="22" fill="#0f172a" font-weight="700">AFE 시스템 — 채널간 상대 임계 + 채널당 비교기 2개</text>
+<text x="620.0" y="32" text-anchor="middle" font-size="22" fill="#0f172a" font-weight="700">AFE 시스템 — 채널간 상대 임계 (확정안)</text>
 <text x="620.0" y="55" text-anchor="middle" font-size="12.5" fill="#64748b">붉은 부분만 새로 추가된다. 왼쪽 신호 체인은 ngspice 검증 완료, 변경 없음.</text>
 <rect x="40" y="88" width="105" height="56" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.4"/>
 <text x="92" y="112" text-anchor="middle" font-size="13" fill="#0f172a" font-weight="700">MIC</text>
@@ -28,13 +28,11 @@
 <text x="400" y="260" text-anchor="middle" font-size="9.5" fill="#64748b">C3=100n → τ=4.7 ms · G=4.7</text>
 <line x1="500" y1="241" x2="545" y2="241" stroke="#334155" stroke-width="1.6" marker-end="url(#a)"/>
 <text x="524" y="231" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">v_env,c</text>
-<rect x="545" y="209" width="120" height="64" rx="6" fill="#fff1f2" stroke="#dc2626" stroke-width="1.4"/>
-<text x="605" y="227" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">비교기 ×2</text>
-<text x="605" y="243" text-anchor="middle" font-size="9.5" fill="#64748b">LPV7215 · 0.58 µA</text>
-<text x="605" y="257" text-anchor="middle" font-size="9.5" fill="#dc2626" font-weight="700">α_c,0 / α_c,1</text>
+<rect x="545" y="215" width="120" height="52" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.1"/>
+<text x="605" y="237" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">비교기</text>
+<text x="605" y="253" text-anchor="middle" font-size="9.5" fill="#64748b">LPV7215 · 0.58 µA</text>
 <line x1="665" y1="241" x2="720" y2="241" stroke="#334155" stroke-width="1.6" marker-end="url(#a)"/>
-<text x="738" y="237" text-anchor="middle" font-size="11" fill="#dc2626" font-weight="700">2비트</text>
-<text x="738" y="252" text-anchor="middle" font-size="9.5" fill="#64748b">온도계</text>
+<text x="732" y="245" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">0/1</text>
 <line x1="524" y1="253" x2="524" y2="330" stroke="#dc2626" stroke-width="1.8"/>
 <text x="534" y="322" text-anchor="start" font-size="9.5" fill="#dc2626">16채널 전부</text>
 <rect x="40" y="340" width="700" height="210" rx="6" fill="#fff1f2" stroke="#dc2626" stroke-width="1.8"/>
@@ -53,7 +51,7 @@
 <text x="372" y="464" text-anchor="middle" font-size="10" fill="#0f172a" font-weight="700">→ V_max</text>
 <line x1="460" y1="436" x2="500" y2="436" stroke="#dc2626" stroke-width="1.6" marker-end="url(#a)"/>
 <rect x="500" y="388" width="215" height="100" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="1.2"/>
-<text x="607" y="408" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">채널별 분압 ×32  (채널당 2개)</text>
+<text x="607" y="408" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">채널별 분압 ×16</text>
 <text x="607" y="428" text-anchor="middle" font-size="11" fill="#0f172a">V_max ─[Ra]─┬─[Rb]─ V_ref</text>
 <text x="607" y="444" text-anchor="middle" font-size="10" fill="#0f172a">│</text>
 <text x="607" y="458" text-anchor="middle" font-size="11" fill="#9a3412" font-weight="700">V_thr,c</text>
@@ -67,16 +65,16 @@
 <text x="58" y="531" text-anchor="start" font-size="10" fill="#64748b">δ = 전형 음성 엔벨로프 상승의 2.4% (ML 실측). 더미 검출기 1채널로 만들면 온도·공정이 자동 추종된다.</text>
 <rect x="770" y="88" width="430" height="205" rx="6" fill="#fef9f3" stroke="#fdba74" stroke-width="1.4"/>
 <text x="985" y="112" text-anchor="middle" font-size="14" fill="#9a3412" font-weight="700">α는 클립마다 변하지 않는다</text>
-<text x="786" y="138" text-anchor="start" font-size="10.5" fill="#0f172a">학습이 끝나면 α는 32개의 상수다. PCB에 납땜되는 저항비이고,</text>
+<text x="786" y="138" text-anchor="start" font-size="10.5" fill="#0f172a">학습이 끝나면 α는 16개의 상수다. PCB에 납땜되는 저항비이고,</text>
 <text x="786" y="154" text-anchor="start" font-size="10.5" fill="#0f172a">추론 중에는 절대 변하지 않는다.</text>
 <text x="786" y="182" text-anchor="start" font-size="10" fill="#64748b" font-weight="700"></text>
 <text x="894" y="182" text-anchor="start" font-size="10" fill="#64748b" font-weight="700">무엇</text>
 <text x="1002" y="182" text-anchor="start" font-size="10" fill="#64748b" font-weight="700">언제 정해지나</text>
 <text x="1110" y="182" text-anchor="start" font-size="10" fill="#64748b" font-weight="700">회로</text>
 <text x="786" y="202" text-anchor="start" font-size="10" fill="#0f172a" font-weight="700">α_c</text>
-<text x="894" y="202" text-anchor="start" font-size="10" fill="#0f172a">채널당 2개 (32개)</text>
+<text x="894" y="202" text-anchor="start" font-size="10" fill="#0f172a">채널당 1개 (16개)</text>
 <text x="1002" y="202" text-anchor="start" font-size="10" fill="#0f172a">학습 중 1회 → 동결</text>
-<text x="1110" y="202" text-anchor="start" font-size="10" fill="#0f172a">저항 4개</text>
+<text x="1110" y="202" text-anchor="start" font-size="10" fill="#0f172a">저항 2개</text>
 <text x="786" y="222" text-anchor="start" font-size="10" fill="#0f172a" font-weight="700">V_max</text>
 <text x="894" y="222" text-anchor="start" font-size="10" fill="#0f172a">프레임마다 다름</text>
 <text x="1002" y="222" text-anchor="start" font-size="10" fill="#0f172a">런타임, 매 순간</text>
@@ -91,26 +89,23 @@
 <text x="786" y="344" text-anchor="start" font-size="11" fill="#64748b" font-weight="700">항목</text>
 <text x="1100" y="344" text-anchor="end" font-size="11" fill="#64748b" font-weight="700">전력</text>
 <text x="1120" y="344" text-anchor="start" font-size="11" fill="#15803d"></text>
-<text x="786" y="365" text-anchor="start" font-size="11" fill="#0f172a">추가: 비교기 16개 (2비트화)</text>
-<text x="1100" y="365" text-anchor="end" font-size="11" fill="#0f172a">+17 µW</text>
-<text x="1120" y="365" text-anchor="start" font-size="11" fill="#15803d">◆</text>
-<text x="786" y="386" text-anchor="start" font-size="11" fill="#0f172a">추가: 버퍼 op-amp ×1</text>
-<text x="1100" y="386" text-anchor="end" font-size="11" fill="#0f172a">+13 µW</text>
+<text x="786" y="365" text-anchor="start" font-size="11" fill="#0f172a">추가: 버퍼 op-amp ×1</text>
+<text x="1100" y="365" text-anchor="end" font-size="11" fill="#0f172a">+13 µW</text>
+<text x="1120" y="365" text-anchor="start" font-size="11" fill="#15803d"></text>
+<text x="786" y="386" text-anchor="start" font-size="11" fill="#0f172a">추가: OR 다이오드 ×16 + 싱크</text>
+<text x="1100" y="386" text-anchor="end" font-size="11" fill="#0f172a">+3 µW</text>
 <text x="1120" y="386" text-anchor="start" font-size="11" fill="#15803d"></text>
-<text x="786" y="407" text-anchor="start" font-size="11" fill="#0f172a">추가: OR 다이오드 ×16 + 싱크</text>
+<text x="786" y="407" text-anchor="start" font-size="11" fill="#0f172a">추가: 새 분압 ×16</text>
 <text x="1100" y="407" text-anchor="end" font-size="11" fill="#0f172a">+3 µW</text>
 <text x="1120" y="407" text-anchor="start" font-size="11" fill="#15803d"></text>
-<text x="786" y="428" text-anchor="start" font-size="11" fill="#0f172a">추가: 새 분압 ×32</text>
-<text x="1100" y="428" text-anchor="end" font-size="11" fill="#0f172a">+6 µW</text>
-<text x="1120" y="428" text-anchor="start" font-size="11" fill="#15803d"></text>
-<text x="786" y="449" text-anchor="start" font-size="11" fill="#0f172a">절감: 기존 분압 ×16</text>
-<text x="1100" y="449" text-anchor="end" font-size="11" fill="#0f172a">−52 µW</text>
-<text x="1120" y="449" text-anchor="start" font-size="11" fill="#15803d">★</text>
-<line x1="786" y1="454" x2="1170" y2="454" stroke="#86efac" stroke-width="1.2"/>
-<text x="786" y="470" text-anchor="start" font-size="11" fill="#15803d" font-weight="700">순증</text>
-<text x="1100" y="470" text-anchor="end" font-size="11" fill="#15803d" font-weight="700">≈ −13 µW</text>
-<text x="1120" y="470" text-anchor="start" font-size="11" fill="#15803d"></text>
-<text x="786" y="496" text-anchor="start" font-size="10" fill="#64748b">◆ 비교기 2개 = 2비트 온도계 코드. 정확도 0.778 → 0.802 (+2.5pp).</text>
+<text x="786" y="428" text-anchor="start" font-size="11" fill="#0f172a">절감: 기존 분압 ×16</text>
+<text x="1100" y="428" text-anchor="end" font-size="11" fill="#0f172a">−52 µW</text>
+<text x="1120" y="428" text-anchor="start" font-size="11" fill="#15803d">★</text>
+<line x1="786" y1="433" x2="1170" y2="433" stroke="#86efac" stroke-width="1.2"/>
+<text x="786" y="449" text-anchor="start" font-size="11" fill="#15803d" font-weight="700">순증</text>
+<text x="1100" y="449" text-anchor="end" font-size="11" fill="#15803d" font-weight="700">≈ −33 µW</text>
+<text x="1120" y="449" text-anchor="start" font-size="11" fill="#15803d"></text>
+<text x="786" y="496" text-anchor="start" font-size="10" fill="#64748b">◆ 업그레이드: 비교기 2개 → 0.778 → 0.802 (+2.5pp), 순증 −13 µW.</text>
 <text x="786" y="512" text-anchor="start" font-size="10" fill="#64748b">★ 기존 분압은 1.8 V 전체, 새 분압은 V_max−V_ref(~0.1 V)에만 걸린다.</text>
 <text x="786" y="536" text-anchor="start" font-size="10.5" fill="#15803d" font-weight="700">AGC와 달리 피드백 루프가 없다 → 발진·어택/릴리즈·첫 단어 문제 없음.</text>
 <rect x="40" y="578" width="1160" height="120" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
