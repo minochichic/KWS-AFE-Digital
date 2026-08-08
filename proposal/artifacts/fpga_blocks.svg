@@ -1,0 +1,122 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="900" viewBox="0 0 1300 900" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1300" height="900" fill="#ffffff"/>
+<defs><marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#334155"/></marker></defs>
+<text x="650.0" y="34" text-anchor="middle" font-size="22" fill="#0f172a" font-weight="700">FPGA 블록 구성 — AMD Kintex-7 KC705</text>
+<text x="650.0" y="57" text-anchor="middle" font-size="12.5" fill="#64748b">접은(folded) 가속기 + 자유 구동 슬라이딩 창. 완전 펼침은 불필요하고 애초에 들어가지도 않는다.</text>
+<rect x="40" y="96" width="150" height="108" rx="6" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.4" stroke-dasharray="5 3"/>
+<text x="115" y="118" text-anchor="middle" font-size="12.5" fill="#64748b" font-weight="700">아날로그 AFE</text>
+<text x="115" y="137" text-anchor="middle" font-size="10" fill="#64748b">(FPGA 밖)</text>
+<text x="115" y="160" text-anchor="middle" font-size="11.5" fill="#9a3412" font-weight="700">비교기 16개</text>
+<text x="115" y="177" text-anchor="middle" font-size="10" fill="#64748b">0/1 라인 ×16</text>
+<text x="115" y="194" text-anchor="middle" font-size="9" fill="#64748b">→ proposal/THRESHOLD.md</text>
+<line x1="190" y1="150" x2="232" y2="150" stroke="#334155" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="232" y="80" width="1028" height="560" rx="10" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<text x="250" y="102" text-anchor="start" font-size="13" fill="#0f172a" font-weight="700">XC7K325T</text>
+<text x="322" y="102" text-anchor="start" font-size="10.5" fill="#64748b">— 아래 설계는 LUT 1.3% / BRAM 3.3%만 쓴다</text>
+<rect x="256" y="122" width="300" height="250" rx="6" fill="#fef9f3" stroke="#fdba74" stroke-width="1.4"/>
+<text x="406" y="146" text-anchor="middle" font-size="13.5" fill="#9a3412" font-weight="700">A. 프레임 조립</text>
+<text x="406" y="164" text-anchor="middle" font-size="10.5" fill="#64748b">AFE 비트열 → [16, 128] 이미지</text>
+<rect x="274" y="178" width="264" height="44" rx="6" fill="#ffffff" stroke="#fdba74" stroke-width="1.1"/>
+<text x="406" y="197" text-anchor="middle" font-size="11.5" fill="#0f172a" font-weight="700">동기화 2FF ×16</text>
+<text x="406" y="212" text-anchor="middle" font-size="9.5" fill="#64748b">비동기 입력 → 클럭 도메인</text>
+<line x1="406" y1="222" x2="406" y2="232" stroke="#334155" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="274" y="232" width="264" height="44" rx="6" fill="#ffffff" stroke="#fdba74" stroke-width="1.1"/>
+<text x="406" y="251" text-anchor="middle" font-size="11.5" fill="#0f172a" font-weight="700">10 ms OR 누산</text>
+<text x="406" y="266" text-anchor="middle" font-size="9.5" fill="#64748b">창 안에 한 번이라도 1이면 1</text>
+<line x1="406" y1="276" x2="406" y2="286" stroke="#334155" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="274" y="286" width="264" height="44" rx="6" fill="#ffffff" stroke="#fdba74" stroke-width="1.1"/>
+<text x="406" y="305" text-anchor="middle" font-size="11.5" fill="#0f172a" font-weight="700">시프트 레지스터</text>
+<text x="406" y="320" text-anchor="middle" font-size="9.5" fill="#64748b">16비트 × 100단 = 1600 FF</text>
+<text x="406" y="348" text-anchor="middle" font-size="10" fill="#9a3412" font-weight="700">패딩 28칸은 저장 안 한다 — 항상 −1인 상수</text>
+<text x="406" y="363" text-anchor="middle" font-size="9.5" fill="#64748b">주소 &lt;14 또는 ≥114 이면 −1 반환</text>
+<rect x="576" y="122" width="330" height="250" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="741" y="146" text-anchor="middle" font-size="13.5" fill="#1e3a8a" font-weight="700">B. 접은 가속기</text>
+<text x="741" y="164" text-anchor="middle" font-size="10.5" fill="#64748b">6.0 M MAC / 추론</text>
+<rect x="592" y="180" width="298" height="50" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.1"/>
+<text x="741" y="197" text-anchor="middle" font-size="11.5" fill="#0f172a" font-weight="700">XNOR-popcount PE</text>
+<text x="741" y="211" text-anchor="middle" font-size="9.5" fill="#64748b">이진 3.42 M MAC (57%)</text>
+<text x="741" y="224" text-anchor="middle" font-size="9.5" fill="#1e3a8a">P=64 → 53.5 k cyc</text>
+<rect x="592" y="238" width="298" height="50" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.1"/>
+<text x="741" y="255" text-anchor="middle" font-size="11.5" fill="#0f172a" font-weight="700">부호 누산기</text>
+<text x="741" y="269" text-anchor="middle" font-size="9.5" fill="#64748b">conv1 1.44 M — 곱셈기 없음</text>
+<text x="741" y="282" text-anchor="middle" font-size="9.5" fill="#1e3a8a">입력이 ±1이라</text>
+<rect x="592" y="296" width="298" height="50" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.1"/>
+<text x="741" y="313" text-anchor="middle" font-size="11.5" fill="#0f172a" font-weight="700">DSP48 MAC</text>
+<text x="741" y="327" text-anchor="middle" font-size="9.5" fill="#64748b">conv3·conv4 1.15 M (int8)</text>
+<text x="741" y="340" text-anchor="middle" font-size="9.5" fill="#1e3a8a">진짜 곱셈은 여기뿐</text>
+<text x="741" y="362" text-anchor="middle" font-size="10.5" fill="#1e3a8a" font-weight="700">10 Hz에 필요한 건 0.6 MAC/cycle뿐</text>
+<line x1="556" y1="272" x2="576" y2="272" stroke="#334155" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="566.0" y="264" text-anchor="middle" font-size="9.5" fill="#9a3412">[16,128]</text>
+<rect x="926" y="122" width="314" height="250" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/>
+<text x="1083" y="146" text-anchor="middle" font-size="13.5" fill="#15803d" font-weight="700">C. 온칩 메모리</text>
+<text x="1083" y="164" text-anchor="middle" font-size="10.5" fill="#64748b">외부 메모리 불필요</text>
+<text x="944" y="186" text-anchor="start" font-size="10.5" fill="#0f172a">이진 가중치 (bit-packed)</text>
+<text x="1222" y="186" text-anchor="end" font-size="10.5" fill="#0f172a" font-weight="700">6.53 KB</text>
+<text x="944" y="208" text-anchor="start" font-size="10.5" fill="#0f172a">int8 가중치</text>
+<text x="1222" y="208" text-anchor="end" font-size="10.5" fill="#0f172a" font-weight="700">38.00 KB</text>
+<text x="944" y="230" text-anchor="start" font-size="10.5" fill="#0f172a">fixed 가중치</text>
+<text x="1222" y="230" text-anchor="end" font-size="10.5" fill="#0f172a" font-weight="700">3.02 KB</text>
+<text x="944" y="252" text-anchor="start" font-size="10.5" fill="#0f172a">활성 핑퐁 버퍼</text>
+<text x="1222" y="252" text-anchor="end" font-size="10.5" fill="#0f172a" font-weight="700">16.00 KB</text>
+<text x="944" y="274" text-anchor="start" font-size="10.5" fill="#0f172a">정수 threshold + 극성</text>
+<text x="1222" y="274" text-anchor="end" font-size="10.5" fill="#0f172a" font-weight="700">채널당 2개</text>
+<polyline points="944,302 1222,302" fill="none" stroke="#86efac" stroke-width="1.2"/>
+<text x="944" y="320" text-anchor="start" font-size="11" fill="#15803d" font-weight="700">합계</text>
+<text x="1222" y="320" text-anchor="end" font-size="11" fill="#15803d" font-weight="700">63.6 KB</text>
+<text x="1083" y="344" text-anchor="middle" font-size="10" fill="#64748b">KC705 BRAM의 3.3%</text>
+<text x="1083" y="362" text-anchor="middle" font-size="9.5" fill="#64748b">$readmemh ROM으로 초기화</text>
+<polyline points="926,272 906,272" fill="none" stroke="#334155" stroke-width="1.6"/>
+<rect x="256" y="392" width="654" height="226" rx="6" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.4"/>
+<text x="583" y="416" text-anchor="middle" font-size="13.5" fill="#7e22ce" font-weight="700">D. 시퀀서 + 판정</text>
+<text x="583" y="434" text-anchor="middle" font-size="10.5" fill="#64748b">자유 구동 — 웨이크온이벤트가 아니다</text>
+<rect x="274" y="448" width="618" height="34" rx="6" fill="#ffffff" stroke="#d8b4fe" stroke-width="1.1"/>
+<text x="286" y="469" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">10 ms 프레임 타이머</text>
+<text x="882" y="469" text-anchor="end" font-size="10" fill="#64748b">시프트 레지스터를 한 칸 민다</text>
+<rect x="274" y="488" width="618" height="34" rx="6" fill="#ffffff" stroke="#d8b4fe" stroke-width="1.1"/>
+<text x="286" y="509" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">100 ms마다 스냅샷</text>
+<text x="882" y="509" text-anchor="end" font-size="10" fill="#64748b">추론 5.2 ms &lt; 프레임 10 ms → 더블버퍼 불필요</text>
+<rect x="274" y="528" width="618" height="34" rx="6" fill="#ffffff" stroke="#d8b4fe" stroke-width="1.1"/>
+<text x="286" y="549" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">층 시퀀서 FSM</text>
+<text x="882" y="549" text-anchor="end" font-size="10" fill="#64748b">스테이지 순회, 주소 생성</text>
+<rect x="274" y="568" width="618" height="34" rx="6" fill="#ffffff" stroke="#d8b4fe" stroke-width="1.1"/>
+<text x="286" y="589" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">posterior 평활 + 불응기</text>
+<text x="882" y="589" text-anchor="end" font-size="10" fill="#64748b">한 발화가 창 8개에 걸린다 → 억제 필수</text>
+<polyline points="741,372 741,392" fill="none" stroke="#334155" stroke-width="1.6"/>
+<rect x="926" y="392" width="314" height="226" rx="6" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/>
+<text x="1083" y="416" text-anchor="middle" font-size="13.5" fill="#15803d" font-weight="700">E. 출력</text>
+<text x="1083" y="444" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">12-class argmax</text>
+<text x="1083" y="464" text-anchor="middle" font-size="9.5" fill="#64748b">키워드 10 + silence + unknown</text>
+<text x="1083" y="496" text-anchor="middle" font-size="11.5" fill="#0f172a">UART / LED / GPIO</text>
+<text x="1083" y="516" text-anchor="middle" font-size="9.5" fill="#64748b">보드 검증용</text>
+<rect x="944" y="538" width="278" height="62" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.1"/>
+<text x="1083" y="558" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">디버그 여유가 넘친다</text>
+<text x="1083" y="574" text-anchor="middle" font-size="9.5" fill="#64748b">LUT 98%가 남으므로 ILA·중간값</text>
+<text x="1083" y="588" text-anchor="middle" font-size="9.5" fill="#64748b">덤프를 마음껏 넣을 수 있다</text>
+<line x1="910" y1="505" x2="926" y2="505" stroke="#334155" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="40" y="664" width="1220" height="128" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="60" y="688" text-anchor="start" font-size="13" fill="#0f172a" font-weight="700">타이밍 — 슬라이딩 창</text>
+<text x="60" y="706" text-anchor="start" font-size="10.5" fill="#64748b">단어 하나(270 ms)가 창 8개에 걸린다. 그래서 불응기가 필요하다.</text>
+<rect x="250.0" y="722" width="94.0" height="26" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="297.0" y="740" text-anchor="middle" font-size="9.5" fill="#64748b">0</text>
+<rect x="350.0" y="722" width="94.0" height="26" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="397.0" y="740" text-anchor="middle" font-size="9.5" fill="#64748b">100</text>
+<rect x="450.0" y="722" width="94.0" height="26" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="497.0" y="740" text-anchor="middle" font-size="9.5" fill="#64748b">200</text>
+<rect x="550.0" y="722" width="94.0" height="26" rx="3" fill="#fecaca" stroke="#dc2626" stroke-width="1.1"/>
+<text x="597.0" y="740" text-anchor="middle" font-size="9.5" fill="#dc2626">300</text>
+<rect x="650.0" y="722" width="94.0" height="26" rx="3" fill="#fecaca" stroke="#dc2626" stroke-width="1.1"/>
+<text x="697.0" y="740" text-anchor="middle" font-size="9.5" fill="#dc2626">400</text>
+<rect x="750.0" y="722" width="94.0" height="26" rx="3" fill="#fecaca" stroke="#dc2626" stroke-width="1.1"/>
+<text x="797.0" y="740" text-anchor="middle" font-size="9.5" fill="#dc2626">500</text>
+<rect x="850.0" y="722" width="94.0" height="26" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="897.0" y="740" text-anchor="middle" font-size="9.5" fill="#64748b">600</text>
+<rect x="950.0" y="722" width="94.0" height="26" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="997.0" y="740" text-anchor="middle" font-size="9.5" fill="#64748b">700</text>
+<rect x="1050.0" y="722" width="94.0" height="26" rx="3" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="1097.0" y="740" text-anchor="middle" font-size="9.5" fill="#64748b">800</text>
+<text x="60" y="740" text-anchor="start" font-size="10.5" fill="#0f172a">창 시작(ms)</text>
+<text x="60" y="768" text-anchor="start" font-size="10.5" fill="#0f172a">판정</text>
+<text x="700.0" y="768" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700">단어가 학습 분포와 맞는 창은 가운데 2~3개뿐 — ±300 ms에서는 −11~17pp</text>
+<text x="700.0" y="783" text-anchor="middle" font-size="10" fill="#64748b">→ time-shift 증강으로 곡선을 평평하게 만드는 것이 근본 해결 (탐색 중)</text>
+<text x="40" y="878" text-anchor="start" font-size="10" fill="#64748b">연산량 근거: troubleshooting/scripts/count_ops.py · 리소스: estimate_resources.py · 이동 곡선: notebooks/workbench.ipynb §5</text>
+</svg>
