@@ -49,6 +49,12 @@ from train.config import AFEConfig
 
 _EPS = 1e-6
 
+# Modes whose threshold is a resistor divider between the cross-channel node and
+# a shared reference, so alpha is literally Rb/(Ra+Rb) and only [0,1] is
+# buildable. "xmax" is NOT one of them -- it divides by a hard max, which a
+# divider cannot produce.
+_DIVIDER_FORM = ("xmix", "xlse")
+
 
 def discretize(pulse_times_ms, window_ms: float, n_windows: int,
                reduce: str = "max"):
@@ -195,17 +201,19 @@ class AFEFrontend(nn.Module):
         # init_fixed_scale(). "fixed" uses them as the affine scale; "agc" uses
         # fixed_hi as the reference for the max-gain floor.
         # Buffers (not params) so they land in the checkpoint and move with .to().
-        if cfg.normalize in ("fixed", "agc", "xmax", "xmix"):
+        if cfg.normalize in ("fixed", "agc", "xmax", "xmix", "xlse"):
             self.register_buffer("fixed_lo", torch.zeros(1))
             self.register_buffer("fixed_hi", torch.ones(1))
-        if cfg.normalize in ("xmax", "xmix"):
+        if cfg.normalize in ("xmax", "xmix", "xlse"):
             self.register_buffer("xmax_floor", torch.zeros(1))
+        if cfg.normalize == "xlse":
+            self.register_buffer("lse_temp", torch.ones(1))
 
         # AGC divides by a running level, which is only meaningful in a
         # multiplicative (amplitude) domain. Under log compression a gain is a
         # SUBTRACTION and values go negative, so division is wrong there.
         # compression="sqrt" is also the circuit-faithful choice (V+ ~ amplitude).
-        if cfg.normalize in ("agc", "xmax", "xmix") and \
+        if cfg.normalize in ("agc", "xmax", "xmix", "xlse") and \
                 getattr(cfg, "compression", "log") != "sqrt":
             raise ValueError(
                 f'normalize="{cfg.normalize}" requires compression="sqrt": it '
@@ -290,6 +298,8 @@ class AFEFrontend(nn.Module):
             env = self._xmax(env)
         elif self.cfg.normalize == "xmix":
             env = self._xmix(env)
+        elif self.cfg.normalize == "xlse":
+            env = self._xlse(env)
         else:
             raise ValueError(f"unknown normalize {self.cfg.normalize!r}")
         return env
@@ -372,6 +382,36 @@ class AFEFrontend(nn.Module):
         # 89% of values go negative, and the channel mean init_thresholds() uses
         # lands at alpha = -15, i.e. outside the range any resistor pair can
         # build. Clamping costs no information and keeps alpha buildable.
+        return out.clamp(-1.0, 1.0)
+
+    def _xlse(self, env: torch.Tensor) -> torch.Tensor:
+        """`xmix` with the denominator a diode-OR actually produces: a SOFT max.
+
+        A diode is exponential, not a step, so the losing channels never fully
+        stop conducting. Solving the wired-OR with a current sink gives
+
+            V_or = n*V_T * ln( sum_j exp(V_j / (n*V_T)) ) - V_d
+
+        i.e. a log-sum-exp, which overshoots the true max by up to n*V_T*ln(N) --
+        72 mV for N=16 at n=1, 108 mV at n=1.5. Our envelope swings are 28-65 mV,
+        so at realistic levels THE ERROR EXCEEDS THE SIGNAL: measured against a
+        hard max the denominator comes out 1.9-2.5x too large at a 50 mV typical
+        peak, and only falls under 12% once peaks reach ~200 mV.
+
+        Rather than buy 16 more amplifiers to raise the swing, model what the
+        diodes do. The temperature is set in init_fixed_scale() as a FRACTION of
+        a typical frame peak (`lse_temp_frac`), because that ratio -- not the
+        absolute mV -- decides how soft the max is, and it survives not knowing
+        the mic sensitivity.
+
+        LSE >= max >= env_c, so the normalized value still cannot exceed 1 and
+        alpha stays a buildable [0,1] divider ratio.
+        """
+        s = torch.logsumexp(env / self.lse_temp, dim=1,
+                            keepdim=True) * self.lse_temp
+        d = self.xmax_floor
+        out = torch.where(s > d, (env - d) / (s - d).clamp_min(_EPS),
+                          torch.full_like(env, -1.0))
         return out.clamp(-1.0, 1.0)
 
     def _agc(self, env: torch.Tensor) -> torch.Tensor:
@@ -458,7 +498,7 @@ class AFEFrontend(nn.Module):
         # Gradient w.r.t. threshold is -1 * upstream inside the clip window,
         # which is how the thresholds learn (CLAUDE.md 2.4).
         thr = self.threshold.view(1, -1, 1)
-        if self.cfg.normalize == "xmix":
+        if self.cfg.normalize in _DIVIDER_FORM:
             # alpha is a divider ratio Rb/(Ra+Rb): outside [0, 1] no resistor
             # pair can build it, and above 1 the channel is simply dead, since
             # the normalized value cannot exceed 1. Clamping only at init is not
@@ -491,7 +531,7 @@ class AFEFrontend(nn.Module):
         Since lo/hi are constants, the later `env >= thr` decision is an absolute
         threshold -> maps straight to a fixed R7/R8 divider.
         """
-        if self.cfg.normalize not in ("fixed", "agc", "xmax", "xmix"):
+        if self.cfg.normalize not in ("fixed", "agc", "xmax", "xmix", "xlse"):
             return
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self.envelopes(waves, raw=True)
@@ -509,7 +549,7 @@ class AFEFrontend(nn.Module):
             # thresholds) -- this only fixes the CONDITIONING of that optimization.
             # Still a constant, so it remains an absolute threshold -> fixed R7/R8.
             self.fixed_hi.fill_(env.amax(dim=(1, 2)).quantile(q))
-        if self.cfg.normalize in ("xmax", "xmix"):
+        if self.cfg.normalize in ("xmax", "xmix", "xlse"):
             # Silence floor for _xmax: a low quantile of the PER-FRAME
             # cross-channel max, so only genuinely quiet frames fall back to the
             # absolute comparison and speech frames stay gain-invariant.
@@ -528,6 +568,14 @@ class AFEFrontend(nn.Module):
             # "xmix" is immune: it SUBTRACTS d, so a frame sitting on the guard
             # gives a non-positive numerator and stays off. Only "xmax", which
             # divides the guard by itself, needs the warning.
+            if self.cfg.normalize == "xlse":
+                # T as a fraction of a TYPICAL frame peak, not of the dataset
+                # peak: how soft the diode-OR is depends on T relative to the
+                # signal being compared, and the dataset peak sits ~200x above a
+                # median frame (the same trap that broke the floor).
+                typ = env.amax(dim=1).median()
+                self.lse_temp.fill_(
+                    max(float(self.cfg.lse_temp_frac) * float(typ), _EPS))
             guard = (_EPS ** 0.5 if self.cfg.compression == "sqrt" else 0.0)
             if self.cfg.normalize == "xmax" and \
                     0.0 < float(self.xmax_floor) < 2.0 * guard:
@@ -549,7 +597,7 @@ class AFEFrontend(nn.Module):
         1.0. Export and any per-channel report must go through here.
         """
         thr = self.threshold.detach()
-        return thr.clamp(0.0, 1.0) if self.cfg.normalize == "xmix" else thr
+        return thr.clamp(0.0, 1.0) if self.cfg.normalize in _DIVIDER_FORM else thr
 
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:
@@ -573,7 +621,7 @@ class AFEFrontend(nn.Module):
             qs = torch.arange(1, self.n_comparators + 1, device=flat.device,
                               dtype=flat.dtype) / (self.n_comparators + 1)
             thr = torch.quantile(flat, qs, dim=1).T.reshape(-1)   # channel-major
-        if self.cfg.normalize == "xmix":
+        if self.cfg.normalize in _DIVIDER_FORM:
             # alpha is the divider ratio Rb/(Ra+Rb), so only [0, 1] is buildable.
             # It also removes a degenerate start: a channel that never rose above
             # V_ref in the init batch averages to exactly -1, the same value

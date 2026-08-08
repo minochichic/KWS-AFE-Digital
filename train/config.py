@@ -187,7 +187,26 @@ class AFEConfig:
     #            thresholds depend on alpha in OPPOSITE directions (a*floor vs
     #            (1-a)*d), so alphas learned under `xmax` would be mis-set per
     #            channel once built. Use this one to fix the hardware.
-    normalize: str = "minmax"    # "minmax" | "fixed" | "agc" | "xmax" | "xmix" | "none"
+    # "xlse"   = "xmix" with the denominator a DIODE-OR actually produces. A
+    #            diode is exponential, not a step, so the losing channels keep
+    #            conducting and the wired-OR settles at a log-sum-exp, not a max:
+    #                V_or = n*V_T * ln( sum_j exp(V_j/(n*V_T)) ) - V_d
+    #            That overshoots the max by up to n*V_T*ln(16) = 72-108 mV while
+    #            our envelope swings are 28-65 mV, so at realistic levels the
+    #            denominator comes out 1.9-2.5x too large. Buying 16 amplifiers
+    #            to raise the swing defeats the point of a diode-OR; modelling
+    #            what the diodes do costs nothing.
+    normalize: str = "minmax"  # "minmax"|"fixed"|"agc"|"xmax"|"xmix"|"xlse"|"none"
+
+    # normalize="xlse" softness: T as a FRACTION of a typical frame peak, since
+    # T/signal (not T in mV) is what sets how soft the max is -- and the ratio
+    # survives not knowing the mic sensitivity. Circuit side, T = n*V_T is
+    # ~26 mV (n=1) to ~39 mV (n=1.5), so:
+    #   0.13 = a ~200 mV typical peak -> within 12% of a hard max
+    #   0.52 = a ~50 mV typical peak  -> denominator ~1.9x too large
+    #   0.78 = 50 mV with n=1.5       -> ~2.5x
+    # Smaller is closer to xmix. Sweep it to find what swing the board needs.
+    lse_temp_frac: float = 0.13
 
     # Diagnostic ONLY: False skips the comparator, so the network sees the
     # continuous envelope instead of {-1,+1}. Not a hardware option (the AFE has

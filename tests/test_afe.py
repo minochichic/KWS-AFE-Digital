@@ -811,3 +811,77 @@ def test_config_requires_in_channels_to_follow_comparator_count() -> None:
     with _pytest.raises(ValueError, match="comparators_per_channel"):
         Config(afe=AFEConfig(n_channels=16, comparators_per_channel=2),
                model=ModelConfig(in_channels=16)).validate()
+
+
+# --------------------------------------------------------------------------- #
+# 16. normalize="xlse": the SOFT max a diode-OR actually produces
+# --------------------------------------------------------------------------- #
+def _xlse_frontend(**kw):
+    fe = make_frontend(normalize="xlse", compression="sqrt",
+                       envelope_win_ms=10.0, xmax_floor_frac=0.02, **kw)
+    w = noise(6)
+    fe.init_fixed_scale(w)
+    fe.init_thresholds(w)
+    return fe, w
+
+
+def test_xlse_collapses_to_xmix_as_temperature_goes_to_zero() -> None:
+    """log-sum-exp IS the max at T->0, so a vanishing temperature must reproduce
+    xmix exactly -- that is the check that the soft-max is the same rule with a
+    knob, not a different one."""
+    fe, w = _xlse_frontend(lse_temp_frac=1e-6)
+    ref = make_frontend(normalize="xmix", compression="sqrt",
+                        envelope_win_ms=10.0, xmax_floor_frac=0.02)
+    ref.init_fixed_scale(w); ref.init_thresholds(w)
+    ref.threshold.data.copy_(fe.threshold.data)
+    assert torch.allclose(fe.envelopes(w), ref.envelopes(w), atol=1e-4)
+    assert torch.equal(fe(w), ref(w))
+
+
+def test_xlse_denominator_never_undershoots_the_max() -> None:
+    """LSE >= max, always. That is what keeps the normalized value <= 1 and so
+    keeps alpha a buildable [0,1] divider ratio even when the max is soft."""
+    fe, w = _xlse_frontend(lse_temp_frac=0.52)
+    raw = fe.envelopes(w, raw=True)
+    T = fe.lse_temp
+    lse = torch.logsumexp(raw / T, dim=1) * T
+    assert torch.all(lse >= raw.amax(dim=1) - 1e-5)
+    assert float(fe.envelopes(w).max()) <= 1.0 + 1e-5
+
+
+def test_xlse_temperature_scales_with_a_typical_frame_not_the_dataset_peak() -> None:
+    """How soft the diode-OR is depends on T relative to the signal it compares.
+    Anchoring to the dataset peak would repeat the floor's mistake -- that peak
+    sits ~200x above a median frame."""
+    fe, w = _xlse_frontend(lse_temp_frac=0.5)
+    raw = fe.envelopes(w, raw=True)
+    typical = float(raw.amax(dim=1).median())
+    assert abs(float(fe.lse_temp) - 0.5 * typical) < 1e-6
+    assert float(fe.lse_temp) < 0.5 * float(raw.max())     # far below the peak
+
+
+def test_xlse_softer_temperature_inflates_the_denominator() -> None:
+    """The failure this mode exists to model: a warmer diode makes the OR node
+    overshoot the true max, so the threshold every channel is judged against
+    rises. Measured on real speech it reaches 1.9-2.5x at realistic swings."""
+    fe_hard, w = _xlse_frontend(lse_temp_frac=0.01)
+    fe_soft, _ = _xlse_frontend(lse_temp_frac=0.8)
+    raw = fe_hard.envelopes(w, raw=True)
+    mx = raw.amax(dim=1)
+    r = lambda fe: float(((torch.logsumexp(raw / fe.lse_temp, dim=1)
+                           * fe.lse_temp) / mx).median())
+    assert r(fe_hard) < 1.02 < 1.5 < r(fe_soft)
+
+
+def test_xlse_outputs_binary_and_keeps_alpha_buildable() -> None:
+    fe, w = _xlse_frontend(lse_temp_frac=0.52)
+    out = fe(w, target_T=128)
+    assert out.shape == (6, 16, 128)
+    assert set(torch.unique(out).tolist()) <= {-1.0, 1.0}
+    a = fe.effective_alpha()
+    assert torch.all(a >= 0) and torch.all(a <= 1)
+
+
+def test_xlse_rejects_log_compression() -> None:
+    with pytest.raises(ValueError, match="sqrt"):
+        make_frontend(normalize="xlse", compression="log", envelope_win_ms=10.0)
