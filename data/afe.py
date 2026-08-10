@@ -85,6 +85,41 @@ def discretize(pulse_times_ms, window_ms: float, n_windows: int,
         f"reduce {reduce!r} unsupported by this reference (max/count only)")
 
 
+def load_afe_state(afe: "AFEFrontend", state_dict: dict) -> list:
+    """Load an AFE checkpoint, dropping only keys that PROVABLY change nothing.
+
+    `deadzone` used to be registered unconditionally; it is now created only
+    when `spice_deadzone` is set, so every checkpoint written before that
+    change carries a key the current module does not want and strict loading
+    refuses. Old runs still have to be re-scorable -- that is the whole point
+    of runs/<tag>/best.pt -- so the key is dropped, but only when dropping it
+    is exact.
+
+    The deadzone applies `relu(mel - deadzone.clamp(min=0))`. With an all-zero
+    deadzone that is `relu(mel)`, which is the identity ONLY while mel cannot
+    go negative -- true for compression="sqrt", false for "log". So a log run
+    is left to fail loudly rather than silently re-scored through a different
+    front end: we cannot tell from the checkpoint whether that relu was active
+    during training, and guessing wrong would corrupt a recorded number.
+
+    Returns the list of dropped keys so callers can report them.
+    """
+    own = set(afe.state_dict())
+    sd = dict(state_dict)
+    dropped = []
+    for k in [k for k in sd if k not in own]:
+        if k != "deadzone":
+            continue
+        exact = (bool((sd[k].clamp(min=0) == 0).all())
+                 and getattr(afe.cfg, "compression", "log") == "sqrt")
+        if exact:
+            sd.pop(k)
+            dropped.append(k)
+    # Anything not dropped stays in, so load_state_dict raises naming it.
+    afe.load_state_dict(sd)
+    return dropped
+
+
 def _resolve_spice_path(path: str) -> Path:
     """Locate the SPICE filterbank, tolerating the pre-`analog/` layout.
 

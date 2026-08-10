@@ -37,7 +37,7 @@ import torch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from data.afe import AFEFrontend                                     # noqa: E402
+from data.afe import AFEFrontend, load_afe_state                     # noqa: E402
 from data.speech_commands import (SILENCE_INDEX,                     # noqa: E402
                                   build_dataloaders)
 from train.config import load_config                                 # noqa: E402
@@ -183,7 +183,7 @@ def main() -> None:
     afe = AFEFrontend(cfg.afe).to(dev).eval()
     ck = torch.load(f"runs/{args.tag}/best.pt", map_location=dev,
                     weights_only=True)
-    afe.load_state_dict(ck["afe"])
+    load_afe_state(afe, ck["afe"])
 
     tr, _, te = build_dataloaders(cfg.data, cfg.train.batch_size, SR,
                                   seed=cfg.train.seed)

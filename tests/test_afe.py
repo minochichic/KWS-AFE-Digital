@@ -885,3 +885,57 @@ def test_xlse_outputs_binary_and_keeps_alpha_buildable() -> None:
 def test_xlse_rejects_log_compression() -> None:
     with pytest.raises(ValueError, match="sqrt"):
         make_frontend(normalize="xlse", compression="log", envelope_win_ms=10.0)
+
+
+# --------------------------------------------------------------------------- #
+# 17. load_afe_state: old checkpoints must stay re-scorable, but only exactly
+# --------------------------------------------------------------------------- #
+def _with_deadzone(**kw):
+    """A frontend that HAS the deadzone parameter, to mint a legacy state_dict."""
+    return make_frontend(spice_deadzone=True, envelope_win_ms=10.0, **kw)
+
+
+def test_load_afe_state_drops_a_zero_deadzone_under_sqrt() -> None:
+    """The key exists only because it used to be registered unconditionally.
+    All-zero + sqrt means relu(mel) is the identity, so dropping is exact."""
+    from data.afe import load_afe_state
+    old = _with_deadzone(compression="sqrt")
+    new = make_frontend(compression="sqrt", envelope_win_ms=10.0)
+    assert "deadzone" in old.state_dict() and "deadzone" not in new.state_dict()
+
+    w = noise(4)
+    old.init_fixed_scale(w); old.init_thresholds(w)
+    dropped = load_afe_state(new, old.state_dict())
+    assert dropped == ["deadzone"]
+    # exact, not approximate: the two frontends must agree bit for bit
+    assert torch.equal(new(w), old(w))
+
+
+def test_load_afe_state_refuses_a_nonzero_deadzone() -> None:
+    """A trained deadzone is part of the model. Dropping it would silently
+    re-score the run through a different front end."""
+    from data.afe import load_afe_state
+    old = _with_deadzone(compression="sqrt")
+    old.deadzone.data.fill_(0.01)
+    new = make_frontend(compression="sqrt", envelope_win_ms=10.0)
+    with pytest.raises(RuntimeError, match="deadzone"):
+        load_afe_state(new, old.state_dict())
+
+
+def test_load_afe_state_refuses_log_where_relu_is_not_identity() -> None:
+    """Under log compression mel goes negative, so relu(mel) clips instead of
+    passing through -- and the checkpoint cannot tell us whether it was on."""
+    from data.afe import load_afe_state
+    old = _with_deadzone(compression="log")
+    new = make_frontend(compression="log", envelope_win_ms=10.0)
+    with pytest.raises(RuntimeError, match="deadzone"):
+        load_afe_state(new, old.state_dict())
+
+
+def test_load_afe_state_still_catches_a_genuinely_wrong_checkpoint() -> None:
+    """Tolerance is scoped to one key. A shape mismatch must still fail."""
+    from data.afe import load_afe_state
+    src = make_frontend(n_channels=16, envelope_win_ms=10.0)
+    dst = make_frontend(n_channels=8, envelope_win_ms=10.0)
+    with pytest.raises(RuntimeError):
+        load_afe_state(dst, src.state_dict())

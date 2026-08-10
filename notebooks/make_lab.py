@@ -78,7 +78,7 @@ code('''# --- 프리플라이트 + 공용 import (여기서 멈추면 아래는 
 import torch, numpy as np
 from train.config import load_config, AFEConfig
 from data.speech_commands import build_dataloaders, ensure_dataset, class_names
-from data.afe import AFEFrontend
+from data.afe import AFEFrontend, load_afe_state
 from models.binary_matchboxnet import BinaryMatchboxNet
 from train.train import Trainer, set_seed
 import data.afe as _A
@@ -270,7 +270,8 @@ code('''def load_run(tag, **over):
     afe = AFEFrontend(cfg.afe).to(DEV).eval()
     model = BinaryMatchboxNet(cfg.model).to(DEV).eval()
     ck = torch.load(f'runs/{tag}/best.pt', map_location=DEV, weights_only=True)
-    model.load_state_dict(ck['model']); afe.load_state_dict(ck['afe'])
+    model.load_state_dict(ck['model'])
+    load_afe_state(afe, ck['afe'])      # 옛 런의 deadzone 키를 안전하게 흘린다
     return cfg, afe, model, ck
 
 
@@ -315,18 +316,31 @@ def backfill(tag):
         _TE = test_loader(cfg)
     t = Trainer(cfg, BinaryMatchboxNet(cfg.model), afe=AFEFrontend(cfg.afe))
     ck = torch.load(d / 'best.pt', map_location=t.device, weights_only=True)
-    t.model.load_state_dict(ck['model']); t.afe.load_state_dict(ck['afe'])
+    t.model.load_state_dict(ck['model'])
+    load_afe_state(t.afe, ck['afe'])
     rec = save_result(d, tag, cfg, float(ck['best_acc']),
                       float(t.evaluate(_TE)['acc']), t.afe.effective_alpha())
-    print(f"  {tag}: test {rec['test']:.4f} 복원")
+    print(f"  {tag}: test {rec['test']:.4f} 기록")
     return rec
 
 
 def results(backfill_missing=True):
+    failed = []
     if backfill_missing:
+        # 옛 런들은 지금 코드와 안 맞을 수 있다. 하나가 실패해도 나머지 30개의
+        # 결과까지 날리면 안 되므로 런 단위로 잡고 끝에 모아 보고한다.
+        # 경로 경고는 억누른다 -- analog/ 이전에 쓰인 config 라서 나오는 것이고,
+        # 폴백이 맞는 파일을 찾은 것까지 확인된 상태다. 여기선 읽기만 한다.
+        import warnings
         for p in sorted(pathlib.Path('runs').glob('*/config.yaml')):
-            if not (p.parent / 'result.json').exists():
-                backfill(p.parent.name)
+            if (p.parent / 'result.json').exists():
+                continue
+            try:
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('ignore', message='.*spice_matrix_path.*')
+                    backfill(p.parent.name)
+            except Exception as e:
+                failed.append((p.parent.name, f'{type(e).__name__}: {e}'.split(chr(10))[0]))
     rows = [json.loads(p.read_text())
             for p in sorted(pathlib.Path('runs').glob('*/result.json'))]
     if not rows:
@@ -348,6 +362,10 @@ def results(backfill_missing=True):
         for r in lse:
             print(f"{r['lse_temp_frac']:>6.2f}{26.0/r['lse_temp_frac']:>9.0f}mV"
                   f"{r['test']:>9.4f}   {r['tag']}")
+    if failed:
+        print(f"\\n⚠️ 복원 실패 {len(failed)}개 (표에서 빠졌다):")
+        for tag, msg in failed:
+            print(f"   {tag:<24} {msg[:88]}")
     return rows
 
 results()'''),
