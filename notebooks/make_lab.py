@@ -118,14 +118,19 @@ DEV = 'cuda' if torch.cuda.is_available() else 'cpu'
 SR  = AFEConfig().sample_rate
 
 # 확정 설정. 실험 셀들은 이걸 복사해 필요한 키만 바꾼다.
+# 비교기는 채널당 1개가 기본값이다 (AFEConfig / base.yaml 과 동일).
+# k=2 는 업그레이드 경로로 남긴다: 하드 max 에서 +2.5pp 였지만 soft-max 와
+# 겹치는지는 미검증이고, xlse k=1 (0.8445) 이 이미 xmix k=2 (0.8024) 를 크게
+# 넘는다. gpu_local 의 CONFIRMED 는 k=2 였다 -- 그래서 af_k2 를 이 딕셔너리로
+# 재현하려 하면 안 된다 (그 런은 32행이고 resume 이 형상 불일치로 막는다).
 CONFIRMED = {'afe.filterbank_source': 'spice',
              'afe.compression': 'sqrt',
              'afe.normalize': 'xmix',
              'afe.xmax_floor_frac': 0.02,
-             'afe.comparators_per_channel': 2}
+             'afe.comparators_per_channel': 1}
 
-# soft-max 계열. k=1 로 되돌려 xmix k=1 (0.7778) 과 직접 비교한다.
-LSE  = {**CONFIRMED, 'afe.normalize': 'xlse', 'afe.comparators_per_channel': 1}
+# soft-max 계열. k 는 CONFIRMED 에서 그대로 온다 (=1).
+LSE  = {**CONFIRMED, 'afe.normalize': 'xlse'}
 BEST = {**LSE, 'afe.lse_temp_frac': 0.78}
 
 print(f"\\n모듈 정상.  DATA_ROOT={DATA_ROOT}  존재={os.path.isdir(DATA_ROOT)}")
