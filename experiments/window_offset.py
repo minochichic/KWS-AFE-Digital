@@ -88,6 +88,85 @@ def reposition(x: torch.Tensor, a: torch.Tensor, b: torch.Tensor,
 
 # --------------------------------------------------------------------------- #
 @torch.no_grad()
+def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
+                 fills=("noise", "zero"), device: str = "cpu", seed: int = 0):
+    """Accuracy vs where the word sits inside the window. Returns a dict.
+
+    Exposed as a function so the notebook and the CLI share ONE implementation
+    of the repositioning -- that is the part with the traps in it.
+
+    Position is normalized, not absolute: p = 0 puts the word flush against the
+    start of the window, p = 1 flush against the end.  That is exactly the
+    trajectory a word traces as the window slides past it, and unlike an
+    absolute +-ms sweep it is feasible for EVERY clip regardless of word length
+    -- so the population never changes with position and short words are not
+    silently over-represented.
+    """
+    ps = [i / (steps - 1) for i in range(steps)]
+    hit = {(f, i): 0 for f in fills for i in range(steps)}
+    kept = total = 0
+    travel = 0.0
+
+    g = torch.Generator(device="cpu").manual_seed(seed)
+    for x, y in loader:
+        x, y = x.to(device), y.to(device)
+        total += y.numel()
+        a, b = word_span(x)
+        ok = b > a
+        if not ok.any():
+            continue
+        x, y, a, b = x[ok], y[ok], a[ok], b[ok]
+        kept += y.numel()
+
+        # How far this clip's word can travel at all.  Stationary silence fills
+        # the window, so its range is ~0 and it stays put at every p -- which
+        # is the honest answer: sliding does not change a steady noise clip.
+        span = (x.shape[1] - (b - a)).clamp_min(0)
+        travel += float(span.sum()) / SR * 1000.0
+
+        floor = noise_floor_rms(x, a, b)
+        for f in fills:
+            if f == "zero":
+                bed = torch.zeros_like(x)
+            else:
+                # White-ish bed at the clip's own measured floor.  The point is
+                # only that the window is not digitally dead; matching spectrum
+                # would need a noise bank and does not change the comparison.
+                bed = torch.randn(x.shape, generator=g).to(device)
+                bed = bed * (floor / bed.std(1).clamp_min(1e-9))[:, None]
+            for i, p in enumerate(ps):
+                delta = (span.float() * p).long() - a
+                xd = reposition(x, a, b, delta, bed)
+                pred = model(afe(xd, target_T=target_T)).argmax(1)
+                hit[(f, i)] += (pred == y).sum().item()
+
+    if not kept:
+        raise RuntimeError("no clip had a detectable word span")
+    return {"ps": ps, "fills": list(fills), "hit": hit, "kept": kept,
+            "total": total, "travel_ms": travel / kept}
+
+
+def print_offset_curve(res, tag: str = "") -> None:
+    ps, fills, hit, kept = res["ps"], res["fills"], res["hit"], res["kept"]
+    print(f"{tag}   {kept}/{res['total']} 클립, 평균 이동 가능 폭 "
+          f"{res['travel_ms']:.0f} ms  (창 안에서 단어가 움직일 수 있는 거리)\n")
+    print(f"{'위치':>7}{''.join(f'{f:>12}' for f in fills)}   기준=중앙")
+    mid = len(ps) // 2
+    base = {f: hit[(f, mid)] / kept for f in fills}
+    for i, p in enumerate(ps):
+        acc = "".join(f"{hit[(f, i)] / kept:>12.4f}" for f in fills)
+        dlt = "".join(f"{(hit[(f, i)] / kept - base[f]) * 100:>+9.1f}pp"
+                      for f in fills)
+        print(f"{p:>7.2f}{acc}  {dlt}")
+    for f in fills:
+        col = [hit[(f, i)] / kept for i in range(len(ps))]
+        print(f"\n{f:>6}: 평균 {sum(col) / len(col):.4f}  "
+              f"최저 {min(col):.4f}  최고 {max(col):.4f}  "
+              f"낙폭 {(max(col) - min(col)) * 100:.1f}pp")
+
+
+# --------------------------------------------------------------------------- #
+@torch.no_grad()
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("tag", nargs="?", default="af_k1_ref")
@@ -122,69 +201,10 @@ def main() -> None:
     _, _, te = build_dataloaders(cfg.data, cfg.train.batch_size, SR,
                                  seed=cfg.train.seed)
 
-    # Position is normalized, not absolute: p = 0 puts the word flush against
-    # the start of the window, p = 1 flush against the end.  That is exactly
-    # the trajectory a word traces as the window slides past it, and unlike an
-    # absolute +-ms sweep it is feasible for EVERY clip regardless of word
-    # length -- so the population never changes with position and short words
-    # are not silently over-represented.
-    ps = [i / (args.steps - 1) for i in range(args.steps)]
     fills = ["noise", "zero"] if args.fill == "both" else [args.fill]
-    hit = {(f, i): 0 for f in fills for i in range(args.steps)}
-    kept = total = 0
-    travel = 0.0
-
-    g = torch.Generator(device="cpu").manual_seed(0)
-    for x, y in te:
-        x, y = x.to(dev), y.to(dev)
-        total += y.numel()
-        a, b = word_span(x)
-        ok = b > a
-        if not ok.any():
-            continue
-        x, y, a, b = x[ok], y[ok], a[ok], b[ok]
-        kept += y.numel()
-
-        # How far this clip's word can travel at all.  Stationary silence fills
-        # the window, so its range is ~0 and it stays put at every p -- which
-        # is the honest answer: sliding does not change a steady noise clip.
-        span = (x.shape[1] - (b - a)).clamp_min(0)
-        travel += float(span.sum()) / SR * 1000.0
-
-        floor = noise_floor_rms(x, a, b)
-        for f in fills:
-            if f == "zero":
-                bed = torch.zeros_like(x)
-            else:
-                # White-ish bed at the clip's own measured floor.  The point is
-                # only that the window is not digitally dead; matching spectrum
-                # would need a noise bank and does not change the comparison.
-                bed = torch.randn(x.shape, generator=g).to(dev)
-                bed = bed * (floor / bed.std(1).clamp_min(1e-9))[:, None]
-            for i, p in enumerate(ps):
-                delta = (span.float() * p).long() - a
-                xd = reposition(x, a, b, delta, bed)
-                pred = model(afe(xd, target_T=cfg.model.T)).argmax(1)
-                hit[(f, i)] += (pred == y).sum().item()
-
-    if not kept:
-        sys.exit("no clip had a detectable word span")
-
-    print(f"{args.tag}   {kept}/{total} 클립, 평균 이동 가능 폭 "
-          f"{travel / kept:.0f} ms  (창 안에서 단어가 움직일 수 있는 거리)\n")
-    print(f"{'위치':>7}{''.join(f'{f:>12}' for f in fills)}   기준=중앙")
-    mid = args.steps // 2
-    base = {f: hit[(f, mid)] / kept for f in fills}
-    for i, p in enumerate(ps):
-        acc = "".join(f"{hit[(f, i)] / kept:>12.4f}" for f in fills)
-        dlt = "".join(f"{(hit[(f, i)] / kept - base[f]) * 100:>+9.1f}pp"
-                      for f in fills)
-        print(f"{p:>7.2f}{acc}  {dlt}")
-    for f in fills:
-        col = [hit[(f, i)] / kept for i in range(args.steps)]
-        print(f"\n{f:>6}: 평균 {sum(col) / len(col):.4f}  "
-              f"최저 {min(col):.4f}  최고 {max(col):.4f}  "
-              f"낙폭 {(max(col) - min(col)) * 100:.1f}pp")
+    res = offset_curve(afe, model, te, cfg.model.T, steps=args.steps,
+                       fills=fills, device=dev)
+    print_offset_curve(res, args.tag)
 
 
 if __name__ == "__main__":
