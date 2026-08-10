@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1300" height="1010" viewBox="0 0 1300 1010" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1300" height="1010" fill="#ffffff"/>
+<text x="650.0" y="36" text-anchor="middle" font-size="23" fill="#0f172a" font-weight="700">다이오드-OR은 왜 "제일 큰 값"을 못 주나</text>
+<text x="650.0" y="60" text-anchor="middle" font-size="13" fill="#64748b">다이오드는 스위치가 아니라 폭 26 mV짜리 흐릿한 밸브다. 그 폭은 물리가 고정하고, 목소리 크기는 안 그렇다.</text>
+<rect x="40" y="84" width="610" height="176" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="60" y="110" text-anchor="start" font-size="15" fill="#15803d" font-weight="700">우리가 기대한 것 — 스위치</text>
+<rect x="90" y="158" width="44" height="54" rx="3" fill="#15803d" opacity="0.75"/>
+<text x="112" y="230" text-anchor="middle" font-size="10.5" fill="#15803d" font-weight="700">켜짐</text>
+<rect x="220" y="182" width="44" height="30" rx="3" fill="#cbd5e1" opacity="0.5"/>
+<text x="242" y="230" text-anchor="middle" font-size="10.5" fill="#64748b">꺼짐</text>
+<rect x="350" y="192" width="44" height="20" rx="3" fill="#cbd5e1" opacity="0.5"/>
+<text x="372" y="230" text-anchor="middle" font-size="10.5" fill="#64748b">꺼짐</text>
+<rect x="480" y="200" width="44" height="12" rx="3" fill="#cbd5e1" opacity="0.5"/>
+<text x="502" y="230" text-anchor="middle" font-size="10.5" fill="#64748b">꺼짐</text>
+<text x="345" y="250" text-anchor="middle" font-size="12" fill="#15803d" font-weight="700">제일 큰 놈만 통과, 나머지는 완전히 차단</text>
+<rect x="670" y="84" width="590" height="176" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="690" y="110" text-anchor="start" font-size="15" fill="#dc2626" font-weight="700">실제 — 흐릿한 밸브</text>
+<rect x="715" y="158" width="44" height="54" rx="3" fill="#dc2626" opacity="0.7"/>
+<text x="737" y="230" text-anchor="middle" font-size="10.5" fill="#dc2626">많이</text>
+<rect x="840" y="182" width="44" height="30" rx="3" fill="#dc2626" opacity="0.57"/>
+<text x="862" y="230" text-anchor="middle" font-size="10.5" fill="#dc2626">조금</text>
+<rect x="965" y="192" width="44" height="20" rx="3" fill="#dc2626" opacity="0.43999999999999995"/>
+<text x="987" y="230" text-anchor="middle" font-size="10.5" fill="#dc2626">찔끔</text>
+<rect x="1090" y="200" width="44" height="12" rx="3" fill="#dc2626" opacity="0.30999999999999994"/>
+<text x="1112" y="230" text-anchor="middle" font-size="10.5" fill="#dc2626">찔끔</text>
+<text x="965" y="250" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">진 채널도 계속 샌다 → 새는 것들이 합쳐져 노드가 들린다</text>
+<rect x="40" y="288" width="1220" height="540" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="60" y="316" text-anchor="start" font-size="16" fill="#1e3a8a" font-weight="700">B. 같은 회로인데 목소리 크기에 따라 딴판이 된다</text>
+<text x="60" y="338" text-anchor="start" font-size="11.5" fill="#64748b">두 그래프는 같은 mV 자를 쓴다. 회색 띠(26 mV, 다이오드의 흐린 폭)는 양쪽에서 높이가 똑같고, 막대만 줄어든다 — 그게 전부다.</text>
+<rect x="70" y="358" width="540" height="300" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="340" y="384" text-anchor="middle" font-size="14" fill="#0f172a" font-weight="700">74 dB — 보통 대화</text>
+<text x="340" y="402" text-anchor="middle" font-size="10.5" fill="#64748b">채널 차이가 흐린 폭보다 훨씬 크다</text>
+<rect x="90" y="437.97544000000005" width="440" height="20.16456" fill="#64748b" opacity="0.18"/>
+<text x="98" y="452.05772" text-anchor="start" font-size="9.5" fill="#64748b">다이오드 흐린 폭 26 mV</text>
+<rect x="96" y="458.14" width="19" height="184.86" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="123" y="496.16048252886935" width="19" height="146.83951747113068" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="150" y="539.045582625312" width="19" height="103.95441737468794" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="177" y="577.4091968662813" width="19" height="65.59080313371877" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="204" y="596.5652674271139" width="19" height="46.4347325728861" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="231" y="606.1155808454853" width="19" height="36.88441915451472" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="258" y="616.8878309501038" width="19" height="26.11216904989624" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="285" y="622.2583668537739" width="19" height="20.7416331462261" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="312" y="628.316048252887" width="19" height="14.683951747113065" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="339" y="631.3361225299392" width="19" height="11.663877470060854" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="366" y="633.7350527991663" width="19" height="9.264947200833754" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="393" y="635.640590845148" width="19" height="7.359409154851952" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="420" y="637.1542135174127" width="19" height="5.845786482587266" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="447" y="638.3565267427114" width="19" height="4.643473257288609" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="474" y="639.3115580845486" width="19" height="3.6884419154514716" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="501" y="640.0701664444164" width="19" height="2.9298335555836146" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<line x1="90" y1="458.14" x2="530" y2="458.14" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="5 3"/>
+<text x="538" y="462.14" text-anchor="start" font-size="10.5" fill="#0f172a">진짜 max 237</text>
+<line x1="90" y1="454.8684596998236" x2="530" y2="454.8684596998236" stroke="#15803d" stroke-width="2.6"/>
+<line x1="530" y1="454.8684596998236" x2="538" y2="434.14" stroke="#15803d" stroke-width="1.2"/>
+<text x="542" y="438.14" text-anchor="start" font-size="11.5" fill="#15803d" font-weight="700">OR 노드 241</text>
+<line x1="90" y1="643" x2="550" y2="643" stroke="#334155" stroke-width="1.4"/>
+<rect x="70" y="674" width="540" height="100" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="340" y="700" text-anchor="middle" font-size="15" fill="#15803d" font-weight="700">분모가 1.02배 부풀었다</text>
+<text x="340" y="722" text-anchor="middle" font-size="11.5" fill="#0f172a">실제로 분모에 기여한 채널 1.2개 / 16개</text>
+<text x="340" y="744" text-anchor="middle" font-size="11.5" fill="#15803d">→ 사실상 진짜 max. 문제 없음</text>
+<text x="340" y="764" text-anchor="middle" font-size="10.5" fill="#64748b">흐린 폭 / 신호 = 0.11</text>
+<rect x="680" y="358" width="540" height="300" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="950" y="384" text-anchor="middle" font-size="14" fill="#0f172a" font-weight="700">60 dB — 조용한 대화</text>
+<text x="950" y="402" text-anchor="middle" font-size="10.5" fill="#64748b">채널 차이가 흐린 폭과 비슷하다</text>
+<rect x="700" y="586.17544" width="440" height="20.16456" fill="#64748b" opacity="0.18"/>
+<text x="708" y="600.25772" text-anchor="start" font-size="9.5" fill="#64748b">다이오드 흐린 폭 26 mV</text>
+<rect x="706" y="606.34" width="19" height="36.660000000000004" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="733" y="613.8799269150078" width="19" height="29.12007308499216" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="760" y="622.3845670185218" width="19" height="20.615432981478197" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="787" y="629.9925411506971" width="19" height="13.007458849302877" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="814" y="633.7914243420859" width="19" height="9.208575657914121" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="841" y="635.6853683533241" width="19" height="7.314631646675913" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="868" y="637.821637361413" width="19" height="5.178362638587018" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="895" y="638.886680346529" width="19" height="4.113319653470999" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="922" y="640.0879926915007" width="19" height="2.9120073084992155" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="949" y="640.6869103751357" width="19" height="2.313089624864389" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="976" y="641.1626476015224" width="19" height="1.83735239847758" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="1003" y="641.5405391127509" width="19" height="1.4594608872491213" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="1030" y="641.8407090097822" width="19" height="1.1592909902177277" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="1057" y="642.0791424342086" width="19" height="0.9208575657914119" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="1084" y="642.2685368353324" width="19" height="0.7314631646675914" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<rect x="1111" y="642.4189781556438" width="19" height="0.5810218443562443" rx="2" fill="#1e3a8a" opacity="0.55"/>
+<line x1="700" y1="606.34" x2="1140" y2="606.34" stroke="#0f172a" stroke-width="1.6" stroke-dasharray="5 3"/>
+<text x="1148" y="610.34" text-anchor="start" font-size="10.5" fill="#0f172a">진짜 max 47</text>
+<line x1="700" y1="574.9348944843656" x2="1140" y2="574.9348944843656" stroke="#dc2626" stroke-width="2.6"/>
+<line x1="1140" y1="574.9348944843656" x2="1148" y2="560.9348944843656" stroke="#dc2626" stroke-width="1.2"/>
+<text x="1152" y="564.9348944843656" text-anchor="start" font-size="11.5" fill="#dc2626" font-weight="700">OR 노드 87</text>
+<line x1="700" y1="643" x2="1160" y2="643" stroke="#334155" stroke-width="1.4"/>
+<rect x="680" y="674" width="540" height="100" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="950" y="700" text-anchor="middle" font-size="15" fill="#dc2626" font-weight="700">분모가 1.86배 부풀었다</text>
+<text x="950" y="722" text-anchor="middle" font-size="11.5" fill="#0f172a">실제로 분모에 기여한 채널 4.7개 / 16개</text>
+<text x="950" y="744" text-anchor="middle" font-size="11.5" fill="#dc2626">→ 모든 채널이 훨씬 덜 발화한다</text>
+<text x="950" y="764" text-anchor="middle" font-size="10.5" fill="#64748b">흐린 폭 / 신호 = 0.55</text>
+<text x="650" y="810" text-anchor="middle" font-size="13" fill="#dc2626" font-weight="700">조용히 말할수록 나빠진다 — 하필 제일 필요한 곳에서.</text>
+<rect x="40" y="856" width="1220" height="128" rx="6" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.4"/>
+<text x="60" y="884" text-anchor="start" font-size="16" fill="#7e22ce" font-weight="700">C. 그래서 바꿔야 할 것 두 가지</text>
+<text x="70" y="910" text-anchor="start" font-size="12.5" fill="#7e22ce" font-weight="700">1</text>
+<text x="88" y="910" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">"흐린 정도"는 우리가 고르는 값이 아니다</text>
+<text x="430" y="910" text-anchor="start" font-size="11" fill="#64748b">코드의 lse_temp_frac은 곧 1/음량이다. 하나로 학습하면 한 음량만 배운다.</text>
+<text x="70" y="931" text-anchor="start" font-size="12.5" fill="#7e22ce" font-weight="700"></text>
+<text x="88" y="931" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">→ 게인 증강을 다시 본다</text>
+<text x="430" y="931" text-anchor="start" font-size="11" fill="#64748b">xlse에서 클립 게인을 바꾸는 건 lse_temp_frac을 바꾸는 것과 같다. 예전 기각(−9pp)은 고정 임계 얘기라 여기 적용 안 됨.</text>
+<text x="70" y="952" text-anchor="start" font-size="12.5" fill="#7e22ce" font-weight="700">2</text>
+<text x="88" y="952" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">spice_gain_restore를 켠다</text>
+<text x="430" y="952" text-anchor="start" font-size="11" fill="#64748b">"채널별 threshold가 흡수한다"는 진짜 max에서만 맞다. 소프트 max는 16채널을 한 숫자로 섞으므로,</text>
+<text x="70" y="973" text-anchor="start" font-size="12.5" fill="#7e22ce" font-weight="700"></text>
+<text x="88" y="973" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700"></text>
+<text x="430" y="973" text-anchor="start" font-size="11" fill="#64748b">한 채널의 오차가 모두의 분모를 밀어올린다 — 채널별 상수로는 되돌릴 수 없다.</text>
+<text x="40" y="994" text-anchor="start" font-size="10" fill="#64748b">숫자 재현: docs/diagrams/make_softmax_intuition.py · 대수 유도: docs/experiments_log.md §6-6</text>
+</svg>
