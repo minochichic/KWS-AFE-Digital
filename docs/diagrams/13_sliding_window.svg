@@ -1,0 +1,195 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1340" height="1210" viewBox="0 0 1340 1210" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1340" height="1210" fill="#ffffff"/>
+<defs><marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#334155"/></marker></defs>
+<text x="670.0" y="36" text-anchor="middle" font-size="23" fill="#0f172a" font-weight="700">왜 학습 때는 없던 문제가 FPGA에서 생기나</text>
+<text x="670.0" y="60" text-anchor="middle" font-size="13" fill="#64748b">데이터셋이 대신 해주던 일이 하나 있다 — 그걸 보드에서는 아무도 안 해준다.</text>
+<rect x="40" y="88" width="620" height="200" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="60" y="114" text-anchor="start" font-size="15" fill="#15803d" font-weight="700">A. 학습할 때 — 문제가 없었던 이유</text>
+<text x="60" y="135" text-anchor="start" font-size="11.5" fill="#64748b">Speech Commands가 이미 1초로 잘라서 준다. 단어는 대충 가운데.</text>
+<rect x="70" y="154" width="500" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<rect x="220.0" y="155" width="150.0" height="26" rx="5" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/><text x="295.0" y="172.5" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">yes</text>
+<text x="586" y="173" text-anchor="start" font-size="10" fill="#64748b">1초 클립</text>
+<rect x="70" y="194" width="500" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<rect x="200.0" y="195" width="150.0" height="26" rx="5" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/><text x="275.0" y="212.5" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">go</text>
+<text x="586" y="213" text-anchor="start" font-size="10" fill="#64748b">1초 클립</text>
+<rect x="70" y="234" width="500" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<rect x="240.0" y="235" width="150.0" height="26" rx="5" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/><text x="315.0" y="252.5" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">stop</text>
+<text x="586" y="253" text-anchor="start" font-size="10" fill="#64748b">1초 클립</text>
+<text x="350" y="278" text-anchor="middle" font-size="12.5" fill="#15803d" font-weight="700">모델은 평생 "가운데 있는 단어"만 봤다.</text>
+<rect x="680" y="88" width="620" height="200" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="700" y="114" text-anchor="start" font-size="15" fill="#dc2626" font-weight="700">B. FPGA에서 — always-on</text>
+<text x="700" y="135" text-anchor="start" font-size="11.5" fill="#64748b">마이크는 끝없이 흐른다. 클립도, 경계도, 가운데도 없다.</text>
+<rect x="710" y="162" width="570" height="30" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<rect x="1010" y="163" width="130" height="28" rx="5" fill="#dc2626" opacity="0.22" stroke="#dc2626" stroke-width="1.6"/><text x="1075.0" y="181.5" text-anchor="middle" font-size="11" fill="#dc2626" font-weight="700">yes</text>
+<text x="716" y="210" text-anchor="start" font-size="10.5" fill="#64748b">⟵ 끝없는 스트림 ⟶</text>
+<text x="1274" y="210" text-anchor="end" font-size="10.5" fill="#64748b">화자는 아무 때나 말한다</text>
+<rect x="700" y="222" width="580" height="54" rx="6" fill="#ffffff" stroke="#fca5a5" stroke-width="1.1"/>
+<text x="712" y="243" text-anchor="start" font-size="12" fill="#dc2626" font-weight="700">누가 1초를 끊어줄 것인가?</text>
+<text x="712" y="263" text-anchor="start" font-size="11" fill="#0f172a">데이터셋이 해주던 그 일을, 이제 FPGA가 스스로 해야 한다.</text>
+<rect x="40" y="306" width="1260" height="128" rx="6" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.4"/>
+<text x="60" y="332" text-anchor="start" font-size="15" fill="#9a3412" font-weight="700">C. "소리가 나면 그때부터 1초 재면 되지 않나?" — 그게 원래 계획이었고, 죽었다</text>
+<text x="60" y="356" text-anchor="start" font-size="11.5" fill="#64748b">Cerutti는 그렇게 했다. 되는 이유는 그쪽 임계가 고정 전압이라 조용하면 아무도 안 넘기 때문이다.</text>
+<rect x="60" y="370" width="600" height="50" rx="6" fill="#ffffff" stroke="#fcd34d" stroke-width="1.1"/>
+<text x="72" y="390" text-anchor="start" font-size="11.5" fill="#9a3412" font-weight="700">우리 임계는 상대적이다 (xmix/xlse)</text>
+<text x="72" y="409" text-anchor="start" font-size="10.5" fill="#0f172a">"16채널 중 지금 제일 큰 놈"에 대한 비율 — 조용해도 누군가는 제일 크다.</text>
+<rect x="680" y="370" width="600" height="50" rx="6" fill="#ffffff" stroke="#fcd34d" stroke-width="1.1"/>
+<text x="692" y="390" text-anchor="start" font-size="11.5" fill="#dc2626" font-weight="700">실측: 조용한 구간에서도 프레임의 95.2%가 발화</text>
+<text x="692" y="409" text-anchor="start" font-size="10.5" fill="#0f172a">→ 트리거가 상시 걸린다. "첫 이벤트 = 말 시작"이 성립하지 않는다.</text>
+<rect x="40" y="456" width="1260" height="330" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="60" y="482" text-anchor="start" font-size="15" fill="#1e3a8a" font-weight="700">D. 그래서 슬라이딩 — 100 ms마다 1초 창을 계속 뽑는다</text>
+<text x="60" y="503" text-anchor="start" font-size="11.5" fill="#64748b">언제 말할지 모르니 항상 본다. 단어를 온전히 담는 창이 약 8개 생기고, 창마다 단어 위치가 다르다.</text>
+<rect x="150" y="526" width="1120" height="30" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<rect x="560" y="527" width="170" height="28" rx="5" fill="#1e3a8a" opacity="0.22" stroke="#1e3a8a" stroke-width="1.6"/><text x="645.0" y="545.5" text-anchor="middle" font-size="11" fill="#1e3a8a" font-weight="700">yes  (270 ms)</text>
+<text x="142" y="546" text-anchor="end" font-size="10.5" fill="#64748b">스트림</text>
+<rect x="170.0" y="572" width="560" height="19" rx="3" fill="none" stroke="#dc2626" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="574" width="170" height="15" rx="2" fill="#dc2626" opacity="0.28"/>
+<text x="1280" y="586" text-anchor="end" font-size="9.5" fill="#dc2626">단어가 창의 100% 지점</text>
+<rect x="225.71428571428572" y="597" width="560" height="19" rx="3" fill="none" stroke="#dc2626" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="599" width="170" height="15" rx="2" fill="#dc2626" opacity="0.28"/>
+<text x="1280" y="611" text-anchor="end" font-size="9.5" fill="#dc2626">단어가 창의  86% 지점</text>
+<rect x="281.42857142857144" y="622" width="560" height="19" rx="3" fill="none" stroke="#dc2626" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="624" width="170" height="15" rx="2" fill="#dc2626" opacity="0.28"/>
+<text x="1280" y="636" text-anchor="end" font-size="9.5" fill="#dc2626">단어가 창의  71% 지점</text>
+<rect x="337.1428571428571" y="647" width="560" height="19" rx="3" fill="none" stroke="#15803d" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="649" width="170" height="15" rx="2" fill="#15803d" opacity="0.28"/>
+<text x="1280" y="661" text-anchor="end" font-size="9.5" fill="#15803d">단어가 창의  57% 지점</text>
+<rect x="392.8571428571429" y="672" width="560" height="19" rx="3" fill="none" stroke="#15803d" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="674" width="170" height="15" rx="2" fill="#15803d" opacity="0.28"/>
+<text x="1280" y="686" text-anchor="end" font-size="9.5" fill="#15803d">단어가 창의  43% 지점</text>
+<rect x="448.57142857142856" y="697" width="560" height="19" rx="3" fill="none" stroke="#dc2626" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="699" width="170" height="15" rx="2" fill="#dc2626" opacity="0.28"/>
+<text x="1280" y="711" text-anchor="end" font-size="9.5" fill="#dc2626">단어가 창의  29% 지점</text>
+<rect x="504.2857142857143" y="722" width="560" height="19" rx="3" fill="none" stroke="#dc2626" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="724" width="170" height="15" rx="2" fill="#dc2626" opacity="0.28"/>
+<text x="1280" y="736" text-anchor="end" font-size="9.5" fill="#dc2626">단어가 창의  14% 지점</text>
+<rect x="560.0" y="747" width="560" height="19" rx="3" fill="none" stroke="#dc2626" stroke-width="1.5" opacity="0.75"/>
+<rect x="560" y="749" width="170" height="15" rx="2" fill="#dc2626" opacity="0.28"/>
+<text x="1280" y="761" text-anchor="end" font-size="9.5" fill="#dc2626">단어가 창의   0% 지점</text>
+<text x="70" y="586" text-anchor="start" font-size="10" fill="#64748b">창 1</text>
+<text x="70" y="761" text-anchor="start" font-size="10" fill="#64748b">창 8</text>
+<text x="560" y="778" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">같은 한 단어인데, 창마다 다른 위치에서 보인다 — 이게 학습 분포와 어긋난다.</text>
+<rect x="40" y="808" width="620" height="210" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="60" y="834" text-anchor="start" font-size="15" fill="#dc2626" font-weight="700">E. 우리가 잰 것 (틀렸다)</text>
+<text x="60" y="855" text-anchor="start" font-size="11.5" fill="#64748b">1초 클립을 그냥 밀었다 → 단어가 클립 밖으로 나가 잘린다.</text>
+<rect x="70" y="874" width="500" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<rect x="220" y="875" width="170" height="26" rx="5" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/><text x="305.0" y="892.5" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">yes</text>
+<text x="640" y="893" text-anchor="end" font-size="10" fill="#64748b">원본</text>
+<rect x="70" y="914" width="500" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<rect x="470" y="915" width="100" height="26" rx="4" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/>
+<text x="520" y="933" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">ye</text>
+<rect x="570" y="915" width="70" height="26" rx="4" fill="#dc2626" opacity="0.15" stroke="#dc2626" stroke-width="1.4" stroke-dasharray="4 3"/>
+<text x="605" y="933" text-anchor="middle" font-size="11" fill="#dc2626" font-weight="700">s</text>
+<line x1="570" y1="908" x2="570" y2="948" stroke="#dc2626" stroke-width="2"/>
+<text x="270" y="933" text-anchor="middle" font-size="10" fill="#dc2626">0 으로 채움 (인공 무음)</text>
+<text x="645" y="960" text-anchor="end" font-size="9.5" fill="#dc2626">버려짐 ↑</text>
+<text x="350" y="966" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">단어의 뒷부분이 사라졌다 → 정보 소실</text>
+<text x="350" y="986" text-anchor="middle" font-size="11" fill="#0f172a">증강으로 못 고친다. 실제로 ±300 증강은 +0.33pp뿐이었다.</text>
+<text x="350" y="1004" text-anchor="middle" font-size="11" fill="#0f172a">곡선의 −11pp는 오정렬이 아니라 대부분 잘림이었다.</text>
+<rect x="680" y="808" width="620" height="210" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="700" y="834" text-anchor="start" font-size="15" fill="#15803d" font-weight="700">F. 실제 슬라이딩 (맞는 측정)</text>
+<text x="700" y="855" text-anchor="start" font-size="11.5" fill="#64748b">연속 스트림이라 단어는 안 잘린다. 위치만 바뀌고 나머지는 방 잡음.</text>
+<rect x="710" y="874" width="560" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<line x1="714" y1="880" x2="714" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="734" y1="880" x2="734" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="754" y1="880" x2="754" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="774" y1="880" x2="774" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="794" y1="880" x2="794" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="814" y1="880" x2="814" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="834" y1="880" x2="834" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="854" y1="880" x2="854" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="874" y1="880" x2="874" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="894" y1="880" x2="894" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="914" y1="880" x2="914" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="934" y1="880" x2="934" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="954" y1="880" x2="954" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="974" y1="880" x2="974" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="994" y1="880" x2="994" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1014" y1="880" x2="1014" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1034" y1="880" x2="1034" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1054" y1="880" x2="1054" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1074" y1="880" x2="1074" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1094" y1="880" x2="1094" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1114" y1="880" x2="1114" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1134" y1="880" x2="1134" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1154" y1="880" x2="1154" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1174" y1="880" x2="1174" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1194" y1="880" x2="1194" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1214" y1="880" x2="1214" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1234" y1="880" x2="1234" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1254" y1="880" x2="1254" y2="896" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<rect x="766.0" y="875" width="170" height="26" rx="5" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/><text x="851.0" y="892.5" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">yes</text>
+<rect x="710" y="908" width="560" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<line x1="714" y1="914" x2="714" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="734" y1="914" x2="734" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="754" y1="914" x2="754" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="774" y1="914" x2="774" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="794" y1="914" x2="794" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="814" y1="914" x2="814" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="834" y1="914" x2="834" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="854" y1="914" x2="854" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="874" y1="914" x2="874" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="894" y1="914" x2="894" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="914" y1="914" x2="914" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="934" y1="914" x2="934" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="954" y1="914" x2="954" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="974" y1="914" x2="974" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="994" y1="914" x2="994" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1014" y1="914" x2="1014" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1034" y1="914" x2="1034" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1054" y1="914" x2="1054" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1074" y1="914" x2="1074" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1094" y1="914" x2="1094" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1114" y1="914" x2="1114" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1134" y1="914" x2="1134" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1154" y1="914" x2="1154" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1174" y1="914" x2="1174" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1194" y1="914" x2="1194" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1214" y1="914" x2="1214" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1234" y1="914" x2="1234" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1254" y1="914" x2="1254" y2="930" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<rect x="962.0" y="909" width="170" height="26" rx="5" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/><text x="1047.0" y="926.5" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">yes</text>
+<rect x="710" y="942" width="560" height="28" rx="4" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<line x1="714" y1="948" x2="714" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="734" y1="948" x2="734" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="754" y1="948" x2="754" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="774" y1="948" x2="774" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="794" y1="948" x2="794" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="814" y1="948" x2="814" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="834" y1="948" x2="834" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="854" y1="948" x2="854" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="874" y1="948" x2="874" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="894" y1="948" x2="894" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="914" y1="948" x2="914" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="934" y1="948" x2="934" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="954" y1="948" x2="954" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="974" y1="948" x2="974" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="994" y1="948" x2="994" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1014" y1="948" x2="1014" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1034" y1="948" x2="1034" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1054" y1="948" x2="1054" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1074" y1="948" x2="1074" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1094" y1="948" x2="1094" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1114" y1="948" x2="1114" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1134" y1="948" x2="1134" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1154" y1="948" x2="1154" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1174" y1="948" x2="1174" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1194" y1="948" x2="1194" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1214" y1="948" x2="1214" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1234" y1="948" x2="1234" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<line x1="1254" y1="948" x2="1254" y2="964" stroke="#64748b" stroke-width="0.8" opacity="0.35"/>
+<rect x="1146.8" y="943" width="170" height="26" rx="5" fill="#15803d" opacity="0.22" stroke="#15803d" stroke-width="1.6"/><text x="1231.8" y="960.5" text-anchor="middle" font-size="11" fill="#15803d" font-weight="700">yes</text>
+<text x="990" y="986" text-anchor="middle" font-size="12" fill="#15803d" font-weight="700">단어는 항상 온전하다 — 에너지 보존 1.00</text>
+<text x="990" y="1004" text-anchor="middle" font-size="11" fill="#0f172a">회색 빗금 = 실제 방 잡음 (디지털 무음이 아니다)</text>
+<rect x="40" y="1040" width="1260" height="128" rx="6" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.4"/>
+<text x="60" y="1066" text-anchor="start" font-size="15" fill="#7e22ce" font-weight="700">G. 그래서 할 일 — 순서가 중요하다</text>
+<text x="70" y="1088" text-anchor="start" font-size="12" fill="#7e22ce" font-weight="700">1</text>
+<text x="88" y="1088" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">순수 오정렬 비용을 잰다</text>
+<text x="320" y="1088" text-anchor="start" font-size="11" fill="#64748b">experiments/window_offset.py — 자르지 않고 창 안에서만 옮긴다</text>
+<text x="70" y="1114" text-anchor="start" font-size="12" fill="#7e22ce" font-weight="700">2</text>
+<text x="88" y="1114" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">낙폭 ≤ 5pp 면</text>
+<text x="320" y="1114" text-anchor="start" font-size="11" fill="#64748b">슬라이딩이 사실상 공짜. 최대 확신도 선택만 붙이면 끝 (재학습 불필요)</text>
+<text x="70" y="1140" text-anchor="start" font-size="12" fill="#7e22ce" font-weight="700">3</text>
+<text x="88" y="1140" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">낙폭 ≥ 15pp 면</text>
+<text x="320" y="1140" text-anchor="start" font-size="11" fill="#64748b">그때 비로소 증강 — 단, 1초를 미는 게 아니라 긴 캔버스에 단어를 심어 잘리지 않게</text>
+<text x="40" y="1194" text-anchor="start" font-size="10" fill="#64748b">근거: docs/experiments_log.md §6-3 / §6-5 · 그림 생성: docs/diagrams/make_sliding_window.py</text>
+</svg>

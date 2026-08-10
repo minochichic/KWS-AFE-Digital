@@ -37,7 +37,12 @@ md("""# BinaryMatchboxNet KWS — Remote GPU (WSL / RTX)
 | 압축 | `sqrt` (검출기가 진폭에 선형 — 실측 검증) |
 | 정규화 | `xmix`, `xmax_floor_frac 0.02` |
 | 비교기 | 채널당 2개 (2비트) → `model.in_channels = 32` |
-| 현재 정확도 | **test 0.802** |
+| 정확도 | **test 0.802** |
+
+이게 `CONFIRMED` 딕셔너리의 내용이다. **최고 기록은 따로 있다** —
+`xlse` frac 0.78 + **비교기 1개**로 **test 0.8445** (셀 9). 부품이 오히려 적은데
+더 좋지만, 봉우리가 이웃 frac(1.2 / 2.0 = 0.826)보다 튀어 있어 **시드 재현 전까지
+`CONFIRMED`를 바꾸지 않는다.**
 
 배경과 근거는 [`proposal/`](../proposal/README.md).
 
@@ -158,7 +163,7 @@ md("""---
 | α 범위 | 저항비로 만들 수 없는 값 |"""),
 
 code('''# --- 6. 공용 러너 ---------------------------------------------------------
-import yaml
+import json, yaml
 
 _NEEDS_SCALE = ('fixed', 'agc', 'xmax', 'xmix', 'xlse')
 _NEEDS_FLOOR = ('xmax', 'xmix', 'xlse')
@@ -222,8 +227,61 @@ def run(tag, over=None, epochs=None, quiet=False):
     if k > 1:
         g = (a.view(n_ch, k)[:, 1:] - a.view(n_ch, k)[:, :-1])
         print(f"    임계 간격 {g.min():.4f} ~ {g.max():.4f}  (0이면 중복 낭비)")
+    save_result(t.run_dir, tag, cfg, float(ck['best_acc']), float(acc), a)
     return t
-print('run() 준비 완료.')'''),
+
+
+def save_result(run_dir, tag, cfg, val, test, alpha):
+    """runs/<tag>/result.json — test 정확도는 여기 말고 어디에도 안 남는다.
+
+    history.json 은 epoch별 train/val 만 담고 test 는 print 로만 나갔다.
+    커널이 죽으면 스크롤백과 함께 사라지므로 반드시 파일로 남긴다.
+    """
+    rec = {'tag': tag,
+           'val': round(val, 6), 'test': round(test, 6),
+           'normalize': cfg.afe.normalize,
+           'lse_temp_frac': float(getattr(cfg.afe, 'lse_temp_frac', 0.0)),
+           'xmax_floor_frac': float(cfg.afe.xmax_floor_frac),
+           'n_channels': int(cfg.afe.n_channels),
+           'k': int(cfg.afe.comparators_per_channel),
+           'binarize': bool(getattr(cfg.afe, 'binarize', True)),
+           'seed': int(cfg.train.seed), 'epochs': int(cfg.train.epochs),
+           'alpha': [round(float(x), 4) for x in alpha],
+           'dead': int(((alpha >= 0.99) | (alpha <= 0.01)).sum())}
+    pathlib.Path(run_dir, 'result.json').write_text(
+        json.dumps(rec, ensure_ascii=False, indent=2))
+    return rec
+
+
+_TE = None                       # test loader 는 런 사이에 동일 -> 한 번만 만든다
+
+def backfill(tag):
+    """result.json 이 생기기 전에 끝난 런을 best.pt 로부터 복원한다.
+
+    δ(xmax_floor)와 LSE 온도는 register_buffer 라 체크포인트에 들어 있으므로
+    init_fixed_scale 을 다시 부를 필요가 없다.
+    """
+    global _TE
+    d = pathlib.Path('runs', tag)
+    if not (d / 'best.pt').exists():
+        print(f'  {tag}: best.pt 없음'); return None
+
+    cfg = load_config(str(d / 'config.yaml'))     # 그 런이 실제로 쓴 설정
+    cfg.data.root = DATA_ROOT
+    if _TE is None:
+        _TE = build_dataloaders(cfg.data, cfg.train.batch_size,
+                                cfg.afe.sample_rate, seed=cfg.train.seed)[2]
+
+    t = Trainer(cfg, BinaryMatchboxNet(cfg.model), afe=AFEFrontend(cfg.afe))
+    ck = torch.load(d / 'best.pt', map_location=t.device, weights_only=True)
+    t.model.load_state_dict(ck['model']); t.afe.load_state_dict(ck['afe'])
+    rec = save_result(d, tag, cfg, float(ck['best_acc']),
+                      float(t.evaluate(_TE)['acc']), t.afe.effective_alpha())
+    print(f"  {tag}: val {rec['val']:.4f}  test {rec['test']:.4f}  "
+          f"(k={rec['k']}, frac={rec['lse_temp_frac']})")
+    return rec
+
+print('run() / backfill() 준비 완료.')'''),
 
 code("""# --- 7. 확정 설정 재현 (test 0.802 이 나와야 함) --------------------------
 run('af_k2', CONFIRMED)"""),
@@ -258,26 +316,59 @@ ok = bool(alpha.min() >= 0 and alpha.max() <= 1)
 print(f"\\n범위 {alpha.min():.3f} ~ {alpha.max():.3f}   "
       f"{'제작 가능' if ok else '범위 이탈 — 제작 불가'}")'''),
 
-md("""### 대기 중인 실험
+md("""### xlse — 다이오드-OR의 soft-max
 
 **다이오드-OR는 max가 아니라 log-sum-exp를 만든다** (지수 I-V 때문에 지는 채널도
-계속 흘린다). 오차 상한이 `n·V_T·ln16` = 72–108 mV인데 엔벨로프 스윙은 28–65 mV라,
-**조용한 음성에서 분모가 2배 부풀어 오른다**.
+계속 흘린다). 이걸 처음엔 **결함**으로 보고 증폭기 16개로 스윙을 키우려 했는데,
+실측 결과 **하드 max보다 낫다**.
 
-증폭기 16개를 더 사는 대신 **회로가 실제로 만드는 값으로 학습**해서 다이오드만으로
-되는지 판정한다. 기준은 `xmix`의 **0.778**.
+`lse_temp_frac` = `n·V_T / (전형 프레임 피크 스윙)`. 즉 **frac 하나가 곧 회로 조건**이고,
+뒤집으면 **요구 스윙 = 26 mV / frac** 이 동료에게 줄 설계 목표가 된다.
 
-| `lse_temp_frac` | 해당 조건 | 분모 과대평가 |
-|---|---|---|
-| 0.13 | 스윙 ~200 mV (프리앰프 있음, 보통 음성) | 1.4× |
-| 0.52 | 스윙 ~50 mV (조용한 음성) — **최악** | 4.1× |"""),
+의미: 큰 소리 프레임에서는 frac과 무관하게 분모가 하드 max이고, **조용해질수록
+16채널 평균으로 넘어간다. frac이 그 전환점을 정한다.**
 
-code("""# --- 9. xlse: 다이오드-OR의 soft-max 로 학습 ------------------------------
+| frac | 요구 스윙 | test | |
+|---|---|---|---|
+| — | (하드 max `xmix`) | 0.7778 | 기준선 |
+| 0.13 | 200 mV | 0.8185 | |
+| 0.52 | 50 mV | 0.8257 | |
+| **0.78** | **33 mV** | **0.8445** | **최고** — 연속 천장 0.862에 −1.7pp |
+| 1.2 | 22 mV | 0.8259 | |
+| 2.0 | 13 mV | 0.8263 | |
+| 5.5 | 4.7 mV | 0.8059 | **프리앰프 없는 조건** |
+
+**스윙 스펙이 헐렁하다**: 13–50 mV(4배 범위)에서 test가 0.826–0.845로 평평하다.
+동료가 정확한 값을 맞출 필요가 없다.
+
+> ⚠️ 0.78이 이웃(1.2 / 2.0 = 둘 다 0.826)보다 1.8pp 튀어 있는데, 봉우리가 아니라
+> **스파이크 모양**이다. 게다가 `ReduceLROnPlateau` 발동 시점이 런마다 달라
+> (lse078 ep93 / lse120 ep71) 런간 변동이 test SE(±0.57pp)보다 크다.
+> **시드 재현 전에는 33 mV를 설계 목표로 확정하지 말 것.**"""),
+
+code("""# --- 9. xlse frac 스윕 ----------------------------------------------------
 LSE = {**CONFIRMED, 'afe.normalize': 'xlse',
        'afe.comparators_per_channel': 1}      # xmix k=1 (0.778) 과 직접 비교
 
-run('af_lse013', {**LSE, 'afe.lse_temp_frac': 0.13})
-run('af_lse052', {**LSE, 'afe.lse_temp_frac': 0.52})"""),
+# frac = 26mV / 요구 스윙.  이미 돌린 런은 last.pt 때문에 즉시 리턴한다.
+for frac in (0.13, 0.52, 0.78, 1.20, 2.00, 5.50):
+    run(f'af_lse{int(frac*100):03d}', {**LSE, 'afe.lse_temp_frac': frac})"""),
+
+md("""### 다음 3개 (순서대로)
+
+| # | 실험 | 왜 |
+|---|---|---|
+| **1** | frac 0.78 **시드 재현** | 스파이크가 진짜인지. 이게 먼저다 — 아니면 33 mV를 틀린 근거로 넘긴다 |
+| 2 | frac 0.78 + **k=2** | 하드 max에서 +2.5pp였던 레버가 soft-max와 겹치는지 |
+| 3 | **표준 증강** | 12-class 문헌(Hello Edge 등)은 배경잡음 + shift ≤100 ms를 쓴다. 우리만 없다 |"""),
+
+code("""# --- 9-2. 후속 (위 표 순서대로 하나씩) ------------------------------------
+BEST = {**LSE, 'afe.lse_temp_frac': 0.78}
+
+run('af_lse078_s2', {**BEST, 'train.seed': 1235})            # 1. 재현
+# run('af_lse078_k2', {**BEST, 'afe.comparators_per_channel': 2})   # 2
+# run('af_lse078_aug', {**BEST, 'data.aug_time_shift_ms': 100.0,    # 3
+#                       'data.aug_noise_prob': 0.8})"""),
 
 code("""# --- 10. 진단: 비교기를 빼면 얼마가 남나 (하드웨어 설정 아님) -------------
 # binarize=False 는 비교기만 제거해 연속 엔벨로프를 네트워크에 넣는다.
@@ -288,18 +379,34 @@ run('nn_cont_mel64', {'afe.n_channels': 64, 'afe.filterbank_source': 'mel',
                       'afe.compression': 'log', 'afe.normalize': 'minmax',
                       'afe.binarize': False})          # 아키텍처 검증 -> 0.920"""),
 
-code("""# --- 11. 결과 모아보기 -----------------------------------------------------
-import json, glob
-rows = []
-for p in sorted(glob.glob('runs/*/history.json')):
-    tag = p.split('/')[1]
-    h = json.load(open(p))
-    best = max(h, key=lambda e: e.get('val_acc', 0)) if isinstance(h, list) else {}
-    rows.append((tag, len(h) if isinstance(h, list) else 0,
-                 best.get('val_acc', float('nan'))))
-print(f"{'run':<22}{'epochs':>8}{'best val':>10}")
-for tag, n, v in rows:
-    print(f'{tag:<22}{n:>8}{v:>10.4f}')"""),
+code("""# --- 11. result.json 이 없는 옛 런 백필 (한 번만) -------------------------
+# result.json 도입 이전에 끝난 런은 test 가 파일에 없다. best.pt 로 복원한다.
+# 런당 test 1회 통과(4,888클립)라 GPU에서 수십 초.
+import pathlib
+for p in sorted(pathlib.Path('runs').glob('*/best.pt')):
+    if not (p.parent / 'result.json').exists():
+        backfill(p.parent.name)"""),
+
+code("""# --- 12. 결과 모아보기 -----------------------------------------------------
+import json, pathlib
+rows = [json.loads(p.read_text())
+        for p in sorted(pathlib.Path('runs').glob('*/result.json'))]
+rows.sort(key=lambda r: -r['test'])
+
+print(f"{'run':<20}{'norm':>6}{'frac':>6}{'k':>3}{'val':>9}{'test':>9}{'죽은':>7}")
+for r in rows:
+    frac = f"{r['lse_temp_frac']:.2f}" if r['normalize'] == 'xlse' else '—'
+    print(f"{r['tag']:<20}{r['normalize']:>6}{frac:>6}{r['k']:>3}"
+          f"{r['val']:>9.4f}{r['test']:>9.4f}{r['dead']:>4}/{len(r['alpha'])}")
+
+# frac 곡선만 따로: 요구 스윙 = n*V_T / frac  (n=1, V_T=26mV)
+lse = sorted((r for r in rows if r['normalize'] == 'xlse'),
+             key=lambda r: r['lse_temp_frac'])
+if lse:
+    print(f"\\n{'frac':>6}{'요구 스윙':>10}{'test':>9}")
+    for r in lse:
+        f = r['lse_temp_frac']
+        print(f"{f:>6.2f}{26.0/f:>8.0f}mV{r['test']:>9.4f}")"""),
 
 md("""### 결과 커밋
 
