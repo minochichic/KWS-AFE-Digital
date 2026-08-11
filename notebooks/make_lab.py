@@ -78,7 +78,7 @@ code('''# --- 프리플라이트 + 공용 import (여기서 멈추면 아래는 
 import torch, numpy as np
 from train.config import load_config, AFEConfig
 from data.speech_commands import build_dataloaders, ensure_dataset, class_names
-from data.afe import AFEFrontend, load_afe_state
+from data.afe import AFEFrontend, collect_init_batch, load_afe_state
 from models.binary_matchboxnet import BinaryMatchboxNet
 from train.train import Trainer, set_seed
 import data.afe as _A
@@ -100,6 +100,8 @@ _NEED = [
      lambda: hasattr(_W, 'offset_curve')),
     ('레벨 보정', 'experiments/level_calibration.py', 'def level_stats',
      lambda: hasattr(_L, 'level_stats')),
+    ('δ 안정화', 'data/afe.py', 'def collect_init_batch',
+     lambda: hasattr(_A, 'collect_init_batch')),
 ]
 _disk, _mem = [], []
 for name, f, needle, check in _NEED:
@@ -133,6 +135,9 @@ CONFIRMED = {'afe.filterbank_source': 'spice',
 LSE  = {**CONFIRMED, 'afe.normalize': 'xlse'}
 BEST = {**LSE, 'afe.lse_temp_frac': 0.78}
 
+# δ 추정에 쓸 클립 수. 배치 하나(128)로는 2% 분위수가 시드에 2.4배 흔들렸다.
+N_INIT_CLIPS = 2048
+
 print(f"\\n모듈 정상.  DATA_ROOT={DATA_ROOT}  존재={os.path.isdir(DATA_ROOT)}")
 print('torch', torch.__version__, '| cuda',
       torch.cuda.get_device_name(0) if torch.cuda.is_available() else '(CPU only)')'''),
@@ -164,7 +169,12 @@ md("""## 4. 러너 — `run(tag, over)`
 | `model.in_channels` 자동 계산 | `n_channels × k`와 어긋나 config 에러 |
 | `init_fixed_scale` → `init_thresholds` 순서 | δ 없이 α 초기화 |
 | `d > 0` | `floor_frac` 미반영으로 100 에폭 헛돌기 |
-| α 범위 | 저항비로 만들 수 없는 값 |"""),
+| α 범위 | 저항비로 만들 수 없는 값 |
+
+**δ 안정화**: `init_fixed_scale`에 배치 하나가 아니라 **{N_INIT_CLIPS}클립**을 넘긴다.
+δ는 2% 분위수라 배치 하나로는 시드에 **2.4배** 흔들렸고(0.00100 ↔ 0.00244), 그 값은
+동료가 만들 **V_ref 오프셋**이다. 학습 시작 전에 **서로 겹치지 않는 두 절반**으로
+δ를 각각 재서 아직도 흔들리면 바로 보여준다.""".replace('{N_INIT_CLIPS}', '2048')),
 code('''# --- 공용 러너 -----------------------------------------------------------
 import json, yaml
 
@@ -194,10 +204,25 @@ def run(tag, over=None, epochs=None):
     model = BinaryMatchboxNet(cfg.model)
     tr, va, te = build_dataloaders(cfg.data, cfg.train.batch_size,
                                    cfg.afe.sample_rate, seed=cfg.train.seed)
-    w = next(iter(tr))[0]
+    # δ 는 2% 분위수라 배치 하나(128클립)로는 시드에 2.4배 흔들린다 (0.00100 ↔
+    # 0.00244). 그 값은 동료가 만들 V_ref 오프셋이므로 클립을 더 모아 추정한다.
+    # α(채널 평균)와 T(중앙값)는 한 배치로도 충분하지만 같은 배치를 쓴다.
+    w = collect_init_batch(tr, N_INIT_CLIPS)
     if cfg.afe.normalize in _NEEDS_SCALE:
         afe.init_fixed_scale(w)        # 순서 중요: δ 먼저
     afe.init_thresholds(w)             # 그 다음 α
+
+    # 안정성을 눈으로 확인한다: 서로 겹치지 않는 두 절반이 같은 δ 를 주는가.
+    if cfg.afe.normalize in _NEEDS_FLOOR and w.shape[0] >= 4:
+        _h = w.shape[0] // 2
+        _probe = AFEFrontend(cfg.afe)
+        _d2 = []
+        for _half in (w[:_h], w[_h:]):
+            _probe.init_fixed_scale(_half)
+            _d2.append(float(_probe.xmax_floor))
+        _rat = max(_d2) / max(min(_d2), 1e-12)
+        print(f'   δ 반쪽 검사: {_d2[0]:.5f} / {_d2[1]:.5f}  = {_rat:.2f}x'
+              + ('' if _rat < 1.15 else '   ⚠️ 아직 흔들린다 — N_INIT_CLIPS 를 늘릴 것'))
 
     info = [f'{n_ch}채널 x {k}비트 = {n_ch*k}행',
             f'{sum(p.numel() for p in model.parameters()):,} params']

@@ -85,6 +85,30 @@ def discretize(pulse_times_ms, window_ms: float, n_windows: int,
         f"reduce {reduce!r} unsupported by this reference (max/count only)")
 
 
+def collect_init_batch(loader, n_clips: int = 2048) -> torch.Tensor:
+    """Enough clips for init_fixed_scale's LOW quantile to hold still.
+
+    init_thresholds wants a per-channel mean, and one batch estimates that
+    fine. `xmax_floor` does not: it is a 2% quantile, and frames inside a clip
+    are heavily correlated, so the effective sample size tracks the number of
+    CLIPS rather than of frames. Measured across two seeds the median (which
+    sets the LSE temperature) moved 1.6% while that 2% quantile moved 144% --
+    0.00100 to 0.00244. delta is the V_ref offset handed to the analog side; a
+    number that swings 2.4x with the dataloader shuffle is not a circuit spec.
+
+    Draws whole batches, so the count is rounded up to the batch size.
+    """
+    out, n = [], 0
+    for w, _ in loader:
+        out.append(w)
+        n += w.shape[0]
+        if n >= n_clips:
+            break
+    if not out:
+        raise RuntimeError("loader 가 비어 있다")
+    return torch.cat(out)
+
+
 def load_afe_state(afe: "AFEFrontend", state_dict: dict) -> list:
     """Load an AFE checkpoint, dropping only keys that PROVABLY change nothing.
 
@@ -558,6 +582,22 @@ class AFEFrontend(nn.Module):
 
     # ------------------------------------------------------------------ #
     @torch.no_grad()
+    def _envelopes_chunked(self, waves: torch.Tensor, raw: bool,
+                           chunk: int = 256) -> torch.Tensor:
+        """envelopes() over many clips without an STFT the size of the batch.
+
+        The result is tiny -- [N, 16, 100] is 13 MB for 2048 clips -- but the
+        STFT on the way there is not: [2048, 257, 101] complex is ~425 MB, and
+        init now passes thousands of clips so that the low quantile holds still.
+        Chunking keeps the peak flat while the answer is bit-identical, since
+        every statistic taken from env is computed after concatenation.
+        """
+        if waves.shape[0] <= chunk:
+            return self.envelopes(waves, raw=raw)
+        return torch.cat([self.envelopes(waves[i:i + chunk], raw=raw)
+                          for i in range(0, waves.shape[0], chunk)])
+
+    @torch.no_grad()
     def init_fixed_scale(self, waves: torch.Tensor) -> None:
         """Set the dataset-level lo/hi for normalize="fixed" (Cerutti IV-A).
 
@@ -569,7 +609,7 @@ class AFEFrontend(nn.Module):
         if self.cfg.normalize not in ("fixed", "agc", "xmax", "xmix", "xlse"):
             return
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
-        env = self.envelopes(waves, raw=True)
+        env = self._envelopes_chunked(waves, raw=True)
         self.fixed_lo.fill_(env.min())
         q = getattr(self.cfg, "fixed_scale_quantile", 1.0)
         if q >= 1.0:
@@ -619,8 +659,27 @@ class AFEFrontend(nn.Module):
                     f"{float(self.xmax_floor):.2e}, at the compression guard "
                     f"({guard:.2e}); silent/zero-padded frames will fire ALL "
                     f"channels. Raise xmax_floor_frac (0.05 clears it).")
+            elif self.cfg.normalize in _DIVIDER_FORM and \
+                    0.0 < float(self.xmax_floor) <= 1.05 * guard:
+                # Different failure from xmax's. xmix/xlse SUBTRACT d, so a
+                # frame on the guard goes negative and stays off -- nothing
+                # misfires. The problem is that d stops being a measurement:
+                # sqrt(mel + eps) has an ATOM at the guard (every silent and
+                # zero-padded frame lands on exactly that value), so once
+                # xmax_floor_frac exceeds the share of such frames the quantile
+                # sits inside the atom and reports the guard itself. It then
+                # flips in and out of the atom with batch composition, which is
+                # how delta moved 0.00100 -> 0.00244 between two seeds. delta is
+                # the V_ref offset the analog side has to build, so it must come
+                # from quiet SPEECH, not from padding.
+                warnings.warn(
+                    f"afe.xmax_floor_frac={f} put xmax_floor on the compression "
+                    f"guard ({guard:.2e}): at least {f:.0%} of frames are pure "
+                    f"silence/padding, so delta is measuring zero padding, not "
+                    f"quiet speech. Training is unaffected ({self.cfg.normalize} "
+                    f"subtracts d) but this value cannot be handed to the analog "
+                    f"side. Raise xmax_floor_frac above the silent share.")
 
-    @torch.no_grad()
     @torch.no_grad()
     def effective_alpha(self) -> torch.Tensor:
         """The thresholds the comparator actually uses -- what gets soldered.
@@ -643,7 +702,7 @@ class AFEFrontend(nn.Module):
         features, so the mean is directly in threshold coordinates.
         """
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
-        env = self.envelopes(waves)
+        env = self._envelopes_chunked(waves, raw=False)
         if self.n_comparators == 1:
             thr = env.mean(dim=(0, 2))
         else:

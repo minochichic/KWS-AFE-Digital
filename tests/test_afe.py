@@ -16,6 +16,7 @@ What must hold:
 from __future__ import annotations
 
 import math
+import warnings
 
 import pytest
 import torch
@@ -939,3 +940,73 @@ def test_load_afe_state_still_catches_a_genuinely_wrong_checkpoint() -> None:
     dst = make_frontend(n_channels=8, envelope_win_ms=10.0)
     with pytest.raises(RuntimeError):
         load_afe_state(dst, src.state_dict())
+
+
+# --------------------------------------------------------------------------- #
+# 18. delta stability: the number the analog side has to build
+# --------------------------------------------------------------------------- #
+def test_collect_init_batch_gathers_enough_clips() -> None:
+    """One batch is enough for a channel mean and not for a 2% quantile."""
+    from data.afe import collect_init_batch
+    batches = [(torch.randn(8, 16000), torch.zeros(8, dtype=torch.long))
+               for _ in range(10)]
+    w = collect_init_batch(batches, n_clips=40)
+    assert w.shape[0] == 40                      # whole batches, exactly 5 of 8
+    assert collect_init_batch(batches, n_clips=1).shape[0] == 8   # 최소 한 배치
+    assert collect_init_batch(batches, n_clips=10**6).shape[0] == 80  # 있는 만큼
+
+
+def test_more_clips_make_the_floor_hold_still() -> None:
+    """The point of the change: delta must stop depending on which clips the
+    shuffle happened to hand over."""
+    from data.afe import collect_init_batch
+
+    def floor_from(waves):
+        fe = make_frontend(normalize="xmix", compression="sqrt",
+                           envelope_win_ms=10.0, xmax_floor_frac=0.05)
+        fe.init_fixed_scale(waves)
+        return float(fe.xmax_floor)
+
+    torch.manual_seed(0)
+    pool = [(torch.randn(16, 16000) * torch.rand(16, 1), None)
+            for _ in range(24)]                  # clips of widely varying level
+    small = [floor_from(pool[i][0]) for i in range(6)]
+    big = [floor_from(collect_init_batch(pool[i * 6:(i + 1) * 6], 10 ** 6))
+           for i in range(4)]
+    spread = lambda v: max(v) / max(min(v), 1e-12)
+    assert spread(big) < spread(small)
+
+
+def test_floor_on_the_guard_warns_for_divider_forms() -> None:
+    """xmix/xlse do not misfire on the guard -- but delta then measures zero
+    padding instead of quiet speech, and it is a circuit spec."""
+    fe = make_frontend(normalize="xmix", compression="sqrt",
+                       envelope_win_ms=10.0, xmax_floor_frac=0.30)
+    w = noise(8)
+    w[:6] = 0.0                                  # 75% silent -> quantile in the atom
+    with pytest.warns(UserWarning, match="guard"):
+        fe.init_fixed_scale(w)
+
+
+def test_no_warning_when_the_floor_clears_the_guard() -> None:
+    fe = make_frontend(normalize="xmix", compression="sqrt",
+                       envelope_win_ms=10.0, xmax_floor_frac=0.05)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        fe.init_fixed_scale(noise(8))
+
+
+def test_chunking_does_not_change_the_estimates() -> None:
+    """Init now sees thousands of clips, so the STFT is chunked. The numbers
+    must be identical -- every statistic is taken after concatenation."""
+    w = noise(40)
+    a = make_frontend(normalize="xmix", compression="sqrt",
+                      envelope_win_ms=10.0, xmax_floor_frac=0.05)
+    b = make_frontend(normalize="xmix", compression="sqrt",
+                      envelope_win_ms=10.0, xmax_floor_frac=0.05)
+    assert torch.equal(a._envelopes_chunked(w, raw=True, chunk=7),
+                       a.envelopes(w, raw=True))
+    a.init_fixed_scale(w); a.init_thresholds(w)
+    b.init_fixed_scale(w); b.init_thresholds(w)
+    assert float(a.xmax_floor) == float(b.xmax_floor)
+    assert torch.equal(a.threshold.data, b.threshold.data)
