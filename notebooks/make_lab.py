@@ -388,24 +388,42 @@ FPGA는 100 ms마다 판정하는 슬라이딩 창을 쓴다. 한 단어가 창 
 단어를 **자르지 않고** 창 안에서만 옮기고 나머지는 그 클립 자신의 노이즈 플로어로
 채운다. 위치는 정규화 p (0 = 왼쪽 밀착, 1 = 오른쪽 밀착).
 
-| `noise` 낙폭 | 판단 |
+채움은 세 가지고, **어느 걸 쓰느냐가 위치보다 더 크게 작용했다**:
+
+| 채움 | 무엇 | 쓰임 |
+|---|---|---|
+| **`room`** | 실제 `_background_noise_` 크롭, 클립 자기 플로어로 스케일 | **배치 질문에 답하는 것** |
+| `zero` | 디지털 무음 | `xmix`/`xlse`는 d를 **빼므로** 안전 (`xmax`는 아님) |
+| `white` | 같은 RMS의 백색잡음 | ⚠️ 방의 모델로는 **틀렸다** — 아래 참조 |
+
+**낙폭(`room` 기준) 읽는 법:**
+
+| 낙폭 | 판단 |
 |---|---|
 | ≤ 5pp | 슬라이딩이 사실상 공짜. 최대 확신도 선택만 붙이면 끝 |
 | 5–15pp | 최대 확신도 선택 필요 |
 | ≥ 15pp | 오정렬이 진짜 문제 — **긴 캔버스** 증강을 만들 가치가 있음 |
 
-`zero` 열이 크게 낮으면 인공 무음에서 상대 임계가 퇴화한 것(EXPERIMENTS.md §4-4)."""),
+> ⚠️ **`white`는 방이 아니다.** 첫 버전이 백색잡음을 썼고 `zero` 대비 **−15pp**가 나와
+> 위치 효과(1.8pp)를 완전히 덮어버렸다. 상대 임계는 채널간 max로 나누는데 평평한
+> 스펙트럼은 그 분모를 **16채널 전부에서 동시에** 들어올린다 — 음성 에너지가 적은
+> 고역에서 특히. 실제 방 잡음은 저역에 몰려 있다. 버그였지만 **결과 자체는 진짜**다:
+> **광대역 잡음은 상대 임계에 심각한 위협**이라는 뜻이고, 그래서 배경잡음 증강(§7-4)의
+> 우선순위가 올라갔다."""),
 code("""from experiments.window_offset import offset_curve, print_offset_curve
 
-def offset_report(tag, steps=9, fills=('noise','zero'), **over):
+def offset_report(tag, steps=9, fills=('room','zero'), **over):
     cfg, afe, model, _ = load_run(tag, **over)
-    res = offset_curve(afe, model, test_loader(cfg), cfg.model.T,
-                       steps=steps, fills=fills, device=DEV)
+    res = offset_curve(afe, model, test_loader(cfg), cfg.model.T, steps=steps,
+                       fills=fills, device=DEV, data_root=cfg.data.root)
     print_offset_curve(res, tag)
     return res
 
 TAG = 'af_lse078'          # ← 위 결과 표에서 고른다
-offset_report(TAG)"""),
+offset_report(TAG)
+
+# 백색잡음까지 같이 보려면:
+# offset_report(TAG, fills=('room','white','zero'))"""),
 
 md("""## 6b. 시간 이동 곡선 — ⚠️ **잘림**을 잰다
 

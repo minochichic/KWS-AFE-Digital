@@ -132,14 +132,23 @@ def print_level_report(st: dict, nominal: float, spl: float = 74.0,
           f"({span:.1f}x)")
     print(f"   배치 SPL 폭      : {20 * math.log10(need):>5.1f} dB "
           f"({need:.1f}x)   60~85 dB SPL")
-    print("   → " + ("충분 — 학습이 이미 배치 범위를 덮는다" if span >= need
-                     else "부족 — 게인 증강으로 메워야 하는 폭이 있다"))
+    # This comparison is NECESSARY but not SUFFICIENT, and an earlier version of
+    # this report treated it as sufficient -- it read a 1.9 dB shortfall and
+    # recommended aug_gain_db [-1, +1]. Measured on af_lse078 the model spans
+    # 23.1 dB of training levels and is STILL peaked: the frac sweep loses
+    # 5.8pp at +12 dB and 10.3pp at -12 dB. Seeing a range in training does not
+    # make a model flat over it, because level correlates with speaker, phone
+    # and distance, so the model can lean on it instead of becoming invariant.
+    # The augmentation width therefore comes from the frac sweep, not from here.
     if span < need:
-        extra = need / span
-        # aug_gain_db is [-g, +g], a span of 2g, so g is half the shortfall.
-        print(f"     모자란 폭 {20 * math.log10(extra):.1f} dB "
-              f"→ aug_gain_db 약 [-{10 * math.log10(extra):.0f}, "
-              f"+{10 * math.log10(extra):.0f}]")
+        print(f"   → 폭이 {20 * math.log10(need / span):.1f} dB 모자란다. "
+              f"다만 이 비교는 **필요조건일 뿐**이다.")
+    else:
+        print("   → 폭 자체는 덮는다. 다만 이 비교는 **필요조건일 뿐**이다.")
+    print("     학습 분포가 범위를 덮어도 모델이 그 위에서 평평하다는 뜻은 "
+          "아니다\n     (레벨은 화자·기기·거리와 상관되므로 모델이 그걸 단서로 "
+          "쓸 수 있다).\n     → 증강 폭은 여기가 아니라 **frac 스윕(§6d) "
+          "곡선**에서 뽑는다.")
 
     print(f"\n2) 프레임마다 회로가 실제로 겪는 frac  "
           f"(lse_temp 동결 → frac = {nominal} × TYP/프레임피크)")

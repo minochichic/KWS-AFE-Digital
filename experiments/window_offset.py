@@ -14,21 +14,37 @@ digital silence.  Two artifacts follow, neither of which exists on the board:
 A sliding window over a continuous stream does neither.  Some window always
 contains the whole word; only its POSITION inside the window changes, and the
 rest of the window holds room noise.  This script measures that, and only that:
-find the word, move it without cutting it, fill the remainder with real
-background noise at the clip's own noise floor.
+find the word, move it without cutting it, fill the remainder with noise.
+
+Three beds, because the choice turned out to matter more than the position:
+
+  * "room"  -- real _background_noise_ crops, scaled to the clip's own floor.
+               This is the one that answers the deployment question.
+  * "zero"  -- digital silence.  Safe for xmix/xlse (they SUBTRACT d, so a
+               silent frame goes negative and stays off) though not for xmax.
+  * "white" -- flat-spectrum noise at the same RMS.  Kept because it produced a
+               real finding rather than a bug: it cost 15pp against "zero", far
+               more than position ever did.  A relative threshold divides by the
+               cross-channel max, and white noise lifts that denominator in
+               every channel at once -- worst in the high bands where speech has
+               little energy.  It is the wrong model of a room (real noise is
+               low-frequency heavy) but the right warning about broadband noise.
 
 The gap between this curve and the shift curve is the part of the "+-11pp at
 +-300 ms" scare that was measurement artifact.  What survives here is the real
 requirement the FPGA decision rule has to meet.
 
 Usage:
-    python experiments/window_offset.py [tag] [--fill noise|zero|both]
+    python experiments/window_offset.py [tag] [--fill room,zero]
 """
 from __future__ import annotations
 
 import argparse
+import array
+import glob
 import os
 import sys
+import wave as wavemod
 
 import torch
 
@@ -42,6 +58,74 @@ from train.config import load_config                                 # noqa: E40
 SR = 16000
 FRAME = 160                     # 10 ms, matches the envelope grid
 ACTIVE_FRAC = 0.10              # frame is "word" if rms > this * peak rms
+FILLS = ("room", "zero", "white")
+
+
+# --------------------------------------------------------------------------- #
+def _find_background(root: str):
+    """Locate _background_noise_ under a dataset root, whatever the layout."""
+    for pat in ("_background_noise_",
+                "SpeechCommands/speech_commands_v0.02/_background_noise_",
+                "*/_background_noise_", "*/*/_background_noise_"):
+        hits = sorted(glob.glob(os.path.join(root, pat)))
+        if hits:
+            return hits[0]
+    return None
+
+
+def load_room_noise(root: str, length: int = SR, n: int = 512,
+                    seed: int = 0) -> torch.Tensor | None:
+    """`n` random 1 s crops of the real background recordings, or None.
+
+    Read with the stdlib `wave` module rather than torchaudio: this runs inside
+    a notebook that may not have a decoding backend, and these are plain 16-bit
+    mono PCM.
+    """
+    base = _find_background(root)
+    if base is None:
+        return None
+    waves = []
+    for p in sorted(glob.glob(os.path.join(base, "*.wav"))):
+        with wavemod.open(p, "rb") as w:
+            if w.getsampwidth() != 2 or w.getnchannels() != 1:
+                continue
+            a = array.array("h", w.readframes(w.getnframes()))
+        v = torch.tensor(a, dtype=torch.float32) / 32768.0
+        if v.numel() > length:
+            waves.append(v)
+    if not waves:
+        return None
+    g = torch.Generator().manual_seed(seed)
+    crops = []
+    for i in range(n):
+        v = waves[int(torch.randint(len(waves), (), generator=g))]
+        s = int(torch.randint(v.numel() - length, (), generator=g))
+        crops.append(v[s:s + length])
+    return torch.stack(crops)
+
+
+def make_bed(kind: str, x: torch.Tensor, floor: torch.Tensor,
+             bank: torch.Tensor | None, gen: torch.Generator) -> torch.Tensor:
+    """The noise the window holds outside the word, at the clip's own floor.
+
+    Level-matching to `floor` is what makes the beds comparable: they differ
+    only in SPECTRUM, so any gap between them is about spectral shape and not
+    about one being louder.
+    """
+    if kind == "zero":
+        return torch.zeros_like(x)
+    if kind == "room":
+        if bank is None:
+            raise RuntimeError(
+                "_background_noise_ not found -- pass --root, or use "
+                "--fill zero,white")
+        idx = torch.randint(bank.shape[0], (x.shape[0],), generator=gen)
+        bed = bank[idx].to(x.device)
+    elif kind == "white":
+        bed = torch.randn(x.shape, generator=gen).to(x.device)
+    else:
+        raise ValueError(f"unknown fill {kind!r}; pick from {FILLS}")
+    return bed * (floor / bed.std(1).clamp_min(1e-9))[:, None]
 
 
 # --------------------------------------------------------------------------- #
@@ -89,7 +173,8 @@ def reposition(x: torch.Tensor, a: torch.Tensor, b: torch.Tensor,
 # --------------------------------------------------------------------------- #
 @torch.no_grad()
 def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
-                 fills=("noise", "zero"), device: str = "cpu", seed: int = 0):
+                 fills=("room", "zero"), device: str = "cpu", seed: int = 0,
+                 data_root: str | None = None):
     """Accuracy vs where the word sits inside the window. Returns a dict.
 
     Exposed as a function so the notebook and the CLI share ONE implementation
@@ -106,6 +191,16 @@ def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
     hit = {(f, i): 0 for f in fills for i in range(steps)}
     kept = total = 0
     travel = 0.0
+
+    bank = None
+    if "room" in fills:
+        if data_root is None:
+            raise RuntimeError("fills 에 'room' 이 있으면 data_root 가 필요하다")
+        bank = load_room_noise(data_root, seed=seed)
+        if bank is None:
+            raise RuntimeError(
+                f"{data_root} 아래에서 _background_noise_ 를 못 찾았다 -- "
+                f"fills=('zero',) 로 돌리거나 경로를 확인할 것")
 
     g = torch.Generator(device="cpu").manual_seed(seed)
     for x, y in loader:
@@ -126,14 +221,7 @@ def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
 
         floor = noise_floor_rms(x, a, b)
         for f in fills:
-            if f == "zero":
-                bed = torch.zeros_like(x)
-            else:
-                # White-ish bed at the clip's own measured floor.  The point is
-                # only that the window is not digitally dead; matching spectrum
-                # would need a noise bank and does not change the comparison.
-                bed = torch.randn(x.shape, generator=g).to(device)
-                bed = bed * (floor / bed.std(1).clamp_min(1e-9))[:, None]
+            bed = make_bed(f, x, floor, bank, g)
             for i, p in enumerate(ps):
                 delta = (span.float() * p).long() - a
                 xd = reposition(x, a, b, delta, bed)
@@ -172,7 +260,8 @@ def main() -> None:
     p.add_argument("tag", nargs="?", default="af_k1_ref")
     p.add_argument("--root", default=None, help="dataset root, if not the one "
                    "recorded in the run's config")
-    p.add_argument("--fill", choices=["noise", "zero", "both"], default="both")
+    p.add_argument("--fill", default="room,zero",
+                   help=f"콤마 구분. {FILLS} 중에서")
     p.add_argument("--steps", type=int, default=9, help="positions across the "
                    "window, 0 = word flush left, 1 = flush right")
     args = p.parse_args()
@@ -201,9 +290,9 @@ def main() -> None:
     _, _, te = build_dataloaders(cfg.data, cfg.train.batch_size, SR,
                                  seed=cfg.train.seed)
 
-    fills = ["noise", "zero"] if args.fill == "both" else [args.fill]
+    fills = [s.strip() for s in args.fill.split(",") if s.strip()]
     res = offset_curve(afe, model, te, cfg.model.T, steps=args.steps,
-                       fills=fills, device=dev)
+                       fills=fills, device=dev, data_root=cfg.data.root)
     print_offset_curve(res, args.tag)
 
 
