@@ -152,14 +152,15 @@ md("""### 확정 설정 — `configs/base.yaml` 이 곧 baseline 이다
 | **`normalize`** | **`xlse`** | **다이오드-OR 은 max 가 아니라 soft max 다. +6.7pp** |
 | `comparators_per_channel` | 1 | k=2 는 업그레이드 경로 |
 | `f_min` / `f_max` | 50 / 8000 Hz | 125–5000 은 −1.6pp |
+| **`xmax_floor_frac`** | **0 (δ=0)** | **§6e 로 확정.** LSE 자체 바닥 + δ가 offset 아래 |
 
 **`xlse` 가 baseline 인 이유**: 하드 max(`xmix`)로 학습한 0.7778 은 **평범한
 다이오드-OR 로는 만들 수 없는 프론트엔드**의 값이다. 회로가 실제로 만드는 soft max 로
 학습하니 **0.8445** 였다 — 부품은 하나도 안 늘었다. 자세히:
 [`docs/EXPERIMENT_MAP.md`](../docs/EXPERIMENT_MAP.md) §A-1.
 
-> ⚠️ 아직 안 정해진 것은 `lse_temp_frac`(평탄대 13–50 mV 중 어디)과
-> `xmax_floor_frac`(→ δ)뿐이다. 둘 다 §6d / §6e 가 좁힌다."""),
+> **남은 미확정은 `lse_temp_frac` 하나뿐이다** (평탄대 13–50 mV 중 어디).
+> δ는 §6e 로 끝났다 — `V_ref` 를 detector 정지점에 두면 된다."""),
 
 md("## 3. 환경 점검 (처음 한 번)"),
 code("""# 의존성 — torch 를 다운그레이드하지 않도록 requirements-colab.txt 를 쓴다
@@ -187,13 +188,13 @@ md("""## 4. 러너 — `run(tag, over)`
 |---|---|
 | `model.in_channels` 자동 계산 | `n_channels × k`와 어긋나 config 에러 |
 | `init_fixed_scale` → `init_thresholds` 순서 | δ 없이 α 초기화 |
-| `d > 0` | `floor_frac` 미반영으로 100 에폭 헛돌기 |
+| `d > 0` (요구했을 때만) | `floor_frac` override 미반영으로 100 에폭 헛돌기 |
 | α 범위 | 저항비로 만들 수 없는 값 |
 
-**δ 안정화**: `init_fixed_scale`에 배치 하나가 아니라 **{N_INIT_CLIPS}클립**을 넘긴다.
+**δ 안정화**: `init_fixed_scale`에 배치 하나가 아니라 **2048클립**을 넘긴다.
 δ는 2% 분위수라 배치 하나로는 시드에 **2.4배** 흔들렸고(0.00100 ↔ 0.00244), 그 값은
 동료가 만들 **V_ref 오프셋**이다. 학습 시작 전에 **서로 겹치지 않는 두 절반**으로
-δ를 각각 재서 아직도 흔들리면 바로 보여준다.""".replace('{N_INIT_CLIPS}', '2048')),
+δ를 각각 재서 아직도 흔들리면 바로 보여준다."""),
 code('''# --- 공용 러너 -----------------------------------------------------------
 import json, yaml
 
@@ -237,7 +238,8 @@ def run(tag, over=None, epochs=None):
     afe.init_thresholds(w)             # 그 다음 α
 
     # 안정성을 눈으로 확인한다: 서로 겹치지 않는 두 절반이 같은 δ 를 주는가.
-    if cfg.afe.normalize in _NEEDS_FLOOR and w.shape[0] >= 4:
+    if (cfg.afe.normalize in _NEEDS_FLOOR and w.shape[0] >= 4
+            and cfg.afe.xmax_floor_frac > 0):   # δ=0 은 잴 게 없다
         _h = w.shape[0] // 2
         _probe = AFEFrontend(cfg.afe)
         _d2 = []
@@ -252,8 +254,11 @@ def run(tag, over=None, epochs=None):
             f'{sum(p.numel() for p in model.parameters()):,} params']
     if cfg.afe.normalize in _NEEDS_FLOOR:
         d = float(afe.xmax_floor)
-        assert d > 0, (f'd=0 — afe.xmax_floor_frac={cfg.afe.xmax_floor_frac} 이 '
-                       f'반영되지 않았습니다 (커널 재시작 필요?)')
+        # d=0 은 이제 정당한 확정값이다 (floor_frac=0). 잡아야 할 건 "0 을 요구하지
+        # 않았는데 0 이 나온" 경우 -- override 가 안 먹었거나 커널이 stale 한 것이다.
+        assert d > 0 or cfg.afe.xmax_floor_frac == 0, (
+            f'd=0 인데 afe.xmax_floor_frac={cfg.afe.xmax_floor_frac} 이다 — '
+            f'override 가 반영되지 않았다 (커널 재시작 필요?)')
         info.append(f'd={d:.5f}')
     if cfg.afe.normalize == 'xlse':
         info.append(f'T={float(afe.lse_temp):.4f}')
@@ -652,10 +657,10 @@ code("""# 2. k=2 와 soft-max 가 겹치는지
 # 4. 채널간 스케일 복원 (소프트 max 에서만 의미가 생긴다)
 # run('af_lse078_gr', {**BEST, 'afe.spice_gain_restore': True})
 
-# 5. floor_frac — §6e 로 후보를 좁힌 뒤 정확도를 확인한다
-# run('af_lse078_f000', {**BEST, 'afe.xmax_floor_frac': 0.00})
-# run('af_lse078_f003', {**BEST, 'afe.xmax_floor_frac': 0.03})
-# run('af_lse078_f005', {**BEST, 'afe.xmax_floor_frac': 0.05})
+# 5. δ=0 확정본 기준선. floor_frac 스윕은 §6e 가 이미 끝냈다 --
+#    0~0.10 에서 α 가 안 움직이고, 정규화값 변화도 0.6pp 미만이며,
+#    δ 가 그 구간 전체에서 comparator offset 아래다. 스윕은 잡음을 재게 된다.
+# run('xl_d0', BEST)          # base.yaml 이 이미 floor_frac=0 이다
 
 # 끝나면
 # results(); frac_sweep('af_lse078_g12')"""),

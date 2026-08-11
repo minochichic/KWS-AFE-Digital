@@ -67,8 +67,16 @@ afe:
   normalize: xlse           # 다이오드-OR 의 soft max. 위 주석 참조
   lse_temp_frac: 0.78       # = n*V_T / 요구 스윙. 즉 26mV/0.78 = 33 mV 를 요구한다.
                             # 평탄대는 13~50 mV -- 한 점이 아니다(EXPERIMENTS.md 8).
-  xmax_floor_frac: 0.02     # -> delta. xlse 에서는 0 이 맞을 수 있다(EXPERIMENT_MAP A-3):
-                            # LSE >= T*ln(16) 라는 자체 바닥이 있어 무음이 알아서 꺼진다.
+  xmax_floor_frac: 0.0      # -> delta = 0. 측정으로 확정 (EXPERIMENT_MAP A-3):
+                            # (a) LSE >= T*ln(16) = 1.617 이라는 자체 바닥이 있어
+                            #     무음이 0.0006 로 알아서 꺼진다 (하드 max 는 1.0),
+                            # (b) floor_frac 0~0.10 에서 alpha 가 거의 안 움직이고
+                            #     죽는 채널도 0/16 (xmix 의 "0.05 는 4채널 사망" 은
+                            #     하드 max 성질이라 여기 적용 안 됨),
+                            # (c) 그 구간 전체에서 delta 가 0.04~0.80 mV 로 실제
+                            #     comparator offset(~1 mV) 아래다 -- 하드웨어가
+                            #     어떤 값을 골라도 0 과 구별하지 못한다.
+                            # => V_ref 를 detector 정지점(917.8 mV)에 둔다.
   threshold_init: channel_mean  # init the 16 thresholds to per-channel mean
                                 #   envelope (Cerutti IV-A); see init_thresholds().
   threshold_trainable: true # learn the thresholds end-to-end with the net (2.4).
