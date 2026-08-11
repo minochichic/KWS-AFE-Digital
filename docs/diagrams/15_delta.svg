@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1340" height="1150" viewBox="0 0 1340 1150" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1340" height="1150" fill="#ffffff"/>
+<defs><marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#334155"/></marker></defs>
+<text x="670.0" y="36" text-anchor="middle" font-size="23" fill="#0f172a" font-weight="700">δ — comparator 의 기준선이 정지점보다 얼마나 위인가</text>
+<text x="670.0" y="60" text-anchor="middle" font-size="13" fill="#64748b">저항 두 개로 만드는 값이고, 동료에게 넘길 스펙이다. 그런데 seed 를 바꾸면 2.4배 흔들렸다.</text>
+<rect x="40" y="86" width="620" height="330" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="60" y="114" text-anchor="start" font-size="15" fill="#0f172a" font-weight="700">A. 회로에서 — detector 출력의 좌표계</text>
+<line x1="110" y1="376" x2="620" y2="376" stroke="#334155" stroke-width="2"/>
+<text x="102" y="381" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">917.8 mV</text>
+<text x="102" y="397" text-anchor="end" font-size="10" fill="#64748b">quiescent</text>
+<text x="102" y="411" text-anchor="end" font-size="9.5" fill="#64748b">(무신호)</text>
+<path d="M 150 376 C 190 376 205 176 245 176 C 300 176 315 346 380 358 L 480 366 L 480 376 Z" fill="#1e3a8a" opacity="0.18"/>
+<path d="M 150 376 C 190 376 205 176 245 176 C 300 176 315 346 380 358 L 480 366" fill="none" stroke="#1e3a8a" stroke-width="2"/>
+<text x="280" y="164" text-anchor="middle" font-size="11.5" fill="#1e3a8a" font-weight="700">envelope (V_env,c)</text>
+<line x1="245" y1="176" x2="245" y2="376" stroke="#1e3a8a" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="255" y="276.0" text-anchor="start" font-size="11" fill="#1e3a8a">전형 상승 32 mV</text>
+<line x1="130" y1="374" x2="540" y2="374" stroke="#dc2626" stroke-width="2"/>
+<text x="548" y="370" text-anchor="start" font-size="11.5" fill="#dc2626" font-weight="700">V_ref</text>
+<text x="548" y="385" text-anchor="start" font-size="9.5" fill="#dc2626">= 정지점 + δ</text>
+<text x="350" y="408" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">δ = 0.108 mV 는 이 그림에서 선 두께보다 얇다 — 그게 결론의 절반이다</text>
+<rect x="430" y="132" width="210" height="132" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="4 3"/>
+<text x="535" y="152" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700">×300 확대</text>
+<line x1="450" y1="234" x2="620" y2="234" stroke="#334155" stroke-width="2"/>
+<text x="444" y="238" text-anchor="end" font-size="9.5" fill="#64748b">0</text>
+<line x1="450" y1="208" x2="620" y2="208" stroke="#dc2626" stroke-width="2"/>
+<text x="444" y="212" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">δ</text>
+<text x="535" y="202" text-anchor="middle" font-size="9.5" fill="#dc2626">0.108 mV</text>
+<text x="535" y="252" text-anchor="middle" font-size="9.5" fill="#64748b">= 전형 상승의 0.34%</text>
+<rect x="680" y="86" width="620" height="330" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="700" y="114" text-anchor="start" font-size="15" fill="#1e3a8a" font-weight="700">B. 수식에서 — 왜 나눗셈에 나타나나</text>
+<text x="700" y="136" text-anchor="start" font-size="11.5" fill="#64748b">저항 divider 가 만들 수 있는 건 linear mix 뿐이다.</text>
+<text x="700" y="170" text-anchor="start" font-size="13" fill="#0f172a" font-weight="700" font-family="ui-monospace,Menlo,monospace">V_thr,c = α_c · V_max + (1−α_c) · V_ref</text>
+<text x="700" y="187" text-anchor="start" font-size="10" fill="#64748b">divider 가 실제로 만드는 것</text>
+<text x="700" y="216" text-anchor="start" font-size="13" fill="#0f172a" font-weight="700" font-family="ui-monospace,Menlo,monospace">V_env,c &gt; V_thr,c</text>
+<text x="700" y="233" text-anchor="start" font-size="10" fill="#64748b">comparator 발화 조건</text>
+<text x="700" y="262" text-anchor="start" font-size="11.5" fill="#64748b">모든 항에서 quiescent 를 뺀다</text>
+<text x="700" y="279" text-anchor="start" font-size="10" fill="#64748b">→ '정지점 위 상승' 좌표로</text>
+<text x="700" y="308" text-anchor="start" font-size="13" fill="#0f172a" font-weight="700" font-family="ui-monospace,Menlo,monospace">env_c &gt; α_c · S + (1−α_c) · δ</text>
+<text x="700" y="325" text-anchor="start" font-size="10" fill="#64748b">S = 채널간 max, δ = V_ref − 정지점</text>
+<text x="700" y="354" text-anchor="start" font-size="14" fill="#1e3a8a" font-weight="700" font-family="ui-monospace,Menlo,monospace">(env_c − δ) / (S − δ)  &gt;  α_c</text>
+<text x="700" y="371" text-anchor="start" font-size="10" fill="#64748b">← _xmix / _xlse 의 그 줄</text>
+<rect x="700" y="378" width="580" height="26" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.1"/>
+<text x="990" y="396" text-anchor="middle" font-size="11" fill="#0f172a">δ 는 floor 다 — α=0 이어도 임계가 정확히 δ 이므로, δ 만큼도 못 올라오면 절대 발화 못 한다</text>
+<rect x="40" y="440" width="1260" height="430" rx="6" fill="#fff1f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="60" y="468" text-anchor="start" font-size="15" fill="#dc2626" font-weight="700">C. 왜 안 멈추나 — quantile 이 atom 위에 앉아 있다</text>
+<text x="60" y="490" text-anchor="start" font-size="11.5" fill="#64748b">sqrt(mel + 1e-6) 은 √(1e-6) = 0.044 mV 에서 바닥을 친다. 무음·zero padding 프레임이 전부 그 값 하나에 쌓인다 = atom.</text>
+<line x1="150" y1="750" x2="1130" y2="750" stroke="#334155" stroke-width="1.6"/>
+<line x1="150.0" y1="750" x2="150.0" y2="756" stroke="#334155" stroke-width="1.2"/>
+<text x="150.0" y="770" text-anchor="middle" font-size="10" fill="#64748b">0.01</text>
+<line x1="346.0" y1="750" x2="346.0" y2="756" stroke="#334155" stroke-width="1.2"/>
+<text x="346.0" y="770" text-anchor="middle" font-size="10" fill="#64748b">0.1</text>
+<line x1="542.0" y1="750" x2="542.0" y2="756" stroke="#334155" stroke-width="1.2"/>
+<text x="542.0" y="770" text-anchor="middle" font-size="10" fill="#64748b">1</text>
+<line x1="738.0" y1="750" x2="738.0" y2="756" stroke="#334155" stroke-width="1.2"/>
+<text x="738.0" y="770" text-anchor="middle" font-size="10" fill="#64748b">10</text>
+<line x1="934.0" y1="750" x2="934.0" y2="756" stroke="#334155" stroke-width="1.2"/>
+<text x="934.0" y="770" text-anchor="middle" font-size="10" fill="#64748b">100</text>
+<line x1="1130.0" y1="750" x2="1130.0" y2="756" stroke="#334155" stroke-width="1.2"/>
+<text x="1130.0" y="770" text-anchor="middle" font-size="10" fill="#64748b">1000</text>
+<text x="640.0" y="788" text-anchor="middle" font-size="10.5" fill="#0f172a">정지점 위 상승 (mV, log scale)</text>
+<polyline points="150.0,749.9999998150045 156.125,749.9999997347516 162.25,749.9999996209099 168.375,749.9999994599549 174.5,749.9999992331409 180.625,749.999998914577 186.75,749.9999984686287 192.875,749.9999978464255 199.0,749.9999969811795 205.125,749.999995781941 211.25,749.9999941252966 217.375,749.9999918443755 223.5,749.999988714353 229.625,749.9999844334035 235.75,749.9999785977794 241.875,749.9999706693311 248.0,749.9999599333471 254.125,749.9999454440498 260.25,749.9999259544181 266.375,749.9998998262017 272.5,749.9998649150097 278.625,749.9998184241792 284.75,749.9997567197238 290.875,749.9996750969792 297.0,749.9995674876004 303.125,749.9994260932392 309.25,749.9992409295525 315.375,749.9989992610786 321.5,749.9986849039813 327.625,749.9982773696297 333.75,749.9977508174737 339.875,749.9970727806543 346.0,749.9962026222873 352.125,749.9950896743845 358.25,749.9936710050105 364.375,749.9918687525794 370.5,749.98958695932 376.625,749.9867078290364 382.75,749.9830873275993 388.875,749.9785500383838 395.0,749.9728831794749 401.125,749.9658296852923 407.25,749.957080252806 413.375,749.9462642522759 419.5,749.9329394050376 425.625,749.9165801369422 431.75,749.8965645263322 437.875,749.8721597806326 444.0,749.8425061964908 450.125,749.8065995856185 456.25,749.7632721827395 462.375,749.7111720938912 468.5,749.6487413931857 474.625,749.5741930342502 480.75,749.4854868089412 486.875,749.3803046602487 493.0,749.2560257379522 499.125,749.109701673504 505.25,748.9380326433181 511.375,748.7373448851771 517.5,748.5035704283655 523.625,748.2322298914424 529.75,747.9184192888076 535.875,747.5568018645031 542.0,747.1416060347157 548.125,746.6666305646266 554.25,746.1252581258259 560.375,745.5104783726921 566.5,744.8149216353136 572.625,744.0309042484403 578.75,743.1504864169269 584.875,742.1655433553339 591.0,741.0678502309881 597.125,739.8491811854032 603.25,738.5014224095443 609.375,737.0166989067245 615.5,735.3875141975127 621.625,733.6069018104328 627.75,731.6685869688829 633.875,729.5671564389836 640.0,727.2982340570634 646.125,724.8586590228723 652.25,722.2466636402011 658.375,719.4620468260205 664.5,716.5063394084707 670.625,713.382957008702 676.75,710.0973361664942 682.875,706.6570493380683 689.0,703.0718944776683 695.125,699.353955120705 701.25,695.5176272205025 707.375,691.5796094541389 713.5,687.5588543024446 719.625,683.4764779173933 725.75,679.3556276047939 731.875,675.22130665483 738.0,671.100157226858 744.125,667.0202030135315 750.25,663.0105544452213 756.375,659.1010802190652 762.5,655.3220499166786 768.625,651.703753379186 774.75,648.2761033072708 780.875,645.0682282188177 787.0,642.1080634020457 793.125,639.4219478265328 799.25,637.0342351020886 805.375,634.9669264957565 811.5,633.2393337264976 817.625,631.8677787582337 823.75,630.8653371146825 829.875,630.2416303602017 836.0,630.0026723522792 842.125,630.150772701451 848.25,630.6844996059729 854.375,631.5987028976131 860.5,632.8845967798148 866.625,634.529900399343 872.75,636.519033106044 878.875,638.8333600592458 885.0,641.4514827671959 891.125,644.3495682270369 897.25,647.5017095911084 903.375,650.8803107387648 909.5,654.4564867927544 915.625,658.2004724900465 921.75,662.0820303965617 927.875,666.0708512347401 934.0,670.1369390574625 940.125,674.250974631381 946.25,678.3846511627036 952.375,682.510977380991 958.5,686.604543961394 964.625,690.64175028169 970.75,694.6009895461787 976.875,698.4627913337764 983.0,702.2099216143572 989.125,705.8274412002994 995.25,709.302724437654 1001.375,712.6254406757906 1007.5,715.7875016726612 1013.625,718.7829785863338 1019.75,721.6079925681007 1025.875,724.2605832084378 1032.0,726.7405591985327 1038.125,729.0493355646138 1044.25,731.1897617204429 1050.375,733.165944377922 1056.5,734.983069071321 1062.625,736.6472237026788 1068.75,738.165227120397 1074.875,739.5444653156787 1081.0,740.7927373773373 1087.125,741.9181128985599 1093.25,742.9288020919595 1099.375,743.8330394524679 1105.5,744.6389814202347 1111.625,745.3546181446548 1117.75,745.987699140991 1123.875,746.5456723659272 1130.0,747.0356360191992" fill="none" stroke="#1e3a8a" stroke-width="2"/>
+<text x="836.7194364004287" y="612" text-anchor="middle" font-size="12" fill="#1e3a8a" font-weight="700">speech frames</text>
+<text x="836.7194364004287" y="627" text-anchor="middle" font-size="10.5" fill="#1e3a8a">중앙 32 mV</text>
+<rect x="267.7354848061992" y="550" width="18" height="200" fill="#dc2626" opacity="0.30" stroke="#dc2626" stroke-width="1.6"/>
+<text x="276.7354848061992" y="540" text-anchor="middle" font-size="12.5" fill="#dc2626" font-weight="700">atom</text>
+<text x="276.7354848061992" y="524" text-anchor="middle" font-size="10.5" fill="#dc2626">무음 프레임 2.5%</text>
+<text x="252.73548480619922" y="630" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">seed 1234</text>
+<text x="252.73548480619922" y="645" text-anchor="end" font-size="10" fill="#dc2626">δ = 0.044 mV</text>
+<text x="252.73548480619922" y="659" text-anchor="end" font-size="10" fill="#dc2626">atom 안</text>
+<line x1="256.7354848061992" y1="642" x2="265.7354848061992" y2="642" stroke="#dc2626" stroke-width="1.2"/>
+<line x1="352.66389076859014" y1="590" x2="352.66389076859014" y2="750" stroke="#9a3412" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="362.66389076859014" y="600" text-anchor="start" font-size="11" fill="#9a3412" font-weight="700">seed 1235</text>
+<text x="362.66389076859014" y="615" text-anchor="start" font-size="10" fill="#9a3412">δ = 0.108 mV</text>
+<text x="362.66389076859014" y="629" text-anchor="start" font-size="10" fill="#9a3412">atom 밖</text>
+<line x1="276.7354848061992" y1="704" x2="352.66389076859014" y2="704" stroke="#dc2626" stroke-width="1.8"/>
+<line x1="276.7354848061992" y1="699" x2="276.7354848061992" y2="709" stroke="#dc2626" stroke-width="1.8"/>
+<line x1="352.66389076859014" y1="699" x2="352.66389076859014" y2="709" stroke="#dc2626" stroke-width="1.8"/>
+<text x="314.6996877873947" y="695" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">2.4배</text>
+<rect x="60" y="792" width="600" height="48" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="1.1"/>
+<text x="72" y="813" text-anchor="start" font-size="12" fill="#dc2626" font-weight="700">무음 프레임 2.5%   vs   xmax_floor_frac 2.0%</text>
+<text x="72" y="831" text-anchor="start" font-size="10.5" fill="#0f172a">2% quantile 을 요구하는데 무음이 2.5% → quantile 이 atom 안으로 들어간다</text>
+<rect x="680" y="792" width="620" height="48" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="1.1"/>
+<text x="692" y="813" text-anchor="start" font-size="12" fill="#dc2626" font-weight="700">표본을 늘려도 절벽은 안 움직인다</text>
+<text x="692" y="831" text-anchor="start" font-size="10.5" fill="#0f172a">분산은 줄지만 quantile 은 여전히 discontinuity 위다 → floor_frac 을 올려야 한다</text>
+<rect x="40" y="894" width="1260" height="226" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="60" y="922" text-anchor="start" font-size="15" fill="#15803d" font-weight="700">D. 그래서 동료에게 뭐라고 하나</text>
+<rect x="60" y="938" width="600" height="76" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.1"/>
+<text x="72" y="960" text-anchor="start" font-size="12.5" fill="#15803d" font-weight="700">0.1 mV 를 저항으로 맞추라는 건 불가능하다</text>
+<text x="72" y="980" text-anchor="start" font-size="11" fill="#0f172a">저항 공차도 op-amp offset 도 그보다 훨씬 크다.</text>
+<text x="72" y="998" text-anchor="start" font-size="11" fill="#0f172a">그런데 맞출 필요가 없다 — 오른쪽이 이유다.</text>
+<rect x="680" y="938" width="620" height="76" rx="6" fill="#ffffff" stroke="#86efac" stroke-width="1.1"/>
+<text x="692" y="960" text-anchor="start" font-size="12.5" fill="#15803d" font-weight="700" font-family="ui-monospace,Menlo,monospace">δ ≈ 0 이면  (env−δ)/(S−δ) ≈ env/S</text>
+<text x="692" y="980" text-anchor="start" font-size="11" fill="#0f172a">floor 가 사실상 아무 일도 안 한다.</text>
+<text x="692" y="998" text-anchor="start" font-size="11" fill="#0f172a">→ V_ref 를 detector 정지점(917.8 mV)에 두면 된다.</text>
+<text x="670" y="1036" text-anchor="middle" font-size="12.5" fill="#15803d" font-weight="700">실제 일은 학습된 α 16개가 한다. δ 는 그 위에 얹힌 아주 얇은 floor 일 뿐이다.</text>
+<text x="70" y="1068" text-anchor="start" font-size="11.5" fill="#7e22ce" font-weight="700">① floor_frac 을 0.03~0.05 로</text>
+<text x="320" y="1068" text-anchor="start" font-size="10.5" fill="#64748b">δ 가 atom 을 벗어나 조용한 음성을 재게 된다. 단 xmix 에서 0.05 는 채널 4개를 죽였다 — xlse 에서 재확인 필요</text>
+<text x="70" y="1094" text-anchor="start" font-size="11.5" fill="#7e22ce" font-weight="700">② δ = 0 으로 확정</text>
+<text x="320" y="1094" text-anchor="start" font-size="10.5" fill="#64748b">어차피 0.34%다. 회로가 단순해지고(V_ref = 정지점) 불안정성이 원천 제거된다. 무음에서 잡음÷잡음이 되는지만 확인</text>
+<text x="40" y="1134" text-anchor="start" font-size="10" fill="#64748b">환산 앵커: lse_temp 0.58329 ≡ n·V_T 25.85 mV → 1 code = 44.3 mV (검산: TYP → 31.9 mV ≈ 요구 33 mV) · 생성: docs/diagrams/make_delta.py</text>
+</svg>
