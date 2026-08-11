@@ -303,17 +303,27 @@ md("""## 6. 결과 표 — `result.json` 백필 + 집계
 `result.json`이 도입되기 전에 끝난 런은 test가 파일에 없다. `best.pt`로 복원한다.
 δ와 LSE 온도는 `register_buffer`라 체크포인트에 들어 있어 `init_fixed_scale`을
 다시 부를 필요가 없다."""),
-code('''_TE = None                  # test loader 는 런 사이 동일 -> 한 번만 만든다
+code('''# test 세트는 런 사이에 동일하지 "않다". unknown 서브샘플과 합성 silence 가
+# 둘 다 seed 로 뽑히므로(data/speech_commands.py:162,166) 테스트 클립의 약 20%가
+# seed 에 따라 바뀐다. 하나를 만들어 돌려쓰면 다른 seed 의 런을 남의 테스트
+# 세트로 채점하게 된다 -- af_lse078_s2 가 0.8351 대신 0.8331 로 나온 이유다.
+_TE_CACHE = {}
+
+def _te_key(cfg):
+    d = cfg.data
+    return (cfg.train.seed, d.root, d.split, d.silence_fraction,
+            d.unknown_fraction, cfg.train.batch_size, cfg.afe.sample_rate)
 
 def backfill(tag):
-    global _TE
     d = pathlib.Path('runs', tag)
     if not (d / 'best.pt').exists():
         print(f'  {tag}: best.pt 없음'); return None
     cfg = load_config(str(d / 'config.yaml'))      # 그 런이 실제로 쓴 설정
     cfg.data.root = DATA_ROOT
-    if _TE is None:
-        _TE = test_loader(cfg)
+    key = _te_key(cfg)
+    if key not in _TE_CACHE:
+        _TE_CACHE[key] = test_loader(cfg)
+    _TE = _TE_CACHE[key]
     t = Trainer(cfg, BinaryMatchboxNet(cfg.model), afe=AFEFrontend(cfg.afe))
     ck = torch.load(d / 'best.pt', map_location=t.device, weights_only=True)
     t.model.load_state_dict(ck['model'])
