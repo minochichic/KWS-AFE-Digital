@@ -25,9 +25,24 @@ BASE = ROOT / "configs" / "base.yaml"
 
 
 def tiny_cfg(tmp_path, **extra):
+    """A small config for PLUMBING tests, pinned to a simple front end.
+
+    These tests ask whether gradients reach every STE, not whether a front end
+    is good, so they must not change meaning when the production default does.
+    When base.yaml moved to spice+sqrt+xlse they started failing at 0.917 on a
+    12-tone memorization -- correctly: a pure tone lights one or two channels,
+    and a soft max whose denominator is dominated by T*ln(16) then leaves 7.7%
+    of bits firing instead of 27.5%. That is the front end behaving as designed
+    on a signal it was never meant for, so the fix is to state the front end
+    here rather than to loosen the threshold. The real front end is exercised by
+    test_default_config_trains below and by the runs themselves.
+    """
     ov = {
         "model.C": 16, "model.T": 64,
         "afe.envelope_win_ms": 10.0,
+        "afe.filterbank_source": "mel",
+        "afe.compression": "log",
+        "afe.normalize": "minmax",
         "train.lr": 1e-2, "train.epochs": 3,
         "train.batch_size": 48, "train.seed": 7,
         "train.out_dir": str(tmp_path / "runs"),
@@ -53,7 +68,9 @@ def build_trainer(cfg, init_thresholds: bool = True) -> Trainer:
     afe = AFEFrontend(cfg.afe)
     model = BinaryMatchboxNet(cfg.model)
     if init_thresholds:                          # documented workflow
-        afe.init_thresholds(tone_data(cfg)[0])   # (Cerutti IV-A)
+        w = tone_data(cfg)[0]
+        afe.init_fixed_scale(w)                  # delta / lse_temp 먼저
+        afe.init_thresholds(w)                   # 그 다음 alpha (Cerutti IV-A)
     return Trainer(cfg, model, afe=afe)
 
 
@@ -235,3 +252,44 @@ def test_overfit_synthetic_tones(tmp_path) -> None:
 
     # end-to-end STE proof: AFE thresholds moved along the way (CLAUDE.md 2.4)
     assert not torch.equal(trainer.afe.threshold.detach(), thr_before)
+
+
+# --------------------------------------------------------------------------- #
+# the production front end (spice + sqrt + xlse), which tiny_cfg deliberately
+# does not use
+# --------------------------------------------------------------------------- #
+def test_default_config_trains(tmp_path) -> None:
+    """base.yaml's own front end has to train. Memorization is NOT the claim.
+
+    Tones are a poor fit for it and it is slower here by design: a pure tone
+    lights one or two channels, so the soft max denominator sits near its
+    T*ln(16) floor and few bits fire. Measured 2.507 -> 1.772 / 1.166 / 0.702 at
+    15 / 40 / 80 epochs, so 40 clears the same 0.7 bar the easy front end clears
+    at 15, with margin (0.46). The bar is the easy path's; only the budget moved.
+    """
+    cfg = tiny_cfg(tmp_path, **{"train.epochs": 40, "afe.filterbank_source": "spice",
+                                "afe.compression": "sqrt", "afe.normalize": "xlse"})
+    assert cfg.afe.normalize == "xlse"
+    trainer = build_trainer(cfg)
+    history = trainer.fit(tone_loader(cfg))
+    first, last = history[0]["train_loss"], history[-1]["train_loss"]
+    assert last < first * 0.7, f"loss barely moved: {first:.3f} -> {last:.3f}"
+
+
+def test_thresholds_refuse_to_init_before_the_scale() -> None:
+    """The order used to be a docstring. For minmax skipping it changed nothing,
+    so the habit was harmless; for xlse it leaves lse_temp at its placeholder
+    1.0 and the model trains through a softness nobody chose."""
+    from data.afe import AFEFrontend
+    cfg = load_config(BASE, {"afe.normalize": "xlse", "afe.envelope_win_ms": 10.0})
+    afe = AFEFrontend(cfg.afe)
+    with pytest.raises(RuntimeError, match="init_fixed_scale"):
+        afe.init_thresholds(torch.randn(4, 16000))
+
+
+def test_minmax_still_needs_no_scale() -> None:
+    """The guard must not fire where the order genuinely does not matter, or it
+    becomes noise people learn to ignore."""
+    from data.afe import AFEFrontend
+    cfg = load_config(BASE, {"afe.normalize": "minmax", "afe.envelope_win_ms": 10.0})
+    AFEFrontend(cfg.afe).init_thresholds(torch.randn(4, 16000))

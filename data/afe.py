@@ -55,6 +55,10 @@ _EPS = 1e-6
 # divider cannot produce.
 _DIVIDER_FORM = ("xmix", "xlse")
 
+# Modes carrying a dataset-level constant, so init_fixed_scale() must run
+# before init_thresholds(). "minmax" is not one: its scale is per clip.
+_NEEDS_SCALE = ("fixed", "agc", "xmax", "xmix", "xlse")
+
 
 def discretize(pulse_times_ms, window_ms: float, n_windows: int,
                reduce: str = "max"):
@@ -245,6 +249,11 @@ class AFEFrontend(nn.Module):
         # k comparators per channel -> a k-bit thermometer code. The parameter
         # stays FLAT and channel-major (ch0_t0, ch0_t1, ch1_t0, ...) so k=1 is
         # byte-identical to every checkpoint written before this existed.
+        # init_fixed_scale() 이 돌았는지. nn.Buffer 가 아니라 평범한 속성이다 --
+        # 버퍼면 state_dict 에 들어가서 기존 체크포인트가 전부 strict 로딩에
+        # 실패한다. 학습 직전에만 쓰는 값이라 저장할 이유도 없다.
+        self._scale_ready = False
+
         self.n_comparators = max(1, getattr(cfg, "comparators_per_channel", 1))
         self.threshold = nn.Parameter(
             torch.full((cfg.n_channels * self.n_comparators,), 0.5),
@@ -606,6 +615,7 @@ class AFEFrontend(nn.Module):
         Since lo/hi are constants, the later `env >= thr` decision is an absolute
         threshold -> maps straight to a fixed R7/R8 divider.
         """
+        self._scale_ready = True
         if self.cfg.normalize not in ("fixed", "agc", "xmax", "xmix", "xlse"):
             return
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
@@ -701,6 +711,19 @@ class AFEFrontend(nn.Module):
         inside envelopes() already applies the same min-max scaling to the
         features, so the mean is directly in threshold coordinates.
         """
+        if self.cfg.normalize in _NEEDS_SCALE and not self._scale_ready:
+            # Order matters and used to be documented only. For "minmax" it did
+            # not: the scale is per clip, so skipping init_fixed_scale changed
+            # nothing. Every mode that carries a dataset-level constant is
+            # different -- "xlse" leaves lse_temp at its placeholder 1.0, which
+            # is not a temperature anybody chose, and the front end then quietly
+            # trains through the wrong softness. It cost a silently degraded
+            # overfit test before it cost a real run, which is the only reason
+            # this is a guard and not a bug report.
+            raise RuntimeError(
+                f"normalize={self.cfg.normalize!r} 는 init_fixed_scale() 을 "
+                f"먼저 불러야 한다 (delta / lse_temp 가 아직 기본값이다). "
+                f"순서: init_fixed_scale(w) -> init_thresholds(w)")
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self._envelopes_chunked(waves, raw=False)
         if self.n_comparators == 1:

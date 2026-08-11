@@ -119,21 +119,18 @@ DATA_ROOT = os.path.expanduser('~/datasets/speech_commands_v2')
 DEV = 'cuda' if torch.cuda.is_available() else 'cpu'
 SR  = AFEConfig().sample_rate
 
-# 확정 설정. 실험 셀들은 이걸 복사해 필요한 키만 바꾼다.
-# 비교기는 채널당 1개가 기본값이다 (AFEConfig / base.yaml 과 동일).
-# k=2 는 업그레이드 경로로 남긴다: 하드 max 에서 +2.5pp 였지만 soft-max 와
-# 겹치는지는 미검증이고, xlse k=1 (0.8445) 이 이미 xmix k=2 (0.8024) 를 크게
-# 넘는다. gpu_local 의 CONFIRMED 는 k=2 였다 -- 그래서 af_k2 를 이 딕셔너리로
-# 재현하려 하면 안 된다 (그 런은 32행이고 resume 이 형상 불일치로 막는다).
-CONFIRMED = {'afe.filterbank_source': 'spice',
-             'afe.compression': 'sqrt',
-             'afe.normalize': 'xmix',
-             'afe.xmax_floor_frac': 0.02,
-             'afe.comparators_per_channel': 1}
-
-# soft-max 계열. k 는 CONFIRMED 에서 그대로 온다 (=1).
-LSE  = {**CONFIRMED, 'afe.normalize': 'xlse'}
-BEST = {**LSE, 'afe.lse_temp_frac': 0.78}
+# 확정 설정 = configs/base.yaml 그 자체다. 이 딕셔너리는 이제 비어 있고,
+# 남겨둔 건 실험 셀이 {**CONFIRMED, ...} 형태를 계속 쓸 수 있게 하기 위해서다.
+#
+# base.yaml 이 spice + sqrt + xlse + k=1 로 확정됐다 (2026-08-11). 다이오드-OR 은
+# max 가 아니라 log-sum-exp 를 만들고, 그 soft max 로 학습한 쪽이 하드 max 보다
+# +6.7pp 높다 (0.8445 vs 0.7778) -- 부품은 하나도 안 늘었다.
+#
+# ⚠️ 옛 xmix 런을 이 딕셔너리로 재현하려 하지 말 것. af_k2 는 xmix/k=2 라 32행이고
+#    resume 이 형상 불일치로 막는다. 옛 런은 runs/<tag>/config.yaml 로 평가한다.
+CONFIRMED = {}
+BEST = {'afe.lse_temp_frac': 0.78}     # frac 은 아직 확정 아님 (평탄대 13~50 mV)
+XMIX = {'afe.normalize': 'xmix'}       # 하드 max 대조군이 필요할 때만
 
 # δ 추정에 쓸 클립 수. 배치 하나(128)로는 2% 분위수가 시드에 2.4배 흔들렸다.
 N_INIT_CLIPS = 2048
@@ -141,6 +138,28 @@ N_INIT_CLIPS = 2048
 print(f"\\n모듈 정상.  DATA_ROOT={DATA_ROOT}  존재={os.path.isdir(DATA_ROOT)}")
 print('torch', torch.__version__, '| cuda',
       torch.cuda.get_device_name(0) if torch.cuda.is_available() else '(CPU only)')'''),
+
+md("""### 확정 설정 — `configs/base.yaml` 이 곧 baseline 이다
+
+전에는 노트북의 `CONFIRMED` 딕셔너리가 진짜 설정을 들고 있었고 `base.yaml` 은
+`minmax` 였다. 이제 반대다: **`base.yaml` 이 확정 설정이고**, 실험 셀은 거기서
+필요한 키만 바꾼다. 두 곳에 따로 적혀 있으면 언젠가 어긋난다.
+
+| | 값 | 왜 |
+|---|---|---|
+| `filterbank_source` | `spice` | 실제 GIC 응답 (mel 삼각형 아님) |
+| `compression` | `sqrt` | 검출기가 진폭에 선형 |
+| **`normalize`** | **`xlse`** | **다이오드-OR 은 max 가 아니라 soft max 다. +6.7pp** |
+| `comparators_per_channel` | 1 | k=2 는 업그레이드 경로 |
+| `f_min` / `f_max` | 50 / 8000 Hz | 125–5000 은 −1.6pp |
+
+**`xlse` 가 baseline 인 이유**: 하드 max(`xmix`)로 학습한 0.7778 은 **평범한
+다이오드-OR 로는 만들 수 없는 프론트엔드**의 값이다. 회로가 실제로 만드는 soft max 로
+학습하니 **0.8445** 였다 — 부품은 하나도 안 늘었다. 자세히:
+[`docs/EXPERIMENT_MAP.md`](../docs/EXPERIMENT_MAP.md) §A-1.
+
+> ⚠️ 아직 안 정해진 것은 `lse_temp_frac`(평탄대 13–50 mV 중 어디)과
+> `xmax_floor_frac`(→ δ)뿐이다. 둘 다 §6d / §6e 가 좁힌다."""),
 
 md("## 3. 환경 점검 (처음 한 번)"),
 code("""# 의존성 — torch 를 다운그레이드하지 않도록 requirements-colab.txt 를 쓴다
