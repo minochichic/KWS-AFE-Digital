@@ -181,8 +181,8 @@ import json, yaml
 _NEEDS_SCALE = ('fixed', 'agc', 'xmax', 'xmix', 'xlse')
 _NEEDS_FLOOR = ('xmax', 'xmix', 'xlse')
 
-def run(tag, over=None, epochs=None):
-    """학습 1회. over 는 dotted override dict."""
+def build_cfg(tag, over=None, epochs=None):
+    """run() 과 floor_probe 가 같은 config 를 쓰도록 한 곳에 모은다."""
     over = dict(over or {})
     ov = {'tag': tag, **over}
     if epochs is not None:
@@ -195,9 +195,14 @@ def run(tag, over=None, epochs=None):
     k = over.get('afe.comparators_per_channel',
                  _raw.get('comparators_per_channel', _d.comparators_per_channel))
     ov.setdefault('model.in_channels', n_ch * k)
-
     cfg = load_config('configs/base.yaml', ov)
     cfg.data.root = DATA_ROOT
+    return cfg, n_ch, k
+
+
+def run(tag, over=None, epochs=None):
+    """학습 1회. over 는 dotted override dict."""
+    cfg, n_ch, k = build_cfg(tag, over, epochs)
     set_seed(cfg.train.seed)
 
     afe = AFEFrontend(cfg.afe)
@@ -278,7 +283,7 @@ def save_result(run_dir, tag, cfg, val, test, alpha):
         json.dumps(rec, ensure_ascii=False, indent=2))
     return rec
 
-print('run(tag, over) / save_result 준비됨')'''),
+print('build_cfg / run(tag, over) / save_result 준비됨')'''),
 
 md("""## 5. 분석 공통 — 체크포인트에서만 시작
 
@@ -544,6 +549,62 @@ def frac_sweep(tag, mults=(0.25, 0.5, 1.0, 2.0, 4.0, 8.0), **over):
 TAG = 'af_lse078'
 frac_sweep(TAG)'''),
 
+md("""## 6e. floor_frac — δ 를 어디에 앉힐 것인가 (학습 없음, 몇 초)
+
+**안정화만으로는 안 끝난다.** 클립을 2048개로 늘린 건 δ 가 **덜 흔들리게** 만든 것이고,
+지금 δ 는 여전히 **잘못된 것을 재고 있다**:
+
+| | |
+|---|---|
+| 무음 프레임 | **2.5%** |
+| `xmax_floor_frac` | **2.0%** |
+
+2% quantile 을 요구하는데 무음이 2.5%다 → quantile 이 **atom(= `sqrt` guard) 안**에
+들어간다. 표본을 늘리면 δ 가 **가드 값으로 안정적으로 수렴**할 뿐이다 —
+재현은 되지만 **zero padding 을 잰 값**이라 회로 스펙으로 못 쓴다.
+그림: `docs/diagrams/15_delta.svg`, `16_quiescent.svg`.
+
+**그래서 sweep 이 필요하다.** 다만 대부분은 공짜다 — δ 가 atom 을 벗어나는지, α 가
+죽는지는 **init 만 해보면** 알 수 있다. 100 에폭을 태워서 "0.05 는 채널 4개를 죽인다"를
+알아낼 이유가 없다.
+
+| 열 | 보는 법 |
+|---|---|
+| `guard 대비` | **1.0x 면 atom 안** = δ 가 padding 을 잰 것 |
+| `죽은 α` | init 에서 이미 0/1 에 붙은 채널. xmix 에서 0.05 는 4개를 죽였다 |
+| `δ (mV)` | `lse_temp ≡ n·V_T = 25.85 mV` 로 환산 (xlse 만) |"""),
+code('''import warnings
+
+@torch.no_grad()
+def floor_probe(fracs=(0.0, 0.02, 0.03, 0.05, 0.10), over=None, n_clips=None):
+    """floor_frac 을 바꾸면 δ 와 α 가 어디 앉는지. 같은 클립으로만 비교한다."""
+    over = dict(over if over is not None else BEST)
+    cfg0, _, _ = build_cfg('probe', over)
+    tr = build_dataloaders(cfg0.data, cfg0.train.batch_size,
+                           cfg0.afe.sample_rate, seed=cfg0.train.seed)[0]
+    w = collect_init_batch(tr, n_clips or N_INIT_CLIPS)
+    guard = 1e-3 if cfg0.afe.compression == 'sqrt' else 0.0
+    print(f'{cfg0.afe.normalize}  클립 {w.shape[0]}개  guard={guard:.5f}\\n')
+    print(f"{'floor_frac':>11}{'δ (code)':>11}{'δ (mV)':>9}{'guard 대비':>11}"
+          f"{'α 범위':>20}{'죽은 α':>9}")
+    for f in fracs:
+        cfg, _, _ = build_cfg('probe', {**over, 'afe.xmax_floor_frac': f})
+        fe = AFEFrontend(cfg.afe)
+        with warnings.catch_warnings():        # 가드 경고는 아래 열이 대신 말한다
+            warnings.simplefilter('ignore')
+            fe.init_fixed_scale(w); fe.init_thresholds(w)
+        d = float(fe.xmax_floor)
+        mv = (f'{d / float(fe.lse_temp) * 25.852:>8.3f}'
+              if cfg.afe.normalize == 'xlse' else f'{"—":>8}')
+        rat = (f'{d / guard:>9.2f}x' if guard > 0 and d > 0 else f'{"—":>10}')
+        a = fe.effective_alpha()
+        dead = int(((a >= 0.99) | (a <= 0.01)).sum())
+        flag = '  ← atom 안' if guard > 0 and 0 < d <= 1.05 * guard else ''
+        print(f'{f:>11.2f}{d:>11.5f}{mv}{rat}'
+              f'{f"{a.min():.3f}~{a.max():.3f}":>20}{dead:>6}/{a.numel()}{flag}')
+
+floor_probe()'''),
+
 md("""## 7. 학습 — ⚠️ 전부 주석
 
 돌릴 줄 **하나만** 풀고, 끝나면 다시 주석 처리한다.
@@ -571,6 +632,11 @@ code("""# 2. k=2 와 soft-max 가 겹치는지
 
 # 4. 채널간 스케일 복원 (소프트 max 에서만 의미가 생긴다)
 # run('af_lse078_gr', {**BEST, 'afe.spice_gain_restore': True})
+
+# 5. floor_frac — §6e 로 후보를 좁힌 뒤 정확도를 확인한다
+# run('af_lse078_f000', {**BEST, 'afe.xmax_floor_frac': 0.00})
+# run('af_lse078_f003', {**BEST, 'afe.xmax_floor_frac': 0.03})
+# run('af_lse078_f005', {**BEST, 'afe.xmax_floor_frac': 0.05})
 
 # 끝나면
 # results(); frac_sweep('af_lse078_g12')"""),

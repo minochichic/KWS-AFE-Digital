@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="700" viewBox="0 0 1320 700" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1320" height="700" fill="#ffffff"/>
+<defs><marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#334155"/></marker></defs>
+<text x="660.0" y="36" text-anchor="middle" font-size="23" fill="#0f172a" font-weight="700">왜 "quiescent 위로 얼마나" 로 재나</text>
+<text x="660.0" y="60" text-anchor="middle" font-size="13" fill="#64748b">소리가 하나도 없어도 detector 출력선은 0 V 가 아니다. 918 mV 에 앉아 쉬고 있다.</text>
+<rect x="40" y="88" width="400" height="460" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="60" y="116" text-anchor="start" font-size="15" fill="#0f172a" font-weight="700">① 절대 전압으로 보면</text>
+<text x="60" y="136" text-anchor="start" font-size="11" fill="#64748b">1.8 V 단일 전원. 음전압이 없어서 모든 신호가</text>
+<text x="60" y="152" text-anchor="start" font-size="11" fill="#64748b">0 V 위에 떠 있어야 한다 — 그래서 쉬는 자리가 생긴다.</text>
+<line x1="160" y1="460" x2="160" y2="184" stroke="#334155" stroke-width="2"/>
+<line x1="150" y1="460" x2="380" y2="460" stroke="#334155" stroke-width="2"/>
+<text x="144" y="465" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">0 V</text>
+<text x="144" y="480" text-anchor="end" font-size="9.5" fill="#64748b">(GND)</text>
+<line x1="150" y1="184.0" x2="380" y2="184.0" stroke="#334155" stroke-width="2" stroke-dasharray="5 3"/>
+<text x="144" y="188.0" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">1.8 V</text>
+<text x="144" y="203.0" text-anchor="end" font-size="9.5" fill="#64748b">(전원)</text>
+<rect x="160" y="319.27066666666667" width="220" height="140.72933333333333" fill="#64748b" opacity="0.12"/>
+<line x1="160" y1="319.27066666666667" x2="380" y2="319.27066666666667" stroke="#15803d" stroke-width="2.4"/>
+<text x="388" y="316.27066666666667" text-anchor="start" font-size="12" fill="#15803d" font-weight="700">918 mV</text>
+<text x="388" y="332.27066666666667" text-anchor="start" font-size="10.5" fill="#15803d">quiescent</text>
+<path d="M 190 319.27066666666667 Q 230 304.5966666666667 270 319.27066666666667 Q 310 314.37933333333336 360 319.27066666666667" fill="none" stroke="#1e3a8a" stroke-width="2"/>
+<text x="270" y="294.5966666666667" text-anchor="middle" font-size="11" fill="#1e3a8a" font-weight="700">envelope</text>
+<text x="240.0" y="508" text-anchor="middle" font-size="11.5" fill="#0f172a">envelope 도 V_env,c 도 V_ref 도 전부 918 mV 를 깔고 있다</text>
+<text x="240.0" y="528" text-anchor="middle" font-size="12.5" fill="#dc2626" font-weight="700">→ 그 공통분은 아무 정보가 없다</text>
+<line x1="460" y1="328" x2="540" y2="328" stroke="#7e22ce" stroke-width="2.4" marker-end="url(#a)"/>
+<text x="500" y="312" text-anchor="middle" font-size="11.5" fill="#7e22ce" font-weight="700">원점을</text>
+<text x="500" y="356" text-anchor="middle" font-size="11.5" fill="#7e22ce" font-weight="700">여기로</text>
+<text x="500" y="372" text-anchor="middle" font-size="11.5" fill="#7e22ce" font-weight="700">옮긴다</text>
+<rect x="580" y="88" width="400" height="460" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="600" y="116" text-anchor="start" font-size="15" fill="#1e3a8a" font-weight="700">② quiescent 를 빼면</text>
+<text x="600" y="136" text-anchor="start" font-size="11" fill="#64748b">모든 항에서 똑같이 뺀다 = 좌표 이동.</text>
+<text x="600" y="152" text-anchor="start" font-size="11" fill="#64748b">근사가 아니라 정확히 같은 식이다.</text>
+<line x1="710" y1="460" x2="710" y2="212" stroke="#334155" stroke-width="2"/>
+<line x1="700" y1="460" x2="930" y2="460" stroke="#15803d" stroke-width="2.4"/>
+<text x="694" y="465" text-anchor="end" font-size="12" fill="#15803d" font-weight="700">0</text>
+<text x="694" y="480" text-anchor="end" font-size="9.5" fill="#15803d">= quiescent</text>
+<line x1="705" y1="398.0" x2="715" y2="398.0" stroke="#334155" stroke-width="1.2"/>
+<text x="698" y="402.0" text-anchor="end" font-size="10" fill="#64748b">10</text>
+<line x1="705" y1="336.0" x2="715" y2="336.0" stroke="#334155" stroke-width="1.2"/>
+<text x="698" y="340.0" text-anchor="end" font-size="10" fill="#64748b">20</text>
+<line x1="705" y1="274.0" x2="715" y2="274.0" stroke="#334155" stroke-width="1.2"/>
+<text x="698" y="278.0" text-anchor="end" font-size="10" fill="#64748b">30</text>
+<text x="698" y="228.4" text-anchor="end" font-size="10" fill="#0f172a">mV</text>
+<path d="M 730 460 Q 780 248.22000000000003 830 454 Q 875 385.6 925 457" fill="none" stroke="#1e3a8a" stroke-width="2.4"/>
+<text x="790" y="240.22000000000003" text-anchor="middle" font-size="11.5" fill="#1e3a8a" font-weight="700">envelope 상승 ~32 mV</text>
+<line x1="700" y1="459.3304" x2="930" y2="459.3304" stroke="#dc2626" stroke-width="2"/>
+<text x="938" y="463.3304" text-anchor="start" font-size="11.5" fill="#dc2626" font-weight="700">V_ref</text>
+<text x="938" y="478.3304" text-anchor="start" font-size="10" fill="#dc2626">δ = 0.108 mV</text>
+<text x="780.0" y="528" text-anchor="middle" font-size="12.5" fill="#1e3a8a" font-weight="700">이제 δ 와 신호가 같은 자 위에 있다</text>
+<rect x="1000" y="88" width="280" height="460" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="1020" y="116" text-anchor="start" font-size="15" fill="#15803d" font-weight="700">③ 비유</text>
+<text x="1020" y="146" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">파도 높이를 지구 중심에서</text>
+<text x="1020" y="166" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">재지 않는다. 해수면에서 잰다.</text>
+<text x="1020" y="206" text-anchor="start" font-size="11" fill="#64748b">quiescent = 해수면</text>
+<text x="1020" y="226" text-anchor="start" font-size="11" fill="#64748b">δ = 해수면 위에 세운</text>
+<text x="1020" y="246" text-anchor="start" font-size="11" fill="#64748b">      기준 막대의 높이</text>
+<text x="1020" y="266" text-anchor="start" font-size="11" fill="#64748b">envelope = 파도 높이</text>
+<text x="1020" y="306" text-anchor="start" font-size="11" fill="#64748b">해수면이 918 mV 인 건</text>
+<text x="1020" y="326" text-anchor="start" font-size="11" fill="#64748b">파도와 아무 상관이 없다.</text>
+<rect x="1030" y="408" width="220" height="62" fill="#1e3a8a" opacity="0.14"/>
+<line x1="1030" y1="408" x2="1250" y2="408" stroke="#1e3a8a" stroke-width="2.4"/>
+<text x="1140" y="448" text-anchor="middle" font-size="11" fill="#1e3a8a">바다</text>
+<path d="M 1050 408 Q 1080 370 1110 408 Q 1140 392 1180 408" fill="none" stroke="#1e3a8a" stroke-width="2"/>
+<text x="1150" y="362" text-anchor="middle" font-size="11" fill="#1e3a8a" font-weight="700">파도 = envelope</text>
+<line x1="1030" y1="401" x2="1250" y2="401" stroke="#dc2626" stroke-width="1.8"/>
+<line x1="1030" y1="488" x2="1052" y2="488" stroke="#1e3a8a" stroke-width="2.4"/>
+<text x="1060" y="492" text-anchor="start" font-size="10.5" fill="#1e3a8a" font-weight="700">해수면 = quiescent</text>
+<line x1="1030" y1="507" x2="1052" y2="507" stroke="#dc2626" stroke-width="2.4"/>
+<text x="1060" y="511" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700">기준 막대 = δ</text>
+<text x="40" y="680" text-anchor="start" font-size="10" fill="#64748b">918 mV = analog/AFE_tuning 실측 정지점 · 31.9 mV = 전형 프레임 상승 (docs/diagrams/15_delta.svg) · 생성: docs/diagrams/make_quiescent.py</text>
+</svg>
