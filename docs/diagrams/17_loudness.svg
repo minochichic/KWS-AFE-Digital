@@ -1,0 +1,184 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1360" height="1180" viewBox="0 0 1360 1180" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1360" height="1180" fill="#ffffff"/>
+<text x="680.0" y="36" text-anchor="middle" font-size="23" fill="#0f172a" font-weight="700">왜 최댓값으로 나눴는데도 음량이 남나</text>
+<text x="680.0" y="60" text-anchor="middle" font-size="13" fill="#64748b">다이오드-OR 은 max 를 주지 않는다. max + (신호와 무관한 고정 초과분) 을 준다.</text>
+<rect x="40" y="88" width="640" height="220" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="60" y="116" text-anchor="start" font-size="15" fill="#15803d" font-weight="700">① 기대 — 진짜 max 로 나누면</text>
+<text x="60" y="150" text-anchor="start" font-size="15" fill="#0f172a" font-weight="700" font-family="ui-monospace,Menlo,monospace">max(g·v) = g·max(v)</text>
+<text x="60" y="170" text-anchor="start" font-size="10.5" fill="#64748b">max 는 1차 동차 — 크기를 곱하면 그대로 곱해진다</text>
+<text x="60" y="214" text-anchor="start" font-size="16" fill="#15803d" font-weight="700" font-family="ui-monospace,Menlo,monospace">g·v_c / (g·max(v))  =  v_c / max(v)</text>
+<text x="60" y="236" text-anchor="start" font-size="12" fill="#15803d" font-weight="700">→ g 가 정확히 약분된다. 음량 완전 불변 ✅</text>
+<text x="60" y="274" text-anchor="start" font-size="11.5" fill="#0f172a">이게 채널간 임계를 쓰기로 한 이유 전부다.</text>
+<rect x="720" y="88" width="600" height="220" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="740" y="116" text-anchor="start" font-size="15" fill="#dc2626" font-weight="700">② 실제 — 다이오드-OR 은</text>
+<text x="740" y="150" text-anchor="start" font-size="15" fill="#0f172a" font-weight="700" font-family="ui-monospace,Menlo,monospace">V_or = max(v) + T·ln(k)</text>
+<text x="740" y="170" text-anchor="start" font-size="10.5" fill="#64748b">k = 최대 근처 채널 수, T = n·V_T = 26 mV</text>
+<text x="740" y="214" text-anchor="start" font-size="16" fill="#dc2626" font-weight="700" font-family="ui-monospace,Menlo,monospace">g·v_c / (g·max(v) + T·ln k)</text>
+<text x="740" y="236" text-anchor="start" font-size="12" fill="#dc2626" font-weight="700">→ 초과분에 g 가 없다. 약분 안 된다 ❌</text>
+<text x="740" y="274" text-anchor="start" font-size="11.5" fill="#0f172a">T 는 물리 상수라 화자가 조용해져도 안 줄어든다.</text>
+<rect x="40" y="330" width="640" height="250" rx="6" fill="#fff1f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="60" y="358" text-anchor="start" font-size="15" fill="#dc2626" font-weight="700">③ 그 초과분이 조용해질수록 신호를 삼킨다</text>
+<text x="60" y="378" text-anchor="start" font-size="10.5" fill="#64748b">프리앰프 ×10, 포먼트 채널 기준 (ANALOG.md 6-2)</text>
+<text x="90" y="408" text-anchor="middle" font-size="11" fill="#0f172a" font-weight="700">SPL</text>
+<text x="200" y="408" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">스윙</text>
+<text x="330" y="408" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">OR 노드</text>
+<text x="455" y="408" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">초과분</text>
+<text x="610" y="408" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">초과/신호</text>
+<text x="90" y="434" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">85 dB</text>
+<text x="200" y="434" text-anchor="end" font-size="11.5" fill="#0f172a">280.3 mV</text>
+<text x="330" y="434" text-anchor="end" font-size="11.5" fill="#0f172a">283.2 mV</text>
+<text x="455" y="434" text-anchor="end" font-size="11.5" fill="#15803d" font-weight="700">+2.9 mV</text>
+<text x="610" y="434" text-anchor="end" font-size="13" fill="#15803d" font-weight="700">1%</text>
+<text x="90" y="464" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">74 dB</text>
+<text x="200" y="464" text-anchor="end" font-size="11.5" fill="#0f172a">79.0 mV</text>
+<text x="330" y="464" text-anchor="end" font-size="11.5" fill="#0f172a">104.6 mV</text>
+<text x="455" y="464" text-anchor="end" font-size="11.5" fill="#9a3412" font-weight="700">+25.6 mV</text>
+<text x="610" y="464" text-anchor="end" font-size="13" fill="#9a3412" font-weight="700">32%</text>
+<text x="90" y="494" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">66 dB</text>
+<text x="200" y="494" text-anchor="end" font-size="11.5" fill="#0f172a">31.4 mV</text>
+<text x="330" y="494" text-anchor="end" font-size="11.5" fill="#0f172a">80.9 mV</text>
+<text x="455" y="494" text-anchor="end" font-size="11.5" fill="#dc2626" font-weight="700">+49.5 mV</text>
+<text x="610" y="494" text-anchor="end" font-size="13" fill="#dc2626" font-weight="700">158%</text>
+<text x="90" y="524" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">60 dB</text>
+<text x="200" y="524" text-anchor="end" font-size="11.5" fill="#0f172a">15.8 mV</text>
+<text x="330" y="524" text-anchor="end" font-size="11.5" fill="#0f172a">75.8 mV</text>
+<text x="455" y="524" text-anchor="end" font-size="11.5" fill="#dc2626" font-weight="700">+60.0 mV</text>
+<text x="610" y="524" text-anchor="end" font-size="13" fill="#dc2626" font-weight="700">380%</text>
+<text x="360" y="562" text-anchor="middle" font-size="12.5" fill="#dc2626" font-weight="700">60 dB 에서는 초과분이 신호의 4배다</text>
+<rect x="720" y="330" width="600" height="250" rx="6" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.4"/>
+<text x="740" y="358" text-anchor="start" font-size="15" fill="#9a3412" font-weight="700">④ 같은 얘기를 자로 비유하면</text>
+<line x1="760" y1="426" x2="1280" y2="426" stroke="#334155" stroke-width="2"/>
+<line x1="760" y1="414" x2="760" y2="438" stroke="#334155" stroke-width="2"/>
+<text x="760" y="454" text-anchor="middle" font-size="10" fill="#64748b">0</text>
+<line x1="864" y1="414" x2="864" y2="438" stroke="#334155" stroke-width="2"/>
+<text x="864" y="454" text-anchor="middle" font-size="10" fill="#64748b">26</text>
+<line x1="968" y1="414" x2="968" y2="438" stroke="#334155" stroke-width="2"/>
+<text x="968" y="454" text-anchor="middle" font-size="10" fill="#64748b">52</text>
+<line x1="1072" y1="414" x2="1072" y2="438" stroke="#334155" stroke-width="2"/>
+<text x="1072" y="454" text-anchor="middle" font-size="10" fill="#64748b">78</text>
+<line x1="1176" y1="414" x2="1176" y2="438" stroke="#334155" stroke-width="2"/>
+<text x="1176" y="454" text-anchor="middle" font-size="10" fill="#64748b">104</text>
+<line x1="1280" y1="414" x2="1280" y2="438" stroke="#334155" stroke-width="2"/>
+<text x="1280" y="454" text-anchor="middle" font-size="10" fill="#64748b">130</text>
+<text x="1020" y="472" text-anchor="middle" font-size="11.5" fill="#9a3412" font-weight="700">다이오드의 눈금 = 26 mV (T)</text>
+<rect x="760" y="382" width="63" height="20" rx="3" fill="#dc2626" opacity="0.30" stroke="#dc2626"/>
+<text x="791.6" y="396" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700">16</text>
+<text x="833.2" y="396" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">← 60 dB 의 신호 전체</text>
+<text x="740" y="526" text-anchor="start" font-size="12.5" fill="#0f172a">눈금이 26 mm 인 자로 16 mm 를 재는 셈이다.</text>
+<text x="740" y="548" text-anchor="start" font-size="12" fill="#9a3412" font-weight="700">자를 어디에 대든(=α 를 어디에 두든) 안 된다.</text>
+<rect x="40" y="602" width="1280" height="330" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="60" y="630" text-anchor="start" font-size="15" fill="#1e3a8a" font-weight="700">⑤ 그래서 같은 소리가 크기에 따라 다른 이진 이미지가 된다</text>
+<text x="60" y="650" text-anchor="start" font-size="10.5" fill="#64748b">스펙트럼 모양은 완전히 동일. 크기만 다르다. α = 0.3 로 고정 (예시값 — 학습된 α 는 0.06~0.87)</text>
+<text x="195" y="686" text-anchor="middle" font-size="13" fill="#0f172a" font-weight="700">85 dB SPL</text>
+<text x="195" y="702" text-anchor="middle" font-size="10" fill="#64748b">스윙 280 mV → OR 노드 283 mV</text>
+<line x1="78" y1="802" x2="366" y2="802" stroke="#334155" stroke-width="1.4"/>
+<line x1="74" y1="773.2" x2="366" y2="773.2" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="70" y="777.2" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">α</text>
+<rect x="78" y="706.9776279591455" width="13" height="95.0223720408545" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="96" y="726.5210469574741" width="13" height="75.47895304252587" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="114" y="748.5649933838155" width="13" height="53.435006616184495" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="132" y="768.2847901231706" width="13" height="33.71520987682933" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="150" y="778.1314592980722" width="13" height="23.868540701927778" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="168" y="783.0405441987931" width="13" height="18.959455801206953" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="186" y="788.5777331913182" width="13" height="13.42226680868185" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="204" y="791.3383144998614" width="13" height="10.66168550013857" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="222" y="794.4521046957474" width="13" height="7.547895304252587" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="240" y="796.0044936470894" width="13" height="5.9955063529106525" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="258" y="797.2376000224143" width="13" height="4.762399977585733" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="276" y="798.2170912327533" width="13" height="3.782908767246634" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="294" y="798.99512875679" width="13" height="3.004871243210026" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="312" y="799.6131459298073" width="13" height="2.3868540701927765" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="330" y="800.1040544198793" width="13" height="1.8959455801206955" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="348" y="800.4939968942094" width="13" height="1.5060031057905754" rx="2" fill="#64748b" opacity="0.3"/>
+<text x="195" y="824" text-anchor="middle" font-size="13" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1111000000000000</text>
+<text x="195" y="846" text-anchor="middle" font-size="12.5" fill="#15803d" font-weight="700">4/16 발화</text>
+<text x="500" y="686" text-anchor="middle" font-size="13" fill="#0f172a" font-weight="700">74 dB SPL</text>
+<text x="500" y="702" text-anchor="middle" font-size="10" fill="#64748b">스윙 79 mV → OR 노드 105 mV</text>
+<line x1="383" y1="802" x2="671" y2="802" stroke="#334155" stroke-width="1.4"/>
+<line x1="379" y1="773.2" x2="671" y2="773.2" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="375" y="777.2" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">α</text>
+<rect x="383" y="729.4782866768853" width="13" height="72.52171332311465" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="401" y="744.3939554768699" width="13" height="57.60604452313007" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="419" y="761.2180436248051" width="13" height="40.781956375194895" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="437" y="776.2683251028" width="13" height="25.731674897200058" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="455" y="783.7833692313841" width="13" height="18.216630768615925" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="473" y="787.5300158389413" width="13" height="14.469984161058722" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="491" y="791.7560357130733" width="13" height="10.243964286926769" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="509" y="793.8629299313869" width="13" height="8.137070068613124" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="527" y="796.239395547687" width="13" height="5.760604452313006" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="545" y="797.4241892344494" width="13" height="4.575810765550629" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="563" y="798.3653043121678" width="13" height="3.6346956878321928" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="581" y="799.1128585905243" width="13" height="2.8871414094757046" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="599" y="799.7066620608118" width="13" height="2.29333793918821" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="617" y="800.1783369231384" width="13" height="1.8216630768615922" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="635" y="800.5530015838941" width="13" height="1.4469984161058722" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="653" y="800.8506083024857" width="13" height="1.1493916975142087" rx="2" fill="#64748b" opacity="0.3"/>
+<text x="500" y="824" text-anchor="middle" font-size="13" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1110000000000000</text>
+<text x="500" y="846" text-anchor="middle" font-size="12.5" fill="#15803d" font-weight="700">3/16 발화</text>
+<text x="805" y="686" text-anchor="middle" font-size="13" fill="#0f172a" font-weight="700">66 dB SPL</text>
+<text x="805" y="702" text-anchor="middle" font-size="10" fill="#64748b">스윙 31 mV → OR 노드 81 mV</text>
+<line x1="688" y1="802" x2="976" y2="802" stroke="#334155" stroke-width="1.4"/>
+<line x1="684" y1="773.2" x2="976" y2="773.2" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="680" y="777.2" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">α</text>
+<rect x="688" y="764.7517535041659" width="13" height="37.24824649583405" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="706" y="772.4126661143893" width="13" height="29.587333885610768" rx="2" fill="#1e3a8a" opacity="0.75"/>
+<rect x="724" y="781.053771704516" width="13" height="20.946228295484094" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="742" y="788.7838234178055" width="13" height="13.21617658219453" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="760" y="792.643663502959" width="13" height="9.35633649704098" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="778" y="794.5679977468191" width="13" height="7.432002253180931" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="796" y="796.7385453353271" width="13" height="5.261454664672855" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="814" y="797.8206780041286" width="13" height="4.179321995871425" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="832" y="799.0412666114389" width="13" height="2.9587333885610763" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="850" y="799.6497945304445" width="13" height="2.3502054695555117" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="868" y="800.1331654381286" width="13" height="1.8668345618713804" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="886" y="800.5171205979465" width="13" height="1.4828794020535716" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="904" y="800.8221070222578" width="13" height="1.1778929777422111" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="922" y="801.0643663502959" width="13" height="0.9356336497040978" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="940" y="801.2567997746819" width="13" height="0.7432002253180932" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="958" y="801.4096550769764" width="13" height="0.5903449230236091" rx="2" fill="#64748b" opacity="0.3"/>
+<text x="805" y="824" text-anchor="middle" font-size="13" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1100000000000000</text>
+<text x="805" y="846" text-anchor="middle" font-size="12.5" fill="#dc2626" font-weight="700">2/16 발화</text>
+<text x="1110" y="686" text-anchor="middle" font-size="13" fill="#0f172a" font-weight="700">60 dB SPL</text>
+<text x="1110" y="702" text-anchor="middle" font-size="10" fill="#64748b">스윙 16 mV → OR 노드 76 mV</text>
+<line x1="993" y1="802" x2="1281" y2="802" stroke="#334155" stroke-width="1.4"/>
+<line x1="989" y1="773.2" x2="1281" y2="773.2" stroke="#dc2626" stroke-width="1.8" stroke-dasharray="5 3"/>
+<text x="985" y="777.2" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">α</text>
+<rect x="993" y="781.9937499113198" width="13" height="20.006250088680183" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1011" y="786.1084706836061" width="13" height="15.891529316393829" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1029" y="790.7496588130421" width="13" height="11.250341186957954" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1047" y="794.9015146001809" width="13" height="7.098485399819136" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1065" y="796.9746571856857" width="13" height="5.025342814314309" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1083" y="798.0082283134213" width="13" height="3.991771686578638" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1101" y="799.1740420622627" width="13" height="2.825957937737307" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1119" y="799.7552618199121" width="13" height="2.2447381800879462" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1137" y="800.4108470683606" width="13" height="1.5891529316393829" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1155" y="800.737690957104" width="13" height="1.262309042896028" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1173" y="800.9973122862799" width="13" height="1.002687713720099" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1191" y="801.203536838381" width="13" height="0.7964631616190122" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1209" y="801.3673468228083" width="13" height="0.6326531771917501" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1227" y="801.4974657185686" width="13" height="0.5025342814314306" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1245" y="801.6008228313422" width="13" height="0.3991771686578638" rx="2" fill="#64748b" opacity="0.3"/>
+<rect x="1263" y="801.6829223042778" width="13" height="0.3170776957222377" rx="2" fill="#64748b" opacity="0.3"/>
+<text x="1110" y="824" text-anchor="middle" font-size="13" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">0000000000000000</text>
+<text x="1110" y="846" text-anchor="middle" font-size="12.5" fill="#dc2626" font-weight="700">0/16 발화</text>
+<text x="680" y="908" text-anchor="middle" font-size="12.5" fill="#dc2626" font-weight="700">채널 4개 → 0개. α 를 낮춰 개수는 맞출 수 있어도, 격차가 0.204 → 0.043 으로 줄어 패턴은 복구 안 된다</text>
+<rect x="40" y="954" width="1280" height="196" rx="6" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.4"/>
+<text x="60" y="982" text-anchor="start" font-size="15" fill="#7e22ce" font-weight="700">⑥ 고칠 수 있나</text>
+<text x="60" y="1002" text-anchor="start" font-size="11" fill="#64748b">임계가 만들어질 수 있는 형태는 하나뿐이다: V_thr = α·V_or + (1−α)·V_ref. 소프트웨어에 자유도가 없다.</text>
+<text x="66" y="1036" text-anchor="start" font-size="12" fill="#0f172a">❌</text>
+<text x="96" y="1036" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">정규화 바꾸기</text>
+<text x="250" y="1036" text-anchor="start" font-size="10.5" fill="#64748b">이미 xmax / xmix / xlse 를 다 해봤다. 초과분이 스펙트럼에 따라 변해서 상수로 뺄 수 없다 (δ 가 그 시도, 0 이 최적)</text>
+<text x="66" y="1058" text-anchor="start" font-size="12" fill="#0f172a">❌</text>
+<text x="96" y="1058" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">게인 증강</text>
+<text x="250" y="1058" text-anchor="start" font-size="10.5" fill="#64748b">곡선을 +1.3pp 올렸지만 평평하게는 못 만든다 — 네트워크는 훈련되지만 프론트엔드 불변성은 안 생긴다</text>
+<text x="66" y="1080" text-anchor="start" font-size="12" fill="#0f172a">⚠️</text>
+<text x="96" y="1080" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">프리앰프 이득 ↑</text>
+<text x="250" y="1080" text-anchor="start" font-size="10.5" fill="#64748b">×10 이 레일 상한. 그래도 초과분이 1% 아래가 되는 건 78 dB SPL 이상뿐</text>
+<text x="66" y="1102" text-anchor="start" font-size="12" fill="#0f172a">⭕</text>
+<text x="96" y="1102" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">진짜 max 회로</text>
+<text x="250" y="1102" text-anchor="start" font-size="10.5" fill="#64748b">초과분 제거. 단 증폭기 추가 — 그게 `xmax` 이고 0.781 이었다 (soft max 가 +6.7pp 더 높다)</text>
+<text x="66" y="1124" text-anchor="start" font-size="12" fill="#0f172a">❌</text>
+<text x="96" y="1124" text-anchor="start" font-size="11.5" fill="#0f172a" font-weight="700">AGC</text>
+<text x="250" y="1124" text-anchor="start" font-size="10.5" fill="#64748b">피드백 루프(발진·어택/릴리즈) — 이미 기각</text>
+<text x="40" y="1164" text-anchor="start" font-size="10" fill="#64748b">실측 결과: frac 스윕 xl_g12 — 학습 음량 0.845, 12 dB 아래 0.743 · 생성: docs/diagrams/make_loudness.py</text>
+</svg>
