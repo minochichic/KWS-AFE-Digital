@@ -80,9 +80,39 @@ def main() -> None:
     ap.add_argument("--hardmax", action="store_true",
                     help="replace the diode-OR with an ideal max(), i.e. the "
                          "'xmax' normalisation, to see what the LSE floor buys")
+    ap.add_argument("--r4", type=float, default=10e3,
+                    help="detector input resistor [ohm]. Sets gain R5/R4, NOT tau.")
+    ap.add_argument("--r5", type=float, default=47e3,
+                    help="detector feedback resistor [ohm]. Sets BOTH the gain "
+                         "R5/R4 and tau = R5*C3.")
+    ap.add_argument("--preamp", type=float, default=10.0,
+                    help="mic preamp gain (Rf = (G-1)*10k).")
+    ap.add_argument("--c3", type=float, default=100e-9,
+                    help="detector smoothing cap [F]. Sets tau = R5*C3.")
     ap.add_argument("-o", "--out", type=pathlib.Path, default=OUT)
     args = ap.parse_args()
-    vref = VQUIESCENT + args.delta * 1e-3
+    args.out.write_text(build(args), encoding="utf-8")
+    print(f"wrote {args.out}")
+
+
+def build(args) -> str:
+    """Netlist text for one parameter set. `args` needs the argparse fields.
+
+    Every value the analog side is still moving -- R4, R5, C3, preamp gain,
+    the reference -- is a parameter here, because they are moving and a
+    hard-coded netlist would go stale between one conversation and the next.
+
+    `vref` is the one that cannot be defaulted honestly: the quiescent point
+    is `da + (R5/R4)*(vf - da)`, so it MOVES when R4 or R5 does. Pass it
+    explicitly (sim_afe.py measures it first), or accept VQUIESCENT, which is
+    only correct for the original R4=10k / R5=47k.
+    """
+    vref = getattr(args, "vref", None)
+    if vref is None:
+        vref = VQUIESCENT + args.delta * 1e-3
+    r5 = getattr(args, "r5", 47e3)
+    preamp = getattr(args, "preamp", 10.0)
+    tran_csv = getattr(args, "tran_csv", f"../artifacts/{TRAN_CSV.name}")
 
     with DESIGN.open(newline="", encoding="utf-8") as fh:
         d = list(csv.DictReader(fh))
@@ -105,13 +135,13 @@ def main() -> None:
     A("Vpos  vpos  0  DC 1.8")
     A("Vmid  vmid  0  DC 0.9        $ bias rail")
     A("")
-    A("* ---- microphone + preamp (G = 1 + Rf/Rg = 10) -----------------------")
+    A(f"* ---- microphone + preamp (G = 1 + Rf/Rg = {preamp:g}) ---------------")
     A("* Tone BURST (on 20-60 ms, off after) so the transient shows both the")
     A("* attack and the decay. u() is ngspice's unit step.")
     A(f"Bmic  vmic  vmid  V = {args.amp:.6g}*sin(6.283185307*{args.freq:.6g}*time)")
     A("+ *(u(time-20m)-u(time-60m))")
     A("XUPRE vmic  npre  vpos 0 vin  OPA379")
-    A("Rf    vin   npre  90k")
+    A(f"Rf    vin   npre  {eng((preamp - 1.0) * 10e3)}")
     A("Rg    npre  vmid  10k")
     A("")
     A("* ---- shared threshold generator (THE NEW PART) ----------------------")
@@ -175,13 +205,13 @@ def main() -> None:
         A(f"R3_{c}   vmid   nu2{c}  100k")
         A(f"XU2_{c}  nu2{c} nn{c}   vpos 0 c2p{c}  OPA379")
         # active detector
-        A(f"R4_{c}   vf{c}  da{c}   10k")
-        A(f"R5_{c}   da{c}  ve{c}   47k")
+        A(f"R4_{c}   vf{c}  da{c}   {eng(args.r4)}")
+        A(f"R5_{c}   da{c}  ve{c}   {eng(r5)}")
         A(f"R6_{c}   vmid   np3{c}  8.25k")
         A(f"D1_{c}   da{c}  dk{c}   Dbat54wt1")
         A(f"XU3_{c}  np3{c} da{c}   vpos 0 dk{c}  OPA379")
         A(f"D2_{c}   dk{c}  ve{c}   Dbat54wt1")
-        A(f"C3_{c}   ve{c}  0       100n")
+        A(f"C3_{c}   ve{c}  0       {eng(args.c3)}")
         # into the OR bus
         A(f"DOR_{c}  ve{c}  v_or    Dbat54wt1")
         # threshold divider: alpha = Rb/(Ra+Rb) -> V_thr = a*V_max + (1-a)*V_ref
@@ -203,20 +233,18 @@ def main() -> None:
         A(f"print v(ve{c}) v(vt{c}) v(vo{c})")
     A("")
     if not args.no_tran:
-        A("* Tone burst. The tail after the burst is what to watch: R5 discharges")
-        A("* C3 back toward the detector bias, and that is the tau CLAUDE.md 2.5")
-        A("* says the paper never gives a number for. R5*C3 = 4.7 ms nominal;")
+        A("* Tone burst. The tail is what to watch: R5 discharges C3 back toward")
+        A("* the detector bias, and that is the tau CLAUDE.md 2.5 says the paper")
+        A(f"* never gives a number for. R5*C3 = {r5 * args.c3 * 1e3:.2f} ms nominal;")
         A("* the OR diode pulls in parallel so the measured tau comes out lower.")
-        A("tran 20u 120m")
-        A(f"wrdata ../artifacts/{TRAN_CSV.name} v(ve{TONE_CH}) v(v_max)"
+        A("tran 20u 90m")
+        A(f"wrdata {tran_csv} v(ve{TONE_CH}) v(v_max)"
           f" v(v_ref) v(vt{TONE_CH}) v(vo{TONE_CH})")
     A(".endc")
     A("")
     A(".end")
 
-    args.out.write_text("\n".join(L) + "\n", encoding="utf-8")
-    n = len([x for x in L if x and not x.startswith(("*", ".", "+"))])
-    print(f"wrote {args.out}  ({n} elements, 16 channels)")
+    return "\n".join(L) + "\n"
 
 
 if __name__ == "__main__":

@@ -688,6 +688,25 @@ code("""# ⚠️ 전부 주석이다. 순차 실행이 100 에폭을 시작하�
 # run('xl_g12_nz', {**BEST, 'data.aug_gain_db': [-12.0, 12.0],
 #                           'data.aug_noise_prob': 0.8})
 
+# ── ⑤ τ ablation — CLAUDE.md 3.2 의 2 단계 ────────────────────────────────
+#     EMA 는 dt = stft_hop_ms = 10 ms 위에서 돈다: alpha = 1-exp(-10/tau).
+#     그래서 tau <= 1 ms 는 alpha ~ 1, 즉 **baseline 과 구분 불가**다 -- 동료가
+#     0.5~1 ms 로 맞추면 우리 tau=0 모델이 이미 그 하드웨어의 모델이다.
+#     잴 가치가 있는 것은 원래 보드의 3.16 ms 가 얼마나 손해였나 하나뿐이다.
+# run('xl_tau3',  {**BEST, 'afe.envelope_tau_ms': 3.16})   # 구 하드웨어 (측정값)
+# run('xl_tau10', {**BEST, 'afe.envelope_tau_ms': 10.0})   # 곡선 모양 보려고
+
+# ── ⑥ 주파수 범위 — ⚠️ spice 경로에서는 f_min/f_max 가 안 읽힌다 ──────────
+#     filterbank_source: spice 면 필터뱅크가 SPICE 행렬에서 오고, 그 행렬은
+#     design_filterbank.py 의 F_MIN/F_MAX = 50/8000 에 박혀 있다. 125-5000 을
+#     지금 baseline 에서 보려면 필터뱅크를 다시 설계해야 한다.
+#     그래서 **mel 경로에서 먼저 가른다** -- 순수 config 변경이고, 주파수 범위
+#     질문을 필터뱅크 모양 질문에서 분리한다. mel 에서도 지면 재설계 불필요.
+# run('xl_mel50',  {**BEST, 'afe.filterbank_source': 'mel'})   # 대조군 (필수)
+# run('xl_mel125', {**BEST, 'afe.filterbank_source': 'mel',
+#                           'afe.f_min': 125.0, 'afe.f_max': 5000.0})
+#     # 예전 -1.6pp 는 mel+sqrt+xmix 에서 잰 값이다. xlse 에서는 미측정.
+
 # ── 나중에 ────────────────────────────────────────────────────────────────
 # run('xl_k2', {**BEST, 'afe.comparators_per_channel': 2})
 # run('xl_gr', {**BEST, 'afe.spice_gain_restore': True})
@@ -724,6 +743,68 @@ code('''def alpha_table(tag, RTOT=1e6, **over):
 
 TAG = 'af_lse078'
 alpha_table(TAG)'''),
+
+md("""## 8a. 아날로그 SPICE 스윕 — 값 바꿔가며 회로 돌리기
+
+`ngspice`가 있는 머신에서만 돈다 (Mac). **학습과 무관**하고 GPU 박스에서는 건너뛴다.
+
+설계 의도는 두 개뿐이고 나머지는 따라온다:
+
+```
+gain = R5 / R4        검출기가 신호를 얼마나 키우나
+tau  = R5 * C3        엔벨로프가 얼마나 빨리 잊나
+```
+
+`R5`가 둘 다 움직이므로, `tau_ms`를 주면 `C3`가 역산된다.
+
+> **`V_ref`는 파라미터가 아니다.** 정지점이 `da + (R5/R4)(vf − da)`라
+> **R4·R5를 바꾸면 같이 움직인다** — `BUILD_TABLE.md`의 918.4 mV는 원래
+> 10k/47k에서만 맞다. `sim()`은 매번 정지점을 먼저 재고 거기서 `V_ref`를
+> 잡으므로, δ가 학습에서 말하는 그 δ로 유지된다.
+
+`tran=False`면 ~2초(동작점·마진만), `True`면 ~60초(rise·tau·ripple까지)."""),
+code('''import sys; sys.path.insert(0, 'analog/AFE/scripts')
+from sim_afe import sim, table
+
+# ---- 여기 숫자만 바꾸면 된다 --------------------------------------------
+runs = [
+    sim("orig",  r4=10e3, r5=47e3,  tau_ms=4.7),          # 원래 보드
+    sim("now",   r4=30e3, r5=350e3, tau_ms=0.7),          # 현재 값
+    sim("pre5",  r4=30e3, r5=350e3, tau_ms=0.7, preamp=5.0),
+]
+table(runs)'''),
+
+md("""### 쓸 수 있는 인자
+
+| 인자 | 기본 | 뜻 |
+|---|---|---|
+| `r4` | 30e3 | 검출기 입력 저항. `gain = R5/R4` |
+| `r5` | 350e3 | 피드백 저항. **gain 과 tau 둘 다** 움직인다 |
+| `tau_ms` | 0.7 | 원하는 τ. `C3 = tau/R5` 로 역산 |
+| `c3` | — | 직접 줄 수도 있다 (주면 `tau_ms` 무시) |
+| `preamp` | 10.0 | 마이크 프리앰프 배율. `Rf = (G−1)·10k` |
+| `freq` | 1349.0 | 시험 톤 [Hz]. 채널 중심들: 166·295·447·631·832·1072·1349·1660·2042·2455·2951·3467·4169·4898·5754·6761 |
+| `delta_mv` | 0.0 | `V_ref − 정지점`. 학습의 `xmax_floor_frac` 에 대응 |
+| `hardmax` | False | 다이오드-OR 대신 이상적 max (= `xmax`) |
+| `tran` | True | False 면 동작점만, 60초 → 2초 |
+
+**읽는 법**: `floor`는 LSE 바닥 `T·ln16`으로 **이득과 무관하게 고정**이다.
+`minMrg = α_min × floor`가 최악 채널 무음 마진, `scatter`는 채널별 정지점
+산포 `(R5/R4)·Vos + 비교기 오프셋`. **`head = minMrg/scatter`가 1배 아래로
+내려가면 조용한 채널들이 무음에서 발화한다.** 이득을 올리면 scatter는 같이
+커지는데 floor는 안 커지므로, 이득에는 이 대가가 붙는다."""),
+code('''# 주파수: 채널 중심 몇 개에 톤을 넣어본다 (각 ~60초)
+# fcs = [166, 631, 1349, 2951, 6761]
+# table([sim(f"f{f}", r4=30e3, r5=350e3, tau_ms=0.7, freq=f) for f in fcs])
+
+# τ 범위: 동료가 말한 0.5~1 ms 구간
+# table([sim(f"tau{t}", r4=30e3, r5=350e3, tau_ms=t) for t in (0.5, 0.7, 1.0)])
+
+# R5 범위: 300~400k
+# table([sim(f"r5_{r}", r4=30e3, r5=r*1e3, tau_ms=0.7) for r in (300, 350, 400)])
+
+# 프리앰프: 5배 vs 10배 vs 20배
+# table([sim(f"pre{g}", r4=30e3, r5=350e3, tau_ms=0.7, preamp=g) for g in (5, 10, 20)])'''),
 
 md("""## 9. 잘못된 런 지우기
 

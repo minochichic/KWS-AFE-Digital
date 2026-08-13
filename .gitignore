@@ -35,3 +35,6 @@ TASK_afe_semantics_update.md
 # ngspice scratch
 analog/AFE/netlists/_*.cir
 analog/AFE/artifacts/afe16_tran.csv
+analog/AFE/netlists/sim_*.cir
+analog/AFE/artifacts/sim_*.csv
+analog/AFE/artifacts/_t_*.csv
