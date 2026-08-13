@@ -1,0 +1,366 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1560" height="2000" viewBox="0 0 1560 2000" font-family="'Segoe UI',Helvetica,Arial,sans-serif">
+<rect width="1560" height="2000" fill="#ffffff"/>
+<defs><marker id="a" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0, 9 3.5, 0 7" fill="#334155"/></marker></defs>
+<text x="780.0" y="38" text-anchor="middle" font-size="25" fill="#0f172a" font-weight="700">AFE 전체 회로 — 현재 확정 상태</text>
+<text x="780.0" y="62" text-anchor="middle" font-size="13" fill="#64748b">부품값은 SPICE 실측, α 는 학습 결과. 단일 1.8 V 전원, 마이크만 0.9 V.</text>
+<text x="780.0" y="80" text-anchor="middle" font-size="12" fill="#dc2626" font-weight="700">기존 보드에서 바뀌는 곳은 §C 비교기 기준전압 하나뿐이다.</text>
+<rect x="30" y="100" width="1500" height="300" rx="6" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="52" y="126" text-anchor="start" font-size="16" fill="#0f172a" font-weight="700">A. 신호 체인 — 채널 하나 (×16 동일 구조, 부품값만 다름)</text>
+<text x="52" y="146" text-anchor="start" font-size="10.5" fill="#64748b">굵은 선 = 신호 경로. 값은 analog/AFE/artifacts/component_table.md</text>
+<rect x="60" y="245" width="96" height="80" rx="6" fill="#ffffff" stroke="#334155" stroke-width="1.2"/>
+<text x="108" y="269" text-anchor="middle" font-size="12" fill="#0f172a" font-weight="700">MIC</text>
+<text x="108" y="287" text-anchor="middle" font-size="9.5" fill="#64748b">Knowles</text>
+<text x="108" y="300" text-anchor="middle" font-size="9" fill="#64748b">MM20-33366</text>
+<text x="108" y="316" text-anchor="middle" font-size="9.5" fill="#9a3412" font-weight="700">0.9 V 전용</text>
+<polyline points="156,285 200,285" fill="none" stroke="#334155" stroke-width="2.4"/>
+<polygon points="200,261.0 200,309.0 252,285" fill="#ffffff" stroke="#334155" stroke-width="1.7"/><text x="211" y="277.0" text-anchor="middle" font-size="12" fill="#0f172a">+</text><text x="211" y="302.0" text-anchor="middle" font-size="12" fill="#0f172a">−</text>
+<text x="226" y="325" text-anchor="middle" font-size="9.5" fill="#64748b">OPA379</text>
+<polyline points="200,273 188,273 188,223" fill="none" stroke="#334155" stroke-width="1.4"/>
+<circle cx="188" cy="223" r="3.2" fill="#334155"/>
+<rect x="196" y="216.5" width="56" height="13" rx="2" fill="#ffffff" stroke="#334155" stroke-width="1.5"/><text x="224.0" y="211.5" text-anchor="middle" font-size="10.5" fill="#0f172a" font-weight="700">Rf 90 k</text>
+<polyline points="252,223 268,223 268,285" fill="none" stroke="#334155" stroke-width="1.6"/>
+<rect x="126" y="216.5" width="50" height="13" rx="2" fill="#ffffff" stroke="#334155" stroke-width="1.5"/><text x="151.0" y="211.5" text-anchor="middle" font-size="10.5" fill="#0f172a" font-weight="700">Rg 10 k</text>
+<polyline points="126,223 106,223" fill="none" stroke="#334155" stroke-width="1.6"/>
+<line x1="96" y1="231" x2="116" y2="231" stroke="#334155" stroke-width="2"/><line x1="100" y1="235" x2="112" y2="235" stroke="#334155" stroke-width="2"/><line x1="104" y1="239" x2="108" y2="239" stroke="#334155" stroke-width="2"/>
+<polyline points="252,285 300,285" fill="none" stroke="#334155" stroke-width="2.4"/>
+<circle cx="268" cy="285" r="3.2" fill="#334155"/>
+<text x="212" y="343" text-anchor="middle" font-size="11" fill="#0f172a" font-weight="700">G = 1 + Rf/Rg = ×10</text>
+<text x="212" y="358" text-anchor="middle" font-size="9.5" fill="#64748b">GBW·헤드룸 양쪽에서 ×10 이 상한</text>
+<rect x="300" y="235" width="166" height="100" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.3"/>
+<text x="383" y="255" text-anchor="middle" font-size="11.5" fill="#1e3a8a" font-weight="700">2차 GIC 밴드패스</text>
+<text x="383" y="275" text-anchor="middle" font-size="10" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">R_A  10.6 ~ 12.5 k</text>
+<text x="383" y="290" text-anchor="middle" font-size="10" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">C    1.86 ~ 76.6 n</text>
+<text x="383" y="305" text-anchor="middle" font-size="10" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">R1   16.5 ~ 59.3 k</text>
+<text x="383" y="325" text-anchor="middle" font-size="9.5" fill="#64748b">R2 = R3 = 100 k (공통)</text>
+<polyline points="466,285 512,285" fill="none" stroke="#334155" stroke-width="2.4"/>
+<text x="383" y="351" text-anchor="middle" font-size="10.5" fill="#1e3a8a" font-weight="700">f_c = 1/(2π R_A C),   Q = R1/R_A</text>
+<text x="383" y="366" text-anchor="middle" font-size="9.5" fill="#64748b">이득 2.00 — .ac 실측이 공식과 일치</text>
+<rect x="512" y="235" width="232" height="100" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.3"/>
+<text x="628" y="255" text-anchor="middle" font-size="11.5" fill="#15803d" font-weight="700">능동 검출기 (정밀정류 + 평활)</text>
+<polygon points="532,275 532,287 544,281" fill="#ffffff" stroke="#15803d" stroke-width="1.5"/><line x1="544" y1="275" x2="544" y2="287" stroke="#15803d" stroke-width="2.2"/>
+<polygon points="532,291 532,303 544,297" fill="#ffffff" stroke="#15803d" stroke-width="1.5"/><line x1="544" y1="291" x2="544" y2="303" stroke="#15803d" stroke-width="2.2"/>
+<text x="538" y="315" text-anchor="middle" font-size="9" fill="#15803d" font-weight="700">D1/D2</text>
+<text x="566" y="277" text-anchor="start" font-size="9.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">BAT54  R4 10 k  R5 47 k</text>
+<text x="566" y="292" text-anchor="start" font-size="9.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">R6 8.25 k       C3 100 n</text>
+<text x="646" y="317" text-anchor="middle" font-size="9.5" fill="#15803d" font-weight="700">G = R5/R4 = 4.7   τ = R5·C3 = 4.7 ms</text>
+<polyline points="744,285 800,285" fill="none" stroke="#334155" stroke-width="2.4"/>
+<circle cx="800" cy="285" r="3.2" fill="#334155"/>
+<text x="628" y="351" text-anchor="middle" font-size="9.5" fill="#64748b">실측 τ_방전 4.62 ms, 충전 t90 0.65 ms</text>
+<text x="628" y="366" text-anchor="middle" font-size="9.5" fill="#9a3412">⚠️ 데드존 5.9~12.1 mV (저GBW 크로스오버) — 모델 미반영</text>
+<text x="806" y="245" text-anchor="start" font-size="13.5" fill="#7e22ce" font-weight="700">V_env,c</text>
+<text x="806" y="261" text-anchor="start" font-size="9.5" fill="#64748b">정지점 917.8 mV 위로 상승</text>
+<text x="806" y="275" text-anchor="start" font-size="10.5" fill="#7e22ce" font-weight="700">66 dB SPL 에서 33 mV</text>
+<polyline points="800,285 930,285" fill="none" stroke="#334155" stroke-width="2.4"/>
+<polygon points="930,258.0 930,312.0 988,285" fill="#ffffff" stroke="#334155" stroke-width="1.7"/><text x="941" y="275.5" text-anchor="middle" font-size="12" fill="#0f172a">+</text><text x="941" y="303.5" text-anchor="middle" font-size="12" fill="#0f172a">−</text>
+<text x="959" y="329" text-anchor="middle" font-size="9.5" fill="#64748b">LPV7215   0.58 µA</text>
+<polyline points="988,285 1044,285" fill="none" stroke="#334155" stroke-width="2.4"/>
+<text x="1050" y="279" text-anchor="start" font-size="12.5" fill="#0f172a" font-weight="700">→ FPGA</text>
+<text x="1050" y="295" text-anchor="start" font-size="9.5" fill="#64748b">1 비트 / 채널</text>
+<polyline points="910,299 884,299 884,361" fill="none" stroke="#dc2626" stroke-width="1.8"/>
+<text x="880" y="365" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">V_thr,c  ← §C</text>
+<rect x="1130" y="235" width="380" height="100" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.1"/>
+<text x="1142" y="257" text-anchor="start" font-size="10.5" fill="#0f172a">채널당: GIC op-amp 2 + 검출기 1 + 비교기 1</text>
+<text x="1142" y="275" text-anchor="start" font-size="10.5" fill="#0f172a">16채널 = op-amp 48개 + 비교기 16개</text>
+<text x="1142" y="295" text-anchor="start" font-size="10.5" fill="#15803d" font-weight="700">출력 16 라인, 각 0/1 — ADC 없음</text>
+<text x="1142" y="315" text-anchor="start" font-size="9.5" fill="#64748b">FPGA 가 10 ms 창으로 OR 누산 → [16,128]</text>
+<rect x="30" y="420" width="740" height="330" rx="6" fill="#fff1f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="52" y="446" text-anchor="start" font-size="16" fill="#dc2626" font-weight="700">B. 다이오드-OR + 버퍼 (뱅크 전체에 1조)</text>
+<text x="52" y="466" text-anchor="start" font-size="10.5" fill="#64748b">16채널 엔벨로프에서 '지금 가장 큰 것' 을 만든다</text>
+<text x="66" y="508" text-anchor="start" font-size="10.5" fill="#7e22ce" font-weight="700">V_env,0</text>
+<polyline points="130,504 278,504" fill="none" stroke="#334155" stroke-width="1.6"/>
+<polygon points="281,497 281,511 295,504" fill="#ffffff" stroke="#dc2626" stroke-width="1.5"/><line x1="295" y1="497" x2="295" y2="511" stroke="#dc2626" stroke-width="2.2"/>
+<polyline points="296,504 300,504" fill="none" stroke="#334155" stroke-width="1.6"/>
+<circle cx="300" cy="504" r="3.2" fill="#334155"/>
+<text x="66" y="542" text-anchor="start" font-size="10.5" fill="#7e22ce" font-weight="700">V_env,1</text>
+<polyline points="130,538 278,538" fill="none" stroke="#334155" stroke-width="1.6"/>
+<polygon points="281,531 281,545 295,538" fill="#ffffff" stroke="#dc2626" stroke-width="1.5"/><line x1="295" y1="531" x2="295" y2="545" stroke="#dc2626" stroke-width="2.2"/>
+<polyline points="296,538 300,538" fill="none" stroke="#334155" stroke-width="1.6"/>
+<circle cx="300" cy="538" r="3.2" fill="#334155"/>
+<text x="66" y="576" text-anchor="start" font-size="10.5" fill="#7e22ce" font-weight="700">V_env,15</text>
+<polyline points="130,572 278,572" fill="none" stroke="#334155" stroke-width="1.6"/>
+<polygon points="281,565 281,579 295,572" fill="#ffffff" stroke="#dc2626" stroke-width="1.5"/><line x1="295" y1="565" x2="295" y2="579" stroke="#dc2626" stroke-width="2.2"/>
+<polyline points="296,572 300,572" fill="none" stroke="#334155" stroke-width="1.6"/>
+<circle cx="300" cy="572" r="3.2" fill="#334155"/>
+<text x="150" y="568" text-anchor="start" font-size="10.5" fill="#64748b">⋮  16채널 전부</text>
+<polyline points="300,504 300,630" fill="none" stroke="#dc2626" stroke-width="2.2"/>
+<text x="314" y="520" text-anchor="start" font-size="10.5" fill="#dc2626" font-weight="700">BAT54 ×16</text>
+<text x="314" y="534" text-anchor="start" font-size="9" fill="#64748b">(검출기와 같은 부품)</text>
+<circle cx="300" cy="648" r="12" fill="#ffffff" stroke="#dc2626" stroke-width="1.5"/>
+<line x1="300" y1="642" x2="300" y2="654" stroke="#dc2626" stroke-width="1.5"/>
+<polygon points="296,648 304,648 300,655" fill="#dc2626"/>
+<polyline points="300,660 300,672" fill="none" stroke="#dc2626" stroke-width="2"/>
+<line x1="290" y1="672" x2="310" y2="672" stroke="#dc2626" stroke-width="2"/><line x1="294" y1="676" x2="306" y2="676" stroke="#dc2626" stroke-width="2"/><line x1="298" y1="680" x2="302" y2="680" stroke="#dc2626" stroke-width="2"/>
+<text x="278" y="652" text-anchor="end" font-size="10" fill="#dc2626" font-weight="700">정전류 싱크 ×1</text>
+<polyline points="300,504 400,504 400,538 430,538" fill="none" stroke="#dc2626" stroke-width="2.2"/>
+<text x="360" y="496" text-anchor="middle" font-size="10.5" fill="#dc2626" font-weight="700">V_or = LSE − V_d</text>
+<polygon points="430,526.0 430,574.0 482,550" fill="#ffffff" stroke="#334155" stroke-width="1.7"/><text x="441" y="542.0" text-anchor="middle" font-size="12" fill="#0f172a">+</text><text x="441" y="567.0" text-anchor="middle" font-size="12" fill="#0f172a">−</text>
+<polygon points="493,513 493,527 507,520" fill="#ffffff" stroke="#dc2626" stroke-width="1.5"/><line x1="507" y1="513" x2="507" y2="527" stroke="#dc2626" stroke-width="2.2"/>
+<polyline points="430,562 412,562 412,520 492,520" fill="none" stroke="#dc2626" stroke-width="1.6"/>
+<polyline points="508,520 560,520 560,550" fill="none" stroke="#dc2626" stroke-width="1.6"/>
+<polyline points="482,550 560,550" fill="none" stroke="#dc2626" stroke-width="2.2"/>
+<circle cx="560" cy="550" r="3.2" fill="#334155"/>
+<text x="500" y="504" text-anchor="middle" font-size="9.5" fill="#dc2626" font-weight="700">짝 다이오드</text>
+<text x="500" y="492" text-anchor="middle" font-size="9" fill="#64748b">BAT54WT1 같은 다이</text>
+<polyline points="560,550 650,550" fill="none" stroke="#dc2626" stroke-width="2.4"/>
+<text x="658" y="546" text-anchor="start" font-size="14" fill="#dc2626" font-weight="700">V_max</text>
+<text x="658" y="562" text-anchor="start" font-size="9.5" fill="#64748b">(강하 보상 완료)</text>
+<rect x="52" y="688" width="696" height="50" rx="6" fill="#ffffff" stroke="#dc2626" stroke-width="1.1"/>
+<text x="64" y="708" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">⚠️ 이건 max 가 아니라 soft max 다: V_or = max + T·ln k,  T = n·V_T = 26 mV</text>
+<text x="64" y="726" text-anchor="start" font-size="10" fill="#0f172a">다이오드가 지수라 진 채널도 샌다. 그 결과가 하드 max 보다 +6.7pp 좋았다 (docs/diagrams/17_loudness.svg)</text>
+<rect x="790" y="420" width="740" height="330" rx="6" fill="#faf5ff" stroke="#d8b4fe" stroke-width="1.4"/>
+<text x="812" y="446" text-anchor="start" font-size="16" fill="#7e22ce" font-weight="700">C. 채널별 분압 + 기준전압  ← 유일하게 바뀌는 곳</text>
+<text x="812" y="466" text-anchor="start" font-size="10.5" fill="#64748b">기존: R7/R8 이 1.8 V 레일 전체에 걸린 고정 분압</text>
+<polyline points="830,516 900,516" fill="none" stroke="#dc2626" stroke-width="2.2"/>
+<text x="824" y="520" text-anchor="end" font-size="11" fill="#dc2626" font-weight="700">V_max</text>
+<rect x="880.0" y="516" width="40" height="50" rx="2" fill="#ffffff" stroke="#7e22ce" stroke-width="1.5"/><text x="926.0" y="540.0" text-anchor="start" font-size="10.5" fill="#0f172a" font-weight="700">Ra</text><text x="926.0" y="553.0" text-anchor="start" font-size="9.5" fill="#64748b">= (1−α)·1 MΩ</text>
+<polyline points="900,566 900,586" fill="none" stroke="#7e22ce" stroke-width="1.8"/>
+<circle cx="900" cy="586" r="3.2" fill="#334155"/>
+<rect x="880.0" y="586" width="40" height="50" rx="2" fill="#ffffff" stroke="#7e22ce" stroke-width="1.5"/><text x="926.0" y="610.0" text-anchor="start" font-size="10.5" fill="#0f172a" font-weight="700">Rb</text><text x="926.0" y="623.0" text-anchor="start" font-size="9.5" fill="#64748b">= α·1 MΩ</text>
+<polyline points="900,636 900,660 830,660" fill="none" stroke="#15803d" stroke-width="2.2"/>
+<text x="824" y="664" text-anchor="end" font-size="11" fill="#15803d" font-weight="700">V_ref</text>
+<polyline points="900,586 1010,586" fill="none" stroke="#7e22ce" stroke-width="2.2"/>
+<text x="1018" y="582" text-anchor="start" font-size="12.5" fill="#7e22ce" font-weight="700">V_thr,c</text>
+<text x="1018" y="598" text-anchor="start" font-size="9.5" fill="#64748b">= α·V_max + (1−α)·V_ref</text>
+<text x="1000" y="516" text-anchor="start" font-size="10.5" fill="#7e22ce" font-weight="700">×16 (채널마다 다른 α)</text>
+<rect x="812" y="688" width="700" height="50" rx="6" fill="#ffffff" stroke="#15803d" stroke-width="1.2"/>
+<text x="824" y="708" text-anchor="start" font-size="12" fill="#15803d" font-weight="700">✅ δ = 0 확정 → V_ref = 검출기 정지점 917.8 mV</text>
+<text x="824" y="726" text-anchor="start" font-size="10" fill="#0f172a">오프셋 트리밍 불필요. 복제 검출기(입력 개방)로 만들면 온도·전원 드리프트까지 따라간다 — 회로 측 선택</text>
+<rect x="30" y="770" width="1500" height="480" rx="6" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.4"/>
+<text x="52" y="796" text-anchor="start" font-size="16" fill="#0f172a" font-weight="700">D. 16채널 값 — 필터는 SPICE 설계, α 는 학습 결과 (xl_g12)</text>
+<text x="52" y="816" text-anchor="start" font-size="10.5" fill="#64748b">Ra + Rb = 1 MΩ 로 정규화. 전류 = (V_max−V_ref)/1 MΩ ≈ 0.1 µA/채널</text>
+<text x="90" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">ch</text>
+<text x="185" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">f_c [Hz]</text>
+<text x="290" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">Q</text>
+<text x="400" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">R_A [kΩ]</text>
+<text x="510" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">C [nF]</text>
+<text x="620" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">R1 [kΩ]</text>
+<text x="760" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">α (학습)</text>
+<text x="890" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">Rb [kΩ]</text>
+<text x="1010" y="848" text-anchor="end" font-size="11" fill="#0f172a" font-weight="700">Ra [kΩ]</text>
+<polyline points="50,856 1040,856" fill="none" stroke="#334155" stroke-width="1.2"/>
+<rect x="50" y="861" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="876" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">0</text>
+<text x="185" y="876" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">166</text>
+<text x="290" y="876" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1.33</text>
+<text x="400" y="876" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.34</text>
+<text x="510" y="876" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">76.56</text>
+<text x="620" y="876" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">16.5</text>
+<text x="760" y="876" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.8745</text>
+<text x="890" y="876" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">874.5</text>
+<text x="1010" y="876" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">125.5</text>
+<text x="90" y="898" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1</text>
+<text x="185" y="898" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">295</text>
+<text x="290" y="898" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2.08</text>
+<text x="400" y="898" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.50</text>
+<text x="510" y="898" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">42.35</text>
+<text x="620" y="898" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">26.1</text>
+<text x="760" y="898" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.7804</text>
+<text x="890" y="898" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">780.4</text>
+<text x="1010" y="898" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">219.6</text>
+<rect x="50" y="905" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="920" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2</text>
+<text x="185" y="920" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">447</text>
+<text x="290" y="920" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2.73</text>
+<text x="400" y="920" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.48</text>
+<text x="510" y="920" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">27.93</text>
+<text x="620" y="920" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">34.1</text>
+<text x="760" y="920" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.4788</text>
+<text x="890" y="920" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">478.8</text>
+<text x="1010" y="920" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">521.2</text>
+<text x="90" y="942" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">3</text>
+<text x="185" y="942" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">631</text>
+<text x="290" y="942" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">3.29</text>
+<text x="400" y="942" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.26</text>
+<text x="510" y="942" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">20.05</text>
+<text x="620" y="942" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">40.2</text>
+<text x="760" y="942" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.4482</text>
+<text x="890" y="942" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">448.2</text>
+<text x="1010" y="942" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">551.8</text>
+<rect x="50" y="949" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="964" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">4</text>
+<text x="185" y="964" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">832</text>
+<text x="290" y="964" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">3.77</text>
+<text x="400" y="964" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.27</text>
+<text x="510" y="964" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">15.12</text>
+<text x="620" y="964" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">45.9</text>
+<text x="760" y="964" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.5423</text>
+<text x="890" y="964" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">542.3</text>
+<text x="1010" y="964" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">457.7</text>
+<text x="90" y="986" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5</text>
+<text x="185" y="986" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1072</text>
+<text x="290" y="986" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">4.20</text>
+<text x="400" y="986" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.16</text>
+<text x="510" y="986" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11.77</text>
+<text x="620" y="986" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">50.0</text>
+<text x="760" y="986" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.4072</text>
+<text x="890" y="986" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">407.2</text>
+<text x="1010" y="986" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">592.8</text>
+<rect x="50" y="993" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="1008" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">6</text>
+<text x="185" y="1008" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1349</text>
+<text x="290" y="1008" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">4.56</text>
+<text x="400" y="1008" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.05</text>
+<text x="510" y="1008" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">9.38</text>
+<text x="620" y="1008" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">53.3</text>
+<text x="760" y="1008" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.1725</text>
+<text x="890" y="1008" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">172.5</text>
+<text x="1010" y="1008" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">827.5</text>
+<text x="90" y="1030" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">7</text>
+<text x="185" y="1030" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1660</text>
+<text x="290" y="1030" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">4.88</text>
+<text x="400" y="1030" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12.01</text>
+<text x="510" y="1030" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">7.59</text>
+<text x="620" y="1030" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">56.0</text>
+<text x="760" y="1030" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.1326</text>
+<text x="890" y="1030" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">132.6</text>
+<text x="1010" y="1030" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">867.4</text>
+<rect x="50" y="1037" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="1052" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">8</text>
+<text x="185" y="1052" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2042</text>
+<text x="290" y="1052" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5.15</text>
+<text x="400" y="1052" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11.80</text>
+<text x="510" y="1052" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">6.23</text>
+<text x="620" y="1052" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">57.1</text>
+<text x="760" y="1052" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.1799</text>
+<text x="890" y="1052" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">179.9</text>
+<text x="1010" y="1052" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">820.1</text>
+<text x="90" y="1074" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">9</text>
+<text x="185" y="1074" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2455</text>
+<text x="290" y="1074" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5.39</text>
+<text x="400" y="1074" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11.74</text>
+<text x="510" y="1074" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5.15</text>
+<text x="620" y="1074" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">58.4</text>
+<text x="760" y="1074" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.1242</text>
+<text x="890" y="1074" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">124.2</text>
+<text x="1010" y="1074" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">875.8</text>
+<rect x="50" y="1081" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="1096" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">10</text>
+<text x="185" y="1096" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2951</text>
+<text x="290" y="1096" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5.60</text>
+<text x="400" y="1096" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11.57</text>
+<text x="510" y="1096" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">4.30</text>
+<text x="620" y="1096" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">58.5</text>
+<text x="760" y="1096" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.2096</text>
+<text x="890" y="1096" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">209.6</text>
+<text x="1010" y="1096" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">790.4</text>
+<text x="90" y="1118" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11</text>
+<text x="185" y="1118" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">3467</text>
+<text x="290" y="1118" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5.78</text>
+<text x="400" y="1118" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11.59</text>
+<text x="510" y="1118" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">3.61</text>
+<text x="620" y="1118" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">59.3</text>
+<text x="760" y="1118" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.2005</text>
+<text x="890" y="1118" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">200.5</text>
+<text x="1010" y="1118" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">799.5</text>
+<rect x="50" y="1125" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="1140" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">12</text>
+<text x="185" y="1140" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">4169</text>
+<text x="290" y="1140" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5.95</text>
+<text x="400" y="1140" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11.24</text>
+<text x="510" y="1140" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">3.04</text>
+<text x="620" y="1140" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">57.4</text>
+<text x="760" y="1140" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.1244</text>
+<text x="890" y="1140" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">124.4</text>
+<text x="1010" y="1140" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">875.6</text>
+<text x="90" y="1162" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">13</text>
+<text x="185" y="1162" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">4898</text>
+<text x="290" y="1162" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">6.11</text>
+<text x="400" y="1162" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">11.10</text>
+<text x="510" y="1162" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2.57</text>
+<text x="620" y="1162" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">56.6</text>
+<text x="760" y="1162" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.0788</text>
+<text x="890" y="1162" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">78.8</text>
+<text x="1010" y="1162" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">921.2</text>
+<rect x="50" y="1169" width="990" height="20" fill="#64748b" opacity="0.05"/>
+<text x="90" y="1184" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">14</text>
+<text x="185" y="1184" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">5754</text>
+<text x="290" y="1184" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">6.27</text>
+<text x="400" y="1184" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">10.89</text>
+<text x="510" y="1184" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">2.19</text>
+<text x="620" y="1184" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">55.2</text>
+<text x="760" y="1184" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.0572</text>
+<text x="890" y="1184" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">57.2</text>
+<text x="1010" y="1184" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">942.8</text>
+<text x="90" y="1206" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">15</text>
+<text x="185" y="1206" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">6761</text>
+<text x="290" y="1206" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">6.45</text>
+<text x="400" y="1206" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">10.61</text>
+<text x="510" y="1206" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">1.86</text>
+<text x="620" y="1206" text-anchor="end" font-size="10.5" fill="#0f172a" font-family="ui-monospace,Menlo,monospace">53.4</text>
+<text x="760" y="1206" text-anchor="end" font-size="10.5" fill="#7e22ce" font-weight="700" font-family="ui-monospace,Menlo,monospace">0.3787</text>
+<text x="890" y="1206" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">378.7</text>
+<text x="1010" y="1206" text-anchor="end" font-size="10.5" fill="#7e22ce" font-family="ui-monospace,Menlo,monospace">621.3</text>
+<rect x="1070" y="840" width="440" height="180" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.1"/>
+<text x="1090" y="862" text-anchor="start" font-size="12" fill="#15803d" font-weight="700">α 범위 0.057 ~ 0.874 — 전부 제작 가능</text>
+<text x="1090" y="882" text-anchor="start" font-size="10.5" fill="#0f172a">죽은 채널 0/16 (0 또는 1 에 붙은 것 없음)</text>
+<text x="1090" y="906" text-anchor="start" font-size="10.5" fill="#0f172a">α 가 낮은 채널(6~14, 1.3~5.8 kHz)은</text>
+<text x="1090" y="922" text-anchor="start" font-size="10.5" fill="#0f172a">임계가 낮다 = 잘 발화한다. 그 대역의</text>
+<text x="1090" y="938" text-anchor="start" font-size="10.5" fill="#0f172a">엔벨로프가 원래 작기 때문이다.</text>
+<text x="1090" y="964" text-anchor="start" font-size="10.5" fill="#9a3412" font-weight="700">⚠️ α 는 최종 학습이 끝나면 다시 뽑아야 한다.</text>
+<text x="1090" y="980" text-anchor="start" font-size="10" fill="#64748b">지금 값은 xl_g12 (게인 증강, 150 에폭).</text>
+<text x="1090" y="1002" text-anchor="start" font-size="9.5" fill="#dc2626">반드시 effective_alpha() 로 읽을 것 — 원값은</text>
+<text x="1090" y="1016" text-anchor="start" font-size="9.5" fill="#dc2626">straight-through clamp 때문에 [0,1] 밖으로 뜬다.</text>
+<rect x="1070" y="1038" width="440" height="190" rx="6" fill="#fffbeb" stroke="#fcd34d" stroke-width="1.1"/>
+<text x="1090" y="1060" text-anchor="start" font-size="12" fill="#9a3412" font-weight="700">전력 수지 (제안 회로의 순증)</text>
+<text x="1090" y="1084" text-anchor="start" font-size="10.5" fill="#0f172a">버퍼 op-amp ×1</text>
+<text x="1494" y="1084" text-anchor="end" font-size="10.5" fill="#dc2626" font-weight="700">+13 µW</text>
+<text x="1090" y="1104" text-anchor="start" font-size="10.5" fill="#0f172a">OR 다이오드 ×16 + 싱크</text>
+<text x="1494" y="1104" text-anchor="end" font-size="10.5" fill="#dc2626" font-weight="700">+3 µW</text>
+<text x="1090" y="1124" text-anchor="start" font-size="10.5" fill="#0f172a">새 분압 ×16 (~0.1 V)</text>
+<text x="1494" y="1124" text-anchor="end" font-size="10.5" fill="#dc2626" font-weight="700">+3 µW</text>
+<text x="1090" y="1144" text-anchor="start" font-size="10.5" fill="#0f172a">기존 분압 ×16 (1.8 V 전체)</text>
+<text x="1494" y="1144" text-anchor="end" font-size="10.5" fill="#15803d" font-weight="700">−52 µW</text>
+<polyline points="1090,1170 1494,1170" fill="none" stroke="#fcd34d" stroke-width="1.2"/>
+<text x="1090" y="1188" text-anchor="start" font-size="12" fill="#9a3412" font-weight="700">순증</text>
+<text x="1494" y="1188" text-anchor="end" font-size="13" fill="#15803d" font-weight="700">≈ −33 µW</text>
+<text x="1090" y="1210" text-anchor="start" font-size="10" fill="#0f172a">임계를 똑똑하게 만들면서 전력이 오히려 준다 —</text>
+<text x="1090" y="1224" text-anchor="start" font-size="10" fill="#0f172a">분압이 레일 전체가 아니라 V_max−V_ref 에만 걸린다.</text>
+<rect x="30" y="1270" width="740" height="250" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1.4"/>
+<text x="52" y="1298" text-anchor="start" font-size="16" fill="#15803d" font-weight="700">E. 동료에게 넘길 스펙</text>
+<text x="64" y="1330" text-anchor="start" font-size="11" fill="#15803d">✅</text>
+<text x="90" y="1330" text-anchor="start" font-size="11" fill="#0f172a" font-weight="700">요구 엔벨로프 상승</text>
+<text x="300" y="1330" text-anchor="start" font-size="11" fill="#0f172a">66 dB SPL 에서 33 mV</text>
+<text x="64" y="1354" text-anchor="start" font-size="11" fill="#15803d">✅</text>
+<text x="90" y="1354" text-anchor="start" font-size="11" fill="#0f172a" font-weight="700">= 프리앰프</text>
+<text x="300" y="1354" text-anchor="start" font-size="11" fill="#0f172a">×10 (현재 값 그대로)</text>
+<text x="64" y="1378" text-anchor="start" font-size="11" fill="#15803d">✅</text>
+<text x="90" y="1378" text-anchor="start" font-size="11" fill="#0f172a" font-weight="700">V_ref</text>
+<text x="300" y="1378" text-anchor="start" font-size="11" fill="#0f172a">검출기 정지점 917.8 mV (δ=0)</text>
+<text x="64" y="1402" text-anchor="start" font-size="11" fill="#15803d">✅</text>
+<text x="90" y="1402" text-anchor="start" font-size="11" fill="#0f172a" font-weight="700">α ×16</text>
+<text x="300" y="1402" text-anchor="start" font-size="11" fill="#0f172a">위 표의 Ra/Rb (Ra+Rb = 1 MΩ)</text>
+<text x="64" y="1426" text-anchor="start" font-size="11" fill="#15803d">✅</text>
+<text x="90" y="1426" text-anchor="start" font-size="11" fill="#0f172a" font-weight="700">비교기</text>
+<text x="300" y="1426" text-anchor="start" font-size="11" fill="#0f172a">채널당 1개, LPV7215</text>
+<text x="64" y="1450" text-anchor="start" font-size="11" fill="#15803d">✅</text>
+<text x="90" y="1450" text-anchor="start" font-size="11" fill="#0f172a" font-weight="700">다이오드-OR</text>
+<text x="300" y="1450" text-anchor="start" font-size="11" fill="#0f172a">BAT54 ×16 + 정전류 싱크 ×1 + 버퍼 1</text>
+<rect x="52" y="1478" width="696" height="30" rx="6" fill="#ffffff" stroke="#15803d" stroke-width="1.1"/>
+<text x="64" y="1498" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">"이보다 조용하면 정확도가 떨어진다. 회로 특성이지 튜닝으로 못 고친다" 를 함께 전달할 것</text>
+<rect x="790" y="1270" width="740" height="250" rx="6" fill="#fff1f2" stroke="#fca5a5" stroke-width="1.4"/>
+<text x="812" y="1298" text-anchor="start" font-size="16" fill="#dc2626" font-weight="700">F. 아직 모델에 없는 것 (= 이 회로도의 한계)</text>
+<text x="824" y="1332" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">τ (C3 평활)</text>
+<text x="824" y="1347" text-anchor="start" font-size="10" fill="#64748b">실측 4.62 ms. baseline 에 안 넣음 — 논문에 값이 없어 임의값이 섞이면 원인 분리가 안 된다</text>
+<text x="824" y="1368" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">comparator offset</text>
+<text x="824" y="1383" text-anchor="start" font-size="10" fill="#64748b">mV 급. 보드 만든 뒤 측정해서 그 숫자로 재학습</text>
+<text x="824" y="1404" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">검출기 데드존</text>
+<text x="824" y="1419" text-anchor="start" font-size="10" fill="#64748b">5.9~12.1 mV 실측. spice_deadzone 스위치는 있으나 미사용</text>
+<text x="824" y="1440" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">채널 이득 편차</text>
+<text x="824" y="1455" text-anchor="start" font-size="10" fill="#64748b">1.8 dB. soft max 는 16채널을 섞으므로 하드 max 때와 달리 흡수가 안 된다 — 미시험</text>
+<text x="824" y="1476" text-anchor="start" font-size="11" fill="#dc2626" font-weight="700">저항 공차 / E12·E24</text>
+<text x="824" y="1491" text-anchor="start" font-size="10" fill="#64748b">제작 단계에서</text>
+<rect x="30" y="1540" width="1500" height="200" rx="6" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.4"/>
+<text x="52" y="1568" text-anchor="start" font-size="16" fill="#1e3a8a" font-weight="700">G. 이 회로로 기대되는 정확도</text>
+<text x="52" y="1588" text-anchor="start" font-size="10.5" fill="#64748b">두 숫자는 서로 다른 질문에 대한 답이다</text>
+<rect x="52" y="1602" width="700" height="120" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.1"/>
+<text x="64" y="1624" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">① 벤치마크 (GSC test 그대로) — 논문 비교용</text>
+<text x="400" y="1652" text-anchor="middle" font-size="26" fill="#1e3a8a" font-weight="700">0.8445</text>
+<text x="64" y="1680" text-anchor="start" font-size="10.5" fill="#0f172a">Cerutti 8채널 0.763 / 우리 16채널 0.845 / 64채널 0.860</text>
+<text x="64" y="1698" text-anchor="start" font-size="10" fill="#64748b">채널수 곡선 보간 예측치(0.795)보다 5pp 위. 목표 85% 까지 0.6pp</text>
+<rect x="778" y="1602" width="730" height="120" rx="6" fill="#ffffff" stroke="#93c5fd" stroke-width="1.1"/>
+<text x="790" y="1624" text-anchor="start" font-size="12" fill="#0f172a" font-weight="700">② 배치 추정 (실환경)</text>
+<text x="1000" y="1652" text-anchor="middle" font-size="26" fill="#9a3412" font-weight="700">≈ 0.69</text>
+<text x="790" y="1680" text-anchor="start" font-size="10.5" fill="#0f172a">0.8445 − 3.2pp(음량 60~85 dB) − 12.5pp(낯선 배경·위치)</text>
+<text x="790" y="1698" text-anchor="start" font-size="10" fill="#64748b">두 벌점이 더해진다는 가정. 최대 확신도 선택(창 8개 중 고르기)은 아직 미구현 — 상방 여지</text>
+<text x="30" y="1976" text-anchor="start" font-size="10" fill="#64748b">부품값: analog/AFE/artifacts/component_table.md · α: runs/xl_g12 · 정지점 917.8 mV: 동료 실측 · 전력: proposal/ANALOG.md 3-4 · 생성: proposal/artifacts/make_full_schematic.py</text>
+</svg>
