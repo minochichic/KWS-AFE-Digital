@@ -31,3 +31,7 @@ venv/
 CLAUDE_1.md
 TASK_afe_semantics_update.md
 *.docx
+
+# ngspice scratch
+analog/AFE/netlists/_*.cir
+analog/AFE/artifacts/afe16_tran.csv
