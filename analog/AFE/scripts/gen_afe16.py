@@ -113,6 +113,8 @@ def build(args) -> str:
     r5 = getattr(args, "r5", 47e3)
     preamp = getattr(args, "preamp", 10.0)
     tran_csv = getattr(args, "tran_csv", f"../artifacts/{TRAN_CSV.name}")
+    fcs = [float(r["fc_sim"]) for r in csv.DictReader(DESIGN.open(newline=""))]
+    tone_ch = min(range(16), key=lambda c: abs(fcs[c] - args.freq))
 
     with DESIGN.open(newline="", encoding="utf-8") as fh:
         d = list(csv.DictReader(fh))
@@ -130,6 +132,8 @@ def build(args) -> str:
     A("* 'mfg=' that ngspice rejects. Same params the verified netlists use.")
     A(".model Dbat54wt1 D(Is=2.2n Rs=2 N=1.03 Cjo=10p M=0.4 Vj=0.4 Bv=30")
     A("+ Ibv=10u Eg=0.69 Xti=2)")
+    A("")
+    A(f".temp {getattr(args, 'temp', 27.0):g}")
     A("")
     A("* ---- supplies -------------------------------------------------------")
     A("Vpos  vpos  0  DC 1.8")
@@ -238,8 +242,8 @@ def build(args) -> str:
         A(f"* never gives a number for. R5*C3 = {r5 * args.c3 * 1e3:.2f} ms nominal;")
         A("* the OR diode pulls in parallel so the measured tau comes out lower.")
         A("tran 20u 90m")
-        A(f"wrdata {tran_csv} v(ve{TONE_CH}) v(v_max)"
-          f" v(v_ref) v(vt{TONE_CH}) v(vo{TONE_CH})")
+        A(f"wrdata {tran_csv} v(ve{tone_ch}) v(v_max)"
+          f" v(v_ref) v(vt{tone_ch}) v(vo{tone_ch})")
     A(".endc")
     A("")
     A(".end")

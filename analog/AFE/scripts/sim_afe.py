@@ -54,7 +54,7 @@ def _nodes(out: str) -> dict[str, float]:
 def sim(tag: str, *, r4: float = 30e3, r5: float = 350e3,
         tau_ms: float | None = 0.7, c3: float | None = None,
         preamp: float = 10.0, freq: float = 1349.0, amp: float = 2.52e-3,
-        delta_mv: float = 0.0, hardmax: bool = False,
+        delta_mv: float = 0.0, hardmax: bool = False, temp: float = 27.0,
         tran: bool = True, verbose: bool = True) -> dict:
     """Build, run and measure one parameter set. ~60 s with tran, ~2 s without."""
     if c3 is None:
@@ -63,7 +63,7 @@ def sim(tag: str, *, r4: float = 30e3, r5: float = 350e3,
         c3 = tau_ms * 1e-3 / r5
     a = types.SimpleNamespace(
         r4=r4, r5=r5, c3=c3, preamp=preamp, freq=freq, amp=amp,
-        delta=delta_mv, hardmax=hardmax, no_tran=True, vref=None,
+        delta=delta_mv, hardmax=hardmax, temp=temp, no_tran=True, vref=None,
         tran_csv=f"../artifacts/sim_{tag}.csv")
 
     # pass 1: where does the envelope actually sit with THESE resistors
@@ -84,7 +84,7 @@ def sim(tag: str, *, r4: float = 30e3, r5: float = 350e3,
              floor_mv=(d["v_max"] - quiescent) * 1e3,
              margins_mv=marg, min_margin_mv=min(marg),
              n_firing=sum(d[f"vo{c}"] > 0.9 for c in range(16)),
-             scatter_gain=r5 / r4)
+             scatter_gain=r5 / r4, temp=temp, amp=amp)
     r.update(rise_mv=math.nan, tau_ms=math.nan, ripple_mv=math.nan,
              fire_pct=math.nan)
     if tran:
