@@ -29,6 +29,8 @@
 | [EXPERIMENTS.md](EXPERIMENTS.md) | **실험 전체** — 무엇을 시도했고 무엇이 왜 실패했는가, 정확도 사다리 |
 | [REPRODUCE.md](REPRODUCE.md) | **환경과 재현** — 툴, 버전, 명령어 |
 | [artifacts/](artifacts/) | 회로도, 채널 표, 필터뱅크 행렬, 다이어그램 |
+| **[../analog/AFE/netlists/afe16_xlse.cir](../analog/AFE/netlists/afe16_xlse.cir)** | ⭐ **돌아가는 16채널 넷리스트** — ngspice에서 바로 실행 |
+| [../analog/AFE/SPICE_FINDINGS.md](../analog/AFE/SPICE_FINDINGS.md) | 그 넷리스트가 확인해준 것과 **뒤집은 것** (더미 검출기 폐기 등) |
 
 ---
 
