@@ -226,3 +226,55 @@ at mid-rail — which now looks less like a model artifact than it did.
 Whether biasing lower is worth its headroom cost has not been worked out. It
 is the one remaining lever that attacks the offset at the source rather than
 dividing it down afterwards.
+
+### Correction: the comparator, not the op-amp, is the binding term
+
+`head` was computed with a 1 mV placeholder for the comparator. The real part
+(LPV7215, SNOS977, 1.8 V table) is **typ ±0.4 mV, max ±6 mV at 25 °C, ±8 mV
+over temperature** — a 15× typ-to-max spread against the op-amp's 3.75×.
+
+It lands on the comparator input, so `(R5/R4)` does not multiply it:
+
+| | op-amp term | comparator term | scatter | vs 4.0 mV margin |
+|---|---|---|---|---|
+| typ | 4.7 × 0.4 = 1.9 | 0.4 | 2.3 mV | **1.76×** |
+| max | 4.7 × 1.5 = 7.1 | **6.0** | 13.1 mV | **0.31×** |
+
+At worst case the comparator term alone exceeds the margin, so **no choice of
+detector gain passes**. That retracts the low-gain proposal above: dropping the
+gain to 1.96 moves scatter 13.1 → 8.9 mV, still short, and pays for it by
+halving the signal.
+
+### And `head` only measures one of the two failures
+
+Lower gain shrinks the scatter but also flattens the crossing, so the
+comparator sits inside its own offset band for longer. Measured time within
+±6 mV of the threshold at the first rising crossing: gain 1.57 → 351 µs,
+4.70 → 405 µs, 10.0 → 25 µs. The two metrics ask for opposite gains, which is
+drawn in `docs/diagrams/18_head.svg`.
+
+So the way out is not gain: it is a lower-offset or hysteretic comparator, or a
+per-channel bring-up trim. Drift is ±1 µV/°C, so a trim holds.
+
+## 8. tau is a ripple decision, not a smoothing one
+
+At short tau the envelope stops being an envelope. Tone at each channel's own
+centre, ripple against the rise it sits on:
+
+| ch | f_c | period | tau=0.69 ms (C3 8n) | tau=3.13 ms (C3 100n) |
+|---|---|---|---|---|
+| 0 | 166 Hz | 6.02 ms | 252 mV ripple / 228 rise | 179 / 230 |
+| 3 | 631 Hz | 1.58 ms | 241 / 226 | 88 / 256 |
+| 6 | 1349 Hz | 0.74 ms | 204 / 224 | 101 / 247 |
+| 15 | 6761 Hz | 0.15 ms | 87 / 134 | **3 / 76** |
+
+At C3 = 8 nF the ripple equals the signal on every channel — that is a
+rectified carrier, not a smoothed envelope, and C3 has stopped doing its job.
+At 100 nF the top channels are properly smoothed and only the bottom ones
+ripple, which is physics: ch0's 6 ms period is comparable to the 10 ms
+discretisation window, so no tau inside the budget can smooth it.
+
+Accuracy probably survives either way — `envelope_reduce: max` takes the peak
+over 10 ms, and the peak of a rectified carrier is its amplitude, so the binary
+image is the same. What ripple costs is comparator transitions: 107 threshold
+crossings in a 40 ms burst at C3 = 8 nF against 3 at 100 nF.

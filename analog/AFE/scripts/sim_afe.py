@@ -122,10 +122,18 @@ def _measure(csv: pathlib.Path, q: float) -> dict:
 # which matters: the scatter is a FIXED per-channel DC error, so it is
 # trimmable in principle rather than something that wanders at run time.
 VOS_TYP, VOS_MAX, VOS_TEMP = 0.4, 1.5, 2.0
-COMP_OFFSET_MV = 1.0
+
+# LPV7215 comparator, 1.8 V table (SNOS977): V_OS typ +-0.3..0.4 mV,
+# max +-5..6 mV at 25 C, +-7..8 mV over temperature. The typ-to-max ratio is
+# 12x-20x, far wider than the op-amp's 3.75x, and this term does NOT scale
+# with detector gain -- it lands directly on the comparator input. At max it
+# alone exceeds the worst channel's 4 mV margin, which makes it, not the
+# detector gain, the binding term.
+COMP_TYP, COMP_MAX, COMP_TEMP = 0.4, 6.0, 8.0
 
 
-def table(rows: list[dict], vos_mv: float = VOS_MAX) -> None:
+def table(rows: list[dict], vos_mv: float = VOS_MAX,
+          comp_mv: float = COMP_MAX) -> None:
     """Compare runs. The last two columns are the ones that trade off.
 
     vos_mv defaults to the datasheet MAX. Pass VOS_TYP for the typical case --
@@ -138,7 +146,7 @@ def table(rows: list[dict], vos_mv: float = VOS_MAX) -> None:
     print(h)
     print("-" * len(h))
     for r in rows:
-        scatter = vos_mv * r["scatter_gain"] + COMP_OFFSET_MV
+        scatter = vos_mv * r["scatter_gain"] + comp_mv
         print(f"{r['tag']:>10} {r['r4']/1e3:>5.0f}k {r['r5']/1e3:>6.0f}k "
               f"{r['c3']*1e9:>6.2f}n {r['preamp']:>4.0f} {r['gain']:>6.2f} "
               f"{r['quiescent']*1e3:>7.1f}m {r['rise_mv']:>6.1f}m "
@@ -146,8 +154,9 @@ def table(rows: list[dict], vos_mv: float = VOS_MAX) -> None:
               f"{r['min_margin_mv']:>6.2f}m {scatter:>7.2f}m "
               f"{r['min_margin_mv']/scatter:>5.2f}x")
     print()
-    print(f"V_OS    = {vos_mv} mV (OPA379: typ {VOS_TYP}, max {VOS_MAX}, "
-          f"{VOS_TEMP} over temp).")
+    print(f"V_OS    = {vos_mv} mV op-amp (OPA379 typ {VOS_TYP} / max {VOS_MAX})"
+          f"  +  {comp_mv} mV comparator (LPV7215 typ {COMP_TYP} / max {COMP_MAX}).")
+    print("          The comparator term does NOT scale with detector gain.")
     print("floor   = LSE bottom T*ln16. Fixed by n*V_T -- does NOT scale with gain.")
     print("minMrg  = worst channel's silence margin = alpha_min * floor.")
     print("scatter = per-channel quiescent spread, (R5/R4)*Vos + comparator offset.")
