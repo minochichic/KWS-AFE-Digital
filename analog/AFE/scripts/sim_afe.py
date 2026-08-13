@@ -117,16 +117,28 @@ def _measure(csv: pathlib.Path, q: float) -> dict:
                 fire_pct=sum(vo[k] > 0.9 for k in range(lo, hi)) / (hi - lo) * 100)
 
 
-def table(rows: list[dict]) -> None:
-    """Compare runs. The last two columns are the ones that trade off."""
+# OPA379 datasheet (SBOS347D) table 1: V_OS typ 0.4 mV, max 1.5 mV at 25 C,
+# 2 mV over -40..+125 C. Drift 1.5 uV/C is negligible here (0.1 mV over 60 C),
+# which matters: the scatter is a FIXED per-channel DC error, so it is
+# trimmable in principle rather than something that wanders at run time.
+VOS_TYP, VOS_MAX, VOS_TEMP = 0.4, 1.5, 2.0
+COMP_OFFSET_MV = 1.0
+
+
+def table(rows: list[dict], vos_mv: float = VOS_MAX) -> None:
+    """Compare runs. The last two columns are the ones that trade off.
+
+    vos_mv defaults to the datasheet MAX. Pass VOS_TYP for the typical case --
+    the two differ by 3.75x and the design sits between them.
+    """
     h = (f"{'tag':>10} {'R4':>6} {'R5':>7} {'C3':>7} {'pre':>4} {'gain':>6} "
          f"{'quiesc':>8} {'rise':>7} {'tau':>6} {'floor':>6} {'minMrg':>7} "
          f"{'scatter':>8} {'head':>5}")
+    print(f"(V_OS = {vos_mv} mV)")
     print(h)
     print("-" * len(h))
     for r in rows:
-        # +-0.5 mV OPA379 Vos, amplified by R5/R4, plus ~1 mV comparator offset
-        scatter = 0.5 * r["scatter_gain"] + 1.0
+        scatter = vos_mv * r["scatter_gain"] + COMP_OFFSET_MV
         print(f"{r['tag']:>10} {r['r4']/1e3:>5.0f}k {r['r5']/1e3:>6.0f}k "
               f"{r['c3']*1e9:>6.2f}n {r['preamp']:>4.0f} {r['gain']:>6.2f} "
               f"{r['quiescent']*1e3:>7.1f}m {r['rise_mv']:>6.1f}m "
@@ -134,6 +146,8 @@ def table(rows: list[dict]) -> None:
               f"{r['min_margin_mv']:>6.2f}m {scatter:>7.2f}m "
               f"{r['min_margin_mv']/scatter:>5.2f}x")
     print()
+    print(f"V_OS    = {vos_mv} mV (OPA379: typ {VOS_TYP}, max {VOS_MAX}, "
+          f"{VOS_TEMP} over temp).")
     print("floor   = LSE bottom T*ln16. Fixed by n*V_T -- does NOT scale with gain.")
     print("minMrg  = worst channel's silence margin = alpha_min * floor.")
     print("scatter = per-channel quiescent spread, (R5/R4)*Vos + comparator offset.")

@@ -80,15 +80,10 @@ failure rather than a score. It also means the LSE floor is not a side effect
 of modelling the diode honestly — it is the thing that makes the shared-max
 threshold work at all.
 
-The flip side is that the worst channel has only 4.0 mV of it, against:
-
-- per-channel quiescent scatter, `(R5/R4)·ΔVos` = 4.7 × ΔVos ≈ ±2.4 mV at the
-  OPA379 datasheet limit of ±0.5 mV
-- comparator input offset, ~1 mV
-
-≈3.4 mV of worst-case perturbation against 4.0 mV of margin. Positive, but
-1.18×. **This is the number to watch at bring-up**, and the case for a small
-deliberate positive δ if the measured spread comes in worse than typical.
+The flip side is that the worst channel has only 4.0 mV of it, and what eats
+it is the per-channel quiescent scatter of §3. See §7 — that comparison is
+close at typical V_OS and negative at the datasheet maximum, and it is the
+binding constraint on the whole design.
 
 ## 3. The envelope quiescent is an amplified op-amp offset
 
@@ -168,3 +163,66 @@ board's 917.83 mV suggests the model is not far wrong here.
 One actionable hint if it holds up: biasing below mid-rail removed the offset
 entirely in simulation. That trades away negative-half headroom, so it is a
 real decision rather than a free win — flagged, not taken.
+
+## 7. `head` — the constraint that binds
+
+The silence margin (§2) and the quiescent scatter (§3) are the same design
+pulling in two directions, and `sim_afe.table()` reports the ratio:
+
+    margin_c = alpha_c · T·ln16                  grows with alpha only
+    scatter  = (R5/R4) · V_OS + comparator_off   grows with detector gain
+    head     = min(margin) / scatter
+
+**Below 1×, the low-alpha channels sit below their own trip point at silence
+and free-run on noise.** They stop carrying information — a dead channel, in
+the sense CLAUDE.md §3.5 uses.
+
+The asymmetry is the whole point. `T·ln16` is `n·V_T·ln16` — thermal, fixed at
+~70 mV whatever the circuit does. The scatter is an op-amp offset multiplied
+by the detector gain. **So detector gain buys signal and pays for it in
+margin, one for one, and the floor never follows.**
+
+### The numbers
+
+OPA379 (SBOS347D): V_OS typ 0.4 mV, **max 1.5 mV**, 2 mV over −40..+125 °C.
+Drift is 1.5 µV/°C, so this is a fixed per-device DC error, not something that
+wanders at run time. Simulated:
+
+| | R4 | R5 | C3 | preamp | gain | rise | τ | head @typ | head @max |
+|---|---|---|---|---|---|---|---|---|---|
+| original board | 10k | 47k | 100n | 10 | 4.70 | 247 mV | 3.13 ms | 1.39× | 0.50× |
+| analog's current | 30k | 350k | 2.0n | 10 | 11.67 | 555 mV | 0.75 ms | **0.70×** | **0.21×** |
+| **proposed** | 10k | 47k | 8.0n | **20** | 4.70 | 442 mV | 1.29 ms | **1.39×** | **0.50×** |
+
+The proposed row is the finding: **same τ target and more signal than the
+current values, at 2.8× less scatter**, because the level comes from the
+preamp instead of the detector.
+
+Preamp gain is free. 5 vs 10 vs 20 vs 30 changes `rise` and leaves quiescent,
+floor, margin and scatter bit-for-bit identical — it sits ahead of the filter,
+so its own offset never reaches the detector's summing node.
+
+And R5 = 350 kΩ was never needed for a short τ. `τ = R5·C3`, so 47 kΩ with
+8 nF gets there just as well, without the 2.5× gain that comes attached.
+
+### What does not fix it
+
+- **δ.** Restoring head at the current gain needs δ ≈ +15 mV, i.e. floor_frac
+  ≈ 0.22. floor_frac 0.05 already killed four channels (test 0.732).
+- **Per-channel α trim.** Absorbing the offset needs Δα = scatter/floor = 0.27
+  at worst case. On ch14's α = 0.057 that is a 6× change — it kills the very
+  channel it was meant to save.
+
+Both work at the *typical* offset and neither survives the maximum, which is
+the same statement as the table.
+
+### Open
+
+The bias rail sits at 0.9 V, and the datasheet specifies CMRR only for
+V_CM ≤ (V+) − 1 V = **0.8 V on a 1.8 V supply**. We are above it. That is
+consistent with §6's macromodel behaviour — ~0 offset at V_CM = 0.5 V, −5 mV
+at mid-rail — which now looks less like a model artifact than it did.
+
+Whether biasing lower is worth its headroom cost has not been worked out. It
+is the one remaining lever that attacks the offset at the source rather than
+dividing it down afterwards.
