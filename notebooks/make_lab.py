@@ -132,6 +132,16 @@ CONFIRMED = {}
 BEST = {'afe.lse_temp_frac': 0.78}     # frac 은 아직 확정 아님 (평탄대 13~50 mV)
 XMIX = {'afe.normalize': 'xmix'}       # 하드 max 대조군이 필요할 때만
 
+# ── 트랙 2: 다이오드-OR 없는 고정 임계 ────────────────────────────────────
+# 정규화 자체를 빼고, 채널마다 자기 R7/R8 분압으로 절대 전압과 비교한다.
+# 다이오드 16개 + 버퍼 + 공유 V_ref 가 통째로 사라진다 (대신 분압이 16벌).
+# 동료 회로가 다이오드-OR 을 못 해줄 때의 대비이자, "정규화가 정말 필요한가"의 대조군.
+#
+# ⚠️ 기록된 fixed 0.726 은 **낡았다** (2026-08-05, Stage 3). 그 뒤 spice 필터뱅크,
+#    sqrt 압축, f_max 8000, 게인 증강이 전부 들어왔고 그 넷은 트랙 2 에도 적용된다.
+#    그래서 0.726 을 트랙 2 의 예상치로 쓰지 말 것 -- 다시 재야 한다.
+FIXED = {'afe.normalize': 'fixed'}     # lse_temp_frac / xmax_floor_frac 은 무관해진다
+
 # δ 추정에 쓸 클립 수. 배치 하나(128)로는 2% 분위수가 시드에 2.4배 흔들렸다.
 N_INIT_CLIPS = 2048
 
@@ -629,6 +639,76 @@ def floor_probe(fracs=(0.0, 0.02, 0.03, 0.05, 0.10), over=None, n_clips=None):
 
 floor_probe()'''),
 
+md("""## 6f. 게인 스윕 — **두 트랙의 공통 축** (학습 없음)
+
+§6d 의 `frac_sweep` 은 `xlse` 전용이다 (`fixed` 에는 frac 이 없다). 두 트랙을 나란히
+놓으려면 **둘 다에 물리적으로 의미가 같은** 축이 필요한데, 그게 입력 게인이다 —
+말하는 사람이 마이크에서 멀어지거나 가까워지는 것.
+
+`xlse` 에서는 게인 스윕과 frac 스윕이 δ=0 일 때 **정확히 같은 것**임을 이미 확인했다
+(수치로 1e-7 이내). 그러니 게인 축 하나로 두 트랙을 같은 그림에 올릴 수 있다.
+
+| 트랙 | 음량 방어 | 기대 |
+|---|---|---|
+| `xl_g12` (xlse) | **구조적** 부분 불변 + 증강 | 완만한 낙폭 |
+| `fx_g12` (fixed) | **증강뿐** (분모가 없다) | 가파를 것 — 얼마나인지가 질문 |
+
+> `fixed` 는 `_DIVIDER_FORM` 이 아니라 **threshold 클램프가 없다.** `xmix` 에서
+> 채널이 죽은 적이 있어서 클램프를 넣었는데(alpha 1.344), `fixed` 에는 그 보호가
+> 없다. 학습 뒤 `dead_channels()` 로 관측 범위 밖으로 걸어나간 채널이 있는지 본다."""),
+code('''def gain_sweep(tag, gains=(-18,-12,-6,-3,0,3,6,12,18), **over):
+    """정규화 방식과 무관한 공통 축: 입력 게인 [dB]."""
+    cfg, afe, model, _ = load_run(tag, **over)
+    T, ld = cfg.afe.time_steps, test_loader(cfg)
+    print(f'=== {tag} ({cfg.afe.normalize}) ===')
+    print(f'{"gain[dB]":>9}{"test":>9}{"Δ vs 0":>9}')
+    base = None
+    rows = []
+    for g in gains:
+        a = accuracy(afe, model, ld, T, gain_db=float(g))
+        if g == 0:
+            base = a
+        rows.append((g, a))
+    for g, a in rows:
+        d = '' if base is None else f'{(a - base) * 100:+8.1f}'
+        print(f'{g:>9}{a:>9.4f}{d:>9}')
+    accs = [a for _, a in rows]
+    print(f'\\n평균 {sum(accs) / len(accs):.4f}   최저 {min(accs):.4f}   '
+          f'낙폭 {(max(accs) - min(accs)) * 100:.1f}pp')
+    return rows
+
+
+@torch.no_grad()
+def dead_channels(tag, n_clips=512, **over):
+    """threshold 가 그 채널의 관측 엔벨로프 범위 밖으로 나갔는가.
+
+    밖이면 그 채널 비교기는 항상 0 이거나 항상 1 이다 -- 정확도에는 조용히
+    반영되고 하드웨어에서는 납땜해봐야 아무 일도 안 한다.
+    """
+    cfg, afe, model, _ = load_run(tag, **over)
+    env = afe._envelopes_chunked(
+        collect_init_batch(test_loader(cfg), n_clips=n_clips).to(DEV), raw=False)
+    lo = env.amin(dim=(0, 2))           # [C] 채널별 관측 최소
+    hi = env.amax(dim=(0, 2))
+    thr = afe.threshold.detach().view(-1)
+    print(f'=== {tag} ({cfg.afe.normalize}) — {n_clips} 클립 ===')
+    print(f'{"ch":>3}{"thr":>9}{"env min":>10}{"env max":>10}   판정')
+    n_dead = 0
+    for c in range(thr.numel()):
+        t, l, h = thr[c].item(), lo[c].item(), hi[c].item()
+        if t <= l:
+            v, n_dead = '항상 1 (죽음)', n_dead + 1
+        elif t >= h:
+            v, n_dead = '항상 0 (죽음)', n_dead + 1
+        else:
+            frac_above = (env[:, c] > t).float().mean().item()
+            v = f'살아있음 (발화 {frac_above * 100:.1f}%)'
+        print(f'{c:>3}{t:>9.4f}{l:>10.4f}{h:>10.4f}   {v}')
+    print(f'\\n죽은 채널 {n_dead}/{thr.numel()}')
+    return n_dead
+
+print('gain_sweep / dead_channels 준비됨')'''),
+
 md("""## 7. 학습 — ⚠️ 전부 주석
 
 돌릴 줄 **하나만** 풀고, 끝나면 다시 주석 처리한다. 각 100 에폭.
@@ -711,10 +791,19 @@ code("""# ⚠️ 전부 주석이다. 순차 실행이 100 에폭을 시작하�
 # run('xl_k2', {**BEST, 'afe.comparators_per_channel': 2})
 # run('xl_gr', {**BEST, 'afe.spice_gain_restore': True})
 
+# ══ 트랙 2 — 다이오드-OR 없는 고정 임계 ═══════════════════════════════════
+#   트랙 1(xlse)과 **같은 프론트엔드·같은 증강**으로 돌려야 비교가 성립한다.
+#   fixed 는 정규화가 없어 음량에 절대적으로 민감하므로, 게인 증강이
+#   유일한 방어다 -> ②를 주력으로 본다. ①은 증강의 기여를 재는 대조군.
+# run('fx_d0',  FIXED)                                          # 증강 없음 (대조군)
+# run('fx_g12', {**FIXED, 'data.aug_gain_db': [-12.0, 12.0]})   # ★ 트랙 2 본선
+
 # ── 끝나면: 표 + 증강이 실제로 먹었는지 ───────────────────────────────────
 # results()
-# frac_sweep('xl_g12')        # 낙폭이 27.4pp 보다 작아졌나
-# offset_report('xl_nz')      # room 이 zero 에 가까워졌나"""),
+# frac_sweep('xl_g12')        # 낙폭이 27.4pp 보다 작아졌나 (xlse 전용)
+# offset_report('xl_nz')      # room 이 zero 에 가까워졌나
+# gain_sweep('xl_g12'); gain_sweep('fx_g12')   # ★ 두 트랙 공통 축 (§6f)
+# dead_channels('fx_g12')     # fixed 는 threshold 클램프가 없다 (§6f)"""),
 
 md("""## 8. 하드웨어 내보내기 — α → 저항비
 
