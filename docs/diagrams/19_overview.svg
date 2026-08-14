@@ -1,0 +1,159 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 976" width="1240" height="976">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c3cbd9"/></marker><marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#3f9a5d"/></marker></defs>
+<rect width="1240" height="976" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">KWS AFE — 지금 어디에 있고, 다음에 무엇을 하는가</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">16채널 아날로그 프론트엔드 → 부분 이진화 MatchboxNet → 12-class  |  아날로그=동료 담당, FPGA=우리 담당</text>
+<rect x="24" y="84" width="1192" height="176" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="108" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  물리 체인 — 소리에서 키워드까지</text>
+<rect x="36" y="120" width="700" height="20" rx="5" fill="#fdf3e3" stroke="#d9a441" stroke-width="1"/>
+<text x="386" y="134" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#8a6410" text-anchor="middle" font-weight="600">동료 담당 — 아날로그 회로 (PCB)</text>
+<rect x="748" y="120" width="456" height="20" rx="5" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1"/>
+<text x="976.0" y="134" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#2f5aa0" text-anchor="middle" font-weight="600">우리 담당 — FPGA (KC705)</text>
+<rect x="36.0" y="152" width="120" height="60" rx="8" fill="#fdf3e3" stroke="#d9a441" stroke-width="1.4"/>
+<text x="96.0" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">마이크</text>
+<text x="96.0" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">MM20-33366</text>
+<line x1="157.0" y1="182.0" x2="163.5" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="164.5" y="152" width="120" height="60" rx="8" fill="#fdf3e3" stroke="#d9a441" stroke-width="1.4"/>
+<text x="224.5" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">프리앰프</text>
+<text x="224.5" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">×10</text>
+<line x1="285.5" y1="182.0" x2="292.0" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="293.0" y="152" width="120" height="60" rx="8" fill="#fdf3e3" stroke="#d9a441" stroke-width="1.4"/>
+<text x="353.0" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">GIC 필터 ×16</text>
+<text x="353.0" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">166–6761 Hz</text>
+<line x1="414.0" y1="182.0" x2="420.5" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="421.5" y="152" width="120" height="60" rx="8" fill="#fdf3e3" stroke="#d9a441" stroke-width="1.4"/>
+<text x="481.5" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">검출기 ×16</text>
+<text x="481.5" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">정류+평활</text>
+<line x1="542.5" y1="182.0" x2="549.0" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="550.0" y="152" width="120" height="60" rx="8" fill="#fff8e6" stroke="#c9902a" stroke-width="1.4"/>
+<text x="610.0" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">★ 분기점</text>
+<text x="610.0" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">트랙 1 / 2</text>
+<line x1="671.0" y1="182.0" x2="677.5" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="678.5" y="152" width="120" height="60" rx="8" fill="#fdf3e3" stroke="#d9a441" stroke-width="1.4"/>
+<text x="738.5" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">비교기 ×16</text>
+<text x="738.5" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">→ 0/1 펄스</text>
+<line x1="799.5" y1="182.0" x2="806.0" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="807.0" y="152" width="120" height="60" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="867.0" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">동기화 + OR</text>
+<text x="867.0" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">10 ms 창</text>
+<line x1="928.0" y1="182.0" x2="934.5" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="935.5" y="152" width="120" height="60" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="995.5" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">BinaryMatchboxNet</text>
+<text x="995.5" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">[16,128] 이진</text>
+<line x1="1056.5" y1="182.0" x2="1063.0" y2="182.0" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="1064.0" y="152" width="120" height="60" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="1124.0" y="177" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">12 클래스</text>
+<text x="1124.0" y="195" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">yes/no/…</text>
+<line x1="802.75" y1="116" x2="802.75" y2="248" stroke="#1c2333" stroke-width="2.4" stroke-dasharray="7 4"/>
+<text x="802.75" y="234" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="700">경 계</text>
+<text x="802.75" y="250" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">16가닥 + 프레임 타이밍  ·  그 외에는 아무것도 넘어오지 않는다</text>
+<rect x="24" y="280" width="1192" height="214" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="304" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  두 트랙 — 갈리는 곳은 ★ 한 군데뿐이다</text>
+<text x="44" y="323" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">검출기 16채널을 비교기에 어떻게 물리느냐. 그 앞뒤는 완전히 같다.</text>
+<rect x="36.0" y="336" width="577.0" height="138" rx="9" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="50.0" y="359" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="start" font-weight="700">트랙 1 — xlse (다이오드-OR)</text>
+<text x="599.0" y="359" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="end" font-weight="400">xl_g12</text>
+<text x="50.0" y="382" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">·  다이오드 16개 → 한 노드에서 wired-OR</text>
+<text x="50.0" y="399" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">·  버퍼 1개 + 공유 분압 1벌 → V_ref</text>
+<text x="50.0" y="416" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">·  다이오드가 만드는 것은 max 가 아니라 log-sum-exp</text>
+<text x="50.0" y="441" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">음량 방어: 구조적 부분 불변 + 게인 증강</text>
+<rect x="48.0" y="450" width="553.0" height="20" rx="5" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1"/>
+<text x="324.5" y="464" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">벤치마크 0.8445 · 배치 추정 ≈0.69 (측정 완료)</text>
+<rect x="627.0" y="336" width="577.0" height="138" rx="9" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.4"/>
+<text x="641.0" y="359" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="start" font-weight="700">트랙 2 — fixed (다이오드-OR 없음)</text>
+<text x="1190.0" y="359" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="end" font-weight="400">fx_g12</text>
+<text x="641.0" y="382" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">·  다이오드 0 · 버퍼 0 · 공유 노드 없음</text>
+<text x="641.0" y="399" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">·  채널마다 자기 분압 → 절대 임계 16벌</text>
+<text x="641.0" y="416" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">·  정규화 자체가 없다</text>
+<text x="641.0" y="441" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">음량 방어: 게인 증강뿐 (분모가 없다)</text>
+<rect x="639.0" y="450" width="553.0" height="20" rx="5" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1"/>
+<text x="915.5" y="464" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">재측정 필요 — 기록된 0.726 은 낡았다</text>
+<text x="620.0" y="482" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="middle" font-weight="400">공통 잣대:  §6f  gain_sweep()  — 화자가 마이크에서 멀어지고 가까워지는 축. 정규화 방식과 무관하게 물리적 의미가 같다.</text>
+<rect x="24" y="514" width="1192" height="116" rx="12" fill="#f7fbf8" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="44" y="539" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  경계 계약 (docs/ICD.md) — 아날로그가 바뀌어도 RTL 은 안 바뀐다</text>
+<rect x="40" y="550" width="520" height="68" rx="8" fill="#ffffff" stroke="#c3cbd9" stroke-width="1"/>
+<text x="300" y="568" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#2f7a4c" text-anchor="middle" font-weight="600">이것들이 바뀌면 →  가중치만 재학습, RTL 무수정</text>
+<text x="54" y="590" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">· 필터 f_c / Q</text>
+<text x="226" y="590" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">· 채널 threshold (R7/R8)</text>
+<text x="398" y="590" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">· 프리앰프 이득 (frac)</text>
+<text x="54" y="607" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">· V_ref 오프셋 (δ)</text>
+<text x="226" y="607" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">· 검출기 τ</text>
+<text x="398" y="607" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">· 마이크 교체</text>
+<rect x="578" y="550" width="300" height="68" rx="8" fill="#ffffff" stroke="#c3cbd9" stroke-width="1"/>
+<text x="728" y="568" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">이것들만 →  파라미터 1줄</text>
+<text x="592" y="588" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">· 채널 수 16 → N</text>
+<text x="866" y="588" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="end" font-weight="400">N_CH</text>
+<text x="592" y="603" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">· 비교기 극성 반전</text>
+<text x="866" y="603" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="end" font-weight="400">CMP_INVERT</text>
+<text x="592" y="618" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">· 프레임 폭 10 ms → x</text>
+<text x="866" y="618" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="end" font-weight="400">FRAME_CYCLES</text>
+<rect x="896" y="550" width="304" height="68" rx="8" fill="#ffffff" stroke="#c3cbd9" stroke-width="1"/>
+<text x="1048.0" y="568" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">그래서 지키는 규칙</text>
+<text x="910" y="588" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">· 가중치 → BRAM $readmemh</text>
+<text x="910" y="603" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">· 치수 → 매니페스트가 생성</text>
+<text x="910" y="618" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">· 로직에 상수로 박지 않는다</text>
+<rect x="24" y="648" width="1192" height="304" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="673" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">D.  진행 순서 — FPGA 트랙</text>
+<text x="44" y="692" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">가로 = 의존 순서. 왼쪽이 끝나야 오른쪽이 시작된다.</text>
+<rect x="40.0" y="710" width="152" height="108" rx="9" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
+<text x="52.0" y="732" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="600">P5-0</text>
+<rect x="130.0" y="720" width="52" height="17" rx="8" fill="#ffffff" stroke="#3f9a5d" stroke-width="1"/>
+<text x="156.0" y="732" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#3f9a5d" text-anchor="middle" font-weight="700">완료</text>
+<text x="116.0" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">경계 규약</text>
+<text x="116.0" y="790" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">docs/ICD.md</text>
+<text x="116.0" y="806" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">동료와 나눌 계약</text>
+<line x1="193.0" y1="764.0" x2="203.4" y2="764.0" stroke="#c3cbd9" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="204.4" y="710" width="152" height="108" rx="9" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.9"/>
+<text x="216.4" y="732" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="600">P5-1</text>
+<rect x="294.4" y="720" width="52" height="17" rx="8" fill="#ffffff" stroke="#2f6fd0" stroke-width="1"/>
+<text x="320.4" y="732" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#2f6fd0" text-anchor="middle" font-weight="700">▶ 다음</text>
+<text x="280.4" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">비트폭 실측</text>
+<text x="280.4" y="790" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">export/ranges.py</text>
+<text x="280.4" y="806" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">노트북 §8b — 다음 실행</text>
+<line x1="357.4" y1="764.0" x2="367.79999999999995" y2="764.0" stroke="#c3cbd9" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="368.8" y="710" width="152" height="108" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<text x="380.8" y="732" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="600">P5-c</text>
+<rect x="458.79999999999995" y="720" width="52" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="484.79999999999995" y="732" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="444.8" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">매니페스트</text>
+<text x="444.8" y="773" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">+ ROM .hex</text>
+<text x="444.8" y="790" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">parameters.vh</text>
+<text x="444.8" y="806" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">치수 자동 생성</text>
+<line x1="521.8" y1="764.0" x2="532.1999999999999" y2="764.0" stroke="#c3cbd9" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="533.2" y="710" width="152" height="108" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<text x="545.2" y="732" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="600">P5-d</text>
+<rect x="623.2" y="720" width="52" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="649.2" y="732" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="609.2" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">골든 벡터</text>
+<text x="609.2" y="790" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">층별 중간 활성</text>
+<text x="609.2" y="806" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">없으면 디버깅 불가</text>
+<line x1="686.2" y1="764.0" x2="696.6" y2="764.0" stroke="#c3cbd9" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="697.6" y="710" width="152" height="108" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<text x="709.6" y="732" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="600">P5-e</text>
+<rect x="787.6" y="720" width="52" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="813.6" y="732" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="773.6" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">RTL</text>
+<text x="773.6" y="790" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">PE → TCS → top</text>
+<text x="773.6" y="806" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">바텀업</text>
+<line x1="850.6" y1="764.0" x2="861.0" y2="764.0" stroke="#c3cbd9" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="862.0" y="710" width="152" height="108" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<text x="874.0" y="732" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="600">P5-f</text>
+<rect x="952.0" y="720" width="52" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="978.0" y="732" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="938.0" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">검증</text>
+<text x="938.0" y="790" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">비트 정확 일치</text>
+<text x="938.0" y="806" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">골든 벡터 대조</text>
+<line x1="1015.0" y1="764.0" x2="1025.4" y2="764.0" stroke="#c3cbd9" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="1026.4" y="710" width="152" height="108" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<text x="1038.4" y="732" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="600">P5-g</text>
+<rect x="1116.4" y="720" width="52" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="1142.4" y="732" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="1102.4" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">합성·보드</text>
+<text x="1102.4" y="790" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">타이밍 · 비트스트림</text>
+<text x="1102.4" y="806" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">KC705</text>
+<path d="M280.4 818 L280.4 848 L444.8 848 L444.8 822" fill="none" stroke="#3f9a5d" stroke-width="1.8" stroke-dasharray="5 3" marker-end="url(#ag)"/>
+<text x="484.8" y="852" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="start" font-weight="400">실측한 비트폭이 매니페스트의 입력이 된다 — 재지 않고 최악값으로 잡으면 데이터패스 전체가 과설계된다</text>
+<rect x="40" y="900" width="1136" height="38" rx="8" fill="#fdfaf3" stroke="#d9a441" stroke-width="1.2" stroke-dasharray="6 4"/>
+<text x="56" y="924" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#8a6410" text-anchor="start" font-weight="700">병행 (학습 필요 없음):</text>
+<text x="232" y="924" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">트랙 2 학습 fx_g12  ·  §6f gain_sweep 두 트랙 비교  ·  dead_channels 진단  ·  P3-b 최대 확신도 선택  ·  동료 답변 대기: ICD §7 (비교기 레벨, 핀↔채널 매핑)</text>
+</svg>
