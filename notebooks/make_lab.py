@@ -806,6 +806,53 @@ code('''# 주파수: 채널 중심 몇 개에 톤을 넣어본다 (각 ~60초)
 # 프리앰프: 5배 vs 10배 vs 20배
 # table([sim(f"pre{g}", r4=30e3, r5=350e3, tau_ms=0.7, preamp=g) for g in (5, 10, 20)])'''),
 
+md("""## 8b. FPGA 비트폭 — RTL 을 쓰기 **전에** 잰다 (학습 없음, 몇 분)
+
+이진 누산기는 `n = 2*popcount(XNOR) - N` 이라 이론상 `±N` (N = K·C_in/groups) 이다.
+그 값으로 데이터패스를 잡으면 **맞지만 낭비**다 — 모든 입력이 모든 가중치와 일치해야
+도달하는 값이고, 학습된 망은 거기 근처도 안 간다. residual 은 더 심하다:
+`acc + res` 는 경계가 더해지므로 최악값이 두 배가 되는데, 실제로는 두 항이 동시에
+극단으로 가지 않는다.
+
+그래서 **잰다.** 실제 test 세트를 통과시켜 지점별 진짜 min/max 를 기록하고,
+거기에 guard 비트를 얹어 폭을 정한다.
+
+| 지점 | 무엇인가 |
+|---|---|
+| `binary` | 이진 conv 의 **alpha 적용 전 정수** 누산기 (`fuse.py` 의 threshold 가 이 값 기준) |
+| `residual` | 블록 마지막 `post_bn` 의 입력 = `pw_acc + skip_acc`. 두 항 다 unscaled 라 정확히 정수 |
+| `real` | int8 / 고정소수점 단 (conv1·conv3·conv4). 폭은 양자화 방식에서 나오므로 범위만 보고한다 |
+
+> ⚠️ 잰 범위는 **본 데이터만큼만** 믿을 수 있다. `guard_bits=1` 이 기본이고,
+> RTL 에는 saturate 를 같이 넣는다. 분포 밖 입력이 누산기를 wrap 시키면 안 된다."""),
+code('''from export.ranges import measure_ranges, print_range_report, to_json
+
+def bitwidths(tag, max_batches=None, guard_bits=1, save=True):
+    """그 런의 체크포인트로 전 지점 정수 범위를 잰다."""
+    cfg, afe, model, _ = load_run(tag)
+    T = cfg.afe.time_steps
+    loader = test_loader(cfg)
+
+    @torch.no_grad()
+    def feed():                      # 로더는 파형을 준다 -> AFE 를 통과시킨다
+        for x, _ in loader:
+            yield (afe(x.to(DEV), target_T=T),)
+
+    sites = measure_ranges(model, feed(), device=DEV, max_batches=max_batches)
+    print(f'=== {tag} ===')
+    print_range_report(sites, guard_bits=guard_bits)
+    if save:
+        to_json(sites, f'runs/{tag}/ranges.json', guard_bits=guard_bits)
+    return sites
+
+print('bitwidths(tag) 준비됨')
+
+# 확정 모델로 재기 (전체 test 세트, 몇 분)
+# sites = bitwidths('xl_g12')
+
+# 빠른 확인만 (2배치)
+# sites = bitwidths('xl_g12', max_batches=2, save=False)'''),
+
 md("""## 9. 잘못된 런 지우기
 
 `resume=True`라 같은 태그로 다시 돌리면 **이어서** 학습한다. 설정을 바꿨으면 반드시
