@@ -667,7 +667,7 @@ md("""## 6f. 게인 스윕 — **두 트랙의 공통 축** (학습 없음)
 code('''def gain_sweep(tag, gains=(-18,-12,-6,-3,0,3,6,12,18), **over):
     """정규화 방식과 무관한 공통 축: 입력 게인 [dB]."""
     cfg, afe, model, _ = load_run(tag, **over)
-    T, ld = cfg.afe.time_steps, test_loader(cfg)
+    T, ld = cfg.model.T, test_loader(cfg)
     print(f'=== {tag} ({cfg.afe.normalize}) ===')
     print(f'{"gain[dB]":>9}{"test":>9}{"Δ vs 0":>9}')
     base = None
@@ -948,7 +948,7 @@ code('''from export.ranges import measure_ranges, print_range_report, to_json
 def bitwidths(tag, max_batches=None, guard_bits=1, save=True):
     """그 런의 체크포인트로 전 지점 정수 범위를 잰다."""
     cfg, afe, model, _ = load_run(tag)
-    T = cfg.afe.time_steps
+    T = cfg.model.T
     loader = test_loader(cfg)
 
     @torch.no_grad()
