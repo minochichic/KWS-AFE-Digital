@@ -76,6 +76,7 @@ class Layer:
     weight_words: int = 0
     thresholds: Optional[str] = None    # ROM basename
     residual_from: Optional[str] = None
+    input_binary: bool = True     # is this layer fed {-1,+1}?
     notes: str = ""
 
 
@@ -85,6 +86,9 @@ class Emitter:
         self.out = out
         self.out.mkdir(parents=True, exist_ok=True)
         self.layers: List[Layer] = []
+        # the AFE hands over {-1,+1}; each stage updates it from its
+        # own output activation, which is the actual dataflow
+        self._stage_in_binary = True
         self.roms: Dict[str, Dict[str, Any]] = {}
 
     # -- ROM writers ---------------------------------------------------- #
@@ -163,25 +167,21 @@ class Emitter:
     def _mark_real_inputs(self) -> None:
         """Drop the bound on any layer that is not fed +-1.
 
-        A layer's input is binary iff it is the first (the AFE hands over
-        {-1,+1}) or its predecessor ended in `threshold`. conv2's pointwise
-        ends in bn_relu because conv3 is int8, so conv3 sees real numbers and
-        its `sum|q|` bound is meaningless -- it was reporting 14 bits off an
-        assumption that does not hold there. The honest answer is that conv3
-        and conv4 cannot be sized until the tail's fixed-point format is
-        chosen, so say that instead of printing a number.
+        `input_binary` is recorded during emission, from the dataflow, NOT by
+        walking the layer list. The list order is not the dataflow: a block's
+        skip projection is emitted first (it branches off the block input) and
+        ends in `none`, so a positional rule would decide the depthwise right
+        after it is fed real numbers, when it is fed the same +-1 the skip is.
+        Harmless while only int8/fixed layers are cleared, wrong the moment
+        anything else depends on it.
         """
-        prev_epi = "threshold"                       # the AFE output is +-1
         for l in self.layers:
-            binary_in = prev_epi == "threshold"
-            if not binary_in and l.op in ("int8", "fixed"):
+            if not l.input_binary and l.op in ("int8", "fixed"):
                 l.n_terms, l.acc_bits = 0, 0
                 l.notes = (l.notes + "  " if l.notes else "") + (
                     "input is real (previous stage ends in relu), so sum|q| "
                     "is not a bound. Width follows the tail's fixed-point "
                     "format, still to be chosen.")
-            if l.op != "residual_add":               # the add keeps its feed
-                prev_epi = l.epilogue
 
     def _add(self, layer: Layer) -> Layer:
         layer.acc_bits = signed_bits(-layer.n_terms, layer.n_terms)
@@ -191,6 +191,7 @@ class Emitter:
     # -- walkers --------------------------------------------------------- #
     def _plain(self, name: str, st: Any, mod: PlainStage) -> None:
         act = mod.activation
+        stage_in = self._stage_in_binary
         if mod.dw is not None:                        # separable
             dw, pw = mod.dw, mod.pw
             if isinstance(dw, BinaryConv1d):
@@ -199,7 +200,8 @@ class Emitter:
                                 dw.kernel_size[0], dw.stride[0], dw.dilation[0],
                                 dw.padding[0], dw.groups, self._binary_terms(dw),
                                 epilogue="threshold", weights=f"{n}_w",
-                                weight_words=self._binary_weights(f"{n}_w", dw)))
+                                weight_words=self._binary_weights(f"{n}_w", dw),
+                                input_binary=stage_in))
                 self._thresholds(f"{n}_t", mod.dw_bn, conv_alpha(dw))
                 self.layers[-1].thresholds = f"{n}_t"
             else:
@@ -244,7 +246,12 @@ class Emitter:
                               conv.kernel_size[0], conv.stride[0],
                               conv.dilation[0], conv.padding[0], conv.groups,
                               terms, epilogue=epi, weights=wname,
-                              weight_words=words))
+                              weight_words=words,
+                              # a separable stage re-binarizes between dw and pw,
+                              # so the pointwise is fed +-1 regardless of what
+                              # the stage itself was handed
+                              input_binary=(True if mod.dw is not None
+                                            else stage_in)))
         if epi == "threshold":
             # alpha for an int8 conv is its per-channel scale: the real
             # accumulator is scale_o * (integer accumulator), and fuse() folds
@@ -260,8 +267,12 @@ class Emitter:
         else:
             lay.notes = ("logits -> avg-pool over time -> argmax. Monotone, so "
                          "only ordering matters.")
+        self._stage_in_binary = act == "sign"
 
     def _tcs(self, name: str, mod: BinaryTCSBlock) -> None:
+        # every conv in a TCS block is fed +-1: the block input is a
+        # sign() output, and dw->BN->sign re-binarizes before the pw
+        assert self._stage_in_binary, f"{name}: TCS block fed non-binary"
         last = len(mod.subs) - 1
         skip_terms = 0
         if isinstance(mod.skip, BinaryConv1d):
@@ -310,6 +321,7 @@ class Emitter:
                                    else "block input (identity)")))
                 self._thresholds(f"{n}_t", bn, None)   # both addends unscaled
                 add.thresholds = f"{n}_t"
+        self._stage_in_binary = True          # a TCS block ends in sign()
 
     def run(self, cfg: Any, tag: str) -> Dict[str, Any]:
         for st in self.model.cfg.stages:
