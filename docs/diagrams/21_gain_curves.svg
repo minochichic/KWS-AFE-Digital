@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 700" width="1180" height="700">
+<rect width="1180" height="700" fill="#fcfcfb"/>
+<text x="590.0" y="40" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">소리 크기가 변할 때 — 두 트랙의 공통 축</text>
+<text x="590.0" y="62" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">Speech Commands v2 12-class, test n=4888 (SE 0.52pp).  가로축은 입력 게인 = 화자가 마이크에서 멀어지고 가까워지는 것.</text>
+<line x1="108" y1="461.5" x2="998" y2="461.5" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="465.46666666666664" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.2</text>
+<line x1="108" y1="412.4" x2="998" y2="412.4" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="416.4" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.3</text>
+<line x1="108" y1="363.3" x2="998" y2="363.3" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="367.3333333333333" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.4</text>
+<line x1="108" y1="314.3" x2="998" y2="314.3" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="318.26666666666665" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.5</text>
+<line x1="108" y1="265.2" x2="998" y2="265.2" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="269.20000000000005" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.6</text>
+<line x1="108" y1="216.1" x2="998" y2="216.1" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="220.13333333333338" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.7</text>
+<line x1="108" y1="167.1" x2="998" y2="167.1" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="171.06666666666666" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.8</text>
+<line x1="108" y1="118.0" x2="998" y2="118.0" stroke="#e7eaef" stroke-width="1"/>
+<text x="96" y="122.0" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">0.9</text>
+<line x1="108" y1="118" x2="108" y2="486" stroke="#aab2c0" stroke-width="1.2"/>
+<line x1="108" y1="486" x2="998" y2="486" stroke="#aab2c0" stroke-width="1.2"/>
+<line x1="553.0" y1="118" x2="553.0" y2="486" stroke="#aab2c0" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="553.0" y="110" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">학습 레벨</text>
+<text x="108.0" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">-18</text>
+<text x="256.33333333333337" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">-12</text>
+<text x="404.6666666666667" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">-6</text>
+<text x="478.8333333333333" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">-3</text>
+<text x="553.0" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">0</text>
+<text x="627.1666666666666" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">+3</text>
+<text x="701.3333333333334" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">+6</text>
+<text x="849.6666666666666" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">+12</text>
+<text x="998.0" y="506" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">+18</text>
+<text x="553.0" y="530" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#5b6478" text-anchor="middle" font-weight="400">입력 게인 [dB]</text>
+<text x="62" y="104" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#5b6478" text-anchor="start" font-weight="400">test 정확도</text>
+<path d="M108.0 249.3 L256.3 193.6 L404.7 155.3 L478.8 150.5 L553.0 145.2 L627.2 146.5 L701.3 149.4 L849.7 159.5 L998.0 175.6" fill="none" stroke="#4a7fd0" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="108.0" cy="249.3" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="256.3" cy="193.6" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="404.7" cy="155.3" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="478.8" cy="150.5" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="553.0" cy="145.2" r="5.5" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="627.2" cy="146.5" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="701.3" cy="149.4" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="849.7" cy="159.5" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="998.0" cy="175.6" r="4" fill="#4a7fd0" stroke="#fcfcfb" stroke-width="2"/>
+<path d="M108.0 437.9 L256.3 350.9 L404.7 268.0 L478.8 232.3 L553.0 207.7 L627.2 191.8 L701.3 189.7 L849.7 203.9 L998.0 250.4" fill="none" stroke="#cc6155" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="108.0" cy="437.9" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="256.3" cy="350.9" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="404.7" cy="268.0" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="478.8" cy="232.3" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="553.0" cy="207.7" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="627.2" cy="191.8" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="701.3" cy="189.7" r="5.5" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="849.7" cy="203.9" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="998.0" cy="250.4" r="4" fill="#cc6155" stroke="#fcfcfb" stroke-width="2"/>
+<path d="M108.0 459.0 L256.3 404.3 L404.7 334.7 L478.8 291.9 L553.0 257.2 L627.2 232.9 L701.3 219.4 L849.7 213.5 L998.0 242.6" fill="none" stroke="#d9a441" stroke-width="2" stroke-linejoin="round"/>
+<circle cx="108.0" cy="459.0" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="256.3" cy="404.3" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="404.7" cy="334.7" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="478.8" cy="291.9" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="553.0" cy="257.2" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="627.2" cy="232.9" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="701.3" cy="219.4" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="849.7" cy="213.5" r="5.5" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<circle cx="998.0" cy="242.6" r="4" fill="#d9a441" stroke="#fcfcfb" stroke-width="2"/>
+<text x="1016.0" y="179.55520000000007" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="600">xlse · 다이오드-OR</text>
+<text x="1016.0" y="246.5802666666667" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="600">fixed · ±12 dB 증강</text>
+<path d="M1004.0 250.4 L1012.0 260.6" fill="none" stroke="#cc6155" stroke-width="1.2"/>
+<text x="1016.0" y="264.5802666666667" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="600">fixed · 증강 없음</text>
+<text x="701.3333333333334" y="175.6864" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#cc6155" text-anchor="middle" font-weight="700">최고 +6 dB</text>
+<text x="849.6666666666666" y="199.4837333333333" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#d9a441" text-anchor="middle" font-weight="700">최고 +12 dB</text>
+<rect x="24" y="544" width="416" height="122" rx="10" fill="#ffffff" stroke="#e7eaef" stroke-width="1.4"/>
+<text x="246" y="568" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">평균</text>
+<text x="320" y="568" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">최저</text>
+<text x="398" y="568" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">낙폭</text>
+<rect x="42" y="585" width="10" height="10" rx="2" fill="#4a7fd0"/>
+<text x="58" y="594" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">xl_g12</text>
+<text x="246" y="594" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">0.7952</text>
+<text x="320" y="594" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">0.6324</text>
+<text x="398" y="594" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">21.2pp</text>
+<rect x="42" y="609" width="10" height="10" rx="2" fill="#cc6155"/>
+<text x="58" y="618" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">fx_d0</text>
+<text x="246" y="618" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">0.6123</text>
+<text x="320" y="618" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">0.2480</text>
+<text x="398" y="618" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">50.6pp</text>
+<rect x="42" y="633" width="10" height="10" rx="2" fill="#d9a441"/>
+<text x="58" y="642" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">fx_q75</text>
+<text x="246" y="642" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">0.5392</text>
+<text x="320" y="642" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">0.2050</text>
+<text x="398" y="642" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="400">50.0pp</text>
+<rect x="456" y="544" width="700" height="122" rx="10" fill="#ffffff" stroke="#e7eaef" stroke-width="1.4"/>
+<text x="474" y="570" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13.5" fill="#1c2333" text-anchor="start" font-weight="700">판정 — 다이오드 16개 + 버퍼 1개가 사는 값</text>
+<text x="474" y="592" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">· −18 dB 에서 fixed 는 0.248 로 무너진다 (우연 0.083). xlse 는 0.632.</text>
+<text x="474" y="607" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">· 절대 임계는 소리가 작아지면 아무 채널도 안 켜져 이미지가 통째로 −1 이 된다.</text>
+<text x="474" y="622" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">· 다이오드-OR 은 분모도 같이 작아지므로 상대 패턴이 남는다.</text>
+<text x="474" y="637" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">· 증강으로 낙폭이 안 줄었다 (50.6 → 50.0pp). 상쇄할 분모가 없기 때문.</text>
+<text x="474" y="652" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">· 최고점이 0 dB 가 아닌 +6/+12 dB — 학습 지점에서 이미 비트가 모자란다.</text>
+</svg>
