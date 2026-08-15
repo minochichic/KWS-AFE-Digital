@@ -140,7 +140,15 @@ XMIX = {'afe.normalize': 'xmix'}       # 하드 max 대조군이 필요할 때�
 # ⚠️ 기록된 fixed 0.726 은 **낡았다** (2026-08-05, Stage 3). 그 뒤 spice 필터뱅크,
 #    sqrt 압축, f_max 8000, 게인 증강이 전부 들어왔고 그 넷은 트랙 2 에도 적용된다.
 #    그래서 0.726 을 트랙 2 의 예상치로 쓰지 말 것 -- 다시 재야 한다.
-FIXED = {'afe.normalize': 'fixed'}     # lse_temp_frac / xmax_floor_frac 은 무관해진다
+#
+# ⚠️ `fixed_scale_quantile` 을 **반드시** 같이 준다. 기본값 1.0 = 전역 max 인데,
+#    그건 이상치 클립 하나라 전형적 클립이 [0,1] 의 얇은 조각으로 눌린다.
+#    threshold 가 0.002~0.010 에 앉고 Adam 한 스텝이 그걸 15% 씩 움직여서
+#    학습이 요동친다 (data/afe.py init_fixed_scale 주석에 이미 적혀 있다).
+#    실제로 이걸 빼고 돌린 fx_g12 가 0.5763 + 죽은 비교기 4개로 끝났다.
+#    과거 q 스윕: q=1.0 → 0.693 / **q=0.75 → 0.726** / q=0.6 → 0.653.
+FIXED = {'afe.normalize': 'fixed',     # lse_temp_frac / xmax_floor_frac 은 무관해진다
+         'afe.fixed_scale_quantile': 0.75}
 
 # δ 추정에 쓸 클립 수. 배치 하나(128)로는 2% 분위수가 시드에 2.4배 흔들렸다.
 N_INIT_CLIPS = 2048
@@ -651,7 +659,7 @@ md("""## 6f. 게인 스윕 — **두 트랙의 공통 축** (학습 없음)
 | 트랙 | 음량 방어 | 기대 |
 |---|---|---|
 | `xl_g12` (xlse) | **구조적** 부분 불변 + 증강 | 완만한 낙폭 |
-| `fx_g12` (fixed) | **증강뿐** (분모가 없다) | 가파를 것 — 얼마나인지가 질문 |
+| `fx_q75` (fixed) | **증강뿐** (분모가 없다) | 가파를 것 — 얼마나인지가 질문 |
 
 > `fixed` 는 `_DIVIDER_FORM` 이 아니라 **threshold 클램프가 없다.** `xmix` 에서
 > 채널이 죽은 적이 있어서 클램프를 넣었는데(alpha 1.344), `fixed` 에는 그 보호가
@@ -795,15 +803,18 @@ code("""# ⚠️ 전부 주석이다. 순차 실행이 100 에폭을 시작하�
 #   트랙 1(xlse)과 **같은 프론트엔드·같은 증강**으로 돌려야 비교가 성립한다.
 #   fixed 는 정규화가 없어 음량에 절대적으로 민감하므로, 게인 증강이
 #   유일한 방어다 -> ②를 주력으로 본다. ①은 증강의 기여를 재는 대조군.
-# run('fx_d0',  FIXED)                                          # 증강 없음 (대조군)
-# run('fx_g12', {**FIXED, 'data.aug_gain_db': [-12.0, 12.0]})   # ★ 트랙 2 본선
+#   ⚠️ fx_g12 (q=1.0, 태그 재사용 금지) 는 0.5763 + 죽은 비교기 4개로 폐기됐다.
+#      원인은 모델이 아니라 스케일 조건수 -- FIXED 주석 참조. 새 태그로 간다.
+# run('fx_d0',   FIXED)                                          # 증강 없음 (대조군)
+# run('fx_q75',  {**FIXED, 'data.aug_gain_db': [-12.0, 12.0]})   # ★ 트랙 2 본선
+#   폐기된 런은 지운다 (§9): shutil.rmtree('runs/fx_g12')
 
 # ── 끝나면: 표 + 증강이 실제로 먹었는지 ───────────────────────────────────
 # results()
 # frac_sweep('xl_g12')        # 낙폭이 27.4pp 보다 작아졌나 (xlse 전용)
 # offset_report('xl_nz')      # room 이 zero 에 가까워졌나
-# gain_sweep('xl_g12'); gain_sweep('fx_g12')   # ★ 두 트랙 공통 축 (§6f)
-# dead_channels('fx_g12')     # fixed 는 threshold 클램프가 없다 (§6f)"""),
+# gain_sweep('xl_g12'); gain_sweep('fx_q75')   # ★ 두 트랙 공통 축 (§6f)
+# dead_channels('fx_q75')     # fixed 는 threshold 클램프가 없다 (§6f)"""),
 
 md("""## 8. 하드웨어 내보내기 — α → 저항비
 
