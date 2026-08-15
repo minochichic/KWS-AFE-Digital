@@ -250,8 +250,8 @@ text("가로 = 의존 순서. 왼쪽이 끝나야 오른쪽이 시작된다.", 4
 
 STEPS = [
     ("P5-0", "경계 규약", "docs/ICD.md", "동료와 나눌 계약", "done"),
-    ("P5-1", "비트폭 실측", "export/ranges.py", "노트북 §8b — 다음 실행", "now"),
-    ("P5-c", "매니페스트\n+ ROM .hex", "parameters.vh", "치수 자동 생성", "wait"),
+    ("P5-1", "비트폭 실측", "→ 경계로 잡는다", "9비트, 양쪽 동일", "done"),
+    ("P5-c", "매니페스트\n+ ROM .hex", "parameters.vh", "치수 자동 생성 — 다음", "now"),
     ("P5-d", "골든 벡터", "층별 중간 활성", "없으면 디버깅 불가", "wait"),
     ("P5-e", "RTL", "PE → TCS → top", "바텀업", "wait"),
     ("P5-f", "검증", "비트 정확 일치", "골든 벡터 대조", "wait"),
@@ -290,8 +290,8 @@ add(f'<path d="M{sx0 + SW_ / 2 + SW_ + SG} {sy + SH_} '
     f'stroke-dasharray="5 3" marker-end="url(#ag)"/>')
 # kept clear of the dashed path (which spans x 280..445) -- anchored to its
 # right so the arrow cannot run through the glyphs
-text("실측한 비트폭이 매니페스트의 입력이 된다 — 재지 않고 최악값으로 잡으면 "
-     "데이터패스 전체가 과설계된다",
+text("측정 결과: 경계로 잡는 쪽이 낫다 (folded 누산기 9비트, 양쪽 동일). "
+     "재는 값어치는 conv1·3·4 의 고정소수점 범위에 있었다",
      sx0 + 2 * (SW_ + SG) + SW_ / 2 + 40, fy + 4, size=11, fill=DONE_ED,
      anchor="start", limit=W - 560)
 

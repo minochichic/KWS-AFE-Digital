@@ -172,25 +172,48 @@ def print_range_report(sites: List[Site], guard_bits: int = 1) -> None:
     print(f"{'site':<34} {'kind':<9} {'measured range':>20} "
           f"{'meas':>5} {'worst':>6} {'save':>5}")
     print("-" * 84)
+    # Only sites that have BOTH numbers may be summed. `residual` has no
+    # analytic bound here (n_terms=0), so counting it on the measured side and
+    # not on the worst side would compare 18 sites against 15 and invent a
+    # saving that is not there.
     tot_m = tot_w = 0
     for s in sites:
         rng = (f"[{s.lo:.3g}, {s.hi:.3g}]" if s.kind == "real"
                else f"[{int(math.floor(s.lo))}, {int(math.ceil(s.hi))}]")
         m = s.measured_bits
         w = s.worst_bits
-        if m is not None:
+        if m is not None and w is not None:
             tot_m += m + guard_bits
-        if w is not None:
             tot_w += w
         print(f"{s.name:<34} {s.kind:<9} {rng:>20} "
               f"{'' if m is None else m + guard_bits:>5} "
               f"{'' if w is None else w:>6} "
               f"{'' if s.saved is None else s.saved:>5}")
     print("-" * 84)
-    print(f"{'sum of widths (guard=' + str(guard_bits) + ')':<44} "
+    both = [s for s in sites
+            if s.measured_bits is not None and s.worst_bits is not None]
+    print(f"{'sum over the ' + str(len(both)) + ' comparable sites':<44} "
           f"{tot_m:>5} {tot_w:>6} {tot_w - tot_m:>5}")
+
+    # What a FOLDED datapath actually pays for: one accumulator register, sized
+    # by the widest site. The sum is a fully-unrolled quantity -- there, every
+    # layer owns its own hardware. Reporting only the sum invites sizing a
+    # design we are not building (CLAUDE.md 0: folded).
+    max_m = max((s.measured_bits + guard_bits for s in sites
+                 if s.measured_bits is not None), default=0)
+    max_w = max((s.worst_bits for s in sites if s.worst_bits is not None),
+                default=0)
+    print(f"{'FOLDED: widest single accumulator':<44} {max_m:>5} {max_w:>6} "
+          f"{max_w - max_m:>5}")
+
     print("\nmeas = measured + guard bits; worst = +-(K*C_in) bound.")
     print("`save` is per-site bits removed by measuring instead of bounding.")
+    if max_w <= max_m:
+        print(f"\n-> measuring did NOT shrink the folded accumulator "
+              f"({max_m} vs {max_w} bits). Size from the bound: it is exact, "
+              f"needs no guard bit, and cannot overflow.")
+    print("`real` sites are fake-quantized FLOAT outputs, not integer "
+          "accumulators -- use them for fixed-point placement, not for width.")
 
 
 def to_json(sites: List[Site], path: str, guard_bits: int = 1) -> None:
