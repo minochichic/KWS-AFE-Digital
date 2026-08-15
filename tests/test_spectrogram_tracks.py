@@ -89,8 +89,14 @@ def test_xlse_matches_data_afe_exactly(spec, tmp_path):
     # the reference: the actual training-time normalization, on the same data.
     # `mel` (not `spice`) because _xlse never touches the filterbank -- it is
     # handed envelopes -- and this keeps the test off the SPICE artifact files.
-    afe = AFEFrontend(AFEConfig(normalize="xlse", filterbank_source="mel"))
-    x = torch.tensor(swing, dtype=torch.float32).unsqueeze(0)   # [1, 16, T]
+    # compression="sqrt" is not a choice: AFEFrontend rejects xlse without it,
+    # since dividing by a level is only meaningful in an amplitude domain.
+    # .double() matters. The numpy side runs in float64; a float32 reference
+    # would disagree in the last bit on any pixel sitting near its threshold,
+    # and "bit for bit" would then be luck rather than a property.
+    afe = AFEFrontend(AFEConfig(normalize="xlse", filterbank_source="mel",
+                                compression="sqrt")).double()
+    x = torch.tensor(swing, dtype=torch.float64).unsqueeze(0)   # [1, 16, T]
     # the script derives T from the data it was handed; give the model the same
     typ = float(np.median(swing.max(axis=0)))
     afe.lse_temp.fill_(FRAC * typ)
