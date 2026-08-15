@@ -85,7 +85,7 @@ def test_accumulator_bounds_hold(manifest):
 
     def check(mod, inp):
         nonlocal seen
-        acc = binary_accumulator(mod, inp[0])
+        acc = binary_accumulator(mod, inp[0]).detach()
         key = (mod.in_channels, mod.out_channels, mod.kernel_size[0], mod.groups)
         bounds = by_shape.get(key)
         assert bounds, f"no manifest layer for {key}"
@@ -169,6 +169,30 @@ def test_parameters_vh_agrees_with_manifest(manifest):
     for l in man["layers"]:
         p = f"KWS_L{man['layers'].index(l)}_{l['name'].upper()}_ACC_BITS"
         assert p in vh, f"{p} missing from parameters.vh"
+
+
+def test_only_binary_fed_layers_carry_a_bound(manifest):
+    """sum|q| bounds an int8 layer only when its input is +-1.
+
+    conv1 is fed the AFE output and is bounded. conv3 is fed relu(BN(conv2_pw)),
+    a real number, so the same formula bounds nothing -- it must come back
+    unsized rather than printing a width that rests on an assumption which does
+    not hold there.
+    """
+    man, _, _, _ = manifest
+    by_name = {l["name"]: l for l in man["layers"]}
+
+    assert by_name["conv1"]["n_terms"] > 0, "conv1 IS fed +-1 and is bounded"
+    assert by_name["conv1"]["acc_bits"] > 0
+
+    for name in ("conv3", "conv4"):
+        assert by_name[name]["n_terms"] == 0, f"{name} is not fed +-1"
+        assert name in man["unsized_layers"]
+        assert "fixed-point" in by_name[name]["notes"]
+
+    # and the headline width must ignore the unsized ones
+    sized = [l["acc_bits"] for l in man["layers"] if l["n_terms"]]
+    assert man["acc_bits_widest"] == max(sized)
 
 
 def test_widths_are_the_bound_not_a_measurement(manifest):

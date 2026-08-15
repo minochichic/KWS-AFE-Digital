@@ -146,13 +146,42 @@ class Emitter:
 
     @classmethod
     def _int8_terms(cls, conv: QuantConv1d) -> int:
-        """Exact bound for int8 weights against +-1 activations: max_o sum|q|.
+        """Bound for int8 weights against +-1 activations: max_o sum|q|.
 
-        Tighter than 127*K*C_in and just as safe: the quantized weights are
-        known at export time, so this is still a bound, not a measurement.
+        ONLY valid when the input really is +-1. sum|q| is what you get when
+        every activation is at magnitude 1 and agrees in sign with its weight;
+        against a real-valued input it bounds nothing. Callers must check --
+        `_mark_real_inputs` clears n_terms for any layer whose predecessor does
+        not end in a threshold.
+
+        Tighter than 127*K*C_in and just as safe where it applies: the
+        quantized weights are known at export time, so this is still a bound.
         """
         q, _ = cls._int8(conv)
         return int(q.abs().to(torch.int64).flatten(1).sum(dim=1).max())
+
+    def _mark_real_inputs(self) -> None:
+        """Drop the bound on any layer that is not fed +-1.
+
+        A layer's input is binary iff it is the first (the AFE hands over
+        {-1,+1}) or its predecessor ended in `threshold`. conv2's pointwise
+        ends in bn_relu because conv3 is int8, so conv3 sees real numbers and
+        its `sum|q|` bound is meaningless -- it was reporting 14 bits off an
+        assumption that does not hold there. The honest answer is that conv3
+        and conv4 cannot be sized until the tail's fixed-point format is
+        chosen, so say that instead of printing a number.
+        """
+        prev_epi = "threshold"                       # the AFE output is +-1
+        for l in self.layers:
+            binary_in = prev_epi == "threshold"
+            if not binary_in and l.op in ("int8", "fixed"):
+                l.n_terms, l.acc_bits = 0, 0
+                l.notes = (l.notes + "  " if l.notes else "") + (
+                    "input is real (previous stage ends in relu), so sum|q| "
+                    "is not a bound. Width follows the tail's fixed-point "
+                    "format, still to be chosen.")
+            if l.op != "residual_add":               # the add keeps its feed
+                prev_epi = l.epilogue
 
     def _add(self, layer: Layer) -> Layer:
         layer.acc_bits = signed_bits(-layer.n_terms, layer.n_terms)
@@ -290,7 +319,9 @@ class Emitter:
             else:
                 self._plain(st.name, st, mod)
 
-        widest = max(l.acc_bits for l in self.layers)
+        self._mark_real_inputs()
+        # only sized layers count -- the tail's width is not decided yet
+        widest = max((l.acc_bits for l in self.layers if l.n_terms), default=0)
         man = {
             "tag": tag,
             "n_channels": int(cfg.afe.n_channels),
@@ -303,7 +334,9 @@ class Emitter:
             "frame_ms": float(cfg.afe.envelope_win_ms),
             "datapath": "folded",
             "acc_bits_widest": widest,
-            "acc_bits_source": "analytic bound +-n_terms (see module docstring)",
+            "acc_bits_source": "analytic bound +-n_terms, over the layers fed "
+                               "+-1 (see _mark_real_inputs)",
+            "unsized_layers": [l.name for l in self.layers if not l.n_terms],
             "word_bits": WORD_BITS,
             "layers": [asdict(l) for l in self.layers],
             "roms": self.roms,
@@ -368,10 +401,14 @@ def main() -> None:
           f"{'terms':>7}{'acc':>5}  epilogue")
     for l in man["layers"]:
         print(f"{l['name']:<18}{l['op']:<14}{l['in_ch']:>5}{l['out_ch']:>5}"
-              f"{l['kernel']:>4}{l['n_terms']:>7}{l['acc_bits']:>5}  "
+              f"{l['kernel']:>4}{l['n_terms'] or '-':>7}"
+              f"{l['acc_bits'] or '-':>5}  "
               f"{l['epilogue']}")
-    print(f"\nwidest accumulator: {man['acc_bits_widest']} bits "
+    print(f"\nwidest SIZED accumulator: {man['acc_bits_widest']} bits "
           f"(folded -> this is the one register that matters)")
+    if man["unsized_layers"]:
+        print(f"NOT sized (real-valued input, needs the tail's fixed-point "
+              f"format): {', '.join(man['unsized_layers'])}")
     n_fuse = sum(1 for l in man["layers"] if l["epilogue"] == "threshold")
     print(f"{n_fuse}/{len(man['layers'])} layers fuse to an integer compare; "
           f"the rest need fixed-point arithmetic")
