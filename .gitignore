@@ -38,3 +38,9 @@ analog/AFE/artifacts/afe16_tran.csv
 analog/AFE/netlists/sim_*.cir
 analog/AFE/artifacts/sim_*.csv
 analog/AFE/artifacts/_t_*.csv
+
+# --- generated notebooks (source of truth is the make_*.py next to them) ---
+# lab.ipynb is rewritten wholesale by make_lab.py, and Jupyter writes execution
+# counts + outputs back into it on every run -- so a tracked copy conflicts on
+# every single pull. Regenerate instead: python3 notebooks/make_lab.py
+notebooks/lab.ipynb
