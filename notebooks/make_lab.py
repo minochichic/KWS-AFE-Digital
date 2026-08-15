@@ -833,6 +833,24 @@ code('''def alpha_table(tag, RTOT=1e6, **over):
 TAG = 'af_lse078'
 alpha_table(TAG)'''),
 
+code('''from export.afe_constants import dump_afe
+
+def export_afe(tag, **over):
+    """비교기 **왼쪽** 상수를 JSON 으로 — 동료·SPICE 스크립트용.
+
+    FPGA 매니페스트와 혼동하지 말 것. 이건 아날로그 쪽 숫자고, ICD 대로
+    경계를 넘지 않는다.
+    """
+    cfg, afe, _, _ = load_run(tag, **over)
+    return dump_afe(afe, cfg, f'runs/{tag}/afe.json')
+
+print('export_afe(tag) 준비됨')
+
+# export_afe('xl_g12')      # -> runs/xl_g12/afe.json
+# 그 다음 (numpy + ngspice 있는 곳에서):
+#   python analog/AFE/scripts/spectrogram16.py --wav six.wav \\
+#       --afe-json runs/xl_g12/afe.json'''),
+
 md("""## 8a. 아날로그 SPICE 스윕 — 값 바꿔가며 회로 돌리기
 
 `ngspice`가 있는 머신에서만 돈다 (Mac). **학습과 무관**하고 GPU 박스에서는 건너뛴다.
