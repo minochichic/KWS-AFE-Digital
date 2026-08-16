@@ -117,6 +117,10 @@ module kws_bin_mac #(
     end
 
 `ifdef KWS_ASSERT
+    // $finish, not $fatal: $fatal is a SystemVerilog task and a Verilog-2005
+    // simulator may reject it outright. run_tb.sh decides pass/fail from the
+    // log, so the message is what matters, not the exit status.
+    //
     // Two separate claims, both silent when they fail.
     //   1. the P5-1 width argument: the value stays inside +-n_terms
     //   2. ACC_BITS was wide enough to hold it -- if not, the part-select
@@ -129,14 +133,14 @@ module kws_bin_mac #(
     always @(posedge clk) if (out_valid) begin
         if (acc > $signed({1'b0, total}) || acc < -$signed({1'b0, total})) begin
             $display("ASSERT %m: acc %0d outside +-%0d", acc, total);
-            $fatal;
+            $finish;
         end
     end
     always @(posedge clk) if (in_valid && last) begin
         if (acc_full > ACC_MAX || acc_full < ACC_MIN) begin
             $display("ASSERT %m: ACC_BITS=%0d too narrow for %0d",
                      ACC_BITS, acc_full);
-            $fatal;
+            $finish;
         end
     end
 `endif

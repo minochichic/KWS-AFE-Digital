@@ -23,8 +23,13 @@ TB="rtl/tb/tb_${NAME}.v"
 
 if command -v verilator >/dev/null 2>&1; then
     echo "== lint =="
-    # -Wall minus the style-only ones that fight Verilog-2001 conventions
-    verilator --lint-only -Wall -Wno-DECLFILENAME -Wno-VARHIDDEN \
+    # -DKWS_ASSERT here too, and not only for the simulator: without it the
+    # assertion block is invisible to lint, so the upper bits of the wide
+    # accumulator look unused and lint is checking a different configuration
+    # than the one that runs. Lint should see the code the simulator sees.
+    # -Wall minus the style-only ones that fight Verilog-2001 conventions.
+    verilator --lint-only -Wall -DKWS_ASSERT \
+              -Wno-DECLFILENAME -Wno-VARHIDDEN \
               --top-module "kws_${NAME}" "$DUT"
     echo "lint clean"
 else
@@ -33,7 +38,17 @@ fi
 
 echo "== simulate =="
 OUT="$(mktemp -d)/tb_${NAME}"
-# -DKWS_ASSERT arms the +-n_terms accumulator bound check inside the DUT.
+LOG="${OUT}.log"
+# -DKWS_ASSERT arms the accumulator bound checks inside the DUT.
 # -I. so the testbench can include the generated vectors/expect.vh by repo path.
 iverilog -g2005 -Wall -DKWS_ASSERT -I. -o "$OUT" "$DUT" "$TB"
-vvp "$OUT"
+vvp "$OUT" | tee "$LOG"
+
+# Do not rely on $fatal to set the exit status: it is a SystemVerilog task and
+# what a Verilog-2005 simulator does with it varies. The log is the contract.
+if grep -qE '^(FAIL|ASSERT)' "$LOG"; then
+    echo "FAILED -- see above" >&2
+    exit 1
+fi
+# ", 0 failures" and not "0 failures": the latter also matches "10 failures".
+grep -qE ', 0 failures' "$LOG" || { echo "no pass line in output" >&2; exit 1; }
