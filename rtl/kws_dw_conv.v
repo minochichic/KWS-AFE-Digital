@@ -162,7 +162,13 @@ module kws_dw_conv #(
     wire [WORD_BITS-1:0] wgt_sh = wgt_w  >> sh;
 
     // ---- MAC ----------------------------------------------------------- //
-    reg                        mac_start, mac_feed;
+    // Combinational, not registered. A registered strobe rises one cycle after
+    // its state, and pw advances its word/address counters inside S_FEED -- so
+    // the MAC would have sampled word 1 against address base+1 and skipped word
+    // 0 entirely. Driving both from the state keeps the strobe, the activation
+    // word and the weight word in the same cycle by construction.
+    wire                       mac_start = (st == S_START);
+    wire                       mac_feed  = (st == S_FEED);
     wire                       mac_done;
     wire signed [ACC_BITS-1:0] mac_acc;
 
@@ -185,12 +191,8 @@ module kws_dw_conv #(
             ch        <= {CH_BITS{1'b0}};
             out_valid <= 1'b0;
             out_frame <= {C{1'b0}};
-            mac_start <= 1'b0;
-            mac_feed  <= 1'b0;
         end else begin
             out_valid <= 1'b0;
-            mac_start <= 1'b0;
-            mac_feed  <= 1'b0;
             case (st)
             S_IDLE:
                 if (start) begin
@@ -199,14 +201,8 @@ module kws_dw_conv #(
                     ch <= {CH_BITS{1'b0}};
                     st <= S_START;
                 end
-            S_START: begin
-                mac_start <= 1'b1;
-                st        <= S_FEED;
-            end
-            S_FEED: begin
-                mac_feed <= 1'b1;          // K <= WORD_BITS: one word is all
-                st       <= S_TAKE;
-            end
+            S_START: st <= S_FEED;
+            S_FEED: st <= S_TAKE;      // K <= WORD_BITS: one word is all
             S_TAKE:
                 if (mac_done) begin
                     out_frame[ch] <= fired;

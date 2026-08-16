@@ -54,9 +54,21 @@ module kws_pw_conv #(
     localparam [1:0] S_IDLE = 2'd0, S_START = 2'd1,
                      S_FEED = 2'd2, S_TAKE  = 2'd3;
 
+    // The weight ROM is walked strictly in order -- output channel 0's words,
+    // then channel 1's, and so on -- so a counter replaces `co * NW + wi`.
+    // That address expression also mixed three different widths, which lint
+    // objected to; there is nothing to widen if there is no arithmetic.
+    localparam integer WA_RAW  = (C_OUT * NW <= 2) ? 1 : $clog2(C_OUT * NW);
+    // at least one bit wider than either index, so nothing here can need a
+    // zero-width replication
+    localparam integer WA_BITS = (WA_RAW > CO_BITS)
+                                 ? ((WA_RAW > NW_BITS) ? WA_RAW : NW_BITS + 1)
+                                 : CO_BITS + 1;
+
     reg [1:0]          st;
     reg [CO_BITS-1:0]  co;          // which output channel
     reg [NW_BITS-1:0]  wi;          // which word of the frame
+    reg [WA_BITS-1:0]  wa;          // weight ROM address, monotonic per frame
     reg [C_IN-1:0]     act;         // latched, so the caller may drop in_frame
     assign busy = (st != S_IDLE);
 
@@ -67,13 +79,19 @@ module kws_pw_conv #(
         if (T_FILE != "") $readmemh(T_FILE, t_rom);
     end
 
-    // word `wi` of the frame, and the matching weight word for output `co`
+    // word `wi` of the frame, and the weight word the address counter is on
     wire [WORD_BITS-1:0] act_w = act[wi*WORD_BITS +: WORD_BITS];
-    wire [WORD_BITS-1:0] wgt_w = w_rom[co * NW + wi];
+    wire [WORD_BITS-1:0] wgt_w = w_rom[wa];
 
     wire [CNT_BITS-1:0] n_terms = C_IN[CNT_BITS-1:0];
 
-    reg                        mac_start, mac_feed;
+    // Combinational, not registered. A registered strobe rises one cycle after
+    // its state, and pw advances its word/address counters inside S_FEED -- so
+    // the MAC would have sampled word 1 against address base+1 and skipped word
+    // 0 entirely. Driving both from the state keeps the strobe, the activation
+    // word and the weight word in the same cycle by construction.
+    wire                       mac_start = (st == S_START);
+    wire                       mac_feed  = (st == S_FEED);
     wire                       mac_done;
     wire signed [ACC_BITS-1:0] mac_acc;
 
@@ -96,29 +114,26 @@ module kws_pw_conv #(
             st        <= S_IDLE;
             co        <= {CO_BITS{1'b0}};
             wi        <= {NW_BITS{1'b0}};
+            wa        <= {WA_BITS{1'b0}};
             act       <= {C_IN{1'b0}};
             out_valid <= 1'b0;
             out_frame <= {C_OUT{1'b0}};
-            mac_start <= 1'b0;
-            mac_feed  <= 1'b0;
         end else begin
             out_valid <= 1'b0;
-            mac_start <= 1'b0;
-            mac_feed  <= 1'b0;
             case (st)
             S_IDLE:
                 if (in_valid) begin
                     act <= in_frame;
                     co  <= {CO_BITS{1'b0}};
+                    wa  <= {WA_BITS{1'b0}};   // frame restarts at the ROM base
                     st  <= S_START;
                 end
             S_START: begin
-                mac_start <= 1'b1;
-                wi        <= {NW_BITS{1'b0}};
-                st        <= S_FEED;
+                wi <= {NW_BITS{1'b0}};
+                st <= S_FEED;
             end
             S_FEED: begin
-                mac_feed <= 1'b1;
+                wa <= wa + {{(WA_BITS-1){1'b0}}, 1'b1};
                 if (wi == LAST_W) st <= S_TAKE;
                 else              wi <= wi + {{(NW_BITS-1){1'b0}}, 1'b1};
             end
