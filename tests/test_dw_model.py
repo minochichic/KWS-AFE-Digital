@@ -149,3 +149,54 @@ def test_shifting_only_the_activation_would_be_wrong(setup):
         wrong += int(good != bug)
     assert wrong > 0, ("dropping the weight shift changed nothing on this "
                        "frame -- the test cannot detect the bug")
+
+
+# --------------------------------------------------------------------------- #
+# pointwise: the same split, one layer up. Its input is the depthwise output,
+# so a mismatch here cannot be blamed on the activations reaching it.
+# --------------------------------------------------------------------------- #
+
+PW = "b1_s0_pw"
+
+
+@pytest.fixture(scope="module")
+def pw_setup():
+    g = json.loads((GEN / "golden" / "golden.json").read_text())
+    n_clip, c_in, T = g["files"][f"{LAYER}_out"]["shape"]
+    _, c_out, _ = g["files"][f"{PW}_out"]["shape"]
+    trom = _words(f"{PW}_t.hex")
+    return {
+        "c_in": c_in, "c_out": c_out, "T": T, "n_clip": n_clip,
+        "nw": c_in // 32,
+        "inp": _frames(f"golden/{LAYER}_out.hex", n_clip, T, c_in // 32),
+        "exp": _frames(f"golden/{PW}_out.hex", n_clip, T, c_out // 32),
+        "w": _words(f"{PW}_w.hex"),
+        "thr": [v - (1 << 32) if v >= 1 << 31 else v for v in trom[:c_out]],
+        "ge": [bool(v) for v in trom[c_out:]],
+    }
+
+
+def test_pointwise_model_reproduces_the_golden_output(pw_setup):
+    """No line buffer, no shift, no per-frame n_valid.
+
+    k=1 means the taps run along channels, not time, and the channel axis is
+    the whole vector rather than a window -- so none of the edge machinery the
+    depthwise module needs applies here. That absence is the thing worth
+    pinning: if a future refactor shares edge handling between the two, this
+    test says pointwise never wanted it.
+    """
+    s = pw_setup
+    c_in, c_out, nw = s["c_in"], s["c_out"], s["nw"]
+    bad = []
+    for n in range(s["n_clip"]):
+        for t in range(s["T"]):
+            a = s["inp"][n][t]
+            frame = 0
+            for o in range(c_out):
+                w = sum(s["w"][o * nw + j] << (32 * j) for j in range(nw))
+                p = bin(~(a ^ w) & ((1 << c_in) - 1)).count("1")
+                if (2 * p - c_in >= s["thr"][o]) == s["ge"][o]:
+                    frame |= 1 << o
+            if frame != s["exp"][n][t]:
+                bad.append((n, t))
+    assert not bad, f"{len(bad)} frames differ, first at clip/t {bad[:3]}"
