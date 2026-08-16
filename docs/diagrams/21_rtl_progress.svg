@@ -39,45 +39,61 @@
 <rect x="24" y="322" width="1192" height="256" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
 <text x="44" y="347" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  RTL 모듈 — 아래에서 위로</text>
 <text x="44" y="366" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">작은 것부터 만들고 각 단계를 골든 벡터로 끊어 검증한다. 위 모듈은 아래가 맞다는 걸 알고 시작한다.</text>
-<rect x="44.0" y="386" width="220.8" height="118" rx="9" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
-<rect x="206.8" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#3f9a5d" stroke-width="1"/>
-<text x="230.8" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#3f9a5d" text-anchor="middle" font-weight="700">완료</text>
+<rect x="44.0" y="386" width="156.0" height="118" rx="9" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
+<rect x="142.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#3f9a5d" stroke-width="1"/>
+<text x="166.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#3f9a5d" text-anchor="middle" font-weight="700">완료</text>
 <text x="56.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_bin_mac</text>
-<text x="154.4" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">2·popcount(XNOR) − N</text>
-<text x="154.4" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
-<text x="154.4" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">자체 벡터 (pack.py 로 생성)</text>
-<line x1="265.8" y1="445" x2="275.8" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
-<rect x="276.8" y="386" width="220.8" height="118" rx="9" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.9"/>
-<rect x="439.6" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#2f6fd0" stroke-width="1"/>
-<text x="463.6" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#2f6fd0" text-anchor="middle" font-weight="700">▶ 다음</text>
-<text x="288.8" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_tcs_sub</text>
-<text x="387.20000000000005" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">dw → threshold → pw</text>
-<text x="387.20000000000005" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
-<text x="387.20000000000005" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_s0_* 골든</text>
-<line x1="498.6" y1="445" x2="508.6" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
-<rect x="509.6" y="386" width="220.8" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
-<rect x="672.4000000000001" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
-<text x="696.4000000000001" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
-<text x="521.6" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_block</text>
-<text x="620.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">sub ×2 + residual add</text>
+<text x="122.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">2·popcount(XNOR) − N</text>
+<text x="122.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="122.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">자체 벡터</text>
+<line x1="201.0" y1="445" x2="209.0" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="210.0" y="386" width="156.0" height="118" rx="9" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
+<rect x="308.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#3f9a5d" stroke-width="1"/>
+<text x="332.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#3f9a5d" text-anchor="middle" font-weight="700">완료</text>
+<text x="222.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_dw_conv</text>
+<text x="288.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">라인버퍼 + 게더 + shift</text>
+<text x="288.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="288.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_s0_dw 골든</text>
+<line x1="367.0" y1="445" x2="375.0" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="376.0" y="386" width="156.0" height="118" rx="9" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
+<rect x="474.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#3f9a5d" stroke-width="1"/>
+<text x="498.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#3f9a5d" text-anchor="middle" font-weight="700">완료</text>
+<text x="388.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_pw_conv</text>
+<text x="454.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">워드 스트리밍</text>
+<text x="454.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="454.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_s0_pw 골든</text>
+<line x1="533.0" y1="445" x2="541.0" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="542.0" y="386" width="156.0" height="118" rx="9" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.9"/>
+<rect x="640.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#2f6fd0" stroke-width="1"/>
+<text x="664.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#2f6fd0" text-anchor="middle" font-weight="700">▶ 다음</text>
+<text x="554.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_tcs_sub</text>
+<text x="620.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">dw → pw 배선</text>
 <text x="620.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
-<text x="620.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_add 골든</text>
-<line x1="731.4000000000001" y1="445" x2="741.4000000000001" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
-<rect x="742.4000000000001" y="386" width="220.8" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
-<rect x="905.2" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
-<text x="929.2" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
-<text x="754.4000000000001" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_top</text>
-<text x="852.8000000000001" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">21개 층 시분할 (folded)</text>
-<text x="852.8000000000001" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
-<text x="852.8000000000001" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">logits · predictions</text>
-<line x1="964.2" y1="445" x2="974.2" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
-<rect x="975.2" y="386" width="220.8" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<text x="620.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_s0_* 연결</text>
+<line x1="699.0" y1="445" x2="707.0" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="708.0" y="386" width="156.0" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<rect x="806.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="830.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="720.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_block</text>
+<text x="786.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">sub ×2 + residual add</text>
+<text x="786.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="786.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_add 골든</text>
+<line x1="865.0" y1="445" x2="873.0" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="874.0" y="386" width="156.0" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<rect x="972.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="996.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="886.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_top</text>
+<text x="952.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">21개 층 시분할 (folded)</text>
+<text x="952.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="952.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">logits · predictions</text>
+<line x1="1031.0" y1="445" x2="1039.0" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="1040.0" y="386" width="156.0" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
 <rect x="1138.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
 <text x="1162.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
-<text x="987.2" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_frame_ctrl</text>
-<text x="1085.6000000000001" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">2FF 동기화 + sticky OR</text>
-<text x="1085.6000000000001" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
-<text x="1085.6000000000001" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">ICD §5 — 아날로그 경계</text>
+<text x="1052.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_frame_ctrl</text>
+<text x="1118.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">2FF 동기화 + sticky OR</text>
+<text x="1118.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="1118.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">ICD §5 경계</text>
 <text x="44" y="534" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#5b6478" text-anchor="start" font-weight="400">남은 것:  합성 · 타이밍 → KC705 비트스트림</text>
 <text x="44" y="554" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">아날로그는 동료 담당이라 경계(kws_frame_ctrl)까지만 우리 몫이다.</text>
 <rect x="24" y="598" width="1192" height="214" rx="12" fill="#f7fbf8" stroke="#3f9a5d" stroke-width="1.4"/>

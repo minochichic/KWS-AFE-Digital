@@ -133,18 +133,25 @@ text("작은 것부터 만들고 각 단계를 골든 벡터로 끊어 검증한
      "맞다는 걸 알고 시작한다.", 44, BY + 44, size=11.5, fill=MUTE,
      anchor="start", limit=760)
 
+# rtl/README.md 3 의 분해와 같아야 한다. dw 와 pw 는 메모리 접근 패턴이
+# 다르고 골든 파일도 따로라, kws_tcs_sub 한 덩어리로 두지 않았다.
 MODS = [
-    ("kws_bin_mac", "2·popcount(XNOR) − N", "자체 벡터 (pack.py 로 생성)"),
-    ("kws_tcs_sub", "dw → threshold → pw", "b1_s0_* 골든"),
+    ("kws_bin_mac", "2·popcount(XNOR) − N", "자체 벡터"),
+    ("kws_dw_conv", "라인버퍼 + 게더 + shift", "b1_s0_dw 골든"),
+    ("kws_pw_conv", "워드 스트리밍", "b1_s0_pw 골든"),
+    ("kws_tcs_sub", "dw → pw 배선", "b1_s0_* 연결"),
     ("kws_block", "sub ×2 + residual add", "b1_add 골든"),
     ("kws_top", "21개 층 시분할 (folded)", "logits · predictions"),
-    ("kws_frame_ctrl", "2FF 동기화 + sticky OR", "ICD §5 — 아날로그 경계"),
+    ("kws_frame_ctrl", "2FF 동기화 + sticky OR", "ICD §5 경계"),
 ]
-MW, MG = (W - 88 - 4 * 12) / 5, 12
+MG = 10
+MW = (W - 88 - (len(MODS) - 1) * MG) / len(MODS)
 for i, (nm, what, verify) in enumerate(MODS):
     exists = (RTLDIR / f"{nm}.v").is_file()
     bg, ed, lab = ((DONE_BG, DONE_ED, "완료") if exists else
-                   (NOW_BG, NOW_ED, "▶ 다음") if i == 1 else
+                   (NOW_BG, NOW_ED, "▶ 다음") if not any(
+                       (RTLDIR / f"{m}.v").is_file() for m, _, _ in MODS[:i]
+                   ) or (i > 0 and (RTLDIR / f"{MODS[i-1][0]}.v").is_file()) else
                    (WAIT_BG, WAIT_ED, "대기"))
     x = 44 + i * (MW + MG)
     box(x, BY + 64, MW, 118, bg, ed, r=9, sw=1.9 if lab == "▶ 다음" else 1.3)
