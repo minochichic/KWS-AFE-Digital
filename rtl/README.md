@@ -76,8 +76,8 @@ n_valid = 그 프레임의 유효 탭 수   (가운데 13, 왼쪽 끝 7, 오른�
 ```
 kws_bin_mac   ✅  2·popcount(XNOR) − N
 kws_dw_conv   ✅  라인버퍼 + 비트 게더 + 시프트/n_valid + threshold
-kws_pw_conv   🔵  프레임 워드 스트리밍 + threshold  (모델 검증 완료, 시뮬 대기)
-kws_tcs_sub   ⬜  dw → pw 배선
+kws_pw_conv   ✅  프레임 워드 스트리밍 + threshold
+kws_tcs_sub   🔵  dw → pw 배선  (시뮬 대기)
 kws_block     ⬜  sub ×2 + residual add (정수 영역)
 kws_top       ⬜  21개 층 시분할
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
@@ -94,6 +94,9 @@ kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 - **어서션은 `KWS_ASSERT` 안에**, `$finish` 로 (`$fatal` 은 SystemVerilog).
   합격/불합격은 `run_tb.sh` 가 로그에서 판정한다.
 - **치수는 `rtl/gen/<tag>/parameters.vh` 에서.** RTL 소스에 숫자 리터럴 금지.
+- **MAC strobe 는 상태에서 조합으로 뽑는다.** 레지스터로 만들면 상태보다 한 사이클
+  늦게 떠서, 그 사이 카운터가 움직이는 모듈(`pw`)에서 워드 정렬이 어긋난다.
+  "그 사이엔 아무것도 안 바뀐다" 에 기대지 않는다 — `pw` 에서 실제로 바뀌었다.
 
 ### 클럭 엣지 — 합성 RTL 은 `posedge` 전용, TB 는 `negedge` 구동
 
