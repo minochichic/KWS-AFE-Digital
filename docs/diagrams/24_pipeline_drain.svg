@@ -1,0 +1,244 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 872" width="1240" height="872">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6478"/></marker></defs>
+<rect width="1240" height="872" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">line buffer 의 채우기와 비우기 — 「입력이 끝난다」의 의미</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">K=13, padding=6, 프레임 64개짜리 클립 하나를 처리하는 전 과정.</text>
+<rect x="24" y="78" width="1192" height="158" rx="12" fill="#fffbf0" stroke="#c9902a" stroke-width="1.4"/>
+<text x="44" y="104" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  규칙 하나 —  출력 t 를 만들려면 입력 t+6 까지 있어야 한다</text>
+<rect x="250" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="270.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t-6</text>
+<rect x="294" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="314.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t-5</text>
+<rect x="338" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="358.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t-4</text>
+<rect x="382" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="402.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t-3</text>
+<rect x="426" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="446.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t-2</text>
+<rect x="470" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="490.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t-1</text>
+<rect x="514" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="534.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t</text>
+<rect x="558" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="578.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t+1</text>
+<rect x="602" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="622.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t+2</text>
+<rect x="646" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="666.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t+3</text>
+<rect x="690" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="710.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t+4</text>
+<rect x="734" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="754.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t+5</text>
+<rect x="778" y="130" width="41" height="30" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="798.5" y="150" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">t+6</text>
+<text x="234" y="150" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">창 = 앞뒤 6칸</text>
+<rect x="511" y="126" width="45" height="38" rx="4" fill="none" stroke="#1c2333" stroke-width="2"/>
+<line x1="814.0" y1="145.0" x2="862" y2="145.0" stroke="#5b6478" stroke-width="1.8" marker-end="url(#a)"/>
+<text x="874" y="144" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">가장 최근에 필요한 것</text>
+<text x="874" y="162" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">= 입력 t+6</text>
+<text x="620.0" y="210" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="600">→ buffer 는 출력보다 6칸 앞서 달린다. 그래서 앞뒤로 6칸씩 어긋난 구간이 생긴다.</text>
+<rect x="24" y="254" width="1192" height="402" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="279" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  70번 밀어서 출력 64개</text>
+<text x="252" y="304" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="end" font-weight="400">미는 것</text>
+<text x="554.0" y="304" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">line buffer  (오래된 것 ←  → 새 것)</text>
+<text x="930" y="304" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">valid</text>
+<text x="1070" y="304" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">출력</text>
+<text x="252" y="339" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">f0</text>
+<rect x="268" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="288.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="312" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="332.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="356" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="376.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="400" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="420.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="444" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="464.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="488" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="508.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="532" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="552.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="576" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="596.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="620" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="640.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="664" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="684.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="708" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="728.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="752" y="320" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="772.5" y="339" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="796" y="320" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="816.5" y="339" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f0</text>
+<text x="930" y="339" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">0000000000001</text>
+<text x="1070" y="339" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#5b6478" text-anchor="middle" font-weight="700">—</text>
+<text x="252" y="391" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">f5</text>
+<rect x="268" y="372" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="288.5" y="391" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="312" y="372" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="332.5" y="391" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="356" y="372" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="376.5" y="391" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="400" y="372" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="420.5" y="391" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="444" y="372" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="464.5" y="391" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="488" y="372" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="508.5" y="391" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="532" y="372" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="552.5" y="391" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="576" y="372" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="596.5" y="391" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f0</text>
+<rect x="620" y="372" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="640.5" y="391" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f1</text>
+<rect x="664" y="372" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="684.5" y="391" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f2</text>
+<rect x="708" y="372" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="728.5" y="391" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f3</text>
+<rect x="752" y="372" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="772.5" y="391" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f4</text>
+<rect x="796" y="372" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="816.5" y="391" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f5</text>
+<text x="930" y="391" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">0000000111111</text>
+<text x="1070" y="391" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#5b6478" text-anchor="middle" font-weight="700">—</text>
+<line x1="44" y1="412" x2="1196" y2="412" stroke="#e8ecf2" stroke-width="1.5"/>
+<text x="252" y="443" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">f6</text>
+<rect x="268" y="424" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="288.5" y="443" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="312" y="424" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="332.5" y="443" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="356" y="424" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="376.5" y="443" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="400" y="424" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="420.5" y="443" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="444" y="424" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="464.5" y="443" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="488" y="424" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="508.5" y="443" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="532" y="424" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="552.5" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f0</text>
+<rect x="576" y="424" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="596.5" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f1</text>
+<rect x="620" y="424" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="640.5" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f2</text>
+<rect x="664" y="424" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="684.5" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f3</text>
+<rect x="708" y="424" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="728.5" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f4</text>
+<rect x="752" y="424" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="772.5" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f5</text>
+<rect x="796" y="424" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="816.5" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f6</text>
+<text x="930" y="443" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">0000001111111</text>
+<text x="1070" y="443" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">t=0</text>
+<text x="252" y="495" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">f63</text>
+<rect x="268" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="288.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f51</text>
+<rect x="312" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="332.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f52</text>
+<rect x="356" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="376.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f53</text>
+<rect x="400" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="420.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f54</text>
+<rect x="444" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="464.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f55</text>
+<rect x="488" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="508.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f56</text>
+<rect x="532" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="552.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f57</text>
+<rect x="576" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="596.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f58</text>
+<rect x="620" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="640.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f59</text>
+<rect x="664" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="684.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f60</text>
+<rect x="708" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="728.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f61</text>
+<rect x="752" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="772.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f62</text>
+<rect x="796" y="476" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="816.5" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f63</text>
+<text x="930" y="495" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">1111111111111</text>
+<text x="1070" y="495" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">t=57</text>
+<line x1="44" y1="516" x2="1196" y2="516" stroke="#e8ecf2" stroke-width="1.5"/>
+<text x="252" y="547" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">(없음)</text>
+<rect x="268" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="288.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f52</text>
+<rect x="312" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="332.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f53</text>
+<rect x="356" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="376.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f54</text>
+<rect x="400" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="420.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f55</text>
+<rect x="444" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="464.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f56</text>
+<rect x="488" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="508.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f57</text>
+<rect x="532" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="552.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f58</text>
+<rect x="576" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="596.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f59</text>
+<rect x="620" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="640.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f60</text>
+<rect x="664" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="684.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f61</text>
+<rect x="708" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="728.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f62</text>
+<rect x="752" y="528" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="772.5" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f63</text>
+<rect x="796" y="528" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="816.5" y="547" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<text x="930" y="547" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">1111111111110</text>
+<text x="1070" y="547" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">t=58</text>
+<text x="252" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">(없음) ×6</text>
+<rect x="268" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="288.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f58</text>
+<rect x="312" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="332.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f59</text>
+<rect x="356" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="376.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f60</text>
+<rect x="400" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="420.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f61</text>
+<rect x="444" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="464.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f62</text>
+<rect x="488" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="508.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f63</text>
+<rect x="532" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="552.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="576" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="596.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="620" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="640.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="664" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="684.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="708" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="728.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<rect x="752" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="772.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<text x="930" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">111111000000</text>
+<text x="1070" y="599" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">t=63</text>
+<text x="620.0" y="640" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">마지막 실제 프레임 f63 을 밀어도 출력은 t=57 까지다. 남은 t=58~63 의 창은 f64~f69 를 필요로 하는데 그런 건 없다 — 그래서 빈 칸을 6번 더 민다.</text>
+<rect x="24" y="674" width="1192" height="178" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="699" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  세 구간, 그리고 pad 가 어느 쪽에 붙는가</text>
+<rect x="44.0" y="718" width="373.3333333333333" height="118" rx="9" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.4"/>
+<text x="58.0" y="742" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="start" font-weight="700">채우기 (fill)</text>
+<text x="403.3333333333333" y="742" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="end" font-weight="400">6 push</text>
+<text x="58.0" y="764" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">출력  없음</text>
+<text x="58.0" y="784" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">0000001111111</text>
+<text x="58.0" y="804" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">pad 위치  낮은 쪽 (오래된 칸)</text>
+<text x="58.0" y="824" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">shift = 6 … 1</text>
+<rect x="433.3333333333333" y="718" width="373.3333333333333" height="118" rx="9" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="447.3333333333333" y="742" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="start" font-weight="700">본류</text>
+<text x="792.6666666666666" y="742" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="end" font-weight="400">58 push</text>
+<text x="447.3333333333333" y="764" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">출력  t=0 … 57</text>
+<text x="447.3333333333333" y="784" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">1111111111111</text>
+<text x="447.3333333333333" y="804" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">pad 위치  없음</text>
+<text x="447.3333333333333" y="824" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">shift = 0</text>
+<rect x="822.6666666666666" y="718" width="373.3333333333333" height="118" rx="9" fill="#eef2f7" stroke="#7d8896" stroke-width="1.4"/>
+<text x="836.6666666666666" y="742" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="start" font-weight="700">비우기 (drain)</text>
+<text x="1182.0" y="742" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#5b6478" text-anchor="end" font-weight="400">6 push</text>
+<text x="836.6666666666666" y="764" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">출력  t=58 … 63</text>
+<text x="836.6666666666666" y="784" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">1111111000000</text>
+<text x="836.6666666666666" y="804" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">pad 위치  높은 쪽 (새 칸)</text>
+<text x="836.6666666666666" y="824" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">shift = 0</text>
+</svg>
