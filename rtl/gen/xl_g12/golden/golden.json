@@ -1,0 +1,387 @@
+{
+  "tag": "xl_g12",
+  "n_clips": 2,
+  "n_channels": 16,
+  "T": 128,
+  "files": {
+    "input": {
+      "file": "input.hex",
+      "shape": [
+        2,
+        16,
+        128
+      ],
+      "layout": "one word per (clip, frame); bit c = channel c, LSB first, -1 -> 0"
+    },
+    "conv1_acc": {
+      "file": "conv1_acc.hex",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "conv1_out": {
+      "file": "conv1_out.hex",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b1_skip_acc": {
+      "file": "b1_skip_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b1_s0_dw_acc": {
+      "file": "b1_s0_dw_acc.hex",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b1_s0_dw_out": {
+      "file": "b1_s0_dw_out.hex",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b1_s0_pw_acc": {
+      "file": "b1_s0_pw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b1_s0_pw_out": {
+      "file": "b1_s0_pw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b1_s1_dw_acc": {
+      "file": "b1_s1_dw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b1_s1_dw_out": {
+      "file": "b1_s1_dw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b1_s1_pw_acc": {
+      "file": "b1_s1_pw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b1_add_acc": {
+      "file": "b1_add_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b1_add_out": {
+      "file": "b1_add_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b2_s0_dw_acc": {
+      "file": "b2_s0_dw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b2_s0_dw_out": {
+      "file": "b2_s0_dw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b2_s0_pw_acc": {
+      "file": "b2_s0_pw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b2_s0_pw_out": {
+      "file": "b2_s0_pw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b2_s1_dw_acc": {
+      "file": "b2_s1_dw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b2_s1_dw_out": {
+      "file": "b2_s1_dw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b2_s1_pw_acc": {
+      "file": "b2_s1_pw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b2_add_acc": {
+      "file": "b2_add_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b2_add_out": {
+      "file": "b2_add_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b3_s0_dw_acc": {
+      "file": "b3_s0_dw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b3_s0_dw_out": {
+      "file": "b3_s0_dw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b3_s0_pw_acc": {
+      "file": "b3_s0_pw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b3_s0_pw_out": {
+      "file": "b3_s0_pw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b3_s1_dw_acc": {
+      "file": "b3_s1_dw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b3_s1_dw_out": {
+      "file": "b3_s1_dw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "b3_s1_pw_acc": {
+      "file": "b3_s1_pw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b3_add_acc": {
+      "file": "b3_add_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "b3_add_out": {
+      "file": "b3_add_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "conv2_dw_acc": {
+      "file": "conv2_dw_acc.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "conv2_dw_out": {
+      "file": "conv2_dw_out.hex",
+      "shape": [
+        2,
+        64,
+        64
+      ],
+      "layout": "one word per (clip, frame)",
+      "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
+    },
+    "conv2_pw_acc": {
+      "file": "conv2_pw_acc.hex",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "pre-alpha integer accumulator"
+    },
+    "conv3_out": {
+      "file": "conv3_out.txt",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "dtype": "float32",
+      "note": "REFERENCE ONLY -- real-valued; the tail's fixed-point format is not chosen yet"
+    },
+    "conv4_out": {
+      "file": "conv4_out.txt",
+      "shape": [
+        2,
+        12,
+        64
+      ],
+      "dtype": "float32",
+      "note": "REFERENCE ONLY -- real-valued; the tail's fixed-point format is not chosen yet"
+    }
+  },
+  "note": "compare layer by layer; the first mismatch names the module"
+}
