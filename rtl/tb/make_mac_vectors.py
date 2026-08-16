@@ -15,11 +15,21 @@ Cases are chosen for the two things that actually break:
   * an asymmetric bit pattern, so a reversed word order fails instead of
     passing by symmetry (same reason tests/test_export.py uses one).
 
-Run:  python rtl/tb/make_mac_vectors.py
+THE OUTPUT IS COMMITTED. It needs torch, which lives on the training box, but
+the testbench needs it anywhere iverilog runs -- including machines that will
+never have a checkpoint. The files are small and the generator is seeded, so
+they travel with the repo as fixtures rather than being rebuilt per machine.
+
+Run (from the repo root):  python rtl/tb/make_mac_vectors.py
 """
 from __future__ import annotations
 
+import sys
 from pathlib import Path
+
+# run as `python rtl/tb/make_mac_vectors.py` from the repo root: that puts
+# rtl/tb on sys.path, not the root, so export/ is not importable without this
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 import torch
 
