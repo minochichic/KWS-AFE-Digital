@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 968" width="1240" height="968">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6478"/></marker></defs>
+<rect width="1240" height="968" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">FPGA 설계 — 지금까지 만든 것</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">학습된 모델에서 RTL 이 읽는 파일까지는 끝났다. 이제 그 파일들을 쓰는 하드웨어를 아래에서 위로 쌓는다.</text>
+<rect x="24" y="78" width="1192" height="224" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="103" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  빌드 흐름 — 학습된 모델이 어떻게 하드웨어가 읽는 파일이 되나</text>
+<rect x="44" y="124" width="190" height="62" rx="8" fill="#fdf3e3" stroke="#d9a441" stroke-width="1.4"/>
+<text x="139" y="148" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="600">학습된 체크포인트</text>
+<text x="139" y="168" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">runs/xl_g12/best.pt</text>
+<rect x="268" y="124" width="196" height="62" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.2"/>
+<text x="366" y="150" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">export/emit.py</text>
+<text x="366" y="170" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">치수 · 가중치 · threshold</text>
+<line x1="236" y1="155" x2="266" y2="155" stroke="#c3cbd9" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="268" y="210" width="196" height="62" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.2"/>
+<text x="366" y="236" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">export/golden.py</text>
+<text x="366" y="256" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">층별 기준값</text>
+<line x1="236" y1="155" x2="266" y2="241" stroke="#c3cbd9" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="500" y="118" width="250" height="44" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="625" y="138" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">parameters.vh</text>
+<text x="625" y="154" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">치수 — RTL 이 include</text>
+<rect x="500" y="170" width="250" height="44" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="625" y="190" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">*.hex  (32개)</text>
+<text x="625" y="206" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">가중치 · threshold → BRAM</text>
+<rect x="500" y="222" width="250" height="44" rx="8" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="625" y="242" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">golden/  (36개)</text>
+<text x="625" y="258" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">층별 정답 — 테스트벤치용</text>
+<line x1="466" y1="155" x2="498" y2="140" stroke="#c3cbd9" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="466" y1="155" x2="498" y2="192" stroke="#c3cbd9" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="466" y1="241" x2="498" y2="244" stroke="#c3cbd9" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="786" y="124" width="410" height="148" rx="9" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="991.0" y="150" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="15" fill="#1c2333" text-anchor="middle" font-weight="700">RTL</text>
+<text x="991.0" y="172" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#5b6478" text-anchor="middle" font-weight="400">숫자를 하나도 안 갖는다</text>
+<text x="806" y="198" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">· 치수는 parameters.vh 에서</text>
+<text x="806" y="218" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">· 가중치는 $readmemh 로 BRAM 에</text>
+<text x="806" y="238" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">· → 재학습하면 .hex 만 교체</text>
+<line x1="752" y1="140" x2="784" y2="178" stroke="#c3cbd9" stroke-width="1.8" marker-end="url(#a)"/>
+<line x1="752" y1="192" x2="784" y2="188" stroke="#c3cbd9" stroke-width="1.8" marker-end="url(#a)"/>
+<rect x="24" y="322" width="1192" height="256" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="347" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  RTL 모듈 — 아래에서 위로</text>
+<text x="44" y="366" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">작은 것부터 만들고 각 단계를 골든 벡터로 끊어 검증한다. 위 모듈은 아래가 맞다는 걸 알고 시작한다.</text>
+<rect x="44.0" y="386" width="220.8" height="118" rx="9" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
+<rect x="206.8" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#3f9a5d" stroke-width="1"/>
+<text x="230.8" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#3f9a5d" text-anchor="middle" font-weight="700">완료</text>
+<text x="56.0" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_bin_mac</text>
+<text x="154.4" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">2·popcount(XNOR) − N</text>
+<text x="154.4" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="154.4" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">자체 벡터 (pack.py 로 생성)</text>
+<line x1="265.8" y1="445" x2="275.8" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="276.8" y="386" width="220.8" height="118" rx="9" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.9"/>
+<rect x="439.6" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#2f6fd0" stroke-width="1"/>
+<text x="463.6" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#2f6fd0" text-anchor="middle" font-weight="700">▶ 다음</text>
+<text x="288.8" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_tcs_sub</text>
+<text x="387.20000000000005" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">dw → threshold → pw</text>
+<text x="387.20000000000005" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="387.20000000000005" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_s0_* 골든</text>
+<line x1="498.6" y1="445" x2="508.6" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="509.6" y="386" width="220.8" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<rect x="672.4000000000001" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="696.4000000000001" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="521.6" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_block</text>
+<text x="620.0" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">sub ×2 + residual add</text>
+<text x="620.0" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="620.0" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">b1_add 골든</text>
+<line x1="731.4000000000001" y1="445" x2="741.4000000000001" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="742.4000000000001" y="386" width="220.8" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<rect x="905.2" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="929.2" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="754.4000000000001" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_top</text>
+<text x="852.8000000000001" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">21개 층 시분할 (folded)</text>
+<text x="852.8000000000001" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="852.8000000000001" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">logits · predictions</text>
+<line x1="964.2" y1="445" x2="974.2" y2="445" stroke="#c3cbd9" stroke-width="1.5" marker-end="url(#a)"/>
+<rect x="975.2" y="386" width="220.8" height="118" rx="9" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.3"/>
+<rect x="1138.0" y="396" width="48" height="17" rx="8" fill="#ffffff" stroke="#a8b0bf" stroke-width="1"/>
+<text x="1162.0" y="408" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a8b0bf" text-anchor="middle" font-weight="700">대기</text>
+<text x="987.2" y="409" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">kws_frame_ctrl</text>
+<text x="1085.6000000000001" y="438" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">2FF 동기화 + sticky OR</text>
+<text x="1085.6000000000001" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">검증</text>
+<text x="1085.6000000000001" y="485" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">ICD §5 — 아날로그 경계</text>
+<text x="44" y="534" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#5b6478" text-anchor="start" font-weight="400">남은 것:  합성 · 타이밍 → KC705 비트스트림</text>
+<text x="44" y="554" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">아날로그는 동료 담당이라 경계(kws_frame_ctrl)까지만 우리 몫이다.</text>
+<rect x="24" y="598" width="1192" height="214" rx="12" fill="#f7fbf8" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="44" y="623" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  골든 벡터 = 층마다 미리 적어둔 정답</text>
+<text x="44" y="642" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">없으면 보이는 건 「12개 로짓이 이상하다」 하나뿐이다. 21개 층 어디가 틀렸는지 알 방법이 없다.</text>
+<rect x="60" y="664" width="140" height="52" rx="8" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="130.0" y="686" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">conv1</text>
+<text x="130.0" y="704" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#3f9a5d" text-anchor="middle" font-weight="400">일치</text>
+<line x1="201" y1="690" x2="213" y2="690" stroke="#c3cbd9" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="214" y="664" width="140" height="52" rx="8" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="284.0" y="686" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">b1_s0_dw</text>
+<text x="284.0" y="704" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#3f9a5d" text-anchor="middle" font-weight="400">일치</text>
+<line x1="355" y1="690" x2="367" y2="690" stroke="#c3cbd9" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="368" y="664" width="140" height="52" rx="8" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.4"/>
+<text x="438.0" y="686" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">b1_s0_pw</text>
+<text x="438.0" y="704" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#cc6155" text-anchor="middle" font-weight="400">불일치</text>
+<line x1="509" y1="690" x2="521" y2="690" stroke="#c3cbd9" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="522" y="664" width="140" height="52" rx="8" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.4"/>
+<text x="592.0" y="686" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">b1_s1_dw</text>
+<text x="592.0" y="704" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">—</text>
+<line x1="663" y1="690" x2="675" y2="690" stroke="#c3cbd9" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="676" y="664" width="140" height="52" rx="8" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.4"/>
+<text x="746.0" y="686" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">…</text>
+<text x="746.0" y="704" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">—</text>
+<line x1="817" y1="690" x2="829" y2="690" stroke="#c3cbd9" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="830" y="664" width="140" height="52" rx="8" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.4"/>
+<text x="900.0" y="686" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">conv4</text>
+<text x="900.0" y="704" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">—</text>
+<path d="M438.0 722 L438.0 744" stroke="#cc6155" stroke-width="2" marker-end="url(#a)"/>
+<text x="438.0" y="762" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#cc6155" text-anchor="middle" font-weight="600">첫 불일치가 범인을 지목한다 — 이분 탐색이 아니라 바로 그 모듈이다</text>
+<text x="44" y="792" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">우리 파일: input.hex(입력) · &lt;층&gt;_acc.hex(정수 누산기) · &lt;층&gt;_out.hex(±1 출력) · logits.txt  — 8클립 36개</text>
+<rect x="24" y="828" width="1192" height="116" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="853" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">D.  린트와 시뮬은 다른 것을 잡는다</text>
+<rect x="44.0" y="866" width="568.0" height="66" rx="8" fill="#fdf3e3" stroke="#d9a441" stroke-width="1.4"/>
+<text x="56.0" y="886" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">린트 (verilator --lint-only)</text>
+<text x="600.0" y="886" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">코드를 읽어서 잡는다</text>
+<text x="56.0" y="906" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">비트폭 불일치 → 조용한 잘림  ·  의도 안 한 래치  ·  미구동 · 미사용 신호</text>
+<text x="56.0" y="924" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">돌리지 않아도 나온다</text>
+<rect x="628.0" y="866" width="568.0" height="66" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.4"/>
+<text x="640.0" y="886" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">시뮬 (iverilog / XSim)</text>
+<text x="1184.0" y="886" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="end" font-weight="400">코드를 돌려서 잡는다</text>
+<text x="640.0" y="906" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">골든 벡터와 값이 다른가  ·  타이밍 · 상태 전이  ·  리셋 안 된 X 전파</text>
+<text x="640.0" y="924" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">데이터가 그 경우를 밟아야 나온다</text>
+</svg>
