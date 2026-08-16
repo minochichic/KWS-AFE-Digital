@@ -48,15 +48,13 @@ module tb_dw_conv;
     reg [WB-1:0] in_mem  [0:CLIPS*T*NW-1];
     reg [WB-1:0] exp_mem [0:CLIPS*T*NW-1];
 
-    // latch the result so the driver can check it after busy drops
+    // Sampled inside push(), not by a separate always block. out_valid is
+    // registered and pulses on the same edge that clears busy, so both are
+    // visible at the negedge the wait loop exits on. A posedge capture block
+    // would set its flag one edge LATER than the loop returns -- which is why
+    // the first version saw "no output" on every single frame.
     reg [C-1:0] got;
     reg         got_v;
-    always @(posedge clk) begin
-        if (out_valid) begin
-            got   <= out_frame;
-            got_v <= 1'b1;
-        end
-    end
 
     integer errors = 0;
     integer checked = 0;
@@ -68,13 +66,14 @@ module tb_dw_conv;
         input [C-1:0] fr;
         begin
             @(negedge clk);
-            got_v    = 1'b0;
             in_push  = 1'b1;
             in_real  = real_f;
             in_frame = fr;
             @(negedge clk);
             in_push  = 1'b0;
             while (busy) @(negedge clk);
+            got_v = out_valid;          // still high on this negedge
+            got   = out_frame;
         end
     endtask
 

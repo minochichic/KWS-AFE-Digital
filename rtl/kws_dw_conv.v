@@ -136,12 +136,16 @@ module kws_dw_conv #(
     // ---- gather + align ------------------------------------------------ //
     // tap j of channel `ch` lives in slot j; all K slots are registers we
     // already hold, so this costs no cycles.
-    reg [K-1:0] taps;
-    integer g;
-    always @(*) begin
-        taps = {K{1'b0}};
-        for (g = 0; g < K; g = g + 1) taps[g] = fbuf[g][ch];
-    end
+    // A generate loop rather than @(*) over the array: an implicit sensitivity
+    // list on a memory makes the simulator sensitive to every word, which it
+    // warns about, and per-bit assigns say exactly what this is.
+    wire [K-1:0] taps;
+    genvar gv;
+    generate
+        for (gv = 0; gv < K; gv = gv + 1) begin : g_taps
+            assign taps[gv] = fbuf[gv][ch];
+        end
+    endgenerate
 
     // Take only the bits that mean something. The weight ROM holds K taps in a
     // 32-bit word and the polarity ROM one flag; reading the full words and
