@@ -52,7 +52,11 @@ module kws_dw_conv #(
 );
 
     localparam integer CH_BITS = (C <= 2) ? 1 : $clog2(C);
-    localparam [CH_BITS-1:0] LAST_CH = C - 1;
+    // Sized explicitly. `= C - 1` is a 32-bit expression landing in a
+    // CH_BITS target, which is correct only because C-1 happens to fit --
+    // a fact about today's C, not about the code.
+    localparam integer          C_MINUS_1 = C - 1;
+    localparam [CH_BITS-1:0]    LAST_CH   = C_MINUS_1[CH_BITS-1:0];
     // Threshold comparison width. 33, not 32, so BOTH sign-extensions below are
     // at least one bit -- a zero-width replication is not legal Verilog.
     localparam integer TH_BITS = (ACC_BITS + 1 > 33) ? ACC_BITS + 1 : 33;
@@ -139,15 +143,16 @@ module kws_dw_conv #(
         for (g = 0; g < K; g = g + 1) taps[g] = fbuf[g][ch];
     end
 
-    // read the memories into nets first: part-selecting a memory word inline is
-    // accepted unevenly across tools
-    wire [WORD_BITS-1:0] w_word = w_rom[ch];
-    wire signed [31:0]   thr    = t_rom[{1'b0, ch}];
-    wire [31:0]          pol    = t_rom[{1'b1, ch}];
-    wire                 take_ge = pol[0];
+    // Take only the bits that mean something. The weight ROM holds K taps in a
+    // 32-bit word and the polarity ROM one flag; reading the full words and
+    // ignoring the rest reads as "these bits are dead", which is what lint
+    // objected to and is worth stating rather than suppressing.
+    wire [K-1:0]         w_taps  = w_rom[ch][K-1:0];
+    wire signed [31:0]   thr     = t_rom[{1'b0, ch}];
+    wire                 take_ge = t_rom[{1'b1, ch}][0];
 
     wire [WORD_BITS-1:0] taps_w = {{(WORD_BITS-K){1'b0}}, taps};
-    wire [WORD_BITS-1:0] wgt_w  = {{(WORD_BITS-K){1'b0}}, w_word[K-1:0]};
+    wire [WORD_BITS-1:0] wgt_w  = {{(WORD_BITS-K){1'b0}}, w_taps};
     // the same shift on both, or the taps stop meeting their weights
     wire [WORD_BITS-1:0] act_sh = taps_w >> sh;
     wire [WORD_BITS-1:0] wgt_sh = wgt_w  >> sh;
