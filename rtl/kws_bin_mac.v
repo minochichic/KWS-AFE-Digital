@@ -76,6 +76,17 @@ module kws_bin_mac #(
     wire [CNT_BITS-1:0]  ones_n  = ones + popcount(matched);
     wire                 last    = in_valid && (left <= wb);
 
+    // 2*P - N at a width that provably holds it: P and N are CNT_BITS wide, so
+    // 2*P needs CNT_BITS+1 and the signed difference CNT_BITS+2. ACC_BITS may
+    // legitimately be narrower -- export/emit.py sizes it from the bound
+    // +-n_terms -- so the narrowing is explicit above, not implicit here.
+    localparam integer TMP_BITS = (CNT_BITS + 2 > ACC_BITS) ? CNT_BITS + 2
+                                                            : ACC_BITS;
+    wire signed [TMP_BITS-1:0] acc_full =
+        $signed({{(TMP_BITS-CNT_BITS){1'b0}}, ones_n})
+      + $signed({{(TMP_BITS-CNT_BITS){1'b0}}, ones_n})
+      - $signed({{(TMP_BITS-CNT_BITS){1'b0}}, total});
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             left      <= {CNT_BITS{1'b0}};
@@ -93,10 +104,12 @@ module kws_bin_mac #(
                 ones <= ones_n;
                 left <= left - step;
                 if (last) begin
-                    // 2*P - N. The shift is exact: P <= N and ACC_BITS was
-                    // sized from N by export/emit.py, so this cannot wrap.
-                    acc       <= $signed({1'b0, ones_n} << 1)
-                                 - $signed({1'b0, total});
+                    // 2*P - N, computed at a width that holds it and then
+                    // narrowed on purpose. The earlier version let a 17-bit
+                    // subtraction fall into a 16-bit target and justified it
+                    // with "our values are small" -- true today, and not a
+                    // property of the code. verilator caught it.
+                    acc       <= acc_full[ACC_BITS-1:0];
                     out_valid <= 1'b1;
                 end
             end
@@ -104,11 +117,25 @@ module kws_bin_mac #(
     end
 
 `ifdef KWS_ASSERT
-    // The bound is the design's whole width argument (docs/ROADMAP.md P5-1).
-    // If it is ever violated the accumulator is undersized, and silently.
+    // Two separate claims, both silent when they fail.
+    //   1. the P5-1 width argument: the value stays inside +-n_terms
+    //   2. ACC_BITS was wide enough to hold it -- if not, the part-select
+    //      above wrapped, and check 1 would only sometimes notice
+    // Written against integer bounds rather than by sign-extending a slice:
+    // TMP_BITS-ACC_BITS is zero whenever ACC_BITS >= CNT_BITS+2, and a
+    // zero-width replication is not legal Verilog.
+    localparam integer ACC_MAX =  (1 << (ACC_BITS - 1)) - 1;
+    localparam integer ACC_MIN = -(1 << (ACC_BITS - 1));
     always @(posedge clk) if (out_valid) begin
         if (acc > $signed({1'b0, total}) || acc < -$signed({1'b0, total})) begin
             $display("ASSERT %m: acc %0d outside +-%0d", acc, total);
+            $fatal;
+        end
+    end
+    always @(posedge clk) if (in_valid && last) begin
+        if (acc_full > ACC_MAX || acc_full < ACC_MIN) begin
+            $display("ASSERT %m: ACC_BITS=%0d too narrow for %0d",
+                     ACC_BITS, acc_full);
             $fatal;
         end
     end
