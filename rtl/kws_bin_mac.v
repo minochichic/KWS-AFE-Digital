@@ -118,28 +118,42 @@ module kws_bin_mac #(
 
 `ifdef KWS_ASSERT
     // $finish, not $fatal: $fatal is a SystemVerilog task and a Verilog-2005
-    // simulator may reject it outright. run_tb.sh decides pass/fail from the
-    // log, so the message is what matters, not the exit status.
+    // simulator may reject it. run_tb.sh decides pass/fail from the log.
     //
-    // Two separate claims, both silent when they fail.
-    //   1. the P5-1 width argument: the value stays inside +-n_terms
-    //   2. ACC_BITS was wide enough to hold it -- if not, the part-select
-    //      above wrapped, and check 1 would only sometimes notice
-    // Written against integer bounds rather than by sign-extending a slice:
-    // TMP_BITS-ACC_BITS is zero whenever ACC_BITS >= CNT_BITS+2, and a
-    // zero-width replication is not legal Verilog.
-    localparam integer ACC_MAX =  (1 << (ACC_BITS - 1)) - 1;
-    localparam integer ACC_MIN = -(1 << (ACC_BITS - 1));
+    // Every comparison happens at CHK_BITS, wider than every operand, so
+    // nothing is implicitly extended. In an assertion an implicit extension is
+    // exactly what makes a check quietly weaker than it reads.
+    //
+    // CHK_BITS = TMP_BITS+1 keeps every replication non-zero: TMP_BITS equals
+    // ACC_BITS whenever ACC_BITS >= CNT_BITS+2, and a zero-width replication is
+    // not legal Verilog.
+    localparam integer CHK_BITS = TMP_BITS + 1;
+
+    wire signed [CHK_BITS-1:0] acc_chk =
+        {{(CHK_BITS-ACC_BITS){acc[ACC_BITS-1]}}, acc};
+    wire signed [CHK_BITS-1:0] full_chk =
+        {{(CHK_BITS-TMP_BITS){acc_full[TMP_BITS-1]}}, acc_full};
+    wire signed [CHK_BITS-1:0] tot_chk =
+        {{(CHK_BITS-CNT_BITS){1'b0}}, total};
+    // acc_full after the part-select, sign-extended back. Comparing against
+    // full_chk asks "did narrowing lose information?" without naming any
+    // constant -- no shifted literals, so no width to get wrong.
+    wire signed [CHK_BITS-1:0] narrowed_chk =
+        {{(CHK_BITS-ACC_BITS){acc_full[ACC_BITS-1]}}, acc_full[ACC_BITS-1:0]};
+
+    // 1. the P5-1 width argument: the value stays inside +-n_terms
     always @(posedge clk) if (out_valid) begin
-        if (acc > $signed({1'b0, total}) || acc < -$signed({1'b0, total})) begin
-            $display("ASSERT %m: acc %0d outside +-%0d", acc, total);
+        if (acc_chk > tot_chk || acc_chk < -tot_chk) begin
+            $display("ASSERT %m: acc %0d outside +-%0d", acc_chk, tot_chk);
             $finish;
         end
     end
+    // 2. ACC_BITS was wide enough. Check 1 alone would only sometimes catch a
+    //    truncation, since a wrapped value can land back inside +-n_terms.
     always @(posedge clk) if (in_valid && last) begin
-        if (acc_full > ACC_MAX || acc_full < ACC_MIN) begin
+        if (full_chk !== narrowed_chk) begin
             $display("ASSERT %m: ACC_BITS=%0d too narrow for %0d",
-                     ACC_BITS, acc_full);
+                     ACC_BITS, full_chk);
             $finish;
         end
     end
