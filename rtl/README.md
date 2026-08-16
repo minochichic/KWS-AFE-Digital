@@ -77,11 +77,79 @@ n_valid = 그 프레임의 유효 탭 수   (가운데 13, 왼쪽 끝 7, 오른�
 kws_bin_mac   ✅  2·popcount(XNOR) − N
 kws_dw_conv   ✅  라인버퍼 + 비트 게더 + 시프트/n_valid + threshold
 kws_pw_conv   ✅  프레임 워드 스트리밍 + threshold
-kws_tcs_sub   🔵  dw → pw 배선  (시뮬 대기)
+kws_tcs_sub   ✅  dw → pw 배선
 kws_block     ⬜  sub ×2 + residual add (정수 영역)
 kws_top       ⬜  21개 층 시분할
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```
+
+---
+
+## 3-1. 연산 방식과 모듈 간 관계
+
+그림: [`docs/diagrams/25_module_internals.svg`](../docs/diagrams/25_module_internals.svg)
+
+### 이 설계에 곱셈기가 없는 이유
+
+입력도 `±1`, 가중치도 `±1` 이면 곱은 **「부호가 같은가」** 다. 같으면 `+1`, 다르면
+`−1`. 그래서 `XNOR` 로 일치를 세면 곱셈 합이 나온다:
+
+```
+acc = 2·popcount(act XNOR wgt) − N
+```
+
+일치가 `P` 개면 합은 `P·(+1) + (N−P)·(−1) = 2P − N`. **산술은 `kws_bin_mac`
+안에서만 일어나고, 나머지 모듈은 그 앞에 무엇을 놓을지만 정한다.**
+
+| 모듈 | `kws_bin_mac` 에 무엇을 먹이나 |
+|---|---|
+| `kws_dw_conv` | line buffer 에서 모은 시간 방향 `K` 탭, shift 로 정렬 |
+| `kws_pw_conv` | 저장된 word 그 자체 (채널 방향), `NW` 개 연속 |
+
+### 두 conv 가 서로를 대체할 수 없는 이유
+
+같은 `[channel, frame]` 평면을 **다른 방향으로** 읽는다 (§2).
+
+| | depthwise | pointwise |
+|---|---|---|
+| 읽는 방향 | 가로 (시간) | 세로 (채널) |
+| 항 수 | `K` = 13~29 | `C_in` = 64~128 |
+| word 하나에서 쓰는 비트 | `K`/32 만 | **32/32 전부** |
+| line buffer | 필요 | 없음 |
+| padding · shift · `n_valid` | **있음** | 없음 (`n_valid` 는 상수) |
+| 채널당 사이클 | 3 | `2 + NW` = 6 |
+| 프레임당 사이클 | 128×3 = **384** | 64×6 = **384** |
+
+packing 이득이 pointwise 에 몰리는 게 여기서 보인다 — 항이 128개인데 4 사이클이다.
+depthwise 는 32칸짜리 word 에 13칸만 쓴다. **두 PE 를 하나로 합치지 말라는
+CLAUDE.md 3.4 가 이 얘기다.**
+
+### 모듈 간 계약 (전부 동일)
+
+```
+      push/in_valid            busy                    out_valid
+  ────────────────────►  ┌──────────────┐  ────────────────────►
+                         │  한 프레임    │
+                         └──────────────┘
+```
+
+1. **`busy` 중에는 절대 push 하지 않는다.** 어서션이 걸려 있다.
+2. **`out_valid` 는 `busy` 가 내려가는 그 엣지에 1 사이클 뜬다.** 테스트벤치가
+   `while (busy)` 로 기다린 뒤 그 자리에서 읽는 이유다.
+3. **`busy` 는 프레임이 「안에 있는 동안」 한 사이클도 끊기면 안 된다.**
+   `kws_tcs_sub` 이 `dw_ov` 를 빼먹어 한 사이클 구멍이 났고, 그 사이에 호출자가
+   다음 프레임을 밀어 넣어 앞 프레임이 사라졌다.
+4. **`start` 는 클립 시작에만.** line buffer 와 `valid` 를 비운다.
+
+### 계층
+
+```
+kws_tcs_sub ── kws_dw_conv ── kws_bin_mac
+            └─ kws_pw_conv ── kws_bin_mac
+```
+
+위 모듈의 테스트벤치는 **아래가 이미 골든 벡터로 검증됐다는 걸 알고** 시작한다.
+그래서 `kws_tcs_sub` 이 실패했을 때 후보가 handshake 하나로 좁혀졌다.
 
 ---
 
