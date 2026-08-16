@@ -84,9 +84,12 @@ module kws_tcs_sub #(
         .in_valid(pw_iv), .in_frame(pw_if),
         .busy(pw_busy), .out_valid(out_valid), .out_frame(out_frame));
 
-    // pw_iv is part of it: the frame is in flight for that cycle and a push
-    // then would race the handoff
-    assign busy = dw_busy | pw_busy | pw_iv;
+    // BOTH handoff cycles count. dw_busy falls on the edge that raises dw_ov,
+    // and pw_iv does not rise until the edge after that, so leaving dw_ov out
+    // opens a one-cycle hole where busy reads low while a frame is in flight.
+    // The caller then pushes into dw while pw is about to start, and the frame
+    // that was in flight never produces an output.
+    assign busy = dw_busy | dw_ov | pw_iv | pw_busy;
 
 `ifdef KWS_ASSERT
     always @(posedge clk) if (in_push && busy) begin
