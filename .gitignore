@@ -44,3 +44,5 @@ analog/AFE/artifacts/_t_*.csv
 # counts + outputs back into it on every run -- so a tracked copy conflicts on
 # every single pull. Regenerate instead: python3 notebooks/make_lab.py
 notebooks/lab.ipynb
+rtl/tb/vectors/
+*.vcd
