@@ -94,3 +94,28 @@ kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 - **어서션은 `KWS_ASSERT` 안에**, `$finish` 로 (`$fatal` 은 SystemVerilog).
   합격/불합격은 `run_tb.sh` 가 로그에서 판정한다.
 - **치수는 `rtl/gen/<tag>/parameters.vh` 에서.** RTL 소스에 숫자 리터럴 금지.
+
+### 클럭 엣지 — 합성 RTL 은 `posedge` 전용, TB 는 `negedge` 구동
+
+리뷰에서 걸리기 쉬운 자리라 명시해 둔다 (2026-08-16, 사용자 확인).
+
+**`rtl/*.v` 에 `negedge clk` 은 하나도 없다.** 있는 것은 `always @(posedge clk or
+negedge rst_n)` 의 **비동기 리셋 해제 검출**뿐이고, 그건 클럭을 양쪽 엣지로 쓰는
+것과 무관한 표준 관용구다. dual-edge clocking 도 half-cycle path 도 없다.
+
+**`rtl/tb/*.v` 는 `negedge` 에서 자극을 준다. 의도적이다.**
+
+```
+   posedge        negedge        posedge
+      │              │              │
+  DUT 샘플      TB 가 값 변경    DUT 샘플
+```
+
+자극 변화를 샘플링 엣지에서 반 클럭 떼어 놓으면, TB 의 blocking(`=`)과 DUT 의
+non-blocking(`<=`)이 같은 시각에 경쟁하지 않는다. 시뮬레이션에서 setup/hold 가
+구조적으로 보장된다.
+
+> TB 도 `posedge` 로 옮기려면 non-blocking 구동으로 바꾸고, **읽을 때 NBA 영역을
+> 의식해야 한다** — posedge 직후 blocking 으로 읽으면 옛 값을 본다. `tb_dw_conv`
+> 의 첫 버전이 정확히 그 계열의 착각으로 128 프레임 전부 "출력 없음" 을 보고했다.
+> posedge 통일은 그 함정을 줄이지 않고 늘린다.
