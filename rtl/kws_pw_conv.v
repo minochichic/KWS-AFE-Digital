@@ -26,7 +26,10 @@ module kws_pw_conv #(
     parameter integer CNT_BITS  = 16,
     parameter integer WORD_BITS = 32,
     parameter W_FILE = "",               // C_OUT*NW words
-    parameter T_FILE = ""                // C_OUT thresholds, then C_OUT polarity
+    parameter T_FILE = "",               // C_OUT thresholds, then C_OUT polarity
+    // width of the channel index; a localparam cannot be used in a port
+    // declaration, so it is a parameter with a derived default
+    parameter integer CO_BITS_P = (C_OUT <= 2) ? 1 : $clog2(C_OUT)
 ) (
     input  wire              clk,
     input  wire              rst_n,
@@ -36,11 +39,21 @@ module kws_pw_conv #(
 
     output wire              busy,
     output reg               out_valid,
-    output reg  [C_OUT-1:0]  out_frame
+    output reg  [C_OUT-1:0]  out_frame,
+
+    // Raw accumulator, streamed one channel at a time. The last pointwise of a
+    // residual block does NOT end in a threshold (manifest epilogue "none") --
+    // its integer accumulator is added to the skip's before a single threshold
+    // is applied. Exposing it here rather than adding the residual arithmetic
+    // to this module keeps that arithmetic where it belongs, in kws_block, and
+    // leaves the thresholded path untouched for callers that want it.
+    output reg                       acc_valid,
+    output reg  [CO_BITS_P-1:0]      acc_ch,
+    output reg  signed [ACC_BITS-1:0] acc_out
 );
 
     localparam integer NW      = C_IN / WORD_BITS;   // words per frame
-    localparam integer CO_BITS = (C_OUT <= 2) ? 1 : $clog2(C_OUT);
+    localparam integer CO_BITS = CO_BITS_P;
     localparam integer NW_BITS = (NW    <= 2) ? 1 : $clog2(NW);
     // sized explicitly rather than letting a 32-bit expression fall into a
     // narrow target -- that only ever works by accident of today's parameters
@@ -118,8 +131,12 @@ module kws_pw_conv #(
             act       <= {C_IN{1'b0}};
             out_valid <= 1'b0;
             out_frame <= {C_OUT{1'b0}};
+            acc_valid <= 1'b0;
+            acc_ch    <= {CO_BITS{1'b0}};
+            acc_out   <= {ACC_BITS{1'b0}};
         end else begin
             out_valid <= 1'b0;
+            acc_valid <= 1'b0;
             case (st)
             S_IDLE:
                 if (in_valid) begin
@@ -140,6 +157,9 @@ module kws_pw_conv #(
             S_TAKE:
                 if (mac_done) begin
                     out_frame[co] <= fired;
+                    acc_valid     <= 1'b1;      // same cycle as the bit above
+                    acc_ch        <= co;
+                    acc_out       <= mac_acc;
                     if (co == LAST_CO) begin
                         st        <= S_IDLE;
                         out_valid <= 1'b1;

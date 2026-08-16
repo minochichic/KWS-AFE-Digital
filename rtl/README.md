@@ -78,7 +78,7 @@ kws_bin_mac   ✅  2·popcount(XNOR) − N
 kws_dw_conv   ✅  라인버퍼 + 비트 게더 + 시프트/n_valid + threshold
 kws_pw_conv   ✅  프레임 워드 스트리밍 + threshold
 kws_tcs_sub   ✅  dw → pw 배선
-kws_block     ⬜  sub ×2 + residual add (정수 영역)
+kws_block     🔵  sub ×2 + residual add (정수 영역)  (모델 검증 완료, 시뮬 대기)
 kws_top       ⬜  21개 층 시분할
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```

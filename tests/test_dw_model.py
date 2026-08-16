@@ -200,3 +200,76 @@ def test_pointwise_model_reproduces_the_golden_output(pw_setup):
             if frame != s["exp"][n][t]:
                 bad.append((n, t))
     assert not bad, f"{len(bad)} frames differ, first at clip/t {bad[:3]}"
+
+
+# --------------------------------------------------------------------------- #
+# the residual block. The add happens in the INTEGER domain, before any
+# threshold, and the block applies exactly one threshold afterwards.
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="module")
+def blk_setup():
+    g = json.loads((GEN / "golden" / "golden.json").read_text())
+
+    def fr(key):
+        n, C, T = g["files"][key]["shape"]
+        return _frames(f"golden/{g['files'][key]['file']}", n, T, C // 32), C, T
+
+    x, c_in, T = fr("conv1_out")
+    y1, c_mid, _ = fr("b1_s1_dw_out")
+    exp, c_out, _ = fr("b1_add_out")
+    trom = _words("b1_add_t.hex")
+    return {
+        "x": x, "y1": y1, "exp": exp, "T": T, "n_clip": g["n_clips"],
+        "c_in": c_in, "c_mid": c_mid, "c_out": c_out,
+        "w_skip": _words("b1_skip_w.hex"), "w_pw": _words("b1_s1_pw_w.hex"),
+        "thr": [v - (1 << 32) if v >= 1 << 31 else v for v in trom[:c_out]],
+        "ge": [bool(v) for v in trom[c_out:]],
+    }
+
+
+def _dot(a, w_words, n_in, o, nw):
+    w = sum(w_words[o * nw + j] << (32 * j) for j in range(nw))
+    p = bin(~(a ^ w) & ((1 << n_in) - 1)).count("1")
+    return 2 * p - n_in
+
+
+def test_block_model_reproduces_the_golden_output(blk_setup):
+    s = blk_setup
+    nws, nwp = s["c_in"] // 32, s["c_mid"] // 32
+    bad = []
+    for n in range(s["n_clip"]):
+        for t in range(s["T"]):
+            frame = 0
+            for o in range(s["c_out"]):
+                a_sk = _dot(s["x"][n][t], s["w_skip"], s["c_in"], o, nws)
+                a_pw = _dot(s["y1"][n][t], s["w_pw"], s["c_mid"], o, nwp)
+                if (a_pw + a_sk >= s["thr"][o]) == s["ge"][o]:
+                    frame |= 1 << o
+            if frame != s["exp"][n][t]:
+                bad.append((n, t))
+    assert not bad, f"{len(bad)} frames differ, first at clip/t {bad[:3]}"
+
+
+def test_residual_must_be_added_before_the_threshold(blk_setup):
+    """Pin the one structural claim, so a rewrite that thresholds first fails.
+
+    Thresholding each path and combining +-1 outputs is a different network,
+    and it produces perfectly plausible bits -- there is no error, only worse
+    accuracy. It has to fail as a test or it will not fail at all.
+    """
+    s = blk_setup
+    nws, nwp = s["c_in"] // 32, s["c_mid"] // 32
+    n, t = 0, 32
+    differ = 0
+    for o in range(s["c_out"]):
+        a_sk = _dot(s["x"][n][t], s["w_skip"], s["c_in"], o, nws)
+        a_pw = _dot(s["y1"][n][t], s["w_pw"], s["c_mid"], o, nwp)
+        correct = (a_pw + a_sk >= s["thr"][o]) == s["ge"][o]
+        # the wrong version: threshold each path, then OR the +-1 results
+        wrong = (((a_pw >= s["thr"][o]) == s["ge"][o]) or
+                 ((a_sk >= s["thr"][o]) == s["ge"][o]))
+        differ += int(correct != wrong)
+    assert differ > 0, ("thresholding before the add changed nothing on this "
+                        "frame -- the test cannot detect the mistake")
