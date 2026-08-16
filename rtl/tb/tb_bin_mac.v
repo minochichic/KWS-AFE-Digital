@@ -46,6 +46,19 @@ module tb_bin_mac;
     integer errors = 0;
     integer ran    = 0;
 
+    // Wipe before each load. $readmemh leaves untouched entries alone, so a case
+    // with a wrong word count would quietly consume the PREVIOUS case's data
+    // and could pass. Zeroed, it reads -1s and fails.
+    task clear_mem;
+        integer i;
+        begin
+            for (i = 0; i < MAXW; i = i + 1) begin
+                a_mem[i] = {WORD_BITS{1'b0}};
+                w_mem[i] = {WORD_BITS{1'b0}};
+            end
+        end
+    endtask
+
     // one case: load, stream, compare
     task run_case;
         input [8*8-1:0] name;
@@ -115,32 +128,39 @@ module tb_bin_mac;
 
         // Kept explicit rather than parsed from cases.txt: $fscanf across
         // simulators is a portability tarpit, and these must match the file.
-        $readmemh("rtl/tb/vectors/k13_act.hex", a_mem);
-        $readmemh("rtl/tb/vectors/k13_wgt.hex", w_mem);
+        clear_mem;
+        $readmemh("rtl/tb/vectors/k13_act.hex", a_mem, 0, `K13_NWORDS-1);
+        $readmemh("rtl/tb/vectors/k13_wgt.hex", w_mem, 0, `K13_NWORDS-1);
         run_case("k13", 13, `K13_NWORDS, `K13_EXPECT);
 
-        $readmemh("rtl/tb/vectors/k29_act.hex", a_mem);
-        $readmemh("rtl/tb/vectors/k29_wgt.hex", w_mem);
+        clear_mem;
+        $readmemh("rtl/tb/vectors/k29_act.hex", a_mem, 0, `K29_NWORDS-1);
+        $readmemh("rtl/tb/vectors/k29_wgt.hex", w_mem, 0, `K29_NWORDS-1);
         run_case("k29", 29, `K29_NWORDS, `K29_EXPECT);
 
-        $readmemh("rtl/tb/vectors/w31_act.hex", a_mem);
-        $readmemh("rtl/tb/vectors/w31_wgt.hex", w_mem);
+        clear_mem;
+        $readmemh("rtl/tb/vectors/w31_act.hex", a_mem, 0, `W31_NWORDS-1);
+        $readmemh("rtl/tb/vectors/w31_wgt.hex", w_mem, 0, `W31_NWORDS-1);
         run_case("w31", 31, `W31_NWORDS, `W31_EXPECT);
 
-        $readmemh("rtl/tb/vectors/w32_act.hex", a_mem);
-        $readmemh("rtl/tb/vectors/w32_wgt.hex", w_mem);
+        clear_mem;
+        $readmemh("rtl/tb/vectors/w32_act.hex", a_mem, 0, `W32_NWORDS-1);
+        $readmemh("rtl/tb/vectors/w32_wgt.hex", w_mem, 0, `W32_NWORDS-1);
         run_case("w32", 32, `W32_NWORDS, `W32_EXPECT);
 
-        $readmemh("rtl/tb/vectors/w33_act.hex", a_mem);
-        $readmemh("rtl/tb/vectors/w33_wgt.hex", w_mem);
+        clear_mem;
+        $readmemh("rtl/tb/vectors/w33_act.hex", a_mem, 0, `W33_NWORDS-1);
+        $readmemh("rtl/tb/vectors/w33_wgt.hex", w_mem, 0, `W33_NWORDS-1);
         run_case("w33", 33, `W33_NWORDS, `W33_EXPECT);
 
-        $readmemh("rtl/tb/vectors/c64_act.hex", a_mem);
-        $readmemh("rtl/tb/vectors/c64_wgt.hex", w_mem);
+        clear_mem;
+        $readmemh("rtl/tb/vectors/c64_act.hex", a_mem, 0, `C64_NWORDS-1);
+        $readmemh("rtl/tb/vectors/c64_wgt.hex", w_mem, 0, `C64_NWORDS-1);
         run_case("c64", 64, `C64_NWORDS, `C64_EXPECT);
 
-        $readmemh("rtl/tb/vectors/c128_act.hex", a_mem);
-        $readmemh("rtl/tb/vectors/c128_wgt.hex", w_mem);
+        clear_mem;
+        $readmemh("rtl/tb/vectors/c128_act.hex", a_mem, 0, `C128_NWORDS-1);
+        $readmemh("rtl/tb/vectors/c128_wgt.hex", w_mem, 0, `C128_NWORDS-1);
         run_case("c128", 128, `C128_NWORDS, `C128_EXPECT);
 
         run_all_minus_one;

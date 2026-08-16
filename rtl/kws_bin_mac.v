@@ -21,6 +21,10 @@
 // ACC_BITS comes from parameters.vh, which export/emit.py generates from the
 // analytic bound +-n_terms. Do not widen it by hand -- regenerate.
 
+// A timescale even though this is synthesizable RTL: without one, a
+// simulator that has seen `timescale in the testbench warns that the two
+// are mixed, and that warning would repeat for every module added.
+`timescale 1ns/1ps
 `default_nettype none
 
 module kws_bin_mac #(
