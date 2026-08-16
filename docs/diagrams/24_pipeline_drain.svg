@@ -192,19 +192,19 @@
 <text x="1070" y="547" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">t=58</text>
 <text x="252" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="end" font-weight="600">(없음) ×6</text>
 <rect x="268" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
-<text x="288.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f58</text>
+<text x="288.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f57</text>
 <rect x="312" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
-<text x="332.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f59</text>
+<text x="332.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f58</text>
 <rect x="356" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
-<text x="376.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f60</text>
+<text x="376.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f59</text>
 <rect x="400" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
-<text x="420.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f61</text>
+<text x="420.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f60</text>
 <rect x="444" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
-<text x="464.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f62</text>
+<text x="464.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f61</text>
 <rect x="488" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
-<text x="508.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f63</text>
-<rect x="532" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
-<text x="552.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<text x="508.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f62</text>
+<rect x="532" y="580" width="41" height="28" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.1"/>
+<text x="552.5" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">f63</text>
 <rect x="576" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
 <text x="596.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
 <rect x="620" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
@@ -215,7 +215,9 @@
 <text x="728.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
 <rect x="752" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
 <text x="772.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
-<text x="930" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">111111000000</text>
+<rect x="796" y="580" width="41" height="28" rx="3" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.1"/>
+<text x="816.5" y="599" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#cc6155" text-anchor="middle" font-weight="400">pad</text>
+<text x="930" y="599" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">1111111000000</text>
 <text x="1070" y="599" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">t=63</text>
 <text x="620.0" y="640" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="600">마지막 실제 프레임 f63 을 밀어도 출력은 t=57 까지다. 남은 t=58~63 의 창은 f64~f69 를 필요로 하는데 그런 건 없다 — 그래서 빈 칸을 6번 더 민다.</text>
 <rect x="24" y="674" width="1192" height="178" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>

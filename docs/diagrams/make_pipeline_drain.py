@@ -126,8 +126,10 @@ ROWS = [
     ("f6",  [None] * 6 + [0, 1, 2, 3, 4, 5, 6],              "t=0", "run"),
     ("f63", list(range(51, 64)),                             "t=57", "run"),
     ("(없음)", list(range(52, 64)) + [None],                 "t=58", "drain"),
-    ("(없음) ×6", list(range(58, 64)) + [None] * 6,          "t=63", "drain"),
+    ("(없음) ×6", list(range(57, 64)) + [None] * 6,          "t=63", "drain"),
 ]
+for _p, _s, _o, _ph in ROWS:
+    assert len(_s) == K, f"{_p}: {len(_s)} slots, expected {K}"
 for i, (push, slots, outp, phase) in enumerate(ROWS):
     y = BY + 66 + i * 52
     text(push, bx - 16, y + 19, size=11.5, weight="600", anchor="end",

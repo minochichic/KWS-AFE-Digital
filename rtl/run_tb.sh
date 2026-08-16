@@ -18,6 +18,10 @@ cd "$(git rev-parse --show-toplevel)"
 NAME="${1:-bin_mac}"
 DUT="rtl/kws_${NAME}.v"
 TB="rtl/tb/tb_${NAME}.v"
+# every module, not just the DUT: modules instantiate each other
+# (dw_conv wraps bin_mac) and a missing one is a link error, not a
+# design question worth asking the caller about
+ALL_RTL=$(ls rtl/*.v)
 [ -f "$DUT" ] || { echo "no such module: $DUT" >&2; exit 1; }
 [ -f "$TB" ]  || { echo "no testbench: $TB" >&2; exit 1; }
 
@@ -30,7 +34,7 @@ if command -v verilator >/dev/null 2>&1; then
     # -Wall minus the style-only ones that fight Verilog-2001 conventions.
     verilator --lint-only -Wall -DKWS_ASSERT \
               -Wno-DECLFILENAME -Wno-VARHIDDEN \
-              --top-module "kws_${NAME}" "$DUT"
+              --top-module "kws_${NAME}" $ALL_RTL
     echo "lint clean"
 else
     echo "== lint skipped (verilator not installed) =="
@@ -41,7 +45,7 @@ OUT="$(mktemp -d)/tb_${NAME}"
 LOG="${OUT}.log"
 # -DKWS_ASSERT arms the accumulator bound checks inside the DUT.
 # -I. so the testbench can include the generated vectors/expect.vh by repo path.
-iverilog -g2005 -Wall -DKWS_ASSERT -I. -o "$OUT" "$DUT" "$TB"
+iverilog -g2005 -Wall -DKWS_ASSERT -I. -o "$OUT" $ALL_RTL "$TB"
 vvp "$OUT" | tee "$LOG"
 
 # Do not rely on $fatal to set the exit status: it is a SystemVerilog task and
