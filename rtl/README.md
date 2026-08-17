@@ -78,7 +78,7 @@ kws_bin_mac   ✅  2·popcount(XNOR) − N
 kws_dw_conv   ✅  라인버퍼 + 비트 게더 + 시프트/n_valid + threshold
 kws_pw_conv   ✅  프레임 워드 스트리밍 + threshold
 kws_tcs_sub   ✅  dw → pw 배선
-kws_block     🔵  sub ×2 + residual add (정수 영역)  (모델 검증 완료, 시뮬 대기)
+kws_block     ✅  sub ×2 + residual add (정수 영역)
 kws_top       ⬜  21개 층 시분할
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```
@@ -363,6 +363,25 @@ CLAUDE.md 3.4 가 이 얘기다.**
    `kws_tcs_sub` 이 `dw_ov` 를 빼먹어 한 사이클 구멍이 났고, 그 사이에 호출자가
    다음 프레임을 밀어 넣어 앞 프레임이 사라졌다.
 4. **`start` 는 클립 시작에만.** line buffer 와 `valid` 를 비운다.
+
+### 시간 척도가 두 개다
+
+가장 헷갈리는 지점이라 적어둔다. 지연선 그림의 `t=0,1,2` 는 **프레임 스텝**이지
+클럭이 아니다.
+
+| 주기 | 움직이는 것 |
+|---|---|
+| **프레임마다** | `fbuf` · `valid` · `xdly` — 지연선 전부 |
+| **클럭마다** | `ch`/`co` 채널 카운터, `wi`/`wa` 워드 주소, FSM 상태, MAC 의 `P` |
+| 안 움직임 | 가중치 ROM, threshold ROM, 슬롯↔tap 대응 |
+
+**프레임 안에서 conv 창은 얼어 있다.** 움직이는 것은 채널 인덱스뿐이고, gather 가
+같은 13 슬롯에서 매번 다른 비트를 뽑는다. 그게 folded 의 의미다 — 하드웨어는
+MAC 하나고 채널을 갈아 끼운다.
+
+`kws_block` 실측: **프레임당 1,613 클럭** (계산 1,600 + handshake 13).
+100 MHz 면 프레임 16 µs, 클립(64 프레임) 1.0 ms. 추론 예산 100 ms 에 견주면
+블록 하나가 1% 다.
 
 ### 계층
 
