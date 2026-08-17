@@ -66,7 +66,12 @@ module kws_block #(
 );
 
     localparam integer CO_BITS = (C_OUT <= 2) ? 1 : $clog2(C_OUT);
-    localparam integer DEPTH   = 2 * PAD;        // frames the sub chain lags by
+    // 2*PAD + 1, not 2*PAD. After the push of x[i] the newest slot holds x[i]
+    // and the oldest holds x[i - (DEPTH-1)], so reaching x[i-2*PAD] -- the frame
+    // the sub chain is emitting -- needs DEPTH-1 = 2*PAD. One short reads x[i-11]
+    // instead of x[i-12], which is an adjacent frame: most channels still agree
+    // and only some flip, so it fails as partial mismatches rather than garbage.
+    localparam integer DEPTH   = 2 * PAD + 1;
     localparam integer TH_BITS = (ADD_ACC + 1 > 33) ? ADD_ACC + 1 : 33;
     // one wider than every addend, so no sign extension below is zero-width
     localparam integer SUM_BITS = ADD_ACC + 1;
