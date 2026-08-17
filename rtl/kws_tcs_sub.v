@@ -77,12 +77,22 @@ module kws_tcs_sub #(
     end
 
     wire pw_busy;
+    // kws_pw_conv also streams its raw accumulator, which only kws_block wants
+    // (for the residual add). A sub-block ends in a threshold, so these are
+    // dropped on purpose; suppression scoped to these three nets.
+    /* verilator lint_off UNUSEDSIGNAL */
+    wire                     pw_acc_v_nc;
+    wire [$clog2(C_OUT)-1:0] pw_acc_ch_nc;
+    wire signed [PW_ACC-1:0] pw_acc_nc;
+    /* verilator lint_on UNUSEDSIGNAL */
     kws_pw_conv #(.C_IN(C_IN), .C_OUT(C_OUT), .ACC_BITS(PW_ACC),
                   .WORD_BITS(WORD_BITS),
                   .W_FILE(PW_W_FILE), .T_FILE(PW_T_FILE)) u_pw (
         .clk(clk), .rst_n(rst_n),
         .in_valid(pw_iv), .in_frame(pw_if),
-        .busy(pw_busy), .out_valid(out_valid), .out_frame(out_frame));
+        .busy(pw_busy), .out_valid(out_valid), .out_frame(out_frame),
+        .acc_valid(pw_acc_v_nc), .acc_ch(pw_acc_ch_nc),
+        .acc_out(pw_acc_nc));
 
     // BOTH handoff cycles count. dw_busy falls on the edge that raises dw_ov,
     // and pw_iv does not rise until the edge after that, so leaving dw_ov out

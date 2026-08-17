@@ -72,7 +72,7 @@ module kws_block #(
     localparam integer SUM_BITS = ADD_ACC + 1;
 
     localparam [2:0] S_IDLE = 3'd0, S_SUB0 = 3'd1, S_SUB1 = 3'd2,
-                     S_SKIP = 3'd3, S_PW   = 3'd4, S_DONE = 3'd5;
+                     S_SKIP = 3'd3, S_PW   = 3'd4;
     reg [2:0] st;
     assign busy = (st != S_IDLE);
 
@@ -118,8 +118,19 @@ module kws_block #(
     reg [C_MID-1:0] y_lat;                 // sub1's depthwise output, held
     reg [C_IN-1:0]  x_lat;                 // the aligned block input for skip
 
+    // These two instances have no threshold ROM (T_FILE is empty) because the
+    // layers they implement end in epilogue "none" -- their accumulators are
+    // what the residual add consumes. The thresholded outputs therefore carry
+    // nothing meaningful and are deliberately dropped. Named rather than left
+    // as empty pin connections so the intent is visible, and the suppression is
+    // scoped to these four nets only.
+    /* verilator lint_off UNUSEDSIGNAL */
+    wire              skip_ov_nc, s1pw_ov_nc;
+    wire [C_OUT-1:0]  skip_of_nc, s1pw_of_nc;
+    /* verilator lint_on UNUSEDSIGNAL */
+
     // skip: unscaled pointwise on the DELAYED input; only its accumulator is
-    // used, so T_FILE is left empty and out_frame ignored
+    // used, so T_FILE is left empty
     reg                          skip_iv;
     wire                         skip_busy, skip_av;
     wire [CO_BITS-1:0]           skip_ach;
@@ -130,7 +141,7 @@ module kws_block #(
                   .CO_BITS_P(CO_BITS)) u_skip (
         .clk(clk), .rst_n(rst_n),
         .in_valid(skip_iv), .in_frame(x_lat),
-        .busy(skip_busy), .out_valid(), .out_frame(),
+        .busy(skip_busy), .out_valid(skip_ov_nc), .out_frame(skip_of_nc),
         .acc_valid(skip_av), .acc_ch(skip_ach), .acc_out(skip_aval));
 
     // one accumulator per output channel, held while the last pointwise runs
@@ -147,7 +158,7 @@ module kws_block #(
                   .CO_BITS_P(CO_BITS)) u_s1_pw (
         .clk(clk), .rst_n(rst_n),
         .in_valid(s1pw_iv), .in_frame(y_lat),
-        .busy(s1pw_busy), .out_valid(), .out_frame(),
+        .busy(s1pw_busy), .out_valid(s1pw_ov_nc), .out_frame(s1pw_of_nc),
         .acc_valid(s1pw_av), .acc_ch(s1pw_ach), .acc_out(s1pw_aval));
 
     // ---- the residual add, then ONE threshold ----------------------------- //
@@ -171,13 +182,11 @@ module kws_block #(
     always @(posedge clk) if (s1pw_av) out_frame[s1pw_ach] <= add_fired;
 
     // ---- sequencing -------------------------------------------------------- //
-    reg saw_s1dw;                      // did sub1's depthwise emit this pass?
-
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             st <= S_IDLE; out_valid <= 1'b0;
             s0_push <= 1'b0; s1_push <= 1'b0; s1_real <= 1'b0;
-            skip_iv <= 1'b0; s1pw_iv <= 1'b0; saw_s1dw <= 1'b0;
+            skip_iv <= 1'b0; s1pw_iv <= 1'b0;
             y_lat <= {C_MID{1'b0}}; x_lat <= {C_IN{1'b0}};
         end else begin
             out_valid <= 1'b0;
@@ -187,12 +196,9 @@ module kws_block #(
             s1pw_iv   <= 1'b0;
             case (st)
             S_IDLE:
-                if (start) begin
-                    saw_s1dw <= 1'b0;
-                end else if (in_push) begin
-                    s0_push  <= 1'b1;
-                    saw_s1dw <= 1'b0;
-                    st       <= S_SUB0;
+                if (in_push && !start) begin
+                    s0_push <= 1'b1;
+                    st      <= S_SUB0;
                 end
             S_SUB0:
                 // sub0 is sequential inside; wait for it to settle, then hand
