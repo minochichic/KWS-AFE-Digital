@@ -971,6 +971,55 @@ print('bitwidths(tag) 준비됨')
 # 빠른 확인만 (2배치)
 # sites = bitwidths('xl_g12', max_batches=2, save=False)'''),
 
+md("""## 8c. 꼬리 고정소수점 — 소수부 몇 비트? (학습 없음, 몇 분)
+
+층 21개 중 **14개는 threshold 로 끝나** 정수 비교라 포맷을 정할 게 없다.
+세 층만 실수가 남는다:
+
+```
+conv2_pw  이진 MAC → 정수 acc → BN → relu → [실수]   ← conv3 의 입력
+conv3     int8 가중치 × [실수] → BN → relu → [실수]  ← conv4 의 입력
+conv4     [실수] 가중치 × [실수] → logits → argmax
+```
+
+고정소수점 = **소수점 위치를 정해둔 정수**다. 소수부 `f` 비트면 정수 37 이
+`37/2^f` 를 뜻한다. 하드웨어는 정수만 보고, 소수점은 해석에만 있다.
+
+| | 부족하면 | 재료 |
+|---|---|---|
+| **정수부** | 값이 잘림 (saturate) | `runs/<tag>/ranges.json` — **이미 있음** |
+| **소수부** | 양자화 오차 → 정확도 손실 | **이 셀에서 잰다** |
+
+> ⚠️ `conv4` 범위는 `[-68.1, 26.1]` 로 **비대칭**이다. 2의 보수는 비대칭이 될 수
+> 없으니 **큰 쪽(68.1)에 맞춰야** 하고 양수 쪽은 논다. 비용이지 버그가 아니다.
+
+**답을 두 방향에서 구하고 서로 검산한다:**
+- `logit_margin()` — 1등과 2등 logit 격차. argmax 는 순서만 보므로 양자화 간격이
+  격차보다 작으면 예측이 안 바뀐다. **학습 없이 conv4 답이 나오고**, sweep 이
+  어디서 깨질지 예측한다.
+- `sweep_tail()` — 실제로 양자화해서 정확도를 잰다. 최종 답."""),
+code('''from experiments.tail_fixedpoint import (sweep_tail, logit_margin,
+                                          int_bits_from_ranges)
+
+def tail_probe(tag, **over):
+    """격차 분포 + 소수부 sweep 을 한 번에."""
+    cfg, afe, model, _ = load_run(tag, **over)
+    T, ld = cfg.model.T, test_loader(cfg)
+    rp = f'runs/{tag}/ranges.json'
+    if not os.path.isfile(rp):
+        raise FileNotFoundError(f'{rp} 없음 — §8b bitwidths(tag) 를 먼저')
+    print(f'=== {tag} ===')
+    logit_margin(afe, model, ld, T, DEV)
+    print()
+    return sweep_tail(afe, model, ld, T, rp, device=DEV)
+
+print('tail_probe(tag) 준비됨')
+
+# tail_probe('xl_g12')
+
+# 정수부만 먼저 보고 싶으면
+# print(int_bits_from_ranges('runs/xl_g12/ranges.json'))'''),
+
 md("""## 9. 잘못된 런 지우기
 
 `resume=True`라 같은 태그로 다시 돌리면 **이어서** 학습한다. 설정을 바꿨으면 반드시
