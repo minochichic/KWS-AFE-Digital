@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1010" width="1240" height="1010">
+<rect width="1240" height="1010" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">타이밍 — 클럭과 프레임, 두 척도</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">지연선 그림의 t=0,1,2 는 프레임이지 클럭이 아니다. 프레임 하나가 1,613 클럭이다.</text>
+<rect x="24" y="78" width="1192" height="250" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="103" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  프레임 척도 — 지연선은 여기서만 움직인다</text>
+<text x="44" y="122" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">한 칸이 프레임 하나 = 1,613 클럭 ≈ 16 µs (@100 MHz).</text>
+<text x="188" y="155" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">in_push</text>
+<text x="188" y="167" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">프레임 투입</text>
+<polyline points="200,145 200.0,145 255.0,145 255.0,160 310.0,160 310.0,160 365.0,160 365.0,160 420.0,160 420.0,145 475.0,145 475.0,160 530.0,160 530.0,160 585.0,160 585.0,160 640.0,160 640.0,145 695.0,145 695.0,160 750.0,160 750.0,160 805.0,160 805.0,160 860.0,160 860.0,145 915.0,145 915.0,160 970.0,160 970.0,160 1025.0,160 1025.0,160 1080.0,160" fill="none" stroke="#2f6fd0" stroke-width="1.8"/>
+<text x="188" y="185" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">busy</text>
+<text x="188" y="197" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">계산 중</text>
+<polyline points="200,175 200.0,175 255.0,175 255.0,175 310.0,175 310.0,175 365.0,175 365.0,190 420.0,190 420.0,175 475.0,175 475.0,175 530.0,175 530.0,175 585.0,175 585.0,190 640.0,190 640.0,175 695.0,175 695.0,175 750.0,175 750.0,175 805.0,175 805.0,190 860.0,190 860.0,175 915.0,175 915.0,175 970.0,175 970.0,175 1025.0,175 1025.0,190 1080.0,190" fill="none" stroke="#2f6fd0" stroke-width="1.8"/>
+<text x="188" y="215" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">fbuf</text>
+<text x="188" y="227" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">line buffer</text>
+<rect x="202" y="204" width="216" height="17" rx="3" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="310.0" y="216" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">x[t-7 … t+5]</text>
+<rect x="422" y="204" width="216" height="17" rx="3" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="530.0" y="216" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">x[t-6 … t+6]</text>
+<rect x="642" y="204" width="216" height="17" rx="3" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="750.0" y="216" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">x[t-5 … t+7]</text>
+<rect x="862" y="204" width="216" height="17" rx="3" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="970.0" y="216" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">x[t-4 … t+8]</text>
+<text x="188" y="245" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">out_valid</text>
+<text x="188" y="257" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">프레임 완료</text>
+<polyline points="200,250 200.0,250 255.0,250 255.0,250 310.0,250 310.0,250 365.0,250 365.0,235 420.0,235 420.0,250 475.0,250 475.0,250 530.0,250 530.0,250 585.0,250 585.0,235 640.0,235 640.0,250 695.0,250 695.0,250 750.0,250 750.0,250 805.0,250 805.0,235 860.0,235 860.0,250 915.0,250 915.0,250 970.0,250 970.0,250 1025.0,250 1025.0,235 1080.0,235" fill="none" stroke="#2f6fd0" stroke-width="1.8"/>
+<line x1="200" y1="136" x2="200" y2="274" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="420" y1="136" x2="420" y2="274" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="640" y1="136" x2="640" y2="274" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="860" y1="136" x2="860" y2="274" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="1080" y1="136" x2="1080" y2="274" stroke="#e8ecf2" stroke-width="1"/>
+<text x="310.0" y="290" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임 t-1</text>
+<text x="530.0" y="290" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임 t</text>
+<text x="750.0" y="290" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임 t+1</text>
+<text x="970.0" y="290" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임 t+2</text>
+<text x="620.0" y="314" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">← 지연선이 한 칸 미는 순간은 여기, 프레임 경계뿐이다</text>
+<rect x="24" y="346" width="1192" height="346" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="371" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  한 프레임 안을 확대 — 여기서 지연선은 얼어 있다</text>
+<text x="44" y="390" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">채널 하나에 3 클럭. 채널 인덱스만 훑고, tap 은 그대로다 (kws_dw_conv).</text>
+<text x="188" y="425" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">clk</text>
+<text x="188" y="437" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">10 ns</text>
+<polyline points="200,430 200,415 239.0,415 239.0,430 278,430 278,415 317.0,415 317.0,430 356,430 356,415 395.0,415 395.0,430 434,430 434,415 473.0,415 473.0,430 512,430 512,415 551.0,415 551.0,430 590,430 590,415 629.0,415 629.0,430 668,430 668,415 707.0,415 707.0,430 746,430 746,415 785.0,415 785.0,430 824,430 824,415 863.0,415 863.0,430 902,430 902,415 941.0,415 941.0,430 980,430 980,415 1019.0,415 1019.0,430 1058,430 1058,415 1097.0,415 1097.0,430 1136,430" fill="none" stroke="#2f6fd0" stroke-width="1.8"/>
+<text x="188" y="455" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">st</text>
+<text x="188" y="467" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">FSM</text>
+<rect x="202" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="239.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">START</text>
+<rect x="280" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="317.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">FEED</text>
+<rect x="358" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="395.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">TAKE</text>
+<rect x="436" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="473.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">START</text>
+<rect x="514" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="551.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">FEED</text>
+<rect x="592" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="629.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">TAKE</text>
+<rect x="670" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="707.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">START</text>
+<rect x="748" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="785.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">FEED</text>
+<rect x="826" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="863.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">TAKE</text>
+<rect x="904" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="941.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">START</text>
+<rect x="982" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="1019.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">FEED</text>
+<rect x="1060" y="444" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="1097.0" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">TAKE</text>
+<text x="188" y="485" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">ch</text>
+<text x="188" y="497" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">채널 인덱스</text>
+<rect x="202" y="474" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="317.0" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">0</text>
+<rect x="436" y="474" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="551.0" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">1</text>
+<rect x="670" y="474" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="785.0" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">2</text>
+<rect x="904" y="474" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="1019.0" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">3</text>
+<text x="188" y="515" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">taps</text>
+<text x="188" y="527" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">gather 결과</text>
+<rect x="202" y="504" width="230" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="317.0" y="516" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">비트 0 ×13</text>
+<rect x="436" y="504" width="230" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="551.0" y="516" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">비트 1 ×13</text>
+<rect x="670" y="504" width="230" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="785.0" y="516" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">비트 2 ×13</text>
+<rect x="904" y="504" width="230" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="1019.0" y="516" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">비트 3 ×13</text>
+<text x="188" y="545" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">mac_feed</text>
+<text x="188" y="557" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">word 투입</text>
+<polyline points="200,550 200,550 278,550 278,535 356,535 356,550 434,550 434,550 512,550 512,535 590,535 590,550 668,550 668,550 746,550 746,535 824,535 824,550 902,550 902,550 980,550 980,535 1058,535 1058,550 1136,550" fill="none" stroke="#2f6fd0" stroke-width="1.8"/>
+<text x="188" y="575" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">acc</text>
+<text x="188" y="587" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">2P−N</text>
+<rect x="202" y="564" width="152" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<rect x="358" y="564" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="395.0" y="576" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">a0</text>
+<rect x="436" y="564" width="152" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<rect x="592" y="564" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="629.0" y="576" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">a1</text>
+<rect x="670" y="564" width="152" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<rect x="826" y="564" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="863.0" y="576" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">a2</text>
+<rect x="904" y="564" width="152" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<rect x="1060" y="564" width="74" height="17" rx="3" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="1097.0" y="576" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">a3</text>
+<text x="188" y="605" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">out_frame</text>
+<text x="188" y="617" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">비트가 채워짐</text>
+<rect x="202" y="594" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="317.0" y="606" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">[0] 확정</text>
+<rect x="436" y="594" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="551.0" y="606" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">[1] 확정</text>
+<rect x="670" y="594" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="785.0" y="606" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">[2] 확정</text>
+<rect x="904" y="594" width="230" height="17" rx="3" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="1019.0" y="606" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="middle" font-weight="400">[3] 확정</text>
+<text x="188" y="637" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="end" font-weight="600">fbuf</text>
+<text x="188" y="649" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9" fill="#5b6478" text-anchor="end" font-weight="400">line buffer</text>
+<rect x="202" y="626" width="932" height="17" rx="3" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="668.0" y="638" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">변하지 않음 — 같은 13 프레임을 128 채널이 나눠 쓴다</text>
+<line x1="200" y1="406" x2="200" y2="642" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="434" y1="406" x2="434" y2="642" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="668" y1="406" x2="668" y2="642" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="902" y1="406" x2="902" y2="642" stroke="#e8ecf2" stroke-width="1"/>
+<line x1="1136" y1="406" x2="1136" y2="642" stroke="#e8ecf2" stroke-width="1"/>
+<text x="668" y="666" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">… 채널 127 까지 반복 → 128 × 3 = 384 클럭</text>
+<rect x="24" y="708" width="1192" height="282" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="733" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  무엇이 어느 주기로 바뀌나</text>
+<rect x="44" y="754" width="1152" height="50" rx="8" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="60" y="775" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">클럭마다</text>
+<text x="60" y="793" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">10 ns</text>
+<text x="216" y="775" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">st (FSM) · ch/co 채널 인덱스 · wi/wa 워드 주소 · MAC 내부 P</text>
+<text x="216" y="793" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">가장 빠르다. 하드웨어 하나를 채널마다 갈아 끼우는 것이 folded 다.</text>
+<rect x="44" y="812" width="1152" height="50" rx="8" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="60" y="833" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">채널마다</text>
+<text x="60" y="851" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">3 클럭</text>
+<text x="216" y="833" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">taps (gather 결과) · acc · out_frame 의 비트 하나</text>
+<text x="216" y="851" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">tap 은 그대로고 뽑는 비트 위치만 바뀐다.</text>
+<rect x="44" y="870" width="1152" height="50" rx="8" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="60" y="891" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">프레임마다</text>
+<text x="60" y="909" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">1,613 클럭 ≈ 16 µs</text>
+<text x="216" y="891" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">fbuf 슬롯 · valid · xdly — 지연선 전부</text>
+<text x="216" y="909" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">여기서만 창이 한 칸 움직인다. conv 의 시간축이 이것.</text>
+<rect x="44" y="928" width="1152" height="50" rx="8" fill="#f2f4f7" stroke="#a8b0bf" stroke-width="1.2"/>
+<text x="60" y="949" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">절대 안 바뀜</text>
+<text x="60" y="967" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">—</text>
+<text x="216" y="949" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="400">가중치 ROM · threshold ROM · 슬롯↔tap 대응</text>
+<text x="216" y="967" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">재학습하면 .hex 만 갈아 끼운다 (docs/ICD.md 6).</text>
+</svg>
