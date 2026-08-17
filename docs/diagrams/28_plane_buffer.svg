@@ -1,0 +1,126 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1024" width="1240" height="1024">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6478"/></marker></defs>
+<rect width="1240" height="1024" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">층 사이를 어떻게 잇나 — 컨베이어 vs 창고</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">21개 층이 활성을 서로에게 넘기는 방식. 층 안에서는 스트리밍이 맞는데, 층 사이에서는 얘기가 다르다.</text>
+<rect x="24" y="78" width="1192" height="268" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="103" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  스트리밍 = 컨베이어 벨트</text>
+<text x="44" y="122" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">활성이 프레임 단위로 흘러간다. 층이 필요한 것은 그 순간 손에 들고 있어야 한다 — 그게 line buffer 다.</text>
+<rect x="70" y="148" width="150" height="46" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="145.0" y="176" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="600">conv1</text>
+<line x1="222" y1="171" x2="262" y2="171" stroke="#5b6478" stroke-width="1.7" marker-end="url(#a)"/>
+<text x="242.0" y="162" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임</text>
+<rect x="264" y="148" width="150" height="46" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="339.0" y="176" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="600">b1</text>
+<line x1="416" y1="171" x2="456" y2="171" stroke="#5b6478" stroke-width="1.7" marker-end="url(#a)"/>
+<text x="436.0" y="162" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임</text>
+<rect x="458" y="148" width="150" height="46" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="533.0" y="176" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="600">b2</text>
+<line x1="610" y1="171" x2="650" y2="171" stroke="#5b6478" stroke-width="1.7" marker-end="url(#a)"/>
+<text x="630.0" y="162" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임</text>
+<rect x="652" y="148" width="150" height="46" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="727.0" y="176" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="600">b3</text>
+<line x1="804" y1="171" x2="844" y2="171" stroke="#5b6478" stroke-width="1.7" marker-end="url(#a)"/>
+<text x="824.0" y="162" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="middle" font-weight="400">프레임</text>
+<rect x="846" y="148" width="150" height="46" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="921.0" y="176" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="600">꼬리</text>
+<line x1="242.0" y1="194" x2="242.0" y2="222" stroke="#cc6155" stroke-width="1.5" stroke-dasharray="3 3"/>
+<rect x="208.0" y="222" width="68" height="26" rx="5" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.2"/>
+<text x="242.0" y="239" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a3453a" text-anchor="middle" font-weight="400">지연 맞춤</text>
+<line x1="436.0" y1="194" x2="436.0" y2="222" stroke="#cc6155" stroke-width="1.5" stroke-dasharray="3 3"/>
+<rect x="402.0" y="222" width="68" height="26" rx="5" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.2"/>
+<text x="436.0" y="239" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a3453a" text-anchor="middle" font-weight="400">지연 맞춤</text>
+<line x1="630.0" y1="194" x2="630.0" y2="222" stroke="#cc6155" stroke-width="1.5" stroke-dasharray="3 3"/>
+<rect x="596.0" y="222" width="68" height="26" rx="5" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.2"/>
+<text x="630.0" y="239" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a3453a" text-anchor="middle" font-weight="400">지연 맞춤</text>
+<line x1="824.0" y1="194" x2="824.0" y2="222" stroke="#cc6155" stroke-width="1.5" stroke-dasharray="3 3"/>
+<rect x="790.0" y="222" width="68" height="26" rx="5" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.2"/>
+<text x="824.0" y="239" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#a3453a" text-anchor="middle" font-weight="400">지연 맞춤</text>
+<rect x="70" y="268" width="1100" height="62" rx="9" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.3"/>
+<text x="86" y="290" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">접점마다 도착 시각을 손으로 맞춰야 한다</text>
+<text x="86" y="310" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">kws_block 하나에서 이걸로 버그 두 개가 났다 — 지연선 깊이 off-by-one (103/128 실패), drain 이 하류로 안 전파.</text>
+<text x="86" y="326" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">층이 21개면 그런 접점이 20개다.</text>
+<rect x="24" y="362" width="1192" height="300" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="387" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  평면 버퍼 = 창고</text>
+<text x="44" y="406" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">활성 평면 [채널, 프레임] 을 온칩 메모리에 통째로 둔다. 필요할 때 주소로 꺼내 쓴다.</text>
+<rect x="90" y="432" width="130" height="92" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.3"/>
+<text x="155" y="456" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="700">평면 A</text>
+<text x="155" y="476" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">128ch × 64fr</text>
+<text x="155" y="494" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">1.00 KB</text>
+<text x="155" y="512" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="middle" font-weight="400">주소로 접근</text>
+<rect x="560" y="432" width="130" height="92" rx="8" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.3"/>
+<text x="625" y="456" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="middle" font-weight="700">평면 B</text>
+<text x="625" y="476" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">128ch × 64fr</text>
+<text x="625" y="494" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">1.00 KB</text>
+<text x="625" y="512" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="middle" font-weight="400">주소로 접근</text>
+<rect x="268" y="454" width="240" height="48" rx="8" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="388" y="474" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">층 하나 (읽고 → 쓰고)</text>
+<text x="388" y="492" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">kws_block 등</text>
+<line x1="222" y1="478" x2="266" y2="478" stroke="#5b6478" stroke-width="1.7" marker-end="url(#a)"/>
+<line x1="510" y1="478" x2="558" y2="478" stroke="#5b6478" stroke-width="1.7" marker-end="url(#a)"/>
+<path d="M690 524 L690 548 L155 548 L155 526" fill="none" stroke="#4a7fd0" stroke-width="1.6" stroke-dasharray="5 3" marker-end="url(#a)"/>
+<text x="420" y="564" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#4a7fd0" text-anchor="middle" font-weight="600">다음 층은 방향만 바꿔 재사용 (ping-pong)</text>
+<rect x="70" y="520" width="1100" height="110" rx="8" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="470" y="537" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#a3453a" text-anchor="middle" font-weight="700">스트리밍</text>
+<text x="800" y="537" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#4a7fd0" text-anchor="middle" font-weight="700">평면 버퍼</text>
+<text x="86" y="558" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">「6 프레임 전」 값</text>
+<text x="470" y="558" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">지연선에 붙들고 있어야</text>
+<text x="800" y="558" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="600">주소 −6 으로 읽으면 끝</text>
+<text x="86" y="580" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">drain</text>
+<text x="470" y="580" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">손으로 전파</text>
+<text x="800" y="580" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="600">없음 — 필요한 걸 읽는다</text>
+<text x="86" y="602" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">residual skip</text>
+<text x="470" y="602" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">12 프레임 지연선</text>
+<text x="800" y="602" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="600">평면 하나 더</text>
+<text x="86" y="624" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">kws_top</text>
+<text x="470" y="624" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">21 층 스케줄 맞추기</text>
+<text x="800" y="624" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="600">층을 순서대로 도는 루프</text>
+<rect x="70" y="630" width="1100" height="24" rx="7" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="620.0" y="647" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">메모리 비용: 평면 3개 = 3.00 KB, KC705 BRAM 16 Mb 의 0.15 %</text>
+<rect x="24" y="678" width="1192" height="322" rx="12" fill="#f7fbf8" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="44" y="703" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  권고 — 블록 안은 스트리밍, 블록 사이는 평면</text>
+<rect x="60" y="732" width="100" height="40" rx="7" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="110.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">AFE</text>
+<line x1="161" y1="752" x2="175" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="176" y="732" width="100" height="40" rx="7" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="226.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">conv1</text>
+<line x1="277" y1="752" x2="291" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="292" y="732" width="100" height="40" rx="7" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.3"/>
+<text x="342.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">평면 A</text>
+<line x1="393" y1="752" x2="407" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="408" y="732" width="100" height="40" rx="7" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.3"/>
+<text x="458.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">b1</text>
+<line x1="509" y1="752" x2="523" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="524" y="732" width="100" height="40" rx="7" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.3"/>
+<text x="574.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">평면 B</text>
+<line x1="625" y1="752" x2="639" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="640" y="732" width="100" height="40" rx="7" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.3"/>
+<text x="690.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">b2</text>
+<line x1="741" y1="752" x2="755" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="756" y="732" width="100" height="40" rx="7" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.3"/>
+<text x="806.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">평면 A</text>
+<line x1="857" y1="752" x2="871" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="872" y="732" width="100" height="40" rx="7" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.3"/>
+<text x="922.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">b3</text>
+<line x1="973" y1="752" x2="987" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="988" y="732" width="100" height="40" rx="7" fill="#eaf1fb" stroke="#4a7fd0" stroke-width="1.3"/>
+<text x="1038.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">평면 B</text>
+<line x1="1089" y1="752" x2="1103" y2="752" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="1104" y="732" width="100" height="40" rx="7" fill="#ffffff" stroke="#5b6478" stroke-width="1.3"/>
+<text x="1154.0" y="757" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="600">꼬리</text>
+<text x="466.0" y="792" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#8a6410" text-anchor="middle" font-weight="600">블록 안은 지금 그대로 (검증 완료)</text>
+<rect x="60" y="808" width="1120" height="34" rx="7" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="78" y="823" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">·  kws_block 을 안 고친다</text>
+<text x="78" y="837" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="start" font-weight="400">지금 인터페이스(프레임 push → 프레임 받기)를 평면 리더가 그대로 먹인다</text>
+<rect x="60" y="848" width="1120" height="34" rx="7" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="78" y="863" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">·  정렬 문제가 블록 안으로 격리된다</text>
+<text x="78" y="877" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="start" font-weight="400">거기는 이미 풀렸다</text>
+<rect x="60" y="888" width="1120" height="34" rx="7" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="78" y="903" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">·  kws_top 이 5 단계 루프가 된다</text>
+<text x="78" y="917" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="start" font-weight="400">conv1 · b1 · b2 · b3 · 꼬리</text>
+<rect x="60" y="928" width="1120" height="34" rx="7" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="78" y="943" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="600">·  남은 접점이 20개가 아니라 4개</text>
+<text x="78" y="957" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="start" font-weight="400">버그가 날 자리가 그만큼 준다</text>
+<rect x="60" y="970" width="1120" height="22" rx="6" fill="#fffbf0" stroke="#c9902a" stroke-width="1.1"/>
+<text x="620.0" y="985" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="middle" font-weight="400">순수 평면으로 가면 kws_block 의 지연선·drain 로직(~80줄)이 필요 없어져 방금 한 작업 일부가 죽는다. 절충안은 그걸 살린다.</text>
+</svg>
