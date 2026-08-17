@@ -1,0 +1,168 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1000" width="1240" height="1000">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6478"/></marker></defs>
+<rect width="1240" height="1000" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">지연선(delay line)과 tap</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">그림은 K=5 로 그렸다. 실제 설계는 K=13 이고, 나머지는 똑같다.</text>
+<rect x="24" y="78" width="1192" height="288" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="103" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  지연선 = 레지스터를 줄지어 놓은 것</text>
+<text x="44" y="122" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">새 샘플이 한쪽으로 들어오고, 한 칸씩 밀린다. 각 칸은 「몇 스텝 전의 샘플」을 들고 있다.</text>
+<text x="276" y="182" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="end" font-weight="700">t=0</text>
+<rect x="300" y="156" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="334.0" y="182" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="374" y="156" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="408.0" y="182" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="448" y="156" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="482.0" y="182" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="522" y="156" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="556.0" y="182" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="596" y="156" width="68" height="40" rx="6" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.3"/>
+<text x="630.0" y="182" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#2f6fd0" text-anchor="middle" font-weight="700">A</text>
+<line x1="674" y1="176" x2="646" y2="176" stroke="#5b6478" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="682" y="180" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="600">새 샘플</text>
+<text x="276" y="236" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="end" font-weight="700">t=1</text>
+<rect x="300" y="210" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="334.0" y="236" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="374" y="210" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="408.0" y="236" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="448" y="210" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="482.0" y="236" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="522" y="210" width="68" height="40" rx="6" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.3"/>
+<text x="556.0" y="236" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#2f6fd0" text-anchor="middle" font-weight="700">A</text>
+<rect x="596" y="210" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="630.0" y="236" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">B</text>
+<text x="276" y="290" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="end" font-weight="700">t=2</text>
+<rect x="300" y="264" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="334.0" y="290" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="374" y="264" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="408.0" y="290" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">·</text>
+<rect x="448" y="264" width="68" height="40" rx="6" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.3"/>
+<text x="482.0" y="290" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#2f6fd0" text-anchor="middle" font-weight="700">A</text>
+<rect x="522" y="264" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="556.0" y="290" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">B</text>
+<rect x="596" y="264" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="630.0" y="290" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#5b6478" text-anchor="middle" font-weight="400">C</text>
+<text x="334.0" y="322" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">슬롯 0</text>
+<text x="408.0" y="322" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">슬롯 1</text>
+<text x="482.0" y="322" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">슬롯 2</text>
+<text x="556.0" y="322" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">슬롯 3</text>
+<text x="630.0" y="322" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">슬롯 4</text>
+<text x="276" y="322" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="end" font-weight="400">오래된 것 ←</text>
+<text x="682" y="322" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">→ 새 것</text>
+<text x="620.0" y="350" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">A 를 따라가 보면: 들어온 뒤 매 스텝 한 칸씩 왼쪽으로 간다. 슬롯 번호가 곧 「몇 스텝 전인가」다.</text>
+<rect x="24" y="384" width="1192" height="300" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="409" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  tap = 각 칸에서 선을 딴 것</text>
+<text x="44" y="428" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">옛 아날로그 지연선에서 중간중간 전선을 뽑아내던 데서 온 말이다. 뽑은 선마다 계수를 곱해 전부 더하면 — 그게 convolution 이다.</text>
+<rect x="300" y="458" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="334.0" y="484" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">x[t-2]</text>
+<line x1="334.0" y1="498" x2="334.0" y2="524" stroke="#2f6fd0" stroke-width="1.6"/>
+<rect x="306" y="524" width="56" height="30" rx="5" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="334.0" y="544" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">× w0</text>
+<line x1="334.0" y1="554" x2="334.0" y2="578" stroke="#5b6478" stroke-width="1.4"/>
+<rect x="374" y="458" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="408.0" y="484" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">x[t-1]</text>
+<line x1="408.0" y1="498" x2="408.0" y2="524" stroke="#2f6fd0" stroke-width="1.6"/>
+<rect x="380" y="524" width="56" height="30" rx="5" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="408.0" y="544" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">× w1</text>
+<line x1="408.0" y1="554" x2="408.0" y2="578" stroke="#5b6478" stroke-width="1.4"/>
+<rect x="448" y="458" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="482.0" y="484" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">x[t]</text>
+<line x1="482.0" y1="498" x2="482.0" y2="524" stroke="#2f6fd0" stroke-width="1.6"/>
+<rect x="454" y="524" width="56" height="30" rx="5" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="482.0" y="544" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">× w2</text>
+<line x1="482.0" y1="554" x2="482.0" y2="578" stroke="#5b6478" stroke-width="1.4"/>
+<rect x="522" y="458" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="556.0" y="484" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">x[t+1]</text>
+<line x1="556.0" y1="498" x2="556.0" y2="524" stroke="#2f6fd0" stroke-width="1.6"/>
+<rect x="528" y="524" width="56" height="30" rx="5" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="556.0" y="544" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">× w3</text>
+<line x1="556.0" y1="554" x2="556.0" y2="578" stroke="#5b6478" stroke-width="1.4"/>
+<rect x="596" y="458" width="68" height="40" rx="6" fill="#ffffff" stroke="#8a93a6" stroke-width="1.3"/>
+<text x="630.0" y="484" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">x[t+2]</text>
+<line x1="630.0" y1="498" x2="630.0" y2="524" stroke="#2f6fd0" stroke-width="1.6"/>
+<rect x="602" y="524" width="56" height="30" rx="5" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.2"/>
+<text x="630.0" y="544" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#1c2333" text-anchor="middle" font-weight="400">× w4</text>
+<line x1="630.0" y1="554" x2="630.0" y2="578" stroke="#5b6478" stroke-width="1.4"/>
+<line x1="334.0" y1="578" x2="630.0" y2="578" stroke="#5b6478" stroke-width="1.4"/>
+<line x1="482.0" y1="578" x2="482.0" y2="604" stroke="#5b6478" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="412.0" y="604" width="140" height="38" rx="8" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
+<text x="482.0" y="628" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="700">Σ  (전부 더함)</text>
+<text x="276" y="544" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#2f6fd0" text-anchor="end" font-weight="700">tap</text>
+<text x="276" y="564" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="end" font-weight="400">계수</text>
+<rect x="880" y="458" width="320" height="174" rx="9" fill="#fffbf0" stroke="#c9902a" stroke-width="1.3"/>
+<text x="896" y="480" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">이게 곧 convolution 이다</text>
+<text x="896" y="506" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="400">out[t] = Σ w[j] · x[t−2+j]</text>
+<text x="896" y="530" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">우리 경우 K=13 이라 앞뒤 6칸,</text>
+<text x="896" y="548" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">계수는 w_rom[ch] 의 13 비트.</text>
+<text x="896" y="566" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400"></text>
+<text x="896" y="584" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">곱셈이 없는 이유: x 도 w 도 ±1</text>
+<text x="896" y="602" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">이라 곱은 「부호가 같은가」고,</text>
+<text x="896" y="620" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">XNOR 이 그걸 센다.</text>
+<rect x="24" y="702" width="1192" height="268" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="727" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  우리 슬롯 하나는 프레임 전체 — 128 채널이 들어 있다</text>
+<text x="44" y="746" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">그래서 tap 하나가 128 비트다. 채널 하나짜리 필터를 돌리려면 각 tap 에서 그 채널의 비트만 뽑아야 한다 — 그게 gather.</text>
+<rect x="300" y="776" width="64" height="118" rx="6" fill="#fbfcfe" stroke="#8a93a6" stroke-width="1.3"/>
+<rect x="308" y="784" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="308" y="799" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="308" y="814" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="308" y="829" width="48" height="12" rx="2" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1"/>
+<rect x="308" y="844" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="308" y="859" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="308" y="874" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<text x="332.0" y="910" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">tap 0</text>
+<rect x="374" y="776" width="64" height="118" rx="6" fill="#fbfcfe" stroke="#8a93a6" stroke-width="1.3"/>
+<rect x="382" y="784" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="382" y="799" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="382" y="814" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="382" y="829" width="48" height="12" rx="2" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1"/>
+<rect x="382" y="844" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="382" y="859" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="382" y="874" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<text x="406.0" y="910" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">tap 1</text>
+<rect x="448" y="776" width="64" height="118" rx="6" fill="#fbfcfe" stroke="#8a93a6" stroke-width="1.3"/>
+<rect x="456" y="784" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="456" y="799" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="456" y="814" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="456" y="829" width="48" height="12" rx="2" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1"/>
+<rect x="456" y="844" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="456" y="859" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="456" y="874" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<text x="480.0" y="910" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">tap 2</text>
+<rect x="522" y="776" width="64" height="118" rx="6" fill="#fbfcfe" stroke="#8a93a6" stroke-width="1.3"/>
+<rect x="530" y="784" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="530" y="799" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="530" y="814" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="530" y="829" width="48" height="12" rx="2" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1"/>
+<rect x="530" y="844" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="530" y="859" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="530" y="874" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<text x="554.0" y="910" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">tap 3</text>
+<rect x="596" y="776" width="64" height="118" rx="6" fill="#fbfcfe" stroke="#8a93a6" stroke-width="1.3"/>
+<rect x="604" y="784" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="604" y="799" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="604" y="814" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="604" y="829" width="48" height="12" rx="2" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1"/>
+<rect x="604" y="844" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="604" y="859" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<rect x="604" y="874" width="48" height="12" rx="2" fill="#ffffff" stroke="#e8ecf2" stroke-width="0.8"/>
+<text x="628.0" y="910" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="middle" font-weight="400">tap 4</text>
+<text x="280" y="796" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="end" font-weight="400">128 비트</text>
+<text x="280" y="839" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#2f6fd0" text-anchor="end" font-weight="700">채널 ch</text>
+<line x1="332.0" y1="841" x2="332.0" y2="924" stroke="#2f6fd0" stroke-width="1.5"/>
+<line x1="406.0" y1="841" x2="406.0" y2="924" stroke="#2f6fd0" stroke-width="1.5"/>
+<line x1="480.0" y1="841" x2="480.0" y2="924" stroke="#2f6fd0" stroke-width="1.5"/>
+<line x1="554.0" y1="841" x2="554.0" y2="924" stroke="#2f6fd0" stroke-width="1.5"/>
+<line x1="628.0" y1="841" x2="628.0" y2="924" stroke="#2f6fd0" stroke-width="1.5"/>
+<line x1="332.0" y1="924" x2="628.0" y2="924" stroke="#2f6fd0" stroke-width="1.5"/>
+<line x1="480.0" y1="924" x2="480.0" y2="948" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="384.0" y="948" width="192" height="34" rx="8" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.3"/>
+<text x="480.0" y="970" font-family="'SF Mono','Menlo',monospace" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="700">taps[4:0]  —  5 비트</text>
+<rect x="880" y="776" width="320" height="158" rx="9" fill="#f7fbf8" stroke="#3f9a5d" stroke-width="1.3"/>
+<text x="896" y="798" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">gather 가 공짜인 이유</text>
+<text x="896" y="822" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">13 개 슬롯은 전부 레지스터다.</text>
+<text x="896" y="840" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">이미 손에 들고 있으니 비트를</text>
+<text x="896" y="858" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">뽑는 건 배선일 뿐 — 조합논리</text>
+<text x="896" y="876" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">한 방, 추가 사이클 0.</text>
+<text x="896" y="894" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400"></text>
+<text x="896" y="912" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">메모리였다면 13 번 읽어야 했다.</text>
+<text x="896" y="930" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">line buffer 를 두는 이유가 이것.</text>
+</svg>
