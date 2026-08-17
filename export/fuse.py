@@ -110,6 +110,30 @@ def fuse_bn_to_threshold(bn: nn.BatchNorm1d,
     return FusedThreshold(t=t_int.to(torch.int64), take_ge=take_ge)
 
 
+def bn_affine(bn: nn.Module) -> tuple:
+    """BN in eval as a plain affine map: (g, b) with BN(y) = g*y + b, [C] float64.
+
+    The same g' as above, but kept instead of divided away. The tail needs this
+    because it has no sign() to fold into: `conv2_pw` and `conv3` end in relu, so
+    their BN survives as arithmetic and export/tailfmt.py turns it into an
+    integer gain and offset. An nn.Identity BN (the final stage) is the identity
+    map, reported as g=1, b=0 rather than special-cased at every call site.
+    """
+    if isinstance(bn, nn.Identity):
+        return None, None
+    if bn.running_mean is None or bn.running_var is None:
+        raise ValueError("BN has no running stats; fuse only a model in eval "
+                         "mode that has seen data (track_running_stats=True)")
+    mu = bn.running_mean.detach().double()
+    var = bn.running_var.detach().double()
+    gamma = (bn.weight.detach().double() if bn.weight is not None
+             else torch.ones_like(mu))
+    beta = (bn.bias.detach().double() if bn.bias is not None
+            else torch.zeros_like(mu))
+    g = gamma / torch.sqrt(var + bn.eps)
+    return g, beta - g * mu
+
+
 def conv_alpha(conv: nn.Module) -> Optional[torch.Tensor]:
     """The per-output-channel scale a BinaryConv1d applied, or None.
 

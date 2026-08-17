@@ -90,12 +90,29 @@ def test_accumulators_are_integers(dumped):
     assert n_acc >= 15, f"only {n_acc} accumulator dumps -- hooks missed layers"
 
 
+def test_every_output_declares_whether_it_is_packed(dumped):
+    """`_out.hex` now means two different files.
+
+    A thresholded layer's output is bit-packed +-1, one word per frame; a tail
+    layer's is multi-bit fixed point, one word per value. A testbench that
+    inferred the kind from the name would read a tail dump as 32 channels of
+    nonsense, so every output declares which it is -- and a dump that forgets to
+    declare fails here rather than being quietly treated as packed.
+    """
+    man, out, _, _, _ = dumped
+    for key, meta in man["files"].items():
+        if key.endswith("_out") and meta["file"].endswith(".hex"):
+            assert "packed" in meta, f"{key} does not say whether it is packed"
+
+
 def test_binary_outputs_round_trip(dumped):
     """The packed +-1 output must decode back to legal +-1 of the right shape."""
     man, out, _, model, x = dumped
     seen = 0
     for key, meta in man["files"].items():
         if not key.endswith("_out") or not meta["file"].endswith(".hex"):
+            continue
+        if not meta.get("packed"):
             continue
         seen += 1
         n_clip, ch, T = meta["shape"]

@@ -46,6 +46,8 @@ import torch.nn as nn
 
 from export.fuse import fuse_bn_to_threshold, conv_alpha
 from export.pack import pack_pm1, to_hex_words, WORD_BITS
+from export.tailbuild import check_site, fixed_weights, tail_plan
+from export.tailfmt import FRAC_BITS
 from models.binary_ops import BinaryConv1d
 from models.binary_matchboxnet import BinaryMatchboxNet, BinaryTCSBlock, PlainStage
 from models.quant_ops import QuantConv1d
@@ -89,6 +91,7 @@ class Emitter:
         # the AFE hands over {-1,+1}; each stage updates it from its
         # own output activation, which is the actual dataflow
         self._stage_in_binary = True
+        self._T = 0
         self.roms: Dict[str, Dict[str, Any]] = {}
 
     # -- ROM writers ---------------------------------------------------- #
@@ -177,11 +180,18 @@ class Emitter:
         """
         for l in self.layers:
             if not l.input_binary and l.op in ("int8", "fixed"):
-                l.n_terms, l.acc_bits = 0, 0
+                l.n_terms = 0
                 l.notes = (l.notes + "  " if l.notes else "") + (
-                    "input is real (previous stage ends in relu), so sum|q| "
-                    "is not a bound. Width follows the tail's fixed-point "
-                    "format, still to be chosen.")
+                    "input is real (previous stage ends in relu), so sum|q| is "
+                    "not a bound; acc_bits comes from tailfmt instead -- "
+                    "integer weights times a clamped fixed-point input, which "
+                    "is a bound of the same kind, just from a different pair "
+                    "of extremes.")
+                # acc_bits is NOT cleared. It used to be, because the tail's
+                # format was undecided and n_terms was the only source of a
+                # width; now tailfmt gives these layers a real bound and
+                # clearing it here would erase the number the RTL needs while
+                # leaving the manifest looking complete.
 
     def _add(self, layer: Layer) -> Layer:
         layer.acc_bits = signed_bits(-layer.n_terms, layer.n_terms)
@@ -227,19 +237,22 @@ class Emitter:
                              "scale": [float(s) for s in scale],
                              "note": "two's complement int8, row-major"})
             words = q.numel()
-        else:                                          # float head (conv4)
+        else:                                          # fixed-point head (conv4)
             op, terms, wname = "fixed", 0, f"{cname}_w"
-            w = conv.weight.detach()
-            self._write_hex(wname, [f"{v:.8e}" for v in w.reshape(-1).tolist()],
-                            {"kind": "float", "shape": list(w.shape),
+            q = fixed_weights(conv)
+            amax = int(q.abs().max())
+            self._write_hex(wname, [f"{int(v) & 0xFFFFFFFF:08x}"
+                                    for v in q.reshape(-1).tolist()],
+                            {"kind": "fixed", "shape": list(q.shape),
+                             "frac_bits": FRAC_BITS,
+                             "weight_bits": signed_bits(-amax, amax),
+                             "abs_max": amax,
                              "bias": ([float(b) for b in conv.bias.detach()]
                                       if conv.bias is not None else None),
-                             "note": "NOT hardware-ready. Choose a fixed-point "
-                                     "format from the measured logit range "
-                                     "first (runs/<tag>/ranges.json: conv4 was "
-                                     "[-68.1, 26.1], asymmetric -- a symmetric "
-                                     "format throws away a bit)"})
-            words = w.numel()
+                             "note": f"two's complement, row-major, one shared "
+                                     f"scale 2^-{FRAC_BITS} -- the grid "
+                                     f"experiments/tail_fixedpoint.py measured"})
+            words = q.numel()
 
         epi = {"sign": "threshold", "relu": "bn_relu", "none": "logits"}[act]
         lay = self._add(Layer(cname, op, conv.in_channels, conv.out_channels,
@@ -262,12 +275,67 @@ class Emitter:
             lay.thresholds = f"{cname}_t"
         elif epi == "bn_relu":
             lay.notes = ("BN + relu survive: the next stage is not binary, so "
-                         "there is no sign() to fold into. Needs real (fixed-"
-                         "point) BN, not a compare.")
+                         "there is no sign() to fold into. Emitted as an "
+                         "integer gain + offset + shift; see the `tail` section "
+                         "of this manifest and export/tailfmt.py.")
         else:
-            lay.notes = ("logits -> avg-pool over time -> argmax. Monotone, so "
-                         "only ordering matters.")
+            lay.notes = ("logits -> avg-pool over time -> argmax. The pool's "
+                         "divide by T is not built: it is the same positive "
+                         "factor on every class, and argmax ignores it.")
         self._stage_in_binary = act == "sign"
+
+    # -- the tail: BN survives as arithmetic, so it needs ROMs of its own -- #
+    def _emit_tail(self) -> List[Dict[str, Any]]:
+        """One `<layer>_bn` ROM per tail site, from export/tailbuild.py.
+
+        Run after the stage walk rather than inside it, because the folds thread
+        a format forward through the tail and that is easier to get right in one
+        pass over the tail alone than interleaved with the binary layers. The
+        arithmetic itself is in tailbuild so golden.py derives it from the same
+        place -- a ROM and an expected vector computed from two copies of this
+        would disagree, and the disagreement would look like an RTL bug.
+        """
+        by_name = {l.name: l for l in self.layers}
+        rows: List[Dict[str, Any]] = []
+        for s in tail_plan(self.model):
+            check_site(s)
+            lay = by_name.get(s.name)
+            if lay is None:
+                raise ValueError(
+                    f"tail site {s.name!r} has no manifest layer -- tailbuild's "
+                    f"naming has drifted from Emitter._plain's")
+            words = [f"{int(a) & 0xFFFFFFFF:08x}" for a in s.fold.gain]
+            words += [f"{int(b) & 0xFFFFFFFF:08x}" for b in s.fold.bias]
+            err = s.fold.max_output_error_lsb((1 << (s.acc_bits - 1)) - 1)
+            self._write_hex(f"{s.name}_bn", words, {
+                "kind": "affine",
+                "n_channels": s.fold.n_channels,
+                "shift": s.fold.shift,
+                "relu": s.fold.relu,
+                "in_format": None if s.in_fmt is None else str(s.in_fmt),
+                "out_format": str(s.out_fmt),
+                "out_bits": s.out_fmt.bits,
+                "acc_bits": s.acc_bits,
+                "gain_bits": s.fold.gain_bits_used(),
+                "quietest_gain_bits": s.fold.quietest_gain_bits(),
+                "max_output_error_lsb": round(err, 5),
+                "weight_absmax": s.weight_absmax,
+                "layout": "n int32 gains (two's complement), then n int32 offsets",
+                "rule": "y = (A[c]*acc + B[c] + (1<<(shift-1))) >>> shift; then "
+                        "relu if set, then saturate to out_bits",
+                **s.meta})
+            lay.thresholds = f"{s.name}_bn"
+            lay.acc_bits = s.acc_bits
+            row = {"name": s.name, "epilogue": s.kind,
+                   "out_format": str(s.out_fmt), "shift": s.fold.shift,
+                   "acc_bits": s.acc_bits, "n_out": s.fold.n_channels,
+                   "max_output_error_lsb": round(err, 5)}
+            if s.kind == "logits":
+                # the pool sums T frames and never divides, so it is T times
+                # wider than one logit
+                row["pool_acc_bits"] = s.out_fmt.bits + (self._T - 1).bit_length()
+            rows.append(row)
+        return rows
 
     def _tcs(self, name: str, mod: BinaryTCSBlock) -> None:
         # every conv in a TCS block is fed +-1: the block input is a
@@ -324,6 +392,7 @@ class Emitter:
         self._stage_in_binary = True          # a TCS block ends in sign()
 
     def run(self, cfg: Any, tag: str) -> Dict[str, Any]:
+        self._T = int(cfg.model.T)
         for st in self.model.cfg.stages:
             mod = self.model.stages[st.name]
             if isinstance(mod, BinaryTCSBlock):
@@ -331,8 +400,13 @@ class Emitter:
             else:
                 self._plain(st.name, st, mod)
 
+        # the tail after the walk: its folds thread a format forward, and the
+        # ROMs it writes give conv3/conv4 the acc_bits _mark_real_inputs would
+        # otherwise have nothing to put there
+        tail_rows = self._emit_tail()
         self._mark_real_inputs()
-        # only sized layers count -- the tail's width is not decided yet
+        # only sized layers count -- the binary bound does not apply to the
+        # tail, whose widths come from tailfmt instead and are listed separately
         widest = max((l.acc_bits for l in self.layers if l.n_terms), default=0)
         man = {
             "tag": tag,
@@ -348,7 +422,17 @@ class Emitter:
             "acc_bits_widest": widest,
             "acc_bits_source": "analytic bound +-n_terms, over the layers fed "
                                "+-1 (see _mark_real_inputs)",
-            "unsized_layers": [l.name for l in self.layers if not l.n_terms],
+            "unsized_layers": [l.name for l in self.layers
+                               if not l.n_terms and not l.acc_bits],
+            "tail": {
+                "frac_bits": FRAC_BITS,
+                "sites": tail_rows,
+                "note": "the tail's widths come from the measured ranges and "
+                        "the confirmed frac (rtl/README.md 3-07), not from the "
+                        "binary +-n_terms bound. acc_bits here is a real bound "
+                        "too: integer weights known at export time times a "
+                        "clamped fixed-point input.",
+            },
             "word_bits": WORD_BITS,
             "layers": [asdict(l) for l in self.layers],
             "roms": self.roms,
@@ -386,8 +470,34 @@ def write_parameters_vh(man: Dict[str, Any], path: Path) -> None:
                   "groups", "n_terms", "acc_bits"):
             a(f"`define {p}_{k.upper():<10} {l[k]}")
         a("")
+
+    # The tail. Every one of these is a number the RTL would otherwise have to
+    # hardcode, and a retrain can move all of them: the shift depends on the
+    # trained BN gains, the accumulator width on the quantized weights.
+    tail = man.get("tail")
+    if tail:
+        a(f"// ---- tail fixed-point (frac={tail['frac_bits']}) ----")
+        a(f"`define KWS_TAIL_FRAC   {tail['frac_bits']}")
+        for s in tail["sites"]:
+            p = f"KWS_{s['name'].upper()}"
+            a(f"// {s['name']}: {s['epilogue']}, out {s['out_format']}")
+            a(f"`define {p}_ACC_BITS  {s['acc_bits']}")
+            a(f"`define {p}_OUT_BITS  {_fmt_bits(s['out_format'])}")
+            a(f"`define {p}_SHIFT     {s['shift']}")
+            a(f"`define {p}_N_OUT     {s['n_out']}")
+            if "pool_acc_bits" in s:
+                a(f"`define {p}_POOL_BITS {s['pool_acc_bits']}"
+                  f"   // sum over T, no divide")
+        a("")
     a("`endif")
     path.write_text("\n".join(L) + "\n")
+
+
+def _fmt_bits(fmt: str) -> int:
+    """'8.6' -> 14. The manifest carries the format as a string because that is
+    what a human reads; the header needs the width."""
+    i, f = fmt.split(".")
+    return int(i) + int(f)
 
 
 def main() -> None:
@@ -419,11 +529,25 @@ def main() -> None:
     print(f"\nwidest SIZED accumulator: {man['acc_bits_widest']} bits "
           f"(folded -> this is the one register that matters)")
     if man["unsized_layers"]:
-        print(f"NOT sized (real-valued input, needs the tail's fixed-point "
-              f"format): {', '.join(man['unsized_layers'])}")
+        print(f"NOT sized: {', '.join(man['unsized_layers'])}")
     n_fuse = sum(1 for l in man["layers"] if l["epilogue"] == "threshold")
     print(f"{n_fuse}/{len(man['layers'])} layers fuse to an integer compare; "
           f"the rest need fixed-point arithmetic")
+
+    t = man.get("tail")
+    if t:
+        print(f"\ntail, frac={t['frac_bits']}:")
+        print(f"{'site':<10}{'out':>6}{'acc':>5}{'shift':>7}{'A bits':>8}"
+              f"{'quiet':>7}{'err LSB':>9}")
+        for s in t["sites"]:
+            rom = man["roms"].get(f"{s['name']}_bn", {})
+            print(f"{s['name']:<10}{s['out_format']:>6}{s['acc_bits']:>5}"
+                  f"{s['shift']:>7}{rom.get('gain_bits', '-'):>8}"
+                  f"{rom.get('quietest_gain_bits', '-'):>7}"
+                  f"{rom.get('max_output_error_lsb', '-'):>9}")
+        print("err LSB = how much the integer fold moves the result, in LSBs "
+              "of that site's own output grid. One whole LSB is the step the "
+              "frac sweep measured as costing 0.0pp, so these are noise.")
 
 
 if __name__ == "__main__":

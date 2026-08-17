@@ -20,8 +20,18 @@ The residual add is assembled here too: `last_pw_acc + skip_acc`, both unscaled
 by construction, thresholded once. That matches the `*_add` layer in the
 manifest.
 
-Real-valued layers (conv2_pw's bn_relu, conv3, conv4) are written as text and
-labelled reference-only -- the tail's fixed-point format is still open.
+THE TAIL IS DUMPED AS INTEGERS TOO. conv2_pw, conv3 and conv4 keep their BN --
+nothing downstream is a sign() to fold it into -- so they are not compares but
+fixed-point arithmetic. export/tailbuild.py turns each into an integer gain,
+offset and shift, and the same function that builds the ROM is used here to
+produce the expected values. Deriving them twice is how a ROM and its own
+expected output come to disagree, and every symptom of that points at the RTL.
+
+golden.json's `tail` section reports, per site, how far the integer path moved
+from the float one in LSBs of that site's own grid, how wide the accumulator
+actually got, and how many values hit the clamp. Those three numbers are what
+say whether the chosen format is right, and none of them is visible from an
+accuracy figure.
 
 NAMES MUST MATCH THE MANIFEST, or the testbench looks for files that do not
 exist, compares nothing, and passes. tests/test_golden.py asserts the two name
@@ -42,6 +52,8 @@ import torch.nn as nn
 
 from export.fuse import binary_accumulator, fuse_bn_to_threshold, conv_alpha
 from export.pack import pack_pm1, to_hex_words
+from export.tailbuild import (TailSite, apply_site, int8_weights, tail_plan)
+from export.tailfmt import pooled_argmax
 from models.binary_ops import BinaryConv1d
 from models.binary_matchboxnet import BinaryMatchboxNet, BinaryTCSBlock, PlainStage
 from models.quant_ops import QuantConv1d
@@ -105,6 +117,116 @@ def _int_words(t: torch.Tensor) -> List[str]:
 def _pack_words(o: torch.Tensor) -> List[str]:
     """[N, C, T] in +-1 -> one word per (clip, frame), channels LSB first."""
     return to_hex_words(pack_pm1(o.transpose(1, 2).reshape(-1, o.shape[1])))
+
+
+def _conv_int(x: torch.Tensor, w: torch.Tensor, conv: nn.Module) -> torch.Tensor:
+    """Integer 1x1 conv, done in float64 because F.conv1d has no int64 kernel.
+
+    Exact, not approximately exact: conv3's accumulator reaches 1.3e8 and
+    conv4's 1.7e7, both far inside float64's 53 bits of integer range. Written
+    down because "it uses floats" is otherwise a reasonable thing to distrust.
+    """
+    y = torch.nn.functional.conv1d(x.double(), w.double(), None, conv.stride,
+                                   conv.padding, conv.dilation, conv.groups)
+    return torch.round(y).to(torch.int64)
+
+
+@torch.no_grad()
+def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
+               out: Path) -> tuple:
+    """Chain the tail in integers and write what every register holds.
+
+    The chaining is the point. conv3's input is not the float model's conv2_pw
+    output -- it is the QUANTIZED one, because that is what the previous layer's
+    register contains. Feeding conv3 the float activations would produce vectors
+    the RTL can never match, and they would look right to within a percent,
+    which is the worst possible amount of wrong.
+
+    conv2_pw's own accumulator needs no such treatment: its input comes through
+    conv2_dw's threshold, which is exact, so the value the pre-hook recorded is
+    already the integer the hardware sums.
+    """
+    sites: List[TailSite] = tail_plan(model)
+    files: Dict[str, Dict[str, Any]] = {}
+    report: List[Dict[str, Any]] = []
+
+    cur: Optional[torch.Tensor] = None          # previous site's integer output
+    for s in sites:
+        if s.in_fmt is None:                    # conv2_pw: binary accumulator
+            a = acc[s.name].round().to(torch.int64)
+        else:
+            if cur is None:
+                raise ValueError(f"{s.name}: no quantized input to chain from")
+            w = (int8_weights(s.conv)[0] if isinstance(s.conv, QuantConv1d)
+                 else s.weights)
+            a = _conv_int(cur, w, s.conv)
+        y = apply_site(s, a)
+
+        fa, fy = f"{s.name}_acc.hex", f"{s.name}_out.hex"
+        (out / fa).write_text("\n".join(_int_words(a)) + "\n")
+        (out / fy).write_text("\n".join(_int_words(y)) + "\n")
+        files[f"{s.name}_acc"] = {
+            "file": fa, "shape": list(a.shape), "dtype": "int32",
+            "order": "clip-major, then out_ch, then frame",
+            "note": f"integer accumulator, {s.acc_bits} bits signed"}
+        files[f"{s.name}_out"] = {
+            "file": fy, "shape": list(y.shape), "dtype": "int32",
+            # multi-bit, so there is nothing to pack. A testbench that assumed
+            # `_out.hex` meant packed +-1 would misread these as 32 channels of
+            # nonsense, so the kind of file is declared rather than inferred
+            # from the name.
+            "packed": False,
+            "order": "clip-major, then out_ch, then frame",
+            "note": f"(A*acc + B + half) >> {s.fold.shift}"
+                    f"{', relu' if s.fold.relu else ''}, saturated to "
+                    f"{s.out_fmt} -- one word per value"}
+
+        # how far the integer path moved from the float one, on the same
+        # accumulator. Not the same question as end-to-end agreement, but it
+        # localizes a fold error to one layer.
+        gain = torch.tensor(s.fold.gain_real, dtype=torch.float64).view(1, -1, 1)
+        bias = torch.tensor(s.fold.bias_real, dtype=torch.float64).view(1, -1, 1)
+        ref = gain * a.double() + bias
+        if s.fold.relu:
+            ref = torch.clamp_min(ref, 0.0)
+        lsb = float((y.double() / float(1 << s.out_fmt.frac_bits)
+                     - ref).abs().max()) * float(1 << s.out_fmt.frac_bits)
+        clamped = int(((y == s.out_fmt.hi) | (y == s.out_fmt.lo)).sum())
+        report.append({"name": s.name, "out_format": str(s.out_fmt),
+                       "shift": s.fold.shift, "acc_bits": s.acc_bits,
+                       "acc_absmax": int(a.abs().max()),
+                       "max_dev_lsb": round(lsb, 4),
+                       "clamped_values": clamped,
+                       "n_values": int(y.numel())})
+        cur = y
+
+    # the head: sum over time, argmax, no divide
+    if cur is not None:
+        pooled = cur.sum(dim=2)                             # [N, classes]
+        (out / "pooled.txt").write_text(
+            "\n".join(" ".join(str(int(v)) for v in row)
+                      for row in pooled.tolist()) + "\n")
+        pred = [pooled_argmax([[int(v) for v in cur[n, :, t].tolist()]
+                               for t in range(cur.shape[2])])
+                for n in range(cur.shape[0])]
+        (out / "predictions_fixed.txt").write_text(
+            "\n".join(str(p) for p in pred) + "\n")
+        files["pooled"] = {
+            "file": "pooled.txt", "shape": list(pooled.shape), "dtype": "int",
+            "note": "sum of the per-frame logits over T. The pool's divide by T "
+                    "is not built: same positive factor on every class, and "
+                    "argmax ignores it"}
+        files["predictions_fixed"] = {
+            "file": "predictions_fixed.txt", "shape": [int(cur.shape[0])],
+            "note": "argmax of the pooled integer logits -- the answer the "
+                    "hardware gives. Compare against predictions.txt, which is "
+                    "the float model's"}
+        # torch.argmax and pooled_argmax must agree on the same numbers, or one
+        # of the two tie rules is not what was assumed
+        if pred != pooled.argmax(1).tolist():
+            raise ValueError("pooled_argmax disagrees with torch.argmax on the "
+                             "integer logits -- check the tie rule")
+    return files, {"sites": report}
 
 
 @torch.no_grad()
@@ -173,7 +295,13 @@ def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
                       "layout": "one word per (clip, frame); bit c = channel c, "
                                 "LSB first, -1 -> 0"}
 
+    tail_names = {t.name for t in tail_plan(model)}
     for s in sites:
+        if s.name in tail_names:
+            # written by _dump_tail, which knows the width and the format.
+            # conv2_pw would otherwise be dumped twice with the same contents
+            # and two different notes.
+            continue
         a = acc.get(s.name)
         if a is not None and a.dtype.is_floating_point:
             f = f"{s.name}_acc.hex"
@@ -191,18 +319,12 @@ def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
             f = f"{s.name}_out.hex"
             (out / f).write_text("\n".join(_pack_words(o)) + "\n")
             files[f"{s.name}_out"] = {
-                "file": f, "shape": list(o.shape),
+                "file": f, "shape": list(o.shape), "packed": True,
                 "layout": "one word per (clip, frame)",
                 "note": "FusedThreshold.apply(acc) -- the compare RTL performs"}
-        elif s.name in real_out and s.bn is None and a is None:
-            o = real_out[s.name]
-            f = f"{s.name}_out.txt"
-            (out / f).write_text("\n".join(f"{v:.8e}" for v in
-                                           o.reshape(-1).tolist()) + "\n")
-            files[f"{s.name}_out"] = {
-                "file": f, "shape": list(o.shape), "dtype": "float32",
-                "note": "REFERENCE ONLY -- real-valued; the tail's fixed-point "
-                        "format is not chosen yet"}
+    # ---- the tail, as the integers RTL holds ------------------------------ #
+    tail_files, tail_report = _dump_tail(model, acc, out)
+    files.update(tail_files)
 
     (out / "logits.txt").write_text(
         "\n".join(" ".join(f"{v:.8e}" for v in row) for row in logits.tolist())
@@ -212,7 +334,7 @@ def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
 
     man = {"tag": tag, "n_clips": int(x.shape[0]),
            "n_channels": int(x.shape[1]), "T": int(x.shape[2]),
-           "files": files,
+           "files": files, "tail": tail_report,
            "note": "compare layer by layer; the first mismatch names the module"}
     (out / "golden.json").write_text(json.dumps(man, indent=2))
     return man
@@ -255,6 +377,31 @@ def main() -> None:
     print(f"{man['n_clips']} clips -> {len(man['files'])} files in {out}")
     print(f"reference predictions match labels on {ok}/{len(pred)} "
           f"(a sanity check on the dump, not an accuracy measurement)")
+
+    t = man.get("tail")
+    if t:
+        print(f"\ntail, integer path:")
+        print(f"{'site':<10}{'out':>6}{'shift':>7}{'acc':>5}{'|acc| max':>11}"
+              f"{'bound':>11}{'dev LSB':>9}{'clamped':>9}")
+        for s in t["sites"]:
+            bound = (1 << (s["acc_bits"] - 1)) - 1
+            print(f"{s['name']:<10}{s['out_format']:>6}{s['shift']:>7}"
+                  f"{s['acc_bits']:>5}{s['acc_absmax']:>11}{bound:>11}"
+                  f"{s['max_dev_lsb']:>9}"
+                  f"{s['clamped_values']}/{s['n_values']}".rjust(9))
+        fx = [int(v) for v in (out / "predictions_fixed.txt").read_text().split()]
+        agree = sum(int(a == b) for a, b in zip(fx, pred))
+        print(f"\nfixed-point argmax agrees with the float model on "
+              f"{agree}/{len(fx)} clips")
+        print("dev LSB = how far the integer path moved from float on the SAME "
+              "accumulator, per site. |acc| max vs bound says how much of the "
+              "width is real rather than slack; clamped counts saturations, "
+              "which should be a handful at most -- many means the format's "
+              "integer bits are too few, not that the fold is wrong.")
+        if agree != len(fx):
+            print("NOTE: a disagreement is not automatically a bug -- a clip "
+                  "whose top two logits are within one LSB can legitimately "
+                  "flip. Check the margin before touching the format.")
 
 
 if __name__ == "__main__":
