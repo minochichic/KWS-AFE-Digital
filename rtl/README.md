@@ -101,6 +101,45 @@ kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 `trailing zeros` 가 낮은 비트의 0 을 뜻하는 게 여기서 온다. 헷갈리기 쉬운 지점이라
 먼저 적어둔다.
 
+### sub-block / block (sub0, sub1)
+
+MatchboxNet 의 구조 이름에서 온다. **MatchboxNet-BxRxC** 는
+
+- **B** = residual **block** 수 (우리는 3 → `b1`, `b2`, `b3`)
+- **R** = 블록 하나당 **sub-block** 수 (우리는 2 → `s0`, `s1`)
+- **C** = 채널 폭 (우리는 64)
+
+이 프로젝트는 **3x2x64** 다. `b1_s0_dw` 는 「블록 1, sub-block 0, depthwise」.
+
+**sub-block 하나 = `dw → threshold → pw`** 이고, 그게 `kws_tcs_sub` 다.
+**block 하나 = `sub ×2 + skip + residual add`** 이고, 그게 `kws_block` 이다.
+
+### raw 누산기
+
+`kws_bin_mac` 이 내놓는 **정수** (`2P − N`). threshold 를 아직 안 거친 값이라
+`raw` 라고 부른다. 대비되는 것은 threshold 를 거친 **±1 출력**이다.
+
+```
+MAC → 정수 acc  ─┬─ threshold →  ±1        ← 대부분의 층
+                 └─ 그대로 나감  → 정수     ← skip 과 마지막 pw 만
+```
+
+**왜 어떤 층은 raw 로 내보내나**: residual 을 **정수 영역에서** 더해야 하기
+때문이다. `±1` 두 개를 더하면 `{−2, 0, +2}` 가 되어 정보가 뭉개진다. 학습된 망은
+`acc_pw + acc_skip` 을 더한 **뒤에** threshold 를 한 번 건다.
+
+### drain (비우기)
+
+파이프라인에 남은 것을 밀어내는 것. flush 라고도 한다.
+
+`kws_dw_conv` 는 출력 `t` 를 만들려고 입력 `t+PAD` 를 기다리므로, 입력이 끝나도
+마지막 `PAD` 개 출력이 아직 안 나왔다. 그래서 `in_real=0` 인 **빈 push** 를
+`PAD` 번 더 넣어 밀어낸다 (`docs/diagrams/24_pipeline_drain.svg`).
+
+> `kws_block` 에서는 이게 **전파**돼야 한다. `sub0` 은 실제 프레임만 내보내므로
+> 자기 drain 중에도 하류엔 진짜 데이터가 간다. 그래서 블록이 **`sub1` 용 flush 를
+> 직접 주입**한다.
+
 ### tap
 
 FIR 필터 용어다. 지연선(delay line)에 **선을 따 내는 지점**을 tap 이라고 부른다.
@@ -217,6 +256,55 @@ folded 스케줄을 짤 때 편한 우연이다.
 
 > 층마다 다르다: `b1_s1_pw` 는 항이 64개(word 2개)라 채널당 4 사이클, 프레임당
 > 256 이다. 매니페스트의 `n_terms` 에서 바로 나온다.
+
+---
+
+## 3-06. 층마다 뒤에 무엇이 붙나 (epilogue)
+
+conv 자체는 어느 층이나 같다 — `MAC` 으로 정수 하나를 만든다. **다른 것은 그
+뒤에 무엇이 붙느냐**이고, 매니페스트가 `epilogue` 로 들고 있다.
+
+| epilogue | 뜻 | 하드웨어 |
+|---|---|---|
+| `threshold` | `sign(BN(acc))` 가 정수 비교 하나로 접힘 | `acc ≥ t` 한 번 |
+| `none` | **raw 누산기 그대로** 나감 | 아무것도 없음 |
+| `bn_relu` | BN + relu 가 남음 | **실수 산술 필요** |
+| `logits` | 최종 12 클래스 | 실수, argmax |
+
+21층 중 **14층이 `threshold`** 다. 나머지 7층이 왜 다른지가 설계의 요점이다.
+
+### 블록 하나의 구조 (`b1`)
+
+```
+x (128ch)
+ ├─ skip:  pointwise 128→64            epilogue none  → 정수 누산기 ─┐
+ │                                                                    │
+ └─ sub0:  dw(128, k=13) → threshold                                  │
+           pw(128→64)    → threshold  → y0 (±1)                       │
+    sub1:  dw(64,  k=13) → threshold                                  │
+           pw(64→64)     → none       → 정수 누산기 ──── + ───────────┘
+                                                          ↓
+                                                     threshold  → out (±1)
+```
+
+**threshold 4개, raw 2개.** raw 로 나가는 둘이 정수 영역에서 만나 더해지고,
+거기에 threshold 가 **한 번만** 걸린다. 이게 `b1_add` 다.
+
+`b2`·`b3` 도 같은 모양인데 `skip` 이 **Identity** 다 (in_ch == out_ch 라 투영이
+필요 없다). 그래서 더해지는 것이 누산기가 아니라 블록 입력 `±1` 자체다.
+
+### 전체에서 raw 로 나가는 층은 4개뿐이다
+
+`b1_skip`, `b1_s1_pw`, `b2_s1_pw`, `b3_s1_pw`. 전부 **residual add 로 들어가는
+경로**다. 그 외에는 전부 threshold 로 재이진화된다 — 다음 층이 XNOR-popcount 라
+`±1` 입력이 필요하기 때문이다 (CLAUDE.md 3.4).
+
+### 꼬리 세 층만 다르다
+
+`conv2_pw`·`conv3` 는 `bn_relu`, `conv4` 는 `logits` 다. 스테이지 활성이 **다음
+스테이지의 정밀도**로 정해지는데, `conv3` 가 int8 이라 `conv2` 가 `sign` 이 아닌
+`relu` 로 끝난다. 그래서 이 셋은 정수 비교로 안 접히고 **고정소수점 산술**이
+필요하다 (`export/emit.py` 가 이 셋을 미확정으로 내놓는 이유).
 
 ---
 
