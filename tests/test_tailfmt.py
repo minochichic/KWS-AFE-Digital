@@ -289,3 +289,71 @@ def test_pooling_refuses_empty_and_ragged_input():
         pooled_argmax([])
     with pytest.raises(ValueError):
         pooled_argmax([[1, 2], [1]])
+
+
+# --------------------------------------------------------------------------- #
+# the constants have to survive a ROM word
+# --------------------------------------------------------------------------- #
+
+def test_the_shift_is_capped_so_the_offset_fits_a_rom_word():
+    """The bug this test exists for.
+
+    The shift used to be chosen from the gain alone, which wants it as large as
+    possible. But B = bias * 2^frac * 2^shift grows with it, and conv3 at
+    shift=28 needed 35 bits -- while every ROM this project writes is 32-bit
+    hex. The emitter masked with 0xFFFFFFFF and produced a different,
+    valid-looking number, and nothing downstream noticed, because emit and
+    golden both work from Python ints, which have no width.
+    """
+    # a small gain wants a large shift; a large offset cannot afford one.
+    # (At bias 2.5 the two constraints happen to land on the same shift, which
+    # is why the first version of this test proved nothing.)
+    gain = [3e-3] * 8
+    bias = [50.0] * 8
+    f = fold_affine("conv3", gain, bias, FMT_CONV3, relu=True)
+    assert f.fits_word(32)
+    assert f.bias_bits() <= 32, f.bias_bits()
+
+    # the offset, not the gain, is what limited it: given a wider word the
+    # shift goes back up
+    wide = fold_affine("conv3", gain, bias, FMT_CONV3, relu=True, word_bits=64)
+    assert wide.shift > f.shift, (wide.shift, f.shift)
+    assert not wide.fits_word(32), "the wide fold is exactly what used to ship"
+
+
+def test_a_layer_whose_gain_binds_first_keeps_its_full_shift():
+    """The cap must not fire when it is not needed -- a tiny bias should leave
+    the gain-driven shift alone, or every layer pays for conv3's problem."""
+    gain = [3e-3] * 8
+    bias = [1e-4] * 8
+    f32 = fold_affine("t", gain, bias, FMT_CONV3, relu=True)
+    f64 = fold_affine("t", gain, bias, FMT_CONV3, relu=True, word_bits=64)
+    assert f32.shift == f64.shift
+
+
+def test_capping_the_shift_does_not_break_the_fold():
+    """Fewer bits of headroom is fine; a wrong answer is not."""
+    gain, bias = _realistic()
+    bias = [b * 40.0 for b in bias]       # force the cap to bind hard
+    f = fold_affine("t", gain, bias, FMT_CONV3, relu=True)
+    assert f.fits_word(32)
+    assert f.dead_gains() == []
+    assert f.max_output_error_lsb(1 << 20) < 0.25, f.max_output_error_lsb(1 << 20)
+
+
+def test_fits_word_actually_rejects_an_oversized_constant():
+    f = fold_affine("t", [1e-3], [1.0], FMT_CONV3, relu=True)
+    assert f.fits_word(32)
+    f.bias = [1 << 40]
+    assert not f.fits_word(32)
+    f.bias = [0]
+    f.gain = [-(1 << 40)]
+    assert not f.fits_word(32)
+
+
+def test_an_impossible_fold_raises_rather_than_being_written():
+    """A pinned shift bypasses the cap, so the constructor still has to check.
+    Re-exporting with a pinned shift from an older run is exactly how a ROM
+    that used to fit stops fitting."""
+    with pytest.raises(ValueError, match="more than 32 bits"):
+        fold_affine("t", [1e-3], [3.0], FMT_CONV3, relu=True, shift=40)

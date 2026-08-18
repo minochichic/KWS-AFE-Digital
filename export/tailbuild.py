@@ -37,8 +37,8 @@ import torch.nn as nn
 
 from export.fuse import bn_affine, conv_alpha
 from export.tailfmt import (FMT_CONV2_PW, FMT_CONV3, FMT_CONV4, FRAC_BITS,
-                            AffineFold, FixedFormat, acc_bits_for_real_input,
-                            fold_affine, signed_bits)
+                            ROM_WORD_BITS, AffineFold, FixedFormat,
+                            acc_bits_for_real_input, fold_affine, signed_bits)
 from models.binary_ops import BinaryConv1d
 from models.binary_matchboxnet import BinaryMatchboxNet, PlainStage
 from models.quant_ops import QuantConv1d
@@ -217,6 +217,12 @@ def check_site(s: TailSite, max_err_lsb: float = 0.25) -> None:
     the output grid. Neither trips a clamp or an assertion -- the accuracy just
     comes out lower, with nothing in the log to point at.
     """
+    if not s.fold.fits_word(ROM_WORD_BITS):
+        raise ValueError(
+            f"{s.name}: a constant does not fit a {ROM_WORD_BITS}-bit ROM word "
+            f"at shift={s.fold.shift}. The emitter masks with 0xFFFFFFFF, so "
+            f"this would be written as a different, valid-looking number and "
+            f"nothing downstream of the .hex would notice.")
     if s.fold.dead_gains():
         raise ValueError(
             f"{s.name}: gain rounded to zero on channels "

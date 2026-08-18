@@ -323,6 +323,7 @@ class Emitter:
                 "out_bits": s.out_fmt.bits,
                 "acc_bits": s.acc_bits,
                 "gain_bits": s.fold.gain_bits_used(),
+                "bias_bits": s.fold.bias_bits(),
                 "quietest_gain_bits": s.fold.quietest_gain_bits(),
                 "max_output_error_lsb": round(err, 5),
                 "weight_absmax": s.weight_absmax,
@@ -330,11 +331,17 @@ class Emitter:
                 "rule": "y = (A[c]*acc + B[c] + (1<<(shift-1))) >>> shift; then "
                         "relu if set, then saturate to out_bits",
                 **s.meta})
+            self._verify_affine_rom(f"{s.name}_bn", s.fold)
             lay.affine = f"{s.name}_bn"
             lay.acc_bits = s.acc_bits
             row = {"name": s.name, "epilogue": s.kind,
                    "out_format": str(s.out_fmt), "shift": s.fold.shift,
                    "acc_bits": s.acc_bits, "n_out": s.fold.n_channels,
+                   # RTL sizes its multiplier and adder from these, so they go
+                   # in the manifest rather than staying ROM metadata
+                   "gain_bits": s.fold.gain_bits_used(),
+                   "bias_bits": s.fold.bias_bits(),
+                   "relu": s.fold.relu,
                    "max_output_error_lsb": round(err, 5)}
             if s.kind == "logits":
                 # the pool sums T frames and never divides, so it is T times
@@ -342,6 +349,29 @@ class Emitter:
                 row["pool_acc_bits"] = s.out_fmt.bits + (self._T - 1).bit_length()
             rows.append(row)
         return rows
+
+    def _verify_affine_rom(self, name: str, fold: Any) -> None:
+        """Read the file back and decode it. The one check that covers the gap.
+
+        Everything else in this pipeline works from Python ints, which have no
+        width -- so a constant too large for a ROM word passes every test and
+        then gets masked to a different number on the way to disk. That is not
+        hypothetical: conv3 at shift=28 needed 35 bits for its offset, and
+        `int(b) & 0xFFFFFFFF` wrote a plausible wrong value. golden.py agreed
+        with emit.py because neither had read the file.
+        """
+        words = (self.out / f"{name}.hex").read_text().split()
+        n = fold.n_channels
+        if len(words) != 2 * n:
+            raise ValueError(f"{name}: {len(words)} words for {n} channels")
+        for i, want in enumerate(list(fold.gain) + list(fold.bias)):
+            v = int(words[i], 16)
+            if v >= 1 << 31:
+                v -= 1 << 32
+            if v != want:
+                raise ValueError(
+                    f"{name}: word {i} reads back as {v}, not {want} -- the "
+                    f"constant does not survive a 32-bit ROM word")
 
     def _tcs(self, name: str, mod: BinaryTCSBlock) -> None:
         # every conv in a TCS block is fed +-1: the block input is a
@@ -503,6 +533,9 @@ def write_parameters_vh(man: Dict[str, Any], path: Path) -> None:
             a(f"`define {p}_OUT_BITS  {_fmt_bits(s['out_format'])}")
             a(f"`define {p}_SHIFT     {s['shift']}")
             a(f"`define {p}_N_OUT     {s['n_out']}")
+            a(f"`define {p}_GAIN_BITS {s['gain_bits']}")
+            a(f"`define {p}_BIAS_BITS {s['bias_bits']}")
+            a(f"`define {p}_RELU      {1 if s['relu'] else 0}")
             if "pool_acc_bits" in s:
                 a(f"`define {p}_POOL_BITS {s['pool_acc_bits']}"
                   f"   // sum over T, no divide")

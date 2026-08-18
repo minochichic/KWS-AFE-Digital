@@ -79,6 +79,8 @@ kws_dw_conv   ✅  라인버퍼 + 비트 게더 + 시프트/n_valid + threshold
 kws_pw_conv   ✅  프레임 워드 스트리밍 + threshold
 kws_tcs_sub   ✅  dw → pw 배선
 kws_block     ✅  sub ×2 + residual add (정수 영역)
+kws_plane     ✅  활성 평면 (층 사이 BRAM, drain 주입 포함)
+kws_affine    ⬜  꼬리 epilogue — (A·acc + B + half) >> shift → relu → 포화
 kws_top       ⬜  21개 층 시분할
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```
@@ -475,6 +477,17 @@ Y = (A[c] * acc + B[c] + (1 << (shift-1))) >>> shift    → relu? → saturate
 int8 가중치 × `x·2^F` 정수들의 합이므로 **2^F 만큼 크다**. 게인이 `2^-F` 를 같이
 들고 있어야 한다. 빼먹으면 출력이 64배가 되고, relu·clamp 를 지난 뒤에는
 스케일 오류처럼 보이지 않는다 — **죽은 네트워크처럼 보인다.**
+
+**오프셋이 시프트를 제한한다 (2026-08-19에 잡은 버그).** 게인은 시프트가 **클수록**
+좋다 — 여유가 많고 게인이 정밀해진다. 그런데 `B = bias · 2^frac · 2^shift` 는
+시프트와 함께 커지고, **ROM 워드는 32비트다.** 게인만 보고 시프트를 고르면 `conv3`
+가 `shift=28` 에서 오프셋에 **35비트**를 요구했고, `int(b) & 0xFFFFFFFF` 가 그걸
+**다른, 그럴듯한 값으로** 써버렸다.
+
+> emit 도 golden 도 못 잡았다. **둘 다 Python 정수로 계산하는데 Python 정수에는
+> 폭이 없다.** `fold=0.0` 은 맞았고 — 파일만 틀렸다. 이제 (a) 시프트를 두 제약의
+> min 으로 고르고, (b) emit 이 **쓴 파일을 다시 읽어 디코드해** 확인하며,
+> (c) `tests/test_affine_rom.py` 가 `.hex` 에서만 출발해 골든을 재현한다.
 
 **`conv4` 는 클래스 간 게인이 같아야 한다.** argmax 가 12개 출력을 서로 비교하므로,
 채널별 게인은 순서를 바꿔버린다. `tailbuild` 가 이걸 검사한다.

@@ -60,6 +60,13 @@ FRAC_BITS = 6
 # irrelevant next to being able to say the fold is invisible.
 GAIN_BITS = 22
 
+# One ROM word. Every ROM this project emits is 32-bit hex, including the
+# threshold ROMs, and the shift has to respect that: B = bias * 2^frac *
+# 2^shift grows with the shift, so a shift chosen from the gain alone can push
+# the offset past what a word holds. It did -- conv3 wanted 35 bits at
+# shift=28, and `int(b) & 0xFFFFFFFF` truncated it without a word.
+ROM_WORD_BITS = 32
+
 
 # --------------------------------------------------------------------------- #
 # formats
@@ -213,6 +220,25 @@ class AffineFold:
         m = max((abs(a) for a in self.gain), default=0)
         return 0 if m == 0 else m.bit_length() + 1        # +1 for the sign
 
+    def fits_word(self, word_bits: int = ROM_WORD_BITS) -> bool:
+        """Can every constant be written as one two's-complement ROM word?
+
+        The failure this guards is silent in the worst way: the emitter masks
+        with 0xFFFFFFFF, so an oversized offset becomes a different, valid-
+        looking number, and golden.py does not notice because it works from the
+        Python ints rather than from the file. Everything agrees except the
+        hardware.
+        """
+        lim = 1 << (word_bits - 1)
+        return all(-lim <= v < lim for v in self.gain + self.bias)
+
+    def bias_bits(self) -> int:
+        """Width the offset needs. Not the same as the gain's, and usually
+        wider: B carries the BN offset scaled by 2^frac AND 2^shift, while A
+        carries a gain that is often well below 1."""
+        m = max((abs(b) for b in self.bias), default=0)
+        return 0 if m == 0 else m.bit_length() + 1
+
     def quietest_gain_bits(self) -> int:
         """Bits the SMALLEST nonzero gain gets. The shift is shared, so this is
         what a pathological spread in the trained BN would show up as, and it is
@@ -229,6 +255,7 @@ class AffineFold:
 def fold_affine(name: str, gain_real: Sequence[float], bias_real: Sequence[float],
                 out: FixedFormat, relu: bool,
                 gain_bits: int = GAIN_BITS,
+                word_bits: int = ROM_WORD_BITS,
                 shift: Optional[int] = None) -> AffineFold:
     """Turn a real affine map on an integer accumulator into integers.
 
@@ -245,21 +272,34 @@ def fold_affine(name: str, gain_real: Sequence[float], bias_real: Sequence[float
         raise ValueError(f"{name}: {len(gain_real)} gains vs "
                          f"{len(bias_real)} biases")
     g2 = [g * float(1 << out.frac_bits) for g in gain_real]
+    b2 = [b * float(1 << out.frac_bits) for b in bias_real]
     peak = max((abs(g) for g in g2), default=0.0)
+    bpeak = max((abs(b) for b in b2), default=0.0)
     if shift is None:
-        if peak == 0.0:
+        # The gain wants the shift as LARGE as possible -- more headroom, finer
+        # gain. The offset wants it small, because B grows with it and has to
+        # stay inside one ROM word. Both constraints are real, so take the
+        # tighter, and record which one bound it.
+        want = gain_bits - 1 - _ceil_log2(peak) if peak > 0.0 else 0
+        cap = (word_bits - 1 - _ceil_log2(bpeak) if bpeak > 0.0
+               else want)
+        shift = min(want, cap)
+        if shift < 0:
             shift = 0
-        else:
-            shift = gain_bits - 1 - _ceil_log2(peak)
-            if shift < 0:
-                shift = 0
     k = float(1 << shift)
-    return AffineFold(
+    f = AffineFold(
         name=name,
         gain=[int(round(g * k)) for g in g2],
-        bias=[int(round(b * float(1 << out.frac_bits) * k)) for b in bias_real],
+        bias=[int(round(b * k)) for b in b2],
         shift=shift, out=out, relu=relu,
         gain_real=list(gain_real), bias_real=list(bias_real))
+    if not f.fits_word(word_bits):
+        raise ValueError(
+            f"{name}: a constant needs more than {word_bits} bits at "
+            f"shift={shift} (gain up to {max(map(abs, f.gain), default=0)}, "
+            f"offset up to {max(map(abs, f.bias), default=0)}). The shift cap "
+            f"should have prevented this -- check word_bits.")
+    return f
 
 
 # --------------------------------------------------------------------------- #
