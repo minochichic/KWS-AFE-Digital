@@ -405,9 +405,15 @@ class Emitter:
         # otherwise have nothing to put there
         tail_rows = self._emit_tail()
         self._mark_real_inputs()
-        # only sized layers count -- the binary bound does not apply to the
-        # tail, whose widths come from tailfmt instead and are listed separately
-        widest = max((l.acc_bits for l in self.layers if l.n_terms), default=0)
+        # TWO widths, because there are two accumulators and they differ by 2x.
+        # The folded binary MAC sums +-1 and needs 14 bits; conv3 sums int8
+        # weights against a 14-bit fixed-point input and needs 28. Reporting
+        # only the first under the name "widest" was a trap: it is the number
+        # KWS_ACC_BITS carries, and a tail register sized from it would silently
+        # wrap at a quarter of conv3's range.
+        widest_bin = max((l.acc_bits for l in self.layers if l.n_terms),
+                         default=0)
+        widest = max([widest_bin] + [r["acc_bits"] for r in tail_rows])
         man = {
             "tag": tag,
             "n_channels": int(cfg.afe.n_channels),
@@ -420,8 +426,12 @@ class Emitter:
             "frame_ms": float(cfg.afe.envelope_win_ms),
             "datapath": "folded",
             "acc_bits_widest": widest,
-            "acc_bits_source": "analytic bound +-n_terms, over the layers fed "
-                               "+-1 (see _mark_real_inputs)",
+            "acc_bits_widest_binary": widest_bin,
+            "acc_bits_source": "binary layers: analytic bound +-n_terms over "
+                               "the layers fed +-1 (see _mark_real_inputs). "
+                               "Tail: integer weights times a clamped fixed-"
+                               "point input (export/tailfmt.py). Both are real "
+                               "bounds; they just come from different extremes.",
             "unsized_layers": [l.name for l in self.layers
                                if not l.n_terms and not l.acc_bits],
             "tail": {
@@ -460,7 +470,9 @@ def write_parameters_vh(man: Dict[str, Any], path: Path) -> None:
     a(f"`define KWS_FRAME_MS    {man['frame_ms']:.0f}")
     a(f"`define KWS_WORD_BITS   {man['word_bits']}")
     a(f"`define KWS_ACC_BITS    {man['acc_bits_widest']}"
-      f"   // widest accumulator, analytic bound")
+      f"   // widest accumulator anywhere, incl. the tail")
+    a(f"`define KWS_ACC_BITS_BIN {man['acc_bits_widest_binary']}"
+      f"   // widest in the binary MAC engine alone")
     a(f"`define KWS_N_LAYERS    {len(man['layers'])}")
     a("")
     for i, l in enumerate(man["layers"]):
@@ -526,8 +538,8 @@ def main() -> None:
               f"{l['kernel']:>4}{l['n_terms'] or '-':>7}"
               f"{l['acc_bits'] or '-':>5}  "
               f"{l['epilogue']}")
-    print(f"\nwidest SIZED accumulator: {man['acc_bits_widest']} bits "
-          f"(folded -> this is the one register that matters)")
+    print(f"\nwidest accumulator: {man['acc_bits_widest']} bits overall, "
+          f"{man['acc_bits_widest_binary']} bits in the binary MAC engine")
     if man["unsized_layers"]:
         print(f"NOT sized: {', '.join(man['unsized_layers'])}")
     n_fuse = sum(1 for l in man["layers"] if l["epilogue"] == "threshold")

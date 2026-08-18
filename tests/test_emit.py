@@ -174,10 +174,14 @@ def test_parameters_vh_agrees_with_manifest(manifest):
 def test_only_binary_fed_layers_carry_a_bound(manifest):
     """sum|q| bounds an int8 layer only when its input is +-1.
 
-    conv1 is fed the AFE output and is bounded. conv3 is fed relu(BN(conv2_pw)),
-    a real number, so the same formula bounds nothing -- it must come back
-    unsized rather than printing a width that rests on an assumption which does
-    not hold there.
+    conv1 is fed the AFE output and is bounded that way. conv3 is fed
+    relu(BN(conv2_pw)), a real number, so the same formula bounds nothing there
+    -- n_terms must stay 0 rather than printing a width resting on an
+    assumption that does not hold.
+
+    conv3 still gets an acc_bits, from a DIFFERENT bound: integer weights known
+    at export time times a clamped fixed-point input (export/tailfmt.py). Both
+    are real bounds; they just come from different pairs of extremes.
     """
     man, _, _, _ = manifest
     by_name = {l["name"]: l for l in man["layers"]}
@@ -187,12 +191,25 @@ def test_only_binary_fed_layers_carry_a_bound(manifest):
 
     for name in ("conv3", "conv4"):
         assert by_name[name]["n_terms"] == 0, f"{name} is not fed +-1"
-        assert name in man["unsized_layers"]
-        assert "fixed-point" in by_name[name]["notes"]
+        assert by_name[name]["acc_bits"] > 0, f"{name} still needs a width"
+        assert name not in man["unsized_layers"]
+        assert "tailfmt" in by_name[name]["notes"]
 
-    # and the headline width must ignore the unsized ones
-    sized = [l["acc_bits"] for l in man["layers"] if l["n_terms"]]
-    assert man["acc_bits_widest"] == max(sized)
+
+def test_the_headline_width_covers_the_tail_too(manifest):
+    """KWS_ACC_BITS must be the widest register ANYWHERE.
+
+    It used to be the widest among layers with n_terms, which excluded conv3 --
+    whose accumulator is twice as wide as anything in the binary engine. A
+    define called "widest accumulator" that is half the real widest is a trap:
+    a tail register sized from it wraps at a quarter of conv3's range, and
+    wrapping looks like plausible data.
+    """
+    man, _, _, _ = manifest
+    assert man["acc_bits_widest"] == max(l["acc_bits"] for l in man["layers"])
+    binary = [l["acc_bits"] for l in man["layers"] if l["n_terms"]]
+    assert man["acc_bits_widest_binary"] == max(binary)
+    assert man["acc_bits_widest"] >= man["acc_bits_widest_binary"]
 
 
 def test_widths_are_the_bound_not_a_measurement(manifest):

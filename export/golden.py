@@ -181,21 +181,37 @@ def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
                     f"{', relu' if s.fold.relu else ''}, saturated to "
                     f"{s.out_fmt} -- one word per value"}
 
-        # how far the integer path moved from the float one, on the same
-        # accumulator. Not the same question as end-to-end agreement, but it
-        # localizes a fold error to one layer.
+        # ---- two different questions, and the first version asked the wrong
+        # one. Measuring the integer output against the CONTINUOUS float value
+        # necessarily includes rounding onto the 1/2^frac grid, which is up to
+        # half an LSB by definition -- so it reported ~0.5 for every site and
+        # made a fold that is correct look 2000x worse than emit's estimate.
+        #
+        # What isolates the fold is comparing against float-then-rounded: do
+        # the integer arithmetic and the float arithmetic land on the SAME grid
+        # point? That is the question the RTL cares about.
         gain = torch.tensor(s.fold.gain_real, dtype=torch.float64).view(1, -1, 1)
         bias = torch.tensor(s.fold.bias_real, dtype=torch.float64).view(1, -1, 1)
         ref = gain * a.double() + bias
         if s.fold.relu:
             ref = torch.clamp_min(ref, 0.0)
-        lsb = float((y.double() / float(1 << s.out_fmt.frac_bits)
-                     - ref).abs().max()) * float(1 << s.out_fmt.frac_bits)
+        scale = float(1 << s.out_fmt.frac_bits)
+        ref_q = torch.clamp(torch.round(ref * scale),
+                            s.out_fmt.lo, s.out_fmt.hi)
+        fold_dev = float((y.double() - ref_q).abs().max())
+        grid_dev = float((y.double() / scale - ref).abs().max()) * scale
         clamped = int(((y == s.out_fmt.hi) | (y == s.out_fmt.lo)).sum())
         report.append({"name": s.name, "out_format": str(s.out_fmt),
                        "shift": s.fold.shift, "acc_bits": s.acc_bits,
                        "acc_absmax": int(a.abs().max()),
-                       "max_dev_lsb": round(lsb, 4),
+                       # 0 means the integer path and the float path chose the
+                       # same grid point everywhere. 1 is allowed and expected
+                       # only on exact ties, where torch.round goes to even and
+                       # `(x + half) >> s` goes up.
+                       "fold_dev_lsb": round(fold_dev, 4),
+                       # <= 0.5 by construction: this is the grid itself, not
+                       # an error the fold introduced.
+                       "grid_dev_lsb": round(grid_dev, 4),
                        "clamped_values": clamped,
                        "n_values": int(y.numel())})
         cur = y
@@ -380,24 +396,32 @@ def main() -> None:
 
     t = man.get("tail")
     if t:
-        print(f"\ntail, integer path:")
+        print("\ntail, integer path:")
         print(f"{'site':<10}{'out':>6}{'shift':>7}{'acc':>5}{'|acc| max':>11}"
-              f"{'bound':>11}{'dev LSB':>9}{'clamped':>9}")
-        for s in t["sites"]:
-            bound = (1 << (s["acc_bits"] - 1)) - 1
-            print(f"{s['name']:<10}{s['out_format']:>6}{s['shift']:>7}"
-                  f"{s['acc_bits']:>5}{s['acc_absmax']:>11}{bound:>11}"
-                  f"{s['max_dev_lsb']:>9}"
-                  f"{s['clamped_values']}/{s['n_values']}".rjust(9))
+              f"{'bound':>12}{'used':>6}{'fold':>7}{'grid':>7}{'clamped':>14}")
+        for st in t["sites"]:
+            bound = (1 << (st["acc_bits"] - 1)) - 1
+            used = max(1, int(st["acc_absmax"])).bit_length() + 1
+            clamp = f"{st['clamped_values']}/{st['n_values']}"
+            print(f"{st['name']:<10}{st['out_format']:>6}{st['shift']:>7}"
+                  f"{st['acc_bits']:>5}{st['acc_absmax']:>11}{bound:>12}"
+                  f"{used:>6}{st['fold_dev_lsb']:>7}{st['grid_dev_lsb']:>7}"
+                  f"{clamp:>14}")
         fx = [int(v) for v in (out / "predictions_fixed.txt").read_text().split()]
         agree = sum(int(a == b) for a, b in zip(fx, pred))
         print(f"\nfixed-point argmax agrees with the float model on "
               f"{agree}/{len(fx)} clips")
-        print("dev LSB = how far the integer path moved from float on the SAME "
-              "accumulator, per site. |acc| max vs bound says how much of the "
-              "width is real rather than slack; clamped counts saturations, "
-              "which should be a handful at most -- many means the format's "
-              "integer bits are too few, not that the fold is wrong.")
+        print("fold = does the integer path land on the same grid point as "
+              "float-then-round? 0 is what it must be; 1 is allowed only on an "
+              "exact tie. This is the fold's own error.")
+        print("grid = distance to the CONTINUOUS float value. <= 0.5 by "
+              "construction -- it is the 1/64 grid itself, not something the "
+              "fold introduced. Reporting this one alone was the earlier "
+              "mistake: it reads ~0.5 for a perfectly correct fold.")
+        print("acc vs used = allocated width against what these clips actually "
+              "reached. Large slack is expected (the bound assumes every weight "
+              "and activation is extreme and agrees in sign) and is NOT a "
+              "reason to narrow on two clips -- run export.ranges for that.")
         if agree != len(fx):
             print("NOTE: a disagreement is not automatically a bug -- a clip "
                   "whose top two logits are within one LSB can legitimately "
