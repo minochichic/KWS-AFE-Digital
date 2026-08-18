@@ -1,0 +1,102 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1044" width="1240" height="1044">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6478"/></marker></defs>
+<rect width="1240" height="1044" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">접기 —  소수 상수들을 정수 두 개로 만든다</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">꼬리는 A × 누산기 + B 를 실제로 계산해야 한다. 그 A 와 B 는 학습이 끝나면 전부 고정이라, 미리 곱해서 정수로 만들어 둘 수 있다.</text>
+<rect x="24" y="78" width="1192" height="196" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="103" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  누산기 앞의 상수들은 하나로 뭉친다</text>
+<text x="44" y="124" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">conv2_pw 가 실제로 하는 계산.  누산기 말고는 전부 학습 후 고정된 값이다.</text>
+<text x="44" y="154" font-family="'SF Mono','Menlo',monospace" font-size="13.5" fill="#1c2333" text-anchor="start" font-weight="400">진짜 출력  =  BN게인 × ( α × 누산기 )  +  BN오프셋</text>
+<rect x="44" y="172" width="168" height="54" rx="8" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.3"/>
+<text x="128.0" y="193" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#2f6fd0" text-anchor="middle" font-weight="700">BN게인</text>
+<text x="128.0" y="214" font-family="'SF Mono','Menlo',monospace" font-size="14" fill="#1c2333" text-anchor="middle" font-weight="700">0.17</text>
+<text x="128.0" y="244" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">학습 후 고정</text>
+<rect x="226" y="172" width="168" height="54" rx="8" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.3"/>
+<text x="310.0" y="193" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#2f6fd0" text-anchor="middle" font-weight="700">α  (이진 스케일)</text>
+<text x="310.0" y="214" font-family="'SF Mono','Menlo',monospace" font-size="14" fill="#1c2333" text-anchor="middle" font-weight="700">0.02</text>
+<text x="310.0" y="244" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">학습 후 고정</text>
+<line x1="400" y1="199" x2="424" y2="199" stroke="#2f6fd0" stroke-width="1.7" marker-end="url(#a)"/>
+<rect x="430" y="172" width="200" height="54" rx="8" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.6"/>
+<text x="530" y="193" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="middle" font-weight="700">게인  =  BN게인 × α</text>
+<text x="530" y="214" font-family="'SF Mono','Menlo',monospace" font-size="14" fill="#1c2333" text-anchor="middle" font-weight="700">0.0034</text>
+<text x="530" y="244" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#3f9a5d" text-anchor="middle" font-weight="700">미리 곱해서 하나로 — 이게 「접기」</text>
+<rect x="680" y="172" width="168" height="54" rx="8" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.3"/>
+<text x="764.0" y="193" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#c9902a" text-anchor="middle" font-weight="700">누산기 n</text>
+<text x="764.0" y="214" font-family="'SF Mono','Menlo',monospace" font-size="14" fill="#1c2333" text-anchor="middle" font-weight="700">17</text>
+<text x="764.0" y="244" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#c9902a" text-anchor="middle" font-weight="700">★ 뭉쳐지지 않는다</text>
+<rect x="872" y="160" width="328" height="82" rx="9" fill="#ffffff" stroke="#5b6478" stroke-width="1.2"/>
+<text x="892" y="182" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">게인과 오프셋은 학습이 끝나면 다시는</text>
+<text x="892" y="202" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">변하지 않는다. 누산기만 프레임마다</text>
+<text x="892" y="222" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">바뀐다 — 그래서 접을 수 있는 건 상수뿐.</text>
+<text x="620.0" y="260" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">conv3 은 여기에 int8 스케일이 하나 더 붙는데 똑같이 뭉치고, conv4 는 뭉친 결과가 2 의 거듭제곱이라 곱셈기조차 사라진다.</text>
+<rect x="24" y="290" width="1192" height="158" rx="12" fill="#f6f9fe" stroke="#2f6fd0" stroke-width="1.5"/>
+<text x="44" y="315" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  소수 게인을 정수로 —  2 의 거듭제곱을 곱한다</text>
+<text x="60" y="350" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="start" font-weight="400">게인 = 0.0034</text>
+<text x="370" y="350" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">소수. 하드웨어가 싫어한다</text>
+<text x="60" y="376" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="start" font-weight="400">× 2^6  (= 64)</text>
+<text x="370" y="376" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">출력이 8.6 포맷이라 64 배로 저장한다</text>
+<text x="60" y="402" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="start" font-weight="400">× 2^21</text>
+<text x="370" y="402" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">정수로 만들 만큼의 여유. 나중에 되돌린다</text>
+<text x="60" y="428" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#2f6fd0" text-anchor="start" font-weight="700">A = 456,340</text>
+<text x="370" y="428" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">정수! 이게 .hex 에 들어간다</text>
+<rect x="788" y="334" width="412" height="96" rx="9" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.3"/>
+<text x="808" y="358" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">「나중에 되돌린다」  =  &gt;&gt; 21</text>
+<text x="808" y="380" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">2^21 로 나누기다. 2 의 거듭제곱 나누기는</text>
+<text x="808" y="398" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">하드웨어에서 배선을 옮기는 것이라 공짜.</text>
+<text x="808" y="420" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">오프셋 B 도 같은 방식으로 = 28,185,723</text>
+<rect x="24" y="464" width="1192" height="268" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="489" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  숫자 하나를 끝까지 —  누산기에 17 이 담겼다고 하자</text>
+<rect x="44" y="508" width="556" height="172" rx="10" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.4"/>
+<text x="62" y="531" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#2f6fd0" text-anchor="start" font-weight="700">PyTorch (소수)</text>
+<text x="74" y="552" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="400">0.0034 × 17 + 0.21</text>
+<text x="570" y="552" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="400">= 0.2678</text>
+<text x="74" y="582" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="400">relu</text>
+<text x="570" y="582" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="400">= 0.2678</text>
+<text x="74" y="612" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="400">8.6 로 저장:  × 64</text>
+<text x="570" y="612" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="400">= 17.1392</text>
+<rect x="58" y="624" width="528" height="28" rx="6" fill="#ffffff" stroke="#2f6fd0" stroke-width="1.2"/>
+<text x="74" y="642" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">반올림</text>
+<text x="570" y="642" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="700">= 17</text>
+<rect x="632" y="508" width="556" height="172" rx="10" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="650" y="531" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#3f9a5d" text-anchor="start" font-weight="700">FPGA (정수)</text>
+<text x="662" y="552" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="400">A × 17</text>
+<text x="1158" y="552" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="400">= 7,757,780</text>
+<text x="662" y="582" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="400">+ B</text>
+<text x="1158" y="582" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="400">= 35,943,503</text>
+<text x="662" y="612" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="400">+ 절반 (1,048,576)</text>
+<text x="1158" y="612" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="400">= 36,992,079</text>
+<rect x="646" y="624" width="528" height="28" rx="6" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.2"/>
+<text x="662" y="642" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">&gt;&gt; 21</text>
+<text x="1158" y="642" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="end" font-weight="700">= 17</text>
+<text x="620.0" y="710" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="13" fill="#1c2333" text-anchor="middle" font-weight="700">둘 다 17.  이게 접기가 맞게 됐다는 뜻이다.</text>
+<rect x="24" y="748" width="1192" height="268" rx="12" fill="#fffbf0" stroke="#c9902a" stroke-width="1.5"/>
+<text x="44" y="773" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">D.  「반올림용 절반 더하기」가 뭔가</text>
+<text x="44" y="794" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">&gt;&gt; 는 나누고 나서 소수점 아래를 그냥 버린다 (버림). 항상 아래로 깎이니 평균 0.5 씩 손해다.  10 으로 나누는 걸로 보면 쉽다.</text>
+<text x="130" y="830" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="700">나눌 값</text>
+<text x="310" y="830" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="700">정확한 답</text>
+<text x="520" y="830" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#cc6155" text-anchor="middle" font-weight="700">버림만</text>
+<text x="790" y="830" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="middle" font-weight="700">절반(5) 더하고 버림</text>
+<rect x="60" y="844" width="1120" height="34" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="130" y="866" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="400">37 / 10</text>
+<text x="310" y="866" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="400">3.7</text>
+<text x="520" y="866" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#cc6155" text-anchor="middle" font-weight="700">3</text>
+<text x="590" y="866" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#cc6155" text-anchor="start" font-weight="400">✗  4 가 맞다</text>
+<text x="790" y="866" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="700">(37+5) / 10 = 4.2  →  4</text>
+<text x="1050" y="866" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="start" font-weight="400">✓</text>
+<rect x="60" y="884" width="1120" height="34" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="130" y="906" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="400">34 / 10</text>
+<text x="310" y="906" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="400">3.4</text>
+<text x="520" y="906" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">3</text>
+<text x="590" y="906" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="start" font-weight="400">✓</text>
+<text x="790" y="906" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="700">(34+5) / 10 = 3.9  →  3</text>
+<text x="1050" y="906" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="start" font-weight="400">✓</text>
+<rect x="60" y="924" width="1120" height="34" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="130" y="946" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="400">35 / 10</text>
+<text x="310" y="946" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="400">3.5</text>
+<text x="520" y="946" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#cc6155" text-anchor="middle" font-weight="700">3</text>
+<text x="590" y="946" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#cc6155" text-anchor="start" font-weight="400">✗  4 가 맞다</text>
+<text x="790" y="946" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="700">(35+5) / 10 = 4.0  →  4</text>
+<text x="1050" y="946" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="start" font-weight="400">✓</text>
+<text x="620.0" y="984" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="middle" font-weight="700">절반을 더하고 버리면 = 반올림.  2^21 로 나눌 때 그 절반이 2^20 = 1,048,576 이고, 위 C 에 나온 그 숫자다.</text>
+<text x="620.0" y="1004" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">하드웨어에서 이렇게 하는 이유: 상수 하나 더하기는 덧셈기 하나(누산기 초기값으로 넣으면 사실상 공짜)인데, 진짜 반올림 로직은 비트를 들여다봐야 해서 더 비싸다.</text>
+</svg>

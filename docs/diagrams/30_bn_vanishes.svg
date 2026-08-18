@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 1010" width="1240" height="1010">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5b6478"/></marker></defs>
+<rect width="1240" height="1010" fill="#ffffff"/>
+<text x="620.0" y="36" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="21" fill="#1c2333" text-anchor="middle" font-weight="700">sign 이면 BN 이 사라지고, relu 면 안 사라진다</text>
+<text x="620.0" y="58" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">「계산을 해야 0 과 비교하지 않나?」 — 계산하고 비교하면 그렇다. 부등식은 미리 풀어둘 수 있다.</text>
+<rect x="24" y="78" width="1192" height="174" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="103" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">A.  네트워크는 두 가지 방식으로 끝난다</text>
+<rect x="44" y="118" width="564" height="120" rx="10" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="62" y="141" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#3f9a5d" text-anchor="start" font-weight="700">몸통  conv1 · b1 · b2 · b3 · conv2_dw</text>
+<text x="62" y="166" font-family="'SF Mono','Menlo',monospace" font-size="13.5" fill="#1c2333" text-anchor="start" font-weight="400">출력 = sign( BN(누산기) )</text>
+<text x="62" y="189" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">묻는 것:  「어느 쪽이냐」</text>
+<rect x="58" y="200" width="536" height="28" rx="6" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="72" y="219" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">BN 이 사라진다  →  정수 비교 하나</text>
+<rect x="632" y="118" width="564" height="120" rx="10" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.4"/>
+<text x="650" y="141" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#cc6155" text-anchor="start" font-weight="700">꼬리  conv2_pw · conv3 · conv4</text>
+<text x="650" y="166" font-family="'SF Mono','Menlo',monospace" font-size="13.5" fill="#1c2333" text-anchor="start" font-weight="400">출력 = relu( BN(누산기) )</text>
+<text x="650" y="189" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">묻는 것:  「얼마냐」</text>
+<rect x="646" y="200" width="536" height="28" rx="6" fill="#ffffff" stroke="#cc6155" stroke-width="1.1"/>
+<text x="660" y="219" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="start" font-weight="700">BN 이 남는다  →  곱셈 + 덧셈 + 시프트</text>
+<rect x="24" y="268" width="1192" height="218" rx="12" fill="#f7fbf8" stroke="#3f9a5d" stroke-width="1.5"/>
+<text x="44" y="293" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">B.  온도계 —  부등식은 미리 풀어둘 수 있다</text>
+<text x="44" y="314" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">「섭씨를 화씨로 바꿔서 100°F 가 넘으면 알람을 울려라」</text>
+<rect x="60" y="334" width="400" height="32" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="78" y="355" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#1c2333" text-anchor="start" font-weight="400">C × 1.8 + 32  &gt;  100</text>
+<text x="478" y="355" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">시키는 대로.  측정할 때마다 곱셈 한 번</text>
+<line x1="260" y1="367" x2="260" y2="371" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="60" y="372" width="400" height="32" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="78" y="393" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#1c2333" text-anchor="start" font-weight="400">C × 1.8       &gt;  68</text>
+<text x="478" y="393" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">양변에서 32 를 뺀다</text>
+<line x1="260" y1="405" x2="260" y2="409" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="60" y="410" width="400" height="32" rx="7" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.5"/>
+<text x="78" y="431" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#1c2333" text-anchor="start" font-weight="700">C             &gt;  37.8</text>
+<text x="478" y="431" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">양변을 1.8 로 나눈다</text>
+<rect x="786" y="330" width="414" height="122" rx="9" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.3"/>
+<text x="806" y="354" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#1c2333" text-anchor="start" font-weight="700">「화씨 100 도」는 「섭씨 37.8 도」다</text>
+<text x="806" y="376" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">37.8 은 측정값과 무관하다. 노트북에서</text>
+<text x="806" y="394" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">미리 한 번 계산해서 적어두면 된다.</text>
+<text x="806" y="418" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="700">온도계는 변환 없이 눈금만 비교한다 —</text>
+<text x="806" y="436" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="700">곱셈이 사라졌다.</text>
+<text x="60" y="468" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">검산:  37.8 × 1.8 + 32 = 100</text>
+<rect x="24" y="502" width="1192" height="286" rx="12" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.2"/>
+<text x="44" y="527" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">C.  BN 에 똑같이 한다</text>
+<text x="44" y="548" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">BN 은 학습이 끝나면  BN(n) = g × (α×n − μ) + β  다.  변하는 건 누산기 n 하나뿐이고 나머지는 전부 고정된 상수다.</text>
+<rect x="60" y="568" width="470" height="32" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="78" y="589" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#1c2333" text-anchor="start" font-weight="400">BN(n)  &gt;  0</text>
+<line x1="295" y1="601" x2="295" y2="605" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="60" y="606" width="470" height="32" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="78" y="627" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#1c2333" text-anchor="start" font-weight="400">g × (α×n − μ) + β  &gt;  0</text>
+<text x="548" y="627" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">BN 을 펼친다</text>
+<line x1="295" y1="639" x2="295" y2="643" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="60" y="644" width="470" height="32" rx="7" fill="#ffffff" stroke="#c3cbd9" stroke-width="1.1"/>
+<text x="78" y="665" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#1c2333" text-anchor="start" font-weight="400">g×α×n  &gt;  g×μ − β</text>
+<text x="548" y="665" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">n 이 든 항만 왼쪽으로</text>
+<line x1="295" y1="677" x2="295" y2="681" stroke="#5b6478" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="60" y="682" width="470" height="32" rx="7" fill="#e4eefb" stroke="#2f6fd0" stroke-width="1.5"/>
+<text x="78" y="703" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#1c2333" text-anchor="start" font-weight="700">n  &gt;  (g×μ − β) / (g×α)</text>
+<text x="548" y="703" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">양변을 g×α 로 나눈다</text>
+<text x="296" y="734" font-family="'SF Mono','Menlo',monospace" font-size="11" fill="#2f6fd0" text-anchor="middle" font-weight="700">└──────── 이 덩어리가 T ────────┘</text>
+<text x="296" y="756" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">T 에는 n 이 없다 → 미리 계산해서 .hex 에 적어둔다.</text>
+<text x="296" y="774" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">칩은 실행할 때 「n ≥ T」 비교 하나만 한다.</text>
+<rect x="786" y="568" width="414" height="82" rx="9" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.3"/>
+<text x="806" y="590" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">n 은 정수다</text>
+<text x="806" y="612" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">n &gt; 37.8  과  n ≥ 38  은 완전히 같다.</text>
+<text x="806" y="634" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="700">저장되는 건 정수 38 → 반올림 오차 0.</text>
+<rect x="786" y="660" width="414" height="82" rx="9" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.3"/>
+<text x="806" y="682" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">g 가 음수면 부등호가 뒤집힌다</text>
+<text x="806" y="704" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">음수로 나누면 &gt; 가 &lt; 가 된다. 그래서</text>
+<text x="806" y="726" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="400">채널당 (문턱값, 방향 1비트) 두 개를 저장.</text>
+<text x="993.0" y="758" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">이 두 숫자가 b1_s0_dw_t.hex 파일 내용의 전부다.</text>
+<text x="993.0" y="776" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">g·α·μ·β 는 하드웨어에 하나도 남지 않는다.</text>
+<rect x="24" y="804" width="1192" height="178" rx="12" fill="#fffbf7" stroke="#cc6155" stroke-width="1.5"/>
+<text x="44" y="829" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14.5" fill="#1c2333" text-anchor="start" font-weight="700">D.  relu 는 왜 안 되나 — 다른 질문을 하기 때문</text>
+<rect x="60" y="848" width="1120" height="50" rx="8" fill="#e6f4ea" stroke="#3f9a5d" stroke-width="1.3"/>
+<text x="82" y="879" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#3f9a5d" text-anchor="start" font-weight="700">sign</text>
+<text x="160" y="879" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">「어느 쪽이냐」</text>
+<text x="330" y="879" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="start" font-weight="400">BN(n) &gt; 0</text>
+<text x="620" y="879" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">부등식 → 양변을 옮길 수 있다</text>
+<rect x="60" y="906" width="1120" height="50" rx="8" fill="#fdf0ef" stroke="#cc6155" stroke-width="1.3"/>
+<text x="82" y="937" font-family="'SF Mono','Menlo',monospace" font-size="13" fill="#cc6155" text-anchor="start" font-weight="700">relu</text>
+<text x="160" y="937" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12" fill="#1c2333" text-anchor="start" font-weight="700">「얼마냐」</text>
+<text x="330" y="937" font-family="'SF Mono','Menlo',monospace" font-size="12.5" fill="#1c2333" text-anchor="start" font-weight="400">relu(BN(n)) = 0.2678</text>
+<text x="620" y="937" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#5b6478" text-anchor="start" font-weight="400">값 → 옮길 변이 없다</text>
+<text x="620.0" y="972" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#1c2333" text-anchor="middle" font-weight="600">그래서 꼬리는 A × n + B 를 실제로 계산해야 한다 — 그 A 와 B 를 정수로 만드는 게 31_fold_arithmetic.svg 다.</text>
+</svg>
