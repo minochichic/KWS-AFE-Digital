@@ -76,7 +76,13 @@ class Layer:
     epilogue: str = "none"        # threshold | bn_relu | logits
     weights: Optional[str] = None       # ROM basename
     weight_words: int = 0
-    thresholds: Optional[str] = None    # ROM basename
+    thresholds: Optional[str] = None    # ROM basename, `sign(BN(acc))` compare
+    # The tail's epilogue is arithmetic, not a compare, so it gets its own
+    # field. Reusing `thresholds` for it fits the data structure and lies to
+    # the reader: an RTL author who sees `thresholds` loads the ROM into a
+    # comparator, and a gain/offset pair read as a threshold produces plausible
+    # garbage. Two names, because they are two different things.
+    affine: Optional[str] = None        # ROM basename, (gain, offset) + shift
     residual_from: Optional[str] = None
     input_binary: bool = True     # is this layer fed {-1,+1}?
     notes: str = ""
@@ -324,7 +330,7 @@ class Emitter:
                 "rule": "y = (A[c]*acc + B[c] + (1<<(shift-1))) >>> shift; then "
                         "relu if set, then saturate to out_bits",
                 **s.meta})
-            lay.thresholds = f"{s.name}_bn"
+            lay.affine = f"{s.name}_bn"
             lay.acc_bits = s.acc_bits
             row = {"name": s.name, "epilogue": s.kind,
                    "out_format": str(s.out_fmt), "shift": s.fold.shift,

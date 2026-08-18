@@ -149,10 +149,34 @@ def test_threshold_rom_exists_for_every_fusing_layer(manifest):
                 f"{l['name']} does not fuse but carries a threshold ROM")
 
 
+def test_the_tail_carries_an_affine_rom_and_not_a_threshold_one(manifest):
+    """The two epilogues must not share a field name.
+
+    A tail layer's epilogue is `(gain, offset) >> shift`, not a compare. If it
+    were announced under `thresholds`, an RTL author would wire it into a
+    comparator -- and a gain read as a threshold does not fail, it produces
+    plausible garbage.
+    """
+    man, out, _, _ = manifest
+    seen = 0
+    for l in man["layers"]:
+        if l["epilogue"] in ("bn_relu", "logits"):
+            seen += 1
+            assert not l["thresholds"], f"{l['name']} is not a compare"
+            assert l["affine"], f"{l['name']} has no affine ROM"
+            rom = man["roms"][l["affine"]]
+            assert rom["kind"] == "affine"
+            assert rom["n_words"] == 2 * l["out_ch"], "n gains + n offsets"
+            assert (out / rom["file"]).is_file()
+        else:
+            assert not l["affine"], f"{l['name']} is a compare, not arithmetic"
+    assert seen == 3, f"{seen} tail layers, expected conv2_pw/conv3/conv4"
+
+
 def test_every_referenced_rom_was_written(manifest):
     man, out, _, _ = manifest
     for l in man["layers"]:
-        for key in ("weights", "thresholds"):
+        for key in ("weights", "thresholds", "affine"):
             if l[key]:
                 assert l[key] in man["roms"], f"{l['name']}.{key} not in roms"
                 assert (out / man["roms"][l[key]]["file"]).is_file()
@@ -213,8 +237,34 @@ def test_the_headline_width_covers_the_tail_too(manifest):
 
 
 def test_widths_are_the_bound_not_a_measurement(manifest):
+    """Both bounds, checked as arithmetic rather than as a docstring.
+
+    This used to assert a prefix on acc_bits_source, which broke the moment the
+    tail gave that string a second sentence -- a test of the prose, not of the
+    widths. What it should check is that every width is reproducible from the
+    layer's own declared shape, which is what makes it a bound rather than
+    something measured off a few clips.
+    """
+    from export.tailfmt import FixedFormat, acc_bits_for_real_input
+
     man, _, _, _ = manifest
     for l in man["layers"]:
         if l["n_terms"]:
             assert l["acc_bits"] == signed_bits(-l["n_terms"], l["n_terms"])
-    assert man["acc_bits_source"].startswith("analytic bound")
+
+    checked = 0
+    for l in man["layers"]:
+        if not l["affine"]:
+            continue
+        rom = man["roms"][l["affine"]]
+        if not rom.get("in_format"):
+            continue                      # conv2_pw is fed +-1, covered above
+        i, f = (int(v) for v in rom["in_format"].split("."))
+        checked += 1
+        assert l["acc_bits"] == acc_bits_for_real_input(
+            l["in_ch"] * l["kernel"], rom["weight_absmax"],
+            FixedFormat(i, f), in_nonneg=True), l["name"]
+    assert checked == 2, "conv3 and conv4 both have a real-valued input"
+
+    assert "measur" not in man["acc_bits_source"]
+    assert "analytic bound" in man["acc_bits_source"]
