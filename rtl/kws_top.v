@@ -128,6 +128,11 @@ module kws_top #(
     // reach its last output are generated below, which is why in_valid and
     // c1_push are not the same wire.
     localparam integer PC_BITS = 9;
+    // sized through an integer part-select, not written as an expression: the
+    // sum is 32 bits and comparing it against a 9-bit counter is a widening
+    // lint would rightly flag
+    localparam integer PC_LIMIT_I = T_IN + C1_FLUSH + 2;
+    localparam [PC_BITS-1:0] PC_LIMIT = PC_LIMIT_I[PC_BITS-1:0];
     reg [PC_BITS-1:0] pc;
     reg               c1_push, c1_real;
     reg [N_CH-1:0]    c1_frame;
@@ -308,6 +313,18 @@ module kws_top #(
 
     assign busy = (st != S_IDLE);
 
+    // Plane D's rd_done does not sequence anything -- the tail's own frame
+    // count is what ends phase 5. It is not spare, though: it says the plane
+    // handed over everything it owed, including its 28 flushes, and that has to
+    // happen BEFORE a class comes out. If a class arrived first, the tail
+    // pooled fewer than T_OUT frames and the answer is over a partial clip.
+    reg pd_seen;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n)        pd_seen <= 1'b0;
+        else if (start)    pd_seen <= 1'b0;
+        else if (pd_done)  pd_seen <= 1'b1;
+    end
+
 `ifdef KWS_ASSERT
     // A plane must be full before its reader starts, and kws_plane asserts that
     // too -- but the useful place to catch it is here, where the phase that
@@ -324,10 +341,14 @@ module kws_top #(
     always @(posedge clk) if (pd_rs && !pd_full) begin
         $display("ASSERT %m: the tail started before plane D filled"); $finish;
     end
+    always @(posedge clk) if (class_valid && !pd_seen) begin
+        $display("ASSERT %m: a class came out before plane D finished");
+        $finish;
+    end
     // conv1's flush count is derived; if it is wrong the plane never fills and
     // the run hangs in S_C1 rather than failing, which is much harder to read.
     always @(posedge clk)
-        if ((st == S_C1) && (pc > (T_IN + C1_FLUSH + 2))) begin
+        if ((st == S_C1) && (pc > PC_LIMIT)) begin
             $display("ASSERT %m: %0d pushes and plane A still not full",
                      pc);
             $finish;
