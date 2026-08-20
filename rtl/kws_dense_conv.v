@@ -85,8 +85,15 @@ module kws_dense_conv #(
     reg [CO_BITS-1:0]    co;
     reg [WA_BITS-1:0]    wa;
 
-    localparam [CI_BITS-1:0] CI_LAST = C_IN - 1;
-    localparam [CO_BITS-1:0] CO_LAST = C_OUT - 1;
+    // Sized through an integer part-select rather than written as `C_IN - 1`.
+    // The subtraction is a 32-bit expression, and assigning it straight to a
+    // 7-bit localparam is a truncation -- correct here, but the same line is
+    // wrong the moment a count does not fit, and lint cannot tell the two
+    // apart. Same shape as kws_plane's T_I / T_C.
+    localparam integer CI_LAST_I = C_IN - 1;
+    localparam integer CO_LAST_I = C_OUT - 1;
+    localparam [CI_BITS-1:0] CI_LAST = CI_LAST_I[CI_BITS-1:0];
+    localparam [CO_BITS-1:0] CO_LAST = CO_LAST_I[CO_BITS-1:0];
 
     wire ci_last = (ci == CI_LAST);
     wire co_last = (co == CO_LAST);
