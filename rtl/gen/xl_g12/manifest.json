@@ -23,6 +23,9 @@
         "shift": 18,
         "acc_bits": 8,
         "n_out": 128,
+        "n_in": 64,
+        "n_terms": 64,
+        "weight_bits": 0,
         "gain_bits": 22,
         "bias_bits": 26,
         "relu": true,
@@ -35,6 +38,9 @@
         "shift": 24,
         "acc_bits": 28,
         "n_out": 128,
+        "n_in": 128,
+        "n_terms": 128,
+        "weight_bits": 8,
         "gain_bits": 18,
         "bias_bits": 32,
         "relu": true,
@@ -47,6 +53,9 @@
         "shift": 27,
         "acc_bits": 25,
         "n_out": 12,
+        "n_in": 128,
+        "n_terms": 128,
+        "weight_bits": 8,
         "gain_bits": 23,
         "bias_bits": 31,
         "relu": false,
@@ -640,7 +649,9 @@
         0.0035926189739257097,
         0.004503378178924322
       ],
-      "note": "two's complement int8, row-major"
+      "weight_bits": 8,
+      "hex_digits": 2,
+      "note": "two's complement int8, row-major, [out_ch][in_ch]. The ROM must be declared exactly weight_bits wide: a 2-digit negative read into a wider register zero-extends, so -5 becomes 251."
     },
     "conv1_t": {
       "file": "conv1_t.hex",
@@ -1088,7 +1099,9 @@
         0.0036180198658257723,
         0.004406892694532871
       ],
-      "note": "two's complement int8, row-major"
+      "weight_bits": 8,
+      "hex_digits": 2,
+      "note": "two's complement int8, row-major, [out_ch][in_ch]. The ROM must be declared exactly weight_bits wide: a 2-digit negative read into a wider register zero-extends, so -5 becomes 251."
     },
     "conv4_w": {
       "file": "conv4_w.hex",
@@ -1101,6 +1114,7 @@
       ],
       "frac_bits": 6,
       "weight_bits": 8,
+      "hex_digits": 2,
       "abs_max": 71,
       "bias": [
         -0.060680411756038666,
@@ -1116,7 +1130,7 @@
         0.05087873339653015,
         -0.08545443415641785
       ],
-      "note": "two's complement, row-major, one shared scale 2^-6 -- the grid experiments/tail_fixedpoint.py measured"
+      "note": "two's complement, row-major, [out_ch][in_ch], one shared scale 2^-6 -- the grid experiments/tail_fixedpoint.py measured. Declare the ROM exactly weight_bits wide."
     },
     "conv2_pw_bn": {
       "file": "conv2_pw_bn.hex",

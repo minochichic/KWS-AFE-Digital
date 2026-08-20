@@ -253,6 +253,8 @@
 `define KWS_CONV2_PW_OUT_BITS  14
 `define KWS_CONV2_PW_SHIFT     18
 `define KWS_CONV2_PW_N_OUT     128
+`define KWS_CONV2_PW_N_IN      64
+`define KWS_CONV2_PW_W_BITS    0   // 0 = binary, the conv is not a dense one
 `define KWS_CONV2_PW_GAIN_BITS 22
 `define KWS_CONV2_PW_BIAS_BITS 26
 `define KWS_CONV2_PW_RELU      1
@@ -261,6 +263,8 @@
 `define KWS_CONV3_OUT_BITS  11
 `define KWS_CONV3_SHIFT     24
 `define KWS_CONV3_N_OUT     128
+`define KWS_CONV3_N_IN      128
+`define KWS_CONV3_W_BITS    8   // 0 = binary, the conv is not a dense one
 `define KWS_CONV3_GAIN_BITS 18
 `define KWS_CONV3_BIAS_BITS 32
 `define KWS_CONV3_RELU      1
@@ -269,6 +273,8 @@
 `define KWS_CONV4_OUT_BITS  14
 `define KWS_CONV4_SHIFT     27
 `define KWS_CONV4_N_OUT     12
+`define KWS_CONV4_N_IN      128
+`define KWS_CONV4_W_BITS    8   // 0 = binary, the conv is not a dense one
 `define KWS_CONV4_GAIN_BITS 23
 `define KWS_CONV4_BIAS_BITS 31
 `define KWS_CONV4_RELU      0
