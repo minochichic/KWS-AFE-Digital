@@ -56,3 +56,28 @@ if grep -qE '^(FAIL|ASSERT)' "$LOG"; then
 fi
 # ", 0 failures" and not "0 failures": the latter also matches "10 failures".
 grep -qE ', 0 failures' "$LOG" || { echo "no pass line in output" >&2; exit 1; }
+
+# Record it. Until now a run's result lived only in terminal scrollback, so
+# "what has been verified against what" was something a person remembered
+# rather than something the repo knew -- and that is exactly the kind of claim
+# that rots. docs/make_site.py reads this file; nothing else may write it.
+RES="rtl/results.json"
+CHECKED=$(grep -oE '[0-9]+ frames checked' "$LOG" | tail -1 | grep -oE '^[0-9]+')
+python3 - "$RES" "$NAME" "${CHECKED:-0}" "$LOG" <<'EOPY'
+import json, pathlib, subprocess, sys, datetime
+path, name, checked, log = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
+p = pathlib.Path(path)
+data = json.loads(p.read_text()) if p.is_file() else {}
+sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
+                     capture_output=True, text=True).stdout.strip()
+data[name] = {
+    "passed": True,
+    "checked": checked,
+    "commit": sha,
+    "when": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
+    "lines": [l for l in pathlib.Path(log).read_text().splitlines()
+              if l.startswith("ok ") or "failures" in l],
+}
+p.write_text(json.dumps(dict(sorted(data.items())), indent=2) + "\n")
+print(f"recorded {name}: {checked} checked -> {path}")
+EOPY
