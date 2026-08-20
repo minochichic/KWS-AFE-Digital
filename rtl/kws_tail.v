@@ -324,8 +324,8 @@ module kws_tail #(
     // in_flight does.
     always @(posedge clk)
         if (rst_n && (pw_busy | d3_busy | d4_busy) && !in_flight) begin
-            $display("ASSERT %m: a stage is busy while the tail reports idle "
-                     "(pw=%b d3=%b d4=%b)", pw_busy, d3_busy, d4_busy);
+            $display("ASSERT %m: busy stage while idle: pw=%b d3=%b d4=%b",
+                     pw_busy, d3_busy, d4_busy);
             $finish;
         end
 

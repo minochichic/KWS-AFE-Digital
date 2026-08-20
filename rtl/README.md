@@ -664,6 +664,12 @@ BRAM 1장으로 끝날 것을.
 ## 4. 코딩 규약
 
 - **Verilog-2005 서브셋.** iverilog·Verilator·Vivado 가 똑같이 해석하게.
+  - **인접 문자열 리터럴 연결이 없다.** C·파이썬과 다르다. `$display` 의 포맷
+    문자열은 **한 줄**이어야 하고, 줄바꿈은 **인자 목록에서만** 한다.
+    ```verilog
+    $display("ASSERT %m: gain %0d does not fit %0d",   // 문자열은 한 줄
+             $signed(a1), GAIN_BITS);                  // 인자만 줄바꿈
+    ```
   `$countones`·`logic`·`always_ff` 안 씀. XSim 이 본선이 되면 재검토.
 - **폭은 명시적으로.** 암묵적 확장·잘림 금지. `verilator --lint-only -Wall` 이
   게이트다 (`rtl/run_tb.sh` 가 시뮬 전에 돌린다).
