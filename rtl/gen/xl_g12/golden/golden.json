@@ -31,6 +31,7 @@
         128,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -63,6 +64,7 @@
         128,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -84,6 +86,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -105,6 +108,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -137,6 +141,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -158,6 +163,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -179,6 +185,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -200,6 +207,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -232,6 +240,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -253,6 +262,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -274,6 +284,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -295,6 +306,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -327,6 +339,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -348,6 +361,7 @@
         64,
         64
       ],
+      "packed": true,
       "layout": "one word per (clip, frame)",
       "note": "FusedThreshold.apply(acc) -- the compare RTL performs"
     },
@@ -360,28 +374,122 @@
       ],
       "dtype": "int32",
       "order": "clip-major, then out_ch, then frame",
-      "note": "pre-alpha integer accumulator"
+      "note": "integer accumulator, 8 bits signed"
     },
-    "conv3_out": {
-      "file": "conv3_out.txt",
+    "conv2_pw_out": {
+      "file": "conv2_pw_out.hex",
       "shape": [
         2,
         128,
         64
       ],
-      "dtype": "float32",
-      "note": "REFERENCE ONLY -- real-valued; the tail's fixed-point format is not chosen yet"
+      "dtype": "int32",
+      "packed": false,
+      "order": "clip-major, then out_ch, then frame",
+      "note": "(A*acc + B + half) >> 18, relu, saturated to 8.6 -- one word per value"
     },
-    "conv4_out": {
-      "file": "conv4_out.txt",
+    "conv3_acc": {
+      "file": "conv3_acc.hex",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "integer accumulator, 28 bits signed"
+    },
+    "conv3_out": {
+      "file": "conv3_out.hex",
+      "shape": [
+        2,
+        128,
+        64
+      ],
+      "dtype": "int32",
+      "packed": false,
+      "order": "clip-major, then out_ch, then frame",
+      "note": "(A*acc + B + half) >> 24, relu, saturated to 5.6 -- one word per value"
+    },
+    "conv4_acc": {
+      "file": "conv4_acc.hex",
       "shape": [
         2,
         12,
         64
       ],
-      "dtype": "float32",
-      "note": "REFERENCE ONLY -- real-valued; the tail's fixed-point format is not chosen yet"
+      "dtype": "int32",
+      "order": "clip-major, then out_ch, then frame",
+      "note": "integer accumulator, 25 bits signed"
+    },
+    "conv4_out": {
+      "file": "conv4_out.hex",
+      "shape": [
+        2,
+        12,
+        64
+      ],
+      "dtype": "int32",
+      "packed": false,
+      "order": "clip-major, then out_ch, then frame",
+      "note": "(A*acc + B + half) >> 27, saturated to 8.6 -- one word per value"
+    },
+    "pooled": {
+      "file": "pooled.txt",
+      "shape": [
+        2,
+        12
+      ],
+      "dtype": "int",
+      "note": "sum of the per-frame logits over T. The pool's divide by T is not built: same positive factor on every class, and argmax ignores it"
+    },
+    "predictions_fixed": {
+      "file": "predictions_fixed.txt",
+      "shape": [
+        2
+      ],
+      "note": "argmax of the pooled integer logits -- the answer the hardware gives. Compare against predictions.txt, which is the float model's"
     }
+  },
+  "tail": {
+    "sites": [
+      {
+        "name": "conv2_pw",
+        "out_format": "8.6",
+        "shift": 18,
+        "acc_bits": 8,
+        "acc_absmax": 44,
+        "fold_dev_lsb": 0.0,
+        "fold_dev_count": 0,
+        "grid_dev_lsb": 0.4997,
+        "clamped_values": 0,
+        "n_values": 16384
+      },
+      {
+        "name": "conv3",
+        "out_format": "5.6",
+        "shift": 24,
+        "acc_bits": 28,
+        "acc_absmax": 103329,
+        "fold_dev_lsb": 1.0,
+        "fold_dev_count": 4,
+        "grid_dev_lsb": 0.5008,
+        "clamped_values": 0,
+        "n_values": 16384
+      },
+      {
+        "name": "conv4",
+        "out_format": "8.6",
+        "shift": 27,
+        "acc_bits": 25,
+        "acc_absmax": 128600,
+        "fold_dev_lsb": 0.0,
+        "fold_dev_count": 0,
+        "grid_dev_lsb": 0.4981,
+        "clamped_values": 0,
+        "n_values": 1536
+      }
+    ]
   },
   "note": "compare layer by layer; the first mismatch names the module"
 }

@@ -11,7 +11,8 @@
 `define KWS_N_CLASSES   12
 `define KWS_FRAME_MS    10
 `define KWS_WORD_BITS   32
-`define KWS_ACC_BITS    14   // widest accumulator, analytic bound
+`define KWS_ACC_BITS    28   // widest accumulator anywhere, incl. the tail
+`define KWS_ACC_BITS_BIN 14   // widest in the binary MAC engine alone
 `define KWS_N_LAYERS    21
 
 // conv1: int8, epilogue=threshold
@@ -232,7 +233,7 @@
 `define KWS_L19_CONV3_PADDING    0
 `define KWS_L19_CONV3_GROUPS     1
 `define KWS_L19_CONV3_N_TERMS    0
-`define KWS_L19_CONV3_ACC_BITS   0
+`define KWS_L19_CONV3_ACC_BITS   28
 
 // conv4: fixed, epilogue=logits
 `define KWS_L20_CONV4_IN_CH      128
@@ -243,6 +244,34 @@
 `define KWS_L20_CONV4_PADDING    0
 `define KWS_L20_CONV4_GROUPS     1
 `define KWS_L20_CONV4_N_TERMS    0
-`define KWS_L20_CONV4_ACC_BITS   0
+`define KWS_L20_CONV4_ACC_BITS   25
+
+// ---- tail fixed-point (frac=6) ----
+`define KWS_TAIL_FRAC   6
+// conv2_pw: bn_relu, out 8.6
+`define KWS_CONV2_PW_ACC_BITS  8
+`define KWS_CONV2_PW_OUT_BITS  14
+`define KWS_CONV2_PW_SHIFT     18
+`define KWS_CONV2_PW_N_OUT     128
+`define KWS_CONV2_PW_GAIN_BITS 22
+`define KWS_CONV2_PW_BIAS_BITS 26
+`define KWS_CONV2_PW_RELU      1
+// conv3: bn_relu, out 5.6
+`define KWS_CONV3_ACC_BITS  28
+`define KWS_CONV3_OUT_BITS  11
+`define KWS_CONV3_SHIFT     24
+`define KWS_CONV3_N_OUT     128
+`define KWS_CONV3_GAIN_BITS 18
+`define KWS_CONV3_BIAS_BITS 32
+`define KWS_CONV3_RELU      1
+// conv4: logits, out 8.6
+`define KWS_CONV4_ACC_BITS  25
+`define KWS_CONV4_OUT_BITS  14
+`define KWS_CONV4_SHIFT     27
+`define KWS_CONV4_N_OUT     12
+`define KWS_CONV4_GAIN_BITS 23
+`define KWS_CONV4_BIAS_BITS 31
+`define KWS_CONV4_RELU      0
+`define KWS_CONV4_POOL_BITS 21   // sum over T, no divide
 
 `endif

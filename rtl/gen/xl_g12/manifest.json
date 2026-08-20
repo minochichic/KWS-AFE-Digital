@@ -9,12 +9,53 @@
   "C": 64,
   "frame_ms": 10.0,
   "datapath": "folded",
-  "acc_bits_widest": 14,
-  "acc_bits_source": "analytic bound +-n_terms, over the layers fed +-1 (see _mark_real_inputs)",
-  "unsized_layers": [
-    "conv3",
-    "conv4"
-  ],
+  "acc_bits_widest": 28,
+  "acc_bits_widest_binary": 14,
+  "acc_bits_source": "binary layers: analytic bound +-n_terms over the layers fed +-1 (see _mark_real_inputs). Tail: integer weights times a clamped fixed-point input (export/tailfmt.py). Both are real bounds; they just come from different extremes.",
+  "unsized_layers": [],
+  "tail": {
+    "frac_bits": 6,
+    "sites": [
+      {
+        "name": "conv2_pw",
+        "epilogue": "bn_relu",
+        "out_format": "8.6",
+        "shift": 18,
+        "acc_bits": 8,
+        "n_out": 128,
+        "gain_bits": 22,
+        "bias_bits": 26,
+        "relu": true,
+        "max_output_error_lsb": 0.00024
+      },
+      {
+        "name": "conv3",
+        "epilogue": "bn_relu",
+        "out_format": "5.6",
+        "shift": 24,
+        "acc_bits": 28,
+        "n_out": 128,
+        "gain_bits": 18,
+        "bias_bits": 32,
+        "relu": true,
+        "max_output_error_lsb": 0.01143
+      },
+      {
+        "name": "conv4",
+        "epilogue": "logits",
+        "out_format": "8.6",
+        "shift": 27,
+        "acc_bits": 25,
+        "n_out": 12,
+        "gain_bits": 23,
+        "bias_bits": 31,
+        "relu": false,
+        "max_output_error_lsb": 0.00195,
+        "pool_acc_bits": 21
+      }
+    ],
+    "note": "the tail's widths come from the measured ranges and the confirmed frac (rtl/README.md 3-07), not from the binary +-n_terms bound. acc_bits here is a real bound too: integer weights known at export time times a clamped fixed-point input."
+  },
   "word_bits": 32,
   "layers": [
     {
@@ -33,6 +74,7 @@
       "weights": "conv1_w",
       "weight_words": 22528,
       "thresholds": "conv1_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -53,6 +95,7 @@
       "weights": "b1_skip_w",
       "weight_words": 256,
       "thresholds": null,
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": "projection for the residual; unscaled, its integer accumulator is added directly"
@@ -73,6 +116,7 @@
       "weights": "b1_s0_dw_w",
       "weight_words": 128,
       "thresholds": "b1_s0_dw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -93,6 +137,7 @@
       "weights": "b1_s0_pw_w",
       "weight_words": 256,
       "thresholds": "b1_s0_pw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -113,6 +158,7 @@
       "weights": "b1_s1_dw_w",
       "weight_words": 64,
       "thresholds": "b1_s1_dw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -133,6 +179,7 @@
       "weights": "b1_s1_pw_w",
       "weight_words": 128,
       "thresholds": null,
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": "feeds the residual add; unscaled by construction"
@@ -153,6 +200,7 @@
       "weights": null,
       "weight_words": 0,
       "thresholds": "b1_add_t",
+      "affine": null,
       "residual_from": "b1_skip",
       "input_binary": true,
       "notes": ""
@@ -173,6 +221,7 @@
       "weights": "b2_s0_dw_w",
       "weight_words": 64,
       "thresholds": "b2_s0_dw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -193,6 +242,7 @@
       "weights": "b2_s0_pw_w",
       "weight_words": 128,
       "thresholds": "b2_s0_pw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -213,6 +263,7 @@
       "weights": "b2_s1_dw_w",
       "weight_words": 64,
       "thresholds": "b2_s1_dw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -233,6 +284,7 @@
       "weights": "b2_s1_pw_w",
       "weight_words": 128,
       "thresholds": null,
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": "feeds the residual add; unscaled by construction"
@@ -253,6 +305,7 @@
       "weights": null,
       "weight_words": 0,
       "thresholds": "b2_add_t",
+      "affine": null,
       "residual_from": "block input (identity)",
       "input_binary": true,
       "notes": ""
@@ -273,6 +326,7 @@
       "weights": "b3_s0_dw_w",
       "weight_words": 64,
       "thresholds": "b3_s0_dw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -293,6 +347,7 @@
       "weights": "b3_s0_pw_w",
       "weight_words": 128,
       "thresholds": "b3_s0_pw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -313,6 +368,7 @@
       "weights": "b3_s1_dw_w",
       "weight_words": 64,
       "thresholds": "b3_s1_dw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -333,6 +389,7 @@
       "weights": "b3_s1_pw_w",
       "weight_words": 128,
       "thresholds": null,
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": "feeds the residual add; unscaled by construction"
@@ -353,6 +410,7 @@
       "weights": null,
       "weight_words": 0,
       "thresholds": "b3_add_t",
+      "affine": null,
       "residual_from": "block input (identity)",
       "input_binary": true,
       "notes": ""
@@ -373,6 +431,7 @@
       "weights": "conv2_dw_w",
       "weight_words": 64,
       "thresholds": "conv2_dw_t",
+      "affine": null,
       "residual_from": null,
       "input_binary": true,
       "notes": ""
@@ -393,9 +452,10 @@
       "weights": "conv2_pw_w",
       "weight_words": 256,
       "thresholds": null,
+      "affine": "conv2_pw_bn",
       "residual_from": null,
       "input_binary": true,
-      "notes": "BN + relu survive: the next stage is not binary, so there is no sign() to fold into. Needs real (fixed-point) BN, not a compare."
+      "notes": "BN + relu survive: the next stage is not binary, so there is no sign() to fold into. Emitted as an integer gain + offset + shift; see the `tail` section of this manifest and export/tailfmt.py."
     },
     {
       "name": "conv3",
@@ -408,14 +468,15 @@
       "padding": 0,
       "groups": 1,
       "n_terms": 0,
-      "acc_bits": 0,
+      "acc_bits": 28,
       "epilogue": "bn_relu",
       "weights": "conv3_w",
       "weight_words": 16384,
       "thresholds": null,
+      "affine": "conv3_bn",
       "residual_from": null,
       "input_binary": false,
-      "notes": "BN + relu survive: the next stage is not binary, so there is no sign() to fold into. Needs real (fixed-point) BN, not a compare.  input is real (previous stage ends in relu), so sum|q| is not a bound. Width follows the tail's fixed-point format, still to be chosen."
+      "notes": "BN + relu survive: the next stage is not binary, so there is no sign() to fold into. Emitted as an integer gain + offset + shift; see the `tail` section of this manifest and export/tailfmt.py.  input is real (previous stage ends in relu), so sum|q| is not a bound; acc_bits comes from tailfmt instead -- integer weights times a clamped fixed-point input, which is a bound of the same kind, just from a different pair of extremes."
     },
     {
       "name": "conv4",
@@ -428,14 +489,15 @@
       "padding": 0,
       "groups": 1,
       "n_terms": 0,
-      "acc_bits": 0,
+      "acc_bits": 25,
       "epilogue": "logits",
       "weights": "conv4_w",
       "weight_words": 1536,
       "thresholds": null,
+      "affine": "conv4_bn",
       "residual_from": null,
       "input_binary": false,
-      "notes": "logits -> avg-pool over time -> argmax. Monotone, so only ordering matters.  input is real (previous stage ends in relu), so sum|q| is not a bound. Width follows the tail's fixed-point format, still to be chosen."
+      "notes": "logits -> avg-pool over time -> argmax. The pool's divide by T is not built: it is the same positive factor on every class, and argmax ignores it.  input is real (previous stage ends in relu), so sum|q| is not a bound; acc_bits comes from tailfmt instead -- integer weights times a clamped fixed-point input, which is a bound of the same kind, just from a different pair of extremes."
     }
   ],
   "roms": {
@@ -1031,12 +1093,15 @@
     "conv4_w": {
       "file": "conv4_w.hex",
       "n_words": 1536,
-      "kind": "float",
+      "kind": "fixed",
       "shape": [
         12,
         128,
         1
       ],
+      "frac_bits": 6,
+      "weight_bits": 8,
+      "abs_max": 71,
       "bias": [
         -0.060680411756038666,
         0.009433635510504246,
@@ -1051,7 +1116,68 @@
         0.05087873339653015,
         -0.08545443415641785
       ],
-      "note": "NOT hardware-ready. Choose a fixed-point format from the measured logit range first (runs/<tag>/ranges.json: conv4 was [-68.1, 26.1], asymmetric -- a symmetric format throws away a bit)"
+      "note": "two's complement, row-major, one shared scale 2^-6 -- the grid experiments/tail_fixedpoint.py measured"
+    },
+    "conv2_pw_bn": {
+      "file": "conv2_pw_bn.hex",
+      "n_words": 256,
+      "kind": "affine",
+      "n_channels": 128,
+      "shift": 18,
+      "relu": true,
+      "in_format": null,
+      "out_format": "8.6",
+      "out_bits": 14,
+      "acc_bits": 8,
+      "gain_bits": 22,
+      "bias_bits": 26,
+      "quietest_gain_bits": 22,
+      "max_output_error_lsb": 0.00024,
+      "weight_absmax": 0,
+      "layout": "n int32 gains (two's complement), then n int32 offsets",
+      "rule": "y = (A[c]*acc + B[c] + (1<<(shift-1))) >>> shift; then relu if set, then saturate to out_bits",
+      "source": "gain = bn_g * alpha, binary accumulator"
+    },
+    "conv3_bn": {
+      "file": "conv3_bn.hex",
+      "n_words": 256,
+      "kind": "affine",
+      "n_channels": 128,
+      "shift": 24,
+      "relu": true,
+      "in_format": "8.6",
+      "out_format": "5.6",
+      "out_bits": 11,
+      "acc_bits": 28,
+      "gain_bits": 18,
+      "bias_bits": 32,
+      "quietest_gain_bits": 17,
+      "max_output_error_lsb": 0.01143,
+      "weight_absmax": 127,
+      "layout": "n int32 gains (two's complement), then n int32 offsets",
+      "rule": "y = (A[c]*acc + B[c] + (1<<(shift-1))) >>> shift; then relu if set, then saturate to out_bits",
+      "source": "gain = bn_g * int8_scale / 2^in_frac"
+    },
+    "conv4_bn": {
+      "file": "conv4_bn.hex",
+      "n_words": 24,
+      "kind": "affine",
+      "n_channels": 12,
+      "shift": 27,
+      "relu": false,
+      "in_format": "5.6",
+      "out_format": "8.6",
+      "out_bits": 14,
+      "acc_bits": 25,
+      "gain_bits": 23,
+      "bias_bits": 31,
+      "quietest_gain_bits": 23,
+      "max_output_error_lsb": 0.00195,
+      "weight_absmax": 71,
+      "layout": "n int32 gains (two's complement), then n int32 offsets",
+      "rule": "y = (A[c]*acc + B[c] + (1<<(shift-1))) >>> shift; then relu if set, then saturate to out_bits",
+      "source": "gain = 2^-(6+6), uniform across classes; bias = the conv's own bias",
+      "pool": "sum over T frames then argmax; the divide is not built"
     }
   }
 }
