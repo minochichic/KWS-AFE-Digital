@@ -150,6 +150,17 @@ module kws_top #(
     wire              c1_busy, c1_ov;
     wire [C1_OUT-1:0] c1_of;
 
+    // ONE condition, used by both push paths and by in_ready. Writing it twice
+    // is how the flush branch ended up without the !c1_push term: the caller's
+    // path was fixed and the internal one was not, so every real frame passed
+    // and the first flush issued a two-cycle in_push -- one intended push,
+    // two shifts.
+    //
+    // Two different cycles have to be excluded. c1_push is registered, so the
+    // cycle after it is set conv1 has not seen it yet and c1_busy is still low;
+    // and once conv1 is sweeping, c1_busy covers the rest.
+    wire can_push = (st == S_C1) && !c1_busy && !c1_push;
+
     kws_conv1 #(.C_IN(N_CH), .C_OUT(C1_OUT), .K(C1_K), .PAD(C1_PAD),
                 .STRIDE(C1_STRIDE), .T_IN(T_IN), .W_BITS(8),
                 .ACC_BITS(C1_ACC), .CO_BITS(7),
@@ -299,10 +310,10 @@ module kws_top #(
             end else case (st)
             S_C1: begin
                 // real frames come from the caller; the tail flushes are ours
-                if (in_valid && !c1_busy && pc < T_IN[PC_BITS-1:0]) begin
+                if (in_valid && can_push && pc < T_IN[PC_BITS-1:0]) begin
                     c1_push  <= 1'b1; c1_real <= 1'b1; c1_frame <= in_frame;
                     pc       <= pc + {{(PC_BITS-1){1'b0}}, 1'b1};
-                end else if (!c1_busy && pc >= T_IN[PC_BITS-1:0] &&
+                end else if (can_push && pc >= T_IN[PC_BITS-1:0] &&
                              !pa_full) begin
                     c1_push  <= 1'b1; c1_real <= 1'b0;
                     c1_frame <= {N_CH{1'b0}};
@@ -321,11 +332,7 @@ module kws_top #(
         end
     end
 
-    // Not while a push is already registered and not yet seen (c1_push), and
-    // not while conv1 is sweeping (c1_busy). Those are two different cycles and
-    // both have to be excluded.
-    assign in_ready = (st == S_C1) && (pc < T_IN[PC_BITS-1:0]) &&
-                      !c1_busy && !c1_push;
+    assign in_ready = can_push && (pc < T_IN[PC_BITS-1:0]);
 
     assign busy = (st != S_IDLE);
 

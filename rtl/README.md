@@ -599,10 +599,18 @@ RTL 이 `rom[{sel, ch}]` 로 똑같이 주소를 매기게 맞춘 것이다.
 `in_valid && !c1_busy` 가 거짓이 되어 **그 프레임은 조용히 사라진다** (else 가 없다).
 `pc` 가 128 에 못 가고 평면 A 가 안 차서 **S_C1 에서 영원히 기다린다.**
 
-`in_ready` 는 두 사이클을 **둘 다** 배제한다:
+두 사이클을 **둘 다** 배제해야 한다: push 가 등록됐지만 conv1 이 아직 못 본 사이클
+(`c1_push`), 그리고 conv1 이 도는 사이클 (`c1_busy`).
+
+**조건은 하나여야 한다.** 처음엔 이걸 두 군데 썼고 한 군데만 고쳤다 —
+호출자 경로는 `in_ready` 로 막았는데 **`kws_top` 이 스스로 넣는 flush 경로**는
+안 막혀서, 실제 프레임 128개는 전부 통과하고 **첫 flush 에서** 2사이클짜리
+`in_push` 가 나갔다. 의도한 push 하나에 shift 두 번.
 
 ```verilog
-in_ready = (st == S_C1) && (pc < T_IN) && !c1_busy && !c1_push;
+wire can_push = (st == S_C1) && !c1_busy && !c1_push;   // 한 곳
+assign in_ready = can_push && (pc < T_IN);
+// 두 분기 모두 can_push 를 쓴다
 ```
 
 ### 멈춤은 어서션이 못 잡는 유일한 실패다
