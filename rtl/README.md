@@ -83,7 +83,7 @@ kws_plane     ✅  활성 평면 (층 사이 BRAM, drain 주입 포함)
 kws_affine    ✅  꼬리 epilogue — (A·acc + B + half) >> shift → relu → 포화
 kws_dense_conv ✅ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜 곱셈기)
 kws_tail      ✅  꼬리 전체 — 이진 프레임 → 클래스 인덱스
-kws_conv1     ⬜  int8 가중치 × ±1 — 곱셈기 없는 부호 누산 (stride 2)
+kws_conv1     ✅  int8 가중치 × ±1 — 곱셈기 없는 부호 누산 (stride 2)
 kws_top       ⬜  conv1 + b1~b3 + conv2_dw + 평면 핑퐁 → kws_tail
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```
@@ -563,6 +563,33 @@ RTL 이 `rom[{sel, ch}]` 로 똑같이 주소를 매기게 맞춘 것이다.
 > 같은 필드에 넣으면 자료구조상으론 맞고 읽는 사람한테는 거짓말이 된다 — `thresholds`
 > 를 본 사람은 ROM 을 비교기에 물릴 것이고, **게인을 문턱값으로 읽으면 실패하지 않고
 > 그럴듯한 쓰레기가 나온다.** 두 가지 다른 것이니 이름도 둘이다.
+
+---
+
+## 3-069. dilation — 버퍼는 SPAN, 탭은 K
+
+`conv2_dw` 만 `dilation=2` 다. 탭 29개가 **57칸 버퍼**에 한 칸 걸러 놓인다.
+
+```
+SPAN = (K−1)·DIL + 1 = 57
+탭 j  →  슬롯 j·DIL
+```
+
+**시프트·마스크·MAC 은 전부 그대로다.** 그것들은 슬롯이 아니라 **K개의 탭** 위에서
+돌기 때문이다. 그래서 바뀐 건 두 줄뿐:
+
+```verilog
+taps[j] = fbuf[j*DIL][ch];      // 게더를 stride 만큼 띄운다
+tvld[j] = valid[j*DIL];         // valid 도 같은 stride 로
+```
+
+> **`valid` 를 게더 안 하면 조용히 틀린다.** SPAN 폭 `valid` 를 그대로 `tzc`/
+> `popcount` 에 넣으면 **커널이 읽지도 않는 슬롯을 센다** — `n_valid` 가 두 배쯤
+> 나온다. 가장자리에서만 틀리므로 또 「미묘한 수치 문제」로 보인다.
+
+**`DIL=1` 에서는 두 방식이 구별되지 않는다.** `b1_s0_dw` 는 stride 를 아는 게더든
+평범한 게더든 통과한다. `conv2_dw` 만 둘을 가른다 — TB 에 인스턴스를 두 개 두는
+이유다.
 
 ---
 

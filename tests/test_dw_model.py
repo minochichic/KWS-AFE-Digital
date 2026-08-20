@@ -273,3 +273,96 @@ def test_residual_must_be_added_before_the_threshold(blk_setup):
         differ += int(correct != wrong)
     assert differ > 0, ("thresholding before the add changed nothing on this "
                         "frame -- the test cannot detect the mistake")
+
+
+# --------------------------------------------------------------------------- #
+# dilation: conv2_dw spreads 29 taps over 57 slots
+# --------------------------------------------------------------------------- #
+
+@pytest.fixture(scope="module")
+def dil_setup():
+    man = json.loads((GEN / "manifest.json").read_text())
+    lay = {l["name"]: l for l in man["layers"]}["conv2_dw"]
+    g = json.loads((GEN / "golden" / "golden.json").read_text())
+    n_clip, C, T = g["files"]["conv2_dw_out"]["shape"]
+    nw = C // 32
+    trom = _words("conv2_dw_t.hex")
+    return {
+        "C": C, "K": lay["kernel"], "PAD": lay["padding"],
+        "DIL": lay["dilation"], "T": T, "n_clip": n_clip, "nw": nw,
+        "inp": _frames("golden/b3_add_out.hex", n_clip, T, nw),
+        "exp": _frames("golden/conv2_dw_out.hex", n_clip, T, nw),
+        "w": _words("conv2_dw_w.hex"),
+        "thr": [t - (1 << 32) if t >= 1 << 31 else t for t in trom[:C]],
+        "ge": [bool(v) for v in trom[C:]],
+    }
+
+
+def run_dilated(s):
+    """kws_dw_conv with DIL > 1.
+
+    The buffer holds SPAN slots and the K taps sit at slot j*DIL. Everything
+    after the gather is unchanged, because the shift and the mask work on the
+    K TAPS -- feed them the SPAN-wide valid and they would count slots the
+    kernel never reads.
+    """
+    C, K, PAD, DIL, T = s["C"], s["K"], s["PAD"], s["DIL"], s["T"]
+    SPAN = (K - 1) * DIL + 1
+    mask_k = (1 << K) - 1
+    out_all = []
+    for n in range(s["n_clip"]):
+        fbuf, valid, outs = [0] * SPAN, 0, {}
+        for i in range(T + PAD):
+            real = i < T
+            fbuf = fbuf[1:] + [s["inp"][n][i] if real else 0]
+            valid = ((valid >> 1) | (int(real) << (SPAN - 1))) & ((1 << SPAN) - 1)
+            if not (valid >> (SPAN - 1 - PAD)) & 1:
+                continue
+            tvld = sum(((valid >> (j * DIL)) & 1) << j for j in range(K))
+            shift = (tvld & -tvld).bit_length() - 1
+            n_valid = bin(tvld).count("1")
+            frame = 0
+            for c in range(C):
+                taps = sum(((fbuf[j * DIL] >> c) & 1) << j for j in range(K))
+                a = taps >> shift
+                w = (s["w"][c] & mask_k) >> shift
+                p = bin(~(a ^ w) & ((1 << n_valid) - 1)).count("1")
+                acc = 2 * p - n_valid
+                if (acc >= s["thr"][c]) == s["ge"][c]:
+                    frame |= 1 << c
+            outs[i - PAD] = frame
+        out_all.append([outs[t] for t in range(T)])
+    return out_all
+
+
+def test_the_dilated_model_reproduces_the_golden_output(dil_setup):
+    got = run_dilated(dil_setup)
+    bad = [(n, t) for n in range(dil_setup["n_clip"])
+           for t in range(dil_setup["T"]) if got[n][t] != dil_setup["exp"][n][t]]
+    assert not bad, f"{len(bad)} frames differ, first at clip/t {bad[:3]}"
+
+
+def test_the_span_is_wider_than_the_kernel(dil_setup):
+    s = dil_setup
+    assert s["DIL"] == 2 and s["K"] == 29
+    assert (s["K"] - 1) * s["DIL"] + 1 == 57, "29 taps over 57 slots"
+    assert s["PAD"] == 28
+    # the centre slot must be one the kernel actually reads
+    assert ((57 - 1 - s["PAD"]) % s["DIL"]) == 0
+
+
+def test_gathering_valid_at_the_wrong_stride_would_be_caught(dil_setup):
+    """The mistake this gather exists to avoid: feeding the shift and the mask
+    the raw SPAN-wide valid instead of the K taps. It counts slots the kernel
+    never reads, so n_valid comes out roughly twice too large."""
+    s = dil_setup
+    C, K, PAD, DIL, T = s["C"], s["K"], s["PAD"], s["DIL"], s["T"]
+    SPAN = (K - 1) * DIL + 1
+    valid = 0
+    for i in range(PAD + 1):                      # fill to the first output
+        valid = ((valid >> 1) | (1 << (SPAN - 1))) & ((1 << SPAN) - 1)
+    tvld = sum(((valid >> (j * DIL)) & 1) << j for j in range(K))
+    assert bin(valid).count("1") != bin(tvld).count("1"), (
+        "at the edge the slot count and the tap count must differ, or this "
+        "test proves nothing")
+    assert bin(tvld).count("1") <= K

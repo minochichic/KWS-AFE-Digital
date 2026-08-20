@@ -31,7 +31,8 @@
 module kws_dw_conv #(
     parameter integer C         = 128,   // channels
     parameter integer K         = 13,    // kernel taps  (K <= WORD_BITS)
-    parameter integer PAD       = 6,     // (K-1)/2 for "same"
+    parameter integer PAD       = 6,     // (K-1)*DIL/2 for "same"
+    parameter integer DIL       = 1,     // manifest: dilation
     parameter integer ACC_BITS  = 8,     // from parameters.vh
     parameter integer CNT_BITS  = 8,
     parameter integer WORD_BITS = 32,
@@ -77,30 +78,37 @@ module kws_dw_conv #(
     end
 
     // ---- line buffer --------------------------------------------------- //
-    // slot 0 is the oldest frame and is tap 0; a push moves everything down and
-    // the new frame enters at slot K-1.
-    reg [C-1:0] fbuf [0:K-1];
-    reg [K-1:0] valid;
+    // The buffer holds SPAN frames, not K. With dilation the K taps are spread
+    // out -- tap j sits at slot j*DIL -- so conv2_dw's 29 taps need 57 slots
+    // and use every other one. At DIL=1 the two are the same and nothing about
+    // the rest of this module changes: the shift, mask and MAC all work on the
+    // K GATHERED taps, never on the slots.
+    localparam integer SPAN = (K - 1) * DIL + 1;
 
-    wire [K-1:0] valid_next = {in_real, valid[K-1:1]};
-    // The centre tap is slot K-1-PAD. An output exists exactly when that slot
-    // holds a real frame: true after PAD pushes, false again PAD pushes past
-    // the last real one. That single bit is the whole fill/drain condition.
-    wire emit_now  = valid[K-1-PAD];
-    wire emit_next = valid_next[K-1-PAD];
+    reg [C-1:0]    fbuf [0:SPAN-1];
+    reg [SPAN-1:0] valid;
+
+    wire [SPAN-1:0] valid_next = {in_real, valid[SPAN-1:1]};
+    // The centre tap is slot SPAN-1-PAD. An output exists exactly when that
+    // slot holds a real frame: true after PAD pushes, false again PAD pushes
+    // past the last real one. That single bit is the whole fill/drain
+    // condition. For "same" padding it lands on a tap, which the assertion
+    // below checks rather than assumes.
+    wire emit_now  = valid[SPAN-1-PAD];
+    wire emit_next = valid_next[SPAN-1-PAD];
 
     integer i;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            valid <= {K{1'b0}};
-            for (i = 0; i < K; i = i + 1) fbuf[i] <= {C{1'b0}};
+            valid <= {SPAN{1'b0}};
+            for (i = 0; i < SPAN; i = i + 1) fbuf[i] <= {C{1'b0}};
         end else if (start) begin
-            valid <= {K{1'b0}};
-            for (i = 0; i < K; i = i + 1) fbuf[i] <= {C{1'b0}};
+            valid <= {SPAN{1'b0}};
+            for (i = 0; i < SPAN; i = i + 1) fbuf[i] <= {C{1'b0}};
         end else if (in_push && !busy) begin
-            for (i = 0; i < K - 1; i = i + 1) fbuf[i] <= fbuf[i + 1];
-            fbuf[K-1] <= in_frame;
-            valid     <= valid_next;
+            for (i = 0; i < SPAN - 1; i = i + 1) fbuf[i] <= fbuf[i + 1];
+            fbuf[SPAN-1] <= in_frame;
+            valid        <= valid_next;
         end
     end
 
@@ -130,8 +138,20 @@ module kws_dw_conv #(
         end
     endfunction
 
-    wire [CNT_BITS-1:0] sh = tzc(valid);
-    wire [CNT_BITS-1:0] nv = popcnt(valid);
+    // Gathered at the SAME stride as the taps. Sub-sampling a contiguous run
+    // of real slots leaves a contiguous run, so the trailing-zero shift and the
+    // popcount still see what they expect -- but they must see the TAPS. Fed
+    // the raw SPAN-wide `valid` they would count slots the kernel never reads.
+    wire [K-1:0] tvld;
+    genvar gvv;
+    generate
+        for (gvv = 0; gvv < K; gvv = gvv + 1) begin : g_tvld
+            assign tvld[gvv] = valid[gvv*DIL];
+        end
+    endgenerate
+
+    wire [CNT_BITS-1:0] sh = tzc(tvld);
+    wire [CNT_BITS-1:0] nv = popcnt(tvld);
 
     // ---- gather + align ------------------------------------------------ //
     // tap j of channel `ch` lives in slot j; all K slots are registers we
@@ -143,7 +163,7 @@ module kws_dw_conv #(
     genvar gv;
     generate
         for (gv = 0; gv < K; gv = gv + 1) begin : g_taps
-            assign taps[gv] = fbuf[gv][ch];
+            assign taps[gv] = fbuf[gv*DIL][ch];
         end
     endgenerate
 
@@ -220,6 +240,15 @@ module kws_dw_conv #(
     end
 
 `ifdef KWS_ASSERT
+    // emit_now indexes a SLOT, and it has to be a slot the kernel reads. True
+    // for "same" padding with an odd K, which is every depthwise here, but it
+    // is a property of the numbers rather than of the code.
+    initial if (((SPAN - 1 - PAD) % DIL) != 0) begin
+        $display("ASSERT %m: centre slot %0d is not a tap (DIL=%0d)",
+                 SPAN - 1 - PAD, DIL);
+        $finish;
+    end
+
     always @(posedge clk) if (in_push && busy) begin
         $display("ASSERT %m: pushed while busy -- that frame would be dropped");
         $finish;

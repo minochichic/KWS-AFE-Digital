@@ -10,6 +10,12 @@
 // and if it fails, kws_bin_mac is already known good, so the fault is in one
 // of those five.
 //
+// A SECOND INSTANCE FOR DILATION. conv2_dw spreads 29 taps over 57 slots, so
+// the buffer is wider than the kernel and the taps sit at slot j*DIL. The point
+// of running both is that at DIL=1 the two are the same size and nothing can
+// tell a stride-aware gather from a plain one -- b1_s0_dw would pass either
+// way. Only conv2_dw separates them.
+//
 //   ./rtl/run_tb.sh dw_conv
 
 `timescale 1ns/1ps
@@ -77,6 +83,46 @@ module tb_dw_conv;
         end
     endtask
 
+    // ---- second DUT: conv2_dw, 29 taps at dilation 2 -------------------- //
+    localparam integer DC   = 64;
+    localparam integer DK   = 29;
+    localparam integer DPAD = 28;
+    localparam integer DDIL = 2;
+    localparam integer DACC = 6;       // manifest: conv2_dw acc_bits
+    localparam integer DNW  = DC / WB;
+
+    reg           d_start = 1'b0, d_push = 1'b0, d_real = 1'b0;
+    reg  [DC-1:0] d_frame = {DC{1'b0}};
+    wire          d_busy, d_ov;
+    wire [DC-1:0] d_of;
+
+    kws_dw_conv #(.C(DC), .K(DK), .PAD(DPAD), .DIL(DDIL), .ACC_BITS(DACC),
+                  .WORD_BITS(WB),
+                  .W_FILE("rtl/gen/xl_g12/conv2_dw_w.hex"),
+                  .T_FILE("rtl/gen/xl_g12/conv2_dw_t.hex")) dut_d (
+        .clk(clk), .rst_n(rst_n), .start(d_start),
+        .in_push(d_push), .in_real(d_real), .in_frame(d_frame),
+        .busy(d_busy), .out_valid(d_ov), .out_frame(d_of));
+
+    reg [WB-1:0] d_in  [0:CLIPS*T*DNW-1];
+    reg [WB-1:0] d_exp [0:CLIPS*T*DNW-1];
+    reg [DC-1:0] d_got, d_want, d_fr;
+    reg          d_got_v;
+
+    task d_pushf;
+        input        real_f;
+        input [DC-1:0] fr;
+        begin
+            @(negedge clk);
+            d_push = 1'b1; d_real = real_f; d_frame = fr;
+            @(negedge clk);
+            d_push = 1'b0;
+            while (d_busy) @(negedge clk);
+            d_got_v = d_ov;
+            d_got   = d_of;
+        end
+    endtask
+
     initial begin
         $dumpfile("tb_dw_conv.vcd");
         $dumpvars(0, tb_dw_conv);
@@ -127,13 +173,56 @@ module tb_dw_conv;
             $display("ok   clip%0d: %0d frames", clip, T);
         end
 
+        // ---- dilated ---------------------------------------------------- //
+        $readmemh("rtl/gen/xl_g12/golden/b3_add_out.hex",   d_in);
+        $readmemh("rtl/gen/xl_g12/golden/conv2_dw_out.hex", d_exp);
+
+        for (clip = 0; clip < CLIPS; clip = clip + 1) begin
+            @(negedge clk); d_start = 1'b1;
+            @(negedge clk); d_start = 1'b0;
+
+            for (i = 0; i < T + DPAD; i = i + 1) begin
+                d_fr = {DC{1'b0}};
+                if (i < T)
+                    for (j = 0; j < DNW; j = j + 1)
+                        d_fr[j*WB +: WB] = d_in[(clip*T + i)*DNW + j];
+                d_pushf(i < T, d_fr);
+
+                t = i - DPAD;
+                if (t >= 0) begin
+                    if (!d_got_v) begin
+                        $display("FAIL conv2_dw clip%0d t=%0d: no output",
+                                 clip, t);
+                        errors = errors + 1;
+                    end else begin
+                        d_want = {DC{1'b0}};
+                        for (j = 0; j < DNW; j = j + 1)
+                            d_want[j*WB +: WB] = d_exp[(clip*T + t)*DNW + j];
+                        checked = checked + 1;
+                        if (d_got !== d_want) begin
+                            errors = errors + 1;
+                            if (errors <= 5)
+                                $display("FAIL conv2_dw clip%0d t=%0d\n  got  %h\n  want %h",
+                                         clip, t, d_got, d_want);
+                        end
+                    end
+                end else if (d_got_v) begin
+                    $display("FAIL conv2_dw clip%0d push %0d: output during fill",
+                             clip, i);
+                    errors = errors + 1;
+                end
+            end
+            $display("ok   conv2_dw clip%0d: %0d frames (29 taps, dilation 2)",
+                     clip, T);
+        end
+
         $display("\n%0d frames checked, %0d failures", checked, errors);
         $finish;
     end
 
     // a runaway FSM should not hang the run
     initial begin
-        #20_000_000;
+        #60_000_000;
         $display("FAIL timeout");
         $finish;
     end
