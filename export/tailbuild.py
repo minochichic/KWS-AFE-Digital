@@ -209,13 +209,34 @@ def tail_plan(model: BinaryMatchboxNet) -> List[TailSite]:
     return sites
 
 
-def check_site(s: TailSite, max_err_lsb: float = 0.25) -> None:
-    """Refuse a fold that would quietly cost accuracy.
+# Where to draw the line, and why there are two lines.
+#
+# `err` is how far the fold moves a value, in LSBs of that site's own output
+# grid, and it works out to about 0.5 * out.hi / |A| once the clamp binds -- so
+# it is set by the QUIETEST gain's bit count, not by the shift.
+#
+# One whole LSB is the natural failure point, from measurement rather than
+# taste: experiments/tail_fixedpoint.py ran frac=4, a grid FOUR TIMES COARSER
+# than the frac=6 being shipped, and scored 0.8447 against 0.8445 for float.
+# A systematic 4x coarsening of every value costs 0.0pp, so a fold error below
+# one LSB of the finer grid is strictly under the measured noise floor.
+#
+# 0.25 is not a failure, it is where the number stops being obviously
+# negligible and becomes worth reading. xl_g12 sits at 0.009.
+WARN_LSB = 0.25
+FAIL_LSB = 1.0
 
-    Both failures here are invisible downstream: a gain that rounded to zero
-    deletes a channel, and a shift too small moves every value by a fraction of
-    the output grid. Neither trips a clamp or an assertion -- the accuracy just
-    comes out lower, with nothing in the log to point at.
+
+def check_site(s: TailSite, warn_lsb: float = WARN_LSB,
+               fail_lsb: float = FAIL_LSB) -> Optional[str]:
+    """Refuse a fold that would cost accuracy; report one that might.
+
+    The failures here are invisible downstream: a gain that rounded to zero
+    deletes a channel, an oversized constant is masked into a different number,
+    and a starved gain moves every value a little. None trips a clamp or an
+    assertion -- the accuracy just comes out lower, with nothing in the log.
+
+    Returns a warning string, or None. Raises only past `fail_lsb`.
     """
     if not s.fold.fits_word(ROM_WORD_BITS):
         raise ValueError(
@@ -228,19 +249,31 @@ def check_site(s: TailSite, max_err_lsb: float = 0.25) -> None:
             f"{s.name}: gain rounded to zero on channels "
             f"{s.fold.dead_gains()[:8]} -- the fold would delete them. "
             f"Raise export.tailfmt.GAIN_BITS.")
+
     err = s.fold.max_output_error_lsb((1 << (s.acc_bits - 1)) - 1)
-    if err > max_err_lsb:
-        which = s.fold.limiting_constraint()
-        remedy = ("raise export.tailfmt.GAIN_BITS -- the gain is what caps the "
-                  "shift here" if which == "gain" else
-                  "the OFFSET caps the shift, so GAIN_BITS will not help: the "
-                  "shift is already as large as a 32-bit ROM word allows")
+    if err <= warn_lsb:
+        return None
+
+    quiet, loud = s.fold.quietest_gain_bits(), s.fold.gain_bits_used()
+    which = s.fold.limiting_constraint()
+    # Describe what the numbers say rather than a fixed story. A spread is one
+    # way to starve the quiet end; an offset that caps the shift for every
+    # channel at once is another, and they need different answers.
+    cause = (f"gains span {quiet}..{loud} bits, so the shared shift cannot "
+             f"serve both ends" if loud - quiet >= 4 else
+             f"every gain is small ({quiet}..{loud} bits)")
+    remedy = ("raise export.tailfmt.GAIN_BITS -- the gain is what caps the "
+              "shift here" if which == "gain" else
+              "the OFFSET caps the shift, so GAIN_BITS will not help; a wider "
+              "ROM word would, or a BN whose beta is smaller relative to its "
+              "gamma")
+    msg = (f"{s.name}: the fold moves the result by {err:.3f} LSB of its own "
+           f"output grid (shift={s.fold.shift}, {cause}). {remedy}.")
+    if err > fail_lsb:
         raise ValueError(
-            f"{s.name}: the fold moves the result by {err:.3f} LSB of its own "
-            f"output grid (shift={s.fold.shift}, gains span "
-            f"{s.fold.quietest_gain_bits()}..{s.fold.gain_bits_used()} bits). "
-            f"A shared shift cannot serve gains that span orders of magnitude; "
-            f"the quiet end starves. {remedy}.")
+            msg + f" Past {fail_lsb} LSB this is a whole grid step and is "
+                  f"refused.")
+    return msg
 
 
 def apply_site(s: TailSite, acc: torch.Tensor) -> torch.Tensor:

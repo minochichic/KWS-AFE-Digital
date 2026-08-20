@@ -37,6 +37,7 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -304,7 +305,12 @@ class Emitter:
         by_name = {l.name: l for l in self.layers}
         rows: List[Dict[str, Any]] = []
         for s in tail_plan(self.model):
-            check_site(s)
+            warn = check_site(s)
+            if warn:
+                # loud but not fatal: under one LSB the fold is below the noise
+                # floor the frac sweep measured, so refusing would block a
+                # perfectly usable export
+                print(f"WARNING  {warn}", file=sys.stderr)
             lay = by_name.get(s.name)
             if lay is None:
                 raise ValueError(

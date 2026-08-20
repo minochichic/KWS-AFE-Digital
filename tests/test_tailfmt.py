@@ -375,7 +375,7 @@ def test_a_wide_gain_spread_is_reported_rather_than_folded_anyway():
     f = fold_affine("wide", gain, bias, FMT_CONV3, relu=True)
     assert f.quietest_gain_bits() < 8, f.quietest_gain_bits()
     err = f.max_output_error_lsb((1 << 27) - 1)
-    assert err > 1.0, err          # the guard in check_site fires above 0.25
+    assert err > 1.0, err          # check_site REFUSES above one whole LSB
 
 
 def test_the_limiting_constraint_names_the_right_remedy():
@@ -397,3 +397,27 @@ def test_the_error_bound_is_per_channel_not_layer_wide():
                         relu=True)
     acc = (1 << 27) - 1
     assert mixed.max_output_error_lsb(acc) > loud.max_output_error_lsb(acc)
+
+
+def test_the_error_is_set_by_the_quietest_gain_not_by_the_shift():
+    """Once the clamp binds, err ~= 0.5 * out.hi / |A|.
+
+    Worth pinning because it is not obvious and it decides the remedy: a larger
+    shift does not help a starved channel, since raising the shift raises |A| by
+    the same factor and the reach shrinks to match. What helps is more bits on
+    the gain, or a network whose gains do not need them.
+    """
+    acc = (1 << 27) - 1
+    seen, widths = {}, set()
+    for shift in (20, 22, 24):
+        # |A| pinned to 1024 at every shift, by scaling the real gain to match
+        g = 1024.0 / float(1 << shift) / float(1 << FMT_CONV3.frac_bits)
+        f = fold_affine("t", [g], [0.0], FMT_CONV3, relu=True, shift=shift)
+        assert f.gain == [1024], (shift, f.gain)
+        widths.add(f.gain_bits_used())
+        seen[shift] = f.max_output_error_lsb(acc)
+    assert widths == {12}, widths          # 1024 needs 11 bits, plus the sign
+    # three shifts spanning 16x, and the error does not move
+    assert max(seen.values()) - min(seen.values()) < 1e-6, seen
+    # and it is the predicted 0.5 * out.hi / |A|
+    assert seen[22] == pytest.approx(0.5 * FMT_CONV3.hi / 1024, rel=0.02), seen
