@@ -171,17 +171,23 @@ module kws_affine #(
 
     // The ROM words are 32 bits but the datapath is sized from GAIN_BITS and
     // BIAS_BITS. If a constant does not actually fit the width the manifest
-    // claims, the truncation above silently drops its top bits.
+    // claims, the narrowing above silently drops its top bits.
+    //
+    // Tested by shifting rather than by sign-extending. A 32-bit signed v fits
+    // in W bits exactly when `v >>> (W-1)` is all zeros or all ones -- and that
+    // form has no replication, so it survives W = 32, where writing
+    // `{{(32-W){...}}, v[W-1:0]}` is a zero-width replication and a syntax
+    // error rather than a warning. conv3's BIAS_BITS is exactly 32.
     always @(posedge clk) if (v1) begin
-        if ($signed(a1) !== $signed({{(32-GAIN_BITS){a1[GAIN_BITS-1]}},
-                                     a1[GAIN_BITS-1:0]})) begin
+        if (($signed(a1) >>> (GAIN_BITS - 1)) != 0 &&
+            ($signed(a1) >>> (GAIN_BITS - 1)) != -1) begin
             $display("ASSERT %m: gain %0d does not fit GAIN_BITS=%0d",
                      $signed(a1), GAIN_BITS);
             $finish;
         end
-        if ($signed(b1) !== $signed({{(32-BIAS_BITS){b1[BIAS_BITS-1]}},
-                                     b1[BIAS_BITS-1:0]})) begin
-            $display("ASSERT %m: bias %0d does not fit BIAS_BITS=%0d",
+        if (($signed(b1) >>> (BIAS_BITS - 1)) != 0 &&
+            ($signed(b1) >>> (BIAS_BITS - 1)) != -1) begin
+            $display("ASSERT %m: offset %0d does not fit BIAS_BITS=%0d",
                      $signed(b1), BIAS_BITS);
             $finish;
         end
