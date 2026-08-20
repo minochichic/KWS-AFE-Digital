@@ -84,7 +84,7 @@ kws_affine    ✅  꼬리 epilogue — (A·acc + B + half) >> shift → relu →
 kws_dense_conv ✅ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜 곱셈기)
 kws_tail      ✅  꼬리 전체 — 이진 프레임 → 클래스 인덱스
 kws_conv1     ✅  int8 가중치 × ±1 — 곱셈기 없는 부호 누산 (stride 2)
-kws_top       ⬜  conv1 + b1~b3 + conv2_dw + 평면 4장 → kws_tail
+kws_top       ✅  conv1 + b1~b3 + conv2_dw + 평면 4장 → kws_tail
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```
 
