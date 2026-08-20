@@ -259,7 +259,7 @@ module kws_top #(
                 .S0_DW_W(B2_S0DW_W), .S0_DW_T(B2_S0DW_T),
                 .S0_PW_W(B2_S0PW_W), .S0_PW_T(B2_S0PW_T),
                 .S1_DW_W(B2_S1DW_W), .S1_DW_T(B2_S1DW_T),
-                .S1_PW_W(B2_S1PW_W), .SKIP_W(""),
+                .S1_PW_W(B2_S1PW_W), .SKIP_W(""), .SKIP_ID(1),
                 .ADD_T(B2_ADD_T)) u_b2 (
         .clk(clk), .rst_n(rst_n), .start(start),
         .in_push(pb_push), .in_real(pb_real), .in_frame(pb_frame),
@@ -273,7 +273,7 @@ module kws_top #(
                 .S0_DW_W(B3_S0DW_W), .S0_DW_T(B3_S0DW_T),
                 .S0_PW_W(B3_S0PW_W), .S0_PW_T(B3_S0PW_T),
                 .S1_DW_W(B3_S1DW_W), .S1_DW_T(B3_S1DW_T),
-                .S1_PW_W(B3_S1PW_W), .SKIP_W(""),
+                .S1_PW_W(B3_S1PW_W), .SKIP_W(""), .SKIP_ID(1),
                 .ADD_T(B3_ADD_T)) u_b3 (
         .clk(clk), .rst_n(rst_n), .start(start),
         .in_push(pc_push), .in_real(pc_real), .in_frame(pc_frame),
@@ -337,7 +337,12 @@ module kws_top #(
                     c1_push  <= 1'b1; c1_real <= 1'b0;
                     c1_frame <= {N_CH{1'b0}};
                     pc       <= pc + {{(PC_BITS-1){1'b0}}, 1'b1};
-                end else if (pa_full && !c1_busy) begin
+                // `pc >= T_IN` as well: on the second clip pa_full is still
+                // set from the first one when S_C1 is re-entered, because the
+                // plane's wr_start only lands a cycle later. Without the
+                // counter the phase would end before a single frame arrived.
+                end else if (pa_full && !c1_busy &&
+                             pc >= T_IN[PC_BITS-1:0]) begin
                     st    <= S_B1;
                     pa_rs <= 1'b1;
                 end

@@ -45,6 +45,11 @@ module kws_block #(
     parameter integer SKIP_ACC  = 9,
     parameter integer ADD_ACC   = 9,     // manifest: b1_add acc_bits
     parameter integer WORD_BITS = 32,
+    // nn.Identity skip. Set when in_ch == out_ch and the model kept the block
+    // input as the residual instead of projecting it. The manifest says which:
+    // the add's n_terms is 64+128 for a projection and 64+1 for an identity,
+    // and that lone term is the one +-1 this adds.
+    parameter integer SKIP_ID   = 0,
     parameter S0_DW_W = "", parameter S0_DW_T = "",
     parameter S0_PW_W = "", parameter S0_PW_T = "",
     parameter S1_DW_W = "", parameter S1_DW_T = "",
@@ -130,28 +135,51 @@ module kws_block #(
     // as empty pin connections so the intent is visible, and the suppression is
     // scoped to these four nets only.
     /* verilator lint_off UNUSEDSIGNAL */
-    wire              skip_ov_nc, s1pw_ov_nc;
-    wire [C_OUT-1:0]  skip_of_nc, s1pw_of_nc;
+    wire              s1pw_ov_nc;
+    wire [C_OUT-1:0]  s1pw_of_nc;
     /* verilator lint_on UNUSEDSIGNAL */
 
-    // skip: unscaled pointwise on the DELAYED input; only its accumulator is
-    // used, so T_FILE is left empty
-    reg                          skip_iv;
-    wire                         skip_busy, skip_av;
-    wire [CO_BITS-1:0]           skip_ach;
-    wire signed [SKIP_ACC-1:0]   skip_aval;
+    // skip: either an unscaled pointwise on the DELAYED input, or -- when the
+    // model used nn.Identity -- the delayed input's own +-1, straight into the
+    // integer add.
+    //
+    // The empty-ROM shortcut does NOT work for the identity case. An unloaded
+    // weight ROM is all zeros, and 0 means -1 in this packing, so a pointwise
+    // with no weights computes -sum(x) rather than passing x through. b1 has a
+    // real projection and never exposed it; b2 and b3 are the identity ones.
+    reg                        skip_iv;
+    wire                       skip_busy;
+    wire signed [SKIP_ACC-1:0] skip_val;
 
-    kws_pw_conv #(.C_IN(C_IN), .C_OUT(C_OUT), .ACC_BITS(SKIP_ACC),
-                  .WORD_BITS(WORD_BITS), .W_FILE(SKIP_W), .T_FILE(""),
-                  .CO_BITS_P(CO_BITS)) u_skip (
-        .clk(clk), .rst_n(rst_n),
-        .in_valid(skip_iv), .in_frame(x_lat),
-        .busy(skip_busy), .out_valid(skip_ov_nc), .out_frame(skip_of_nc),
-        .acc_valid(skip_av), .acc_ch(skip_ach), .acc_out(skip_aval));
+    generate
+    if (SKIP_ID != 0) begin : g_skip_identity
+        // one +-1 per channel, no accumulator and nothing to wait for
+        assign skip_busy = 1'b0;
+        assign skip_val  = x_lat[s1pw_ach] ? {{(SKIP_ACC-1){1'b0}}, 1'b1}
+                                           : {SKIP_ACC{1'b1}};
+    end else begin : g_skip_project
+        /* verilator lint_off UNUSEDSIGNAL */
+        wire             skip_ov_nc;
+        wire [C_OUT-1:0] skip_of_nc;
+        /* verilator lint_on UNUSEDSIGNAL */
+        wire                       skip_av;
+        wire [CO_BITS-1:0]         skip_ach;
+        wire signed [SKIP_ACC-1:0] skip_aval;
 
-    // one accumulator per output channel, held while the last pointwise runs
-    reg signed [SKIP_ACC-1:0] skip_acc [0:C_OUT-1];
-    always @(posedge clk) if (skip_av) skip_acc[skip_ach] <= skip_aval;
+        kws_pw_conv #(.C_IN(C_IN), .C_OUT(C_OUT), .ACC_BITS(SKIP_ACC),
+                      .WORD_BITS(WORD_BITS), .W_FILE(SKIP_W), .T_FILE(""),
+                      .CO_BITS_P(CO_BITS)) u_skip (
+            .clk(clk), .rst_n(rst_n),
+            .in_valid(skip_iv), .in_frame(x_lat),
+            .busy(skip_busy), .out_valid(skip_ov_nc), .out_frame(skip_of_nc),
+            .acc_valid(skip_av), .acc_ch(skip_ach), .acc_out(skip_aval));
+
+        // one accumulator per output channel, held while the last pw runs
+        reg signed [SKIP_ACC-1:0] skip_acc [0:C_OUT-1];
+        always @(posedge clk) if (skip_av) skip_acc[skip_ach] <= skip_aval;
+        assign skip_val = skip_acc[s1pw_ach];
+    end
+    endgenerate
 
     reg                          s1pw_iv;
     wire                         s1pw_busy, s1pw_av;
@@ -173,8 +201,7 @@ module kws_block #(
     wire signed [SUM_BITS-1:0] a_pw =
         {{(SUM_BITS-S1_PW_ACC){s1pw_aval[S1_PW_ACC-1]}}, s1pw_aval};
     wire signed [SUM_BITS-1:0] a_sk =
-        {{(SUM_BITS-SKIP_ACC){skip_acc[s1pw_ach][SKIP_ACC-1]}},
-         skip_acc[s1pw_ach]};
+        {{(SUM_BITS-SKIP_ACC){skip_val[SKIP_ACC-1]}}, skip_val};
     wire signed [SUM_BITS-1:0] sum = a_pw + a_sk;
 
     wire signed [31:0]        add_thr = add_t_rom[{1'b0, s1pw_ach}];
@@ -257,6 +284,11 @@ module kws_block #(
     end
     // the skip's accumulator must be for the same channel the pointwise is on,
     // or the residual pairs the wrong channels -- silent and plausible
+    initial if (SKIP_ID != 0 && C_IN != C_OUT) begin
+        $display("ASSERT %m: identity skip needs C_IN == C_OUT (%0d vs %0d)",
+                 C_IN, C_OUT);
+        $finish;
+    end
     always @(posedge clk) if (s1pw_av && skip_busy) begin
         $display("ASSERT %m: skip still running while the add consumes it");
         $finish;

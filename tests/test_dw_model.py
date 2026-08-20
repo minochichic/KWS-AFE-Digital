@@ -366,3 +366,73 @@ def test_gathering_valid_at_the_wrong_stride_would_be_caught(dil_setup):
         "at the edge the slot count and the tap count must differ, or this "
         "test proves nothing")
     assert bin(tvld).count("1") <= K
+
+
+# --------------------------------------------------------------------------- #
+# the identity skip: b2 and b3 add the block input, not a projection
+# --------------------------------------------------------------------------- #
+
+@pytest.fixture(scope="module")
+def id_setup():
+    g = json.loads((GEN / "golden" / "golden.json").read_text())
+
+    def fr(key):
+        n, C, T = g["files"][key]["shape"]
+        return _frames(f"golden/{g['files'][key]['file']}", n, T, C // 32), C, T
+
+    x, c_in, T = fr("b1_add_out")        # b2's block input
+    y1, _, _ = fr("b2_s1_dw_out")
+    exp, c_out, _ = fr("b2_add_out")
+    trom = _words("b2_add_t.hex")
+    return {
+        "x": x, "y1": y1, "exp": exp, "T": T, "n_clip": g["n_clips"],
+        "c_in": c_in, "c_out": c_out, "w_pw": _words("b2_s1_pw_w.hex"),
+        "thr": [v - (1 << 32) if v >= 1 << 31 else v for v in trom[:c_out]],
+        "ge": [bool(v) for v in trom[c_out:]],
+    }
+
+
+def test_the_identity_skip_adds_the_input_itself(id_setup):
+    """b2's residual is nn.Identity, so the add is `pw_acc + x`, where x is the
+    block input's own +-1 for that channel.
+
+    The manifest says so in one number: b1_add has n_terms 192 = 128 + 64, and
+    b2_add has 65 = 1 + 64. That lone term is this.
+    """
+    s = id_setup
+    nw = s["c_out"] // 32
+    bad = 0
+    for n in range(s["n_clip"]):
+        for t in range(s["T"]):
+            frame = 0
+            for o in range(s["c_out"]):
+                acc = _dot(s["y1"][n][t], s["w_pw"], s["c_out"], o, nw)
+                acc += 1 if (s["x"][n][t] >> o) & 1 else -1     # the identity
+                if (acc >= s["thr"][o]) == s["ge"][o]:
+                    frame |= 1 << o
+            if frame != s["exp"][n][t]:
+                bad += 1
+    assert bad == 0, f"{bad} frames differ"
+
+
+def test_an_empty_projection_rom_is_not_the_identity(id_setup):
+    """Why kws_block needs a parameter rather than an empty SKIP_W.
+
+    An unloaded weight ROM is all zeros, and 0 decodes to -1 in this packing,
+    so a pointwise with no weights computes -sum(x) over every input channel --
+    not x. It produces a number, and the number is wrong.
+    """
+    s = id_setup
+    n_in, x = s["c_in"], s["x"][0][0]
+    identity = [1 if (x >> o) & 1 else -1 for o in range(s["c_out"])]
+
+    # An all-zero ROM XNORs x against all -1, which does not mention o at all:
+    # every output channel gets the SAME number. That is the sharpest way to
+    # say it is not the identity -- the identity is per channel by definition.
+    p = bin(~(x ^ 0) & ((1 << n_in) - 1)).count("1")
+    empty_rom = [2 * p - n_in] * s["c_out"]
+
+    assert all(v in (-1, 1) for v in identity)
+    assert len(set(empty_rom)) == 1, "an empty ROM cannot vary by channel"
+    assert len(set(identity)) > 1, "the real input does vary by channel"
+    assert identity != empty_rom
