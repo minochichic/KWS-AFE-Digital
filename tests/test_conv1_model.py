@@ -174,3 +174,56 @@ def test_negating_at_eight_bits_would_be_wrong(cfg):
         pytest.skip(f"no weight sits at {floor}; nothing to expose the bug")
     assert (-floor) & ((1 << wbits) - 1) == floor & ((1 << wbits) - 1), (
         "the wrap this test is about")
+
+
+@pytest.mark.parametrize("mask_matches_buffer", [True, False])
+def test_the_valid_mask_must_shift_the_same_way_as_the_buffer(
+        cfg, mask_matches_buffer):
+    """The bug this file exists for, with real data on both sides.
+
+    fbuf moves data toward index 0 and puts the new frame at K-1, so the new
+    valid bit belongs at K-1. Put it at bit 0 and vld[k] shadows fbuf[K-1-k]:
+    the padding is masked at the wrong end. It passes every middle frame,
+    because those use all K taps and cannot tell the masks apart -- only the
+    five edge frames disagree, which is a shape that looks like a subtle
+    numerical issue rather than a reversed register.
+    """
+    man, L, w, frames = _load(cfg)
+    K, P, S, TI = L["kernel"], L["padding"], L["stride"], man["T"]
+    CI, CO = L["in_ch"], L["out_ch"]
+    TO = (TI + 2*P - K) // S + 1
+    want = _words(GOLD / "conv1_acc.hex")
+    clip = frames[:TI]
+
+    fbuf, vld, got = [0]*K, [0]*K, []
+    for p in range(S*(TO-1) + P + 1):
+        real = 1 if p < TI else 0
+        fbuf = fbuf[1:] + [clip[p] if real else 0]
+        vld = (vld[1:] + [real]) if mask_matches_buffer else ([real] + vld[:-1])
+        if p >= P and (p & 1) == (P & 1):
+            a = 0
+            for ti in range(CI):
+                for tk in range(K):
+                    if not vld[tk]:
+                        continue
+                    q = w[(0 * CI + ti) * K + tk]
+                    a += q if (fbuf[tk] >> ti) & 1 else -q
+            got.append(a)
+
+    bad = [t for t in range(TO) if got[t] != want[t]]
+    if mask_matches_buffer:
+        assert bad == [], bad
+    else:
+        assert bad == [0, 1, 2, 62, 63], (
+            f"the reversed mask must fail on exactly the padded frames; got "
+            f"{bad}")
+
+
+def test_the_rtl_still_shifts_them_together():
+    """Pinned at the source, because the two registers are declared apart and
+    nothing else makes their directions agree."""
+    import re
+    src = (Path(__file__).resolve().parents[1] / "rtl" / "kws_conv1.v").read_text()
+    assert re.search(r"fbuf\[K-1\]\s*<=\s*in_frame", src)
+    assert re.search(r"valid_next\s*=\s*\{in_real,\s*vld\[K-1:1\]\}", src), (
+        "the valid mask must take its new bit at K-1, like fbuf")

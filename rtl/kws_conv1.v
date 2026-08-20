@@ -70,6 +70,18 @@ module kws_conv1 #(
     reg [K-1:0]        vld;
     reg [PC_BITS-1:0]  pcnt;
 
+    // The mask must shift the SAME WAY as the buffer. fbuf moves data toward
+    // index 0 and puts the new frame at K-1, so the new valid bit goes at K-1
+    // too. Written as `{vld[K-2:0], in_real}` it goes to bit 0 instead, and
+    // then vld[k] shadows fbuf[K-1-k] -- the padding gets masked at the wrong
+    // end. That is exactly what happened, and it showed up as frames 0,1,2,62
+    // and 63 wrong while every frame in between passed, because a middle frame
+    // uses all K taps and cannot tell the two masks apart.
+    //
+    // Same expression and same name as kws_dw_conv's valid_next, so the two can
+    // be read against each other.
+    wire [K-1:0] valid_next = {in_real, vld[K-1:1]};
+
     integer d;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n || start) begin
@@ -79,7 +91,7 @@ module kws_conv1 #(
         end else if (in_push && !busy) begin
             for (d = 0; d < K - 1; d = d + 1) fbuf[d] <= fbuf[d + 1];
             fbuf[K-1] <= in_frame;
-            vld  <= {vld[K-2:0], in_real};
+            vld  <= valid_next;
             pcnt <= pcnt + {{(PC_BITS-1){1'b0}}, 1'b1};
         end
     end
