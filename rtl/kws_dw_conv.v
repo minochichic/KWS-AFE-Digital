@@ -253,14 +253,24 @@ module kws_dw_conv #(
         $display("ASSERT %m: pushed while busy -- that frame would be dropped");
         $finish;
     end
-    // `valid` must be one contiguous run of ones, or the shift means nothing.
+    // The TAPS must be one contiguous run of ones, or the shift means nothing.
     // Fill puts the zeros low and drain puts them high; anything else says the
     // caller interleaved real and flush pushes.
-    wire [K-1:0] v_sh  = valid >> sh;
+    //
+    // On tvld, not on valid. `sh` and `nv` are computed from the gathered taps,
+    // so shifting the SPAN-wide slot mask by a tap-space shift compares two
+    // different index spaces -- at DIL=1 they coincide and the mistake is
+    // invisible, at DIL=2 it fires on a mask that is perfectly contiguous.
+    //
+    // Sub-sampling a contiguous run of slots leaves a contiguous run of taps,
+    // which is why the shift still means what it means; this is where that gets
+    // checked rather than argued.
+    wire [K-1:0] v_sh  = tvld >> sh;
     wire [K-1:0] v_exp = ~({K{1'b1}} << nv);
     always @(posedge clk) if (emit_now) begin
         if (v_sh != v_exp) begin
-            $display("ASSERT %m: valid=%b is not one contiguous run", valid);
+            $display("ASSERT %m: taps=%b (from valid=%b) is not one run",
+                     tvld, valid);
             $finish;
         end
     end
