@@ -213,11 +213,24 @@ module kws_top #(
     // conv2_dw has ONE depthwise, so its drain is PAD, not 2*PAD. And its
     // consumer downstream is kws_tail, which is busy far longer than conv2_dw
     // is -- so the plane has to wait on both.
+    //
+    // c2_ov as well as the two busies. kws_dw_conv drops its busy and raises
+    // out_valid on the SAME edge, and kws_tail's in_flight is set the edge
+    // after, so there is exactly one cycle where neither looks busy and a frame
+    // is in flight between them. The plane samples rd_ready in S_WAIT and
+    // pushes two cycles later, which is long enough to land in it.
+    //
+    // Fourth instance of the same shape in this design: two registered signals
+    // that are supposed to hand over leave a cycle between them, and something
+    // walks in. kws_tcs_sub's busy hole, kws_top's in_ready, its flush guard,
+    // and now this one.
+    wire tail_chain_busy = c2_busy | tl_busy | c2_ov;
+
     kws_plane #(.C(B1_OUT), .T(T_OUT), .FLUSH(C2_PAD)) u_pd (
         .clk(clk), .rst_n(rst_n),
         .wr_start(pd_ws), .wr_valid(b3_ov), .wr_frame(b3_of),
         .wr_full(pd_full),
-        .rd_start(pd_rs), .rd_ready(!(c2_busy | tl_busy)),
+        .rd_start(pd_rs), .rd_ready(!tail_chain_busy),
         .rd_push(pd_push), .rd_real(pd_real), .rd_frame(pd_frame),
         .rd_done(pd_done));
 
