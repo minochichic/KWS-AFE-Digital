@@ -357,3 +357,43 @@ def test_an_impossible_fold_raises_rather_than_being_written():
     that used to fit stops fitting."""
     with pytest.raises(ValueError, match="more than 32 bits"):
         fold_affine("t", [1e-3], [3.0], FMT_CONV3, relu=True, shift=40)
+
+
+def test_a_wide_gain_spread_is_reported_rather_than_folded_anyway():
+    """The coverage the emit fixture used to provide by accident.
+
+    Its BN gammas came from N(0, 1), which straddles zero and left 8 of 128
+    channels under 0.05 -- nine binary orders of spread in the resulting gains.
+    A shared shift genuinely cannot serve that: the loud end sets the shift and
+    the quiet end is left with five bits, which moves the output by tens of
+    LSBs near its clamp. The fixture now models a trained BN, so the
+    pathological case lives here, deliberately.
+    """
+    n = 64
+    gain = [1.0 / (1 << k) for k in range(n)]      # nine-plus orders, on purpose
+    bias = [0.1] * n
+    f = fold_affine("wide", gain, bias, FMT_CONV3, relu=True)
+    assert f.quietest_gain_bits() < 8, f.quietest_gain_bits()
+    err = f.max_output_error_lsb((1 << 27) - 1)
+    assert err > 1.0, err          # the guard in check_site fires above 0.25
+
+
+def test_the_limiting_constraint_names_the_right_remedy():
+    """More GAIN_BITS raises the shift only when the gain is what caps it. If
+    the offset caps it, the advice is wrong and would send someone in circles.
+    """
+    tiny_bias = fold_affine("t", [3e-3] * 8, [1e-4] * 8, FMT_CONV3, relu=True)
+    assert tiny_bias.limiting_constraint() == "gain"
+    big_bias = fold_affine("t", [3e-3] * 8, [50.0] * 8, FMT_CONV3, relu=True)
+    assert big_bias.limiting_constraint() == "offset"
+
+
+def test_the_error_bound_is_per_channel_not_layer_wide():
+    """One quiet channel among loud ones must show up. A layer-wide figure
+    built from the largest gain would hide it, and a layer-wide figure built
+    from the smallest would condemn a fold that is fine."""
+    loud = fold_affine("t", [1e-2] * 8, [0.1] * 8, FMT_CONV3, relu=True)
+    mixed = fold_affine("t", [1e-2] * 7 + [1e-7], [0.1] * 8, FMT_CONV3,
+                        relu=True)
+    acc = (1 << 27) - 1
+    assert mixed.max_output_error_lsb(acc) > loud.max_output_error_lsb(acc)

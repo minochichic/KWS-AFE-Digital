@@ -30,12 +30,21 @@ ROOT = Path(__file__).resolve().parents[1]
 def built():
     cfg = load_config(str(ROOT / "configs" / "base.yaml"))
     model = BinaryMatchboxNet(cfg.model).eval()
+    torch.manual_seed(0)
     with torch.no_grad():
         for m in model.modules():
             if isinstance(m, nn.BatchNorm1d):
                 m.running_mean.normal_(0.0, 2.0)
                 m.running_var.uniform_(0.5, 3.0)
-                m.weight.normal_(0.0, 1.0)
+                # gamma bounded away from zero, and signs mixed deliberately
+                # rather than by straddling it. N(0, 1) put 8 of 128 channels
+                # under 0.05 and spread the resulting BN gains over 9 binary
+                # orders -- no trained network does that, and the tail's shared
+                # shift genuinely cannot serve such a spread, so the fixture was
+                # failing a guard that is doing its job.
+                # tests/test_tailfmt.py keeps the pathological case on purpose.
+                m.weight.uniform_(0.3, 1.5)
+                m.weight[::7] *= -1.0
                 m.bias.normal_(0.0, 0.5)
     x = torch.where(torch.rand(3, cfg.afe.n_channels, cfg.model.T) > 0.5,
                     1.0, -1.0)

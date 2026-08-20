@@ -230,11 +230,17 @@ def check_site(s: TailSite, max_err_lsb: float = 0.25) -> None:
             f"Raise export.tailfmt.GAIN_BITS.")
     err = s.fold.max_output_error_lsb((1 << (s.acc_bits - 1)) - 1)
     if err > max_err_lsb:
+        which = s.fold.limiting_constraint()
+        remedy = ("raise export.tailfmt.GAIN_BITS -- the gain is what caps the "
+                  "shift here" if which == "gain" else
+                  "the OFFSET caps the shift, so GAIN_BITS will not help: the "
+                  "shift is already as large as a 32-bit ROM word allows")
         raise ValueError(
             f"{s.name}: the fold moves the result by {err:.3f} LSB of its own "
-            f"output grid (shift={s.fold.shift}, quietest gain "
-            f"{s.fold.quietest_gain_bits()} bits). Raise "
-            f"export.tailfmt.GAIN_BITS.")
+            f"output grid (shift={s.fold.shift}, gains span "
+            f"{s.fold.quietest_gain_bits()}..{s.fold.gain_bits_used()} bits). "
+            f"A shared shift cannot serve gains that span orders of magnitude; "
+            f"the quiet end starves. {remedy}.")
 
 
 def apply_site(s: TailSite, acc: torch.Tensor) -> torch.Tensor:

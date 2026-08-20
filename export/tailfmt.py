@@ -191,29 +191,50 @@ class AffineFold:
     def max_output_error_lsb(self, acc_absmax: int) -> float:
         """Worst error the fold adds, in LSBs of the output format.
 
-        THIS is the number that matters, and getting to it took getting the
-        metric wrong once. Two bounds apply and the true error is under both:
+        Rounding A costs at most half a unit, so a channel's output moves by
+        0.5*|acc| / 2^shift LSB, and rounding B adds 0.5/2^shift more. Two
+        things limit |acc|, and BOTH have to be applied per channel:
 
-          A. rounding A and B costs at most half a unit each, and they are
-             divided by 2^shift, so the error is (0.5*|acc| + 0.5) / 2^shift.
-             Grows with the accumulator.
-          B. the error is `rel_gain_error * output`, and any output beyond the
-             format's range clamps -- where both the exact and folded results
-             clamp to the same number and the error is zero. So it is also
-             bounded by rel_gain_error * out.hi.
+          * the layer's accumulator bound, and
+          * the clamp. Past |acc| = out.hi * 2^shift / |A[o]| the output
+            saturates, and there the exact and folded results saturate to the
+            same number -- the error is zero, not growing.
 
-        Bound A alone looks alarming for conv3, whose accumulator reaches 2^27:
-        it says 124 LSB. That bound is unreachable, because a channel cannot sit
-        at 2^27 of accumulator AND inside an 11-bit output. Bound B is what
-        applies there. Reporting the min is the honest answer; reporting only A
-        would have sent this design chasing a 31-bit shift.
-
-        The final `>> shift` also rounds, but that half-LSB is inherent to
-        landing on the grid, not something the fold added.
+        Getting this metric right took two tries. Measuring against the
+        continuous float value reports ~0.5 for a perfectly correct fold, since
+        that is the 1/2^frac grid itself. Using the accumulator bound alone
+        reports 124 LSB for conv3, which is unreachable. The per-channel min is
+        the number that means something -- and it is per CHANNEL, because a
+        quiet channel has both the worst relative gain error and the smallest
+        output swing, and a layer-wide figure mixes the two up.
         """
-        a = (0.5 * float(acc_absmax) + 0.5) / float(1 << self.shift)
-        b = self.max_rel_gain_error() * float(self.out.hi)
-        return min(a, b)
+        if self.shift <= 0:
+            return 0.0
+        k = float(1 << self.shift)
+        worst = 0.0
+        for a in self.gain:
+            if a == 0:
+                continue                      # dead_gains() reports these
+            reach = min(float(acc_absmax), float(self.out.hi) * k / abs(a))
+            worst = max(worst, (0.5 * reach + 0.5) / k)
+        return worst
+
+    def limiting_constraint(self, gain_bits: int = GAIN_BITS,
+                            word_bits: int = ROM_WORD_BITS) -> str:
+        """Which of the two pressures on the shift is actually binding.
+
+        The remedy differs: if the gain is binding, more GAIN_BITS raises the
+        shift and helps. If the offset is binding, it does not -- the shift is
+        already as large as a ROM word allows, and the fix is a wider word or a
+        network whose BN gains do not span orders of magnitude.
+        """
+        g2 = [g * float(1 << self.out.frac_bits) for g in self.gain_real]
+        b2 = [b * float(1 << self.out.frac_bits) for b in self.bias_real]
+        peak = max((abs(v) for v in g2), default=0.0)
+        bpeak = max((abs(v) for v in b2), default=0.0)
+        want = gain_bits - 1 - _ceil_log2(peak) if peak > 0.0 else 0
+        cap = word_bits - 1 - _ceil_log2(bpeak) if bpeak > 0.0 else want
+        return "gain" if want <= cap else "offset"
 
     def gain_bits_used(self) -> int:
         """Bits the LARGEST gain needs, sign included."""
