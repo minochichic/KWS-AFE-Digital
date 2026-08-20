@@ -37,7 +37,7 @@ module tb_top;
 
     reg                  start = 1'b0, iv = 1'b0;
     reg  [`KWS_N_CH-1:0] frame = {`KWS_N_CH{1'b0}};
-    wire                 busy, cls_v;
+    wire                 busy, rdy, cls_v;
     wire [3:0]           cls;
 
     kws_top #(.WORD_BITS(`KWS_WORD_BITS), .T_IN(T_IN), .T_OUT(T_OUT),
@@ -126,7 +126,8 @@ module tb_top;
               .TL_A4_F("rtl/gen/xl_g12/conv4_bn.hex"),
               .TL_POOL(`KWS_CONV4_POOL_BITS), .TL_C4O_B(4)) dut (
         .clk(clk), .rst_n(rst_n),
-        .start(start), .in_valid(iv), .in_frame(frame), .busy(busy),
+        .start(start), .in_valid(iv), .in_frame(frame),
+        .in_ready(rdy), .busy(busy),
         .class_valid(cls_v), .class_idx(cls));
 
     reg [`KWS_WORD_BITS-1:0] xin [0:CLIPS*T_IN*NWI-1];
@@ -174,9 +175,12 @@ module tb_top;
                 for (j = 0; j < NWI; j = j + 1)
                     frame[j*`KWS_WORD_BITS +: `KWS_WORD_BITS] =
                         xin[(n * T_IN + t) * NWI + j];
+                // wait for the DUT to say it can take one, rather than
+                // watching conv1's busy from outside -- that rises a cycle
+                // after the push reaches it, so the frame lands in the gap
+                while (!rdy) @(negedge clk);
                 @(negedge clk); iv = 1'b1;
                 @(negedge clk); iv = 1'b0;
-                while (dut.c1_busy) @(negedge clk);
             end
 
             wait (got_v === 1'b1);

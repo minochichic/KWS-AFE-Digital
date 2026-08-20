@@ -104,7 +104,12 @@ module kws_top #(
     parameter integer TL_A4_S   = 27, parameter integer TL_A4_O = 14,
     parameter         TL_A4_F   = "",
     parameter integer TL_POOL   = 21,
-    parameter integer TL_C4O_B  = 4
+    parameter integer TL_C4O_B  = 4,
+    // A stall is the one failure the other assertions cannot see: they all
+    // check a value, and a stall has no wrong value to check. This bounds how
+    // long any phase may take, so a hang names its phase instead of running out
+    // the testbench clock in silence.
+    parameter integer PHASE_LIMIT = 4000000
 ) (
     input  wire                clk,
     input  wire                rst_n,
@@ -112,6 +117,11 @@ module kws_top #(
     input  wire                start,     // new clip
     input  wire                in_valid,  // one AFE frame, +-1, N_CH wide
     input  wire [N_CH-1:0]     in_frame,
+    // "a frame offered THIS cycle will be taken". Not derivable from `busy`,
+    // which is high for the whole clip, and not from conv1's busy either: that
+    // rises a cycle after the push reaches it, so a caller watching it pushes
+    // again into the gap and the frame is dropped without a trace.
+    output wire                in_ready,
     output wire                busy,
 
     output wire                class_valid,
@@ -311,7 +321,26 @@ module kws_top #(
         end
     end
 
+    // Not while a push is already registered and not yet seen (c1_push), and
+    // not while conv1 is sweeping (c1_busy). Those are two different cycles and
+    // both have to be excluded.
+    assign in_ready = (st == S_C1) && (pc < T_IN[PC_BITS-1:0]) &&
+                      !c1_busy && !c1_push;
+
     assign busy = (st != S_IDLE);
+
+    // ---- phase watchdog ---------------------------------------------------- //
+    reg [23:0] phase_cyc;
+    reg [2:0]  st_q;
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            phase_cyc <= 24'd0; st_q <= S_IDLE;
+        end else begin
+            st_q <= st;
+            if (st != st_q || st == S_IDLE) phase_cyc <= 24'd0;
+            else phase_cyc <= phase_cyc + 24'd1;
+        end
+    end
 
     // Plane D's rd_done does not sequence anything -- the tail's own frame
     // count is what ends phase 5. It is not spare, though: it says the plane
@@ -340,6 +369,18 @@ module kws_top #(
     end
     always @(posedge clk) if (pd_rs && !pd_full) begin
         $display("ASSERT %m: the tail started before plane D filled"); $finish;
+    end
+    // The drop that caused a hang rather than a failure. There is no else on
+    // the S_C1 push branch, so a frame offered while conv1 is busy vanishes and
+    // pc stops short -- plane A never fills and the phase waits forever.
+    always @(posedge clk) if (in_valid && !in_ready) begin
+        $display("ASSERT %m: frame offered while not ready -- it is dropped");
+        $finish;
+    end
+    always @(posedge clk) if (phase_cyc > PHASE_LIMIT[23:0]) begin
+        $display("ASSERT %m: phase %0d stalled for %0d cycles (pc=%0d)",
+                 st, phase_cyc, pc);
+        $finish;
     end
     always @(posedge clk) if (class_valid && !pd_seen) begin
         $display("ASSERT %m: a class came out before plane D finished");
