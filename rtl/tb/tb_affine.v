@@ -34,8 +34,15 @@ module tb_affine;
     reg clk = 1'b0, rst_n = 1'b0;
     always #5 clk = ~clk;
 
-    // ---- one driver bus, three consumers -------------------------------- //
-    reg               iv = 1'b0;
+    // ---- one address bus, three consumers, THREE valids ----------------- //
+    //
+    // The valid cannot be shared. The three sites have different channel
+    // counts, so while the conv2_pw loop sweeps ch=0..127 a shared valid would
+    // also be handing conv4 an in_ch of 0..15 -- and conv4 has twelve channels,
+    // so 12..15 land in the OFFSET half of its ROM. It would read an offset as
+    // a gain. The first version of this file did exactly that, and kws_affine's
+    // width assertion caught it on the first channel past the end.
+    reg  [2:0]        ivs = 3'b000;      // bit 0 -> u2, 1 -> u3, 2 -> u4
     reg  [6:0]        ich = 7'd0;
     reg signed [31:0] iacc = 32'sd0;
 
@@ -55,7 +62,7 @@ module tb_affine;
                  .RELU(`KWS_CONV2_PW_RELU), .CH_BITS(7),
                  .ROM_FILE("rtl/gen/xl_g12/conv2_pw_bn.hex")) u2 (
         .clk(clk), .rst_n(rst_n),
-        .in_valid(iv), .in_ch(ich),
+        .in_valid(ivs[0]), .in_ch(ich),
         .in_acc(iacc[`KWS_CONV2_PW_ACC_BITS-1:0]),
         .out_valid(ov2), .out_ch(och2), .out_val(oval2));
 
@@ -68,7 +75,7 @@ module tb_affine;
                  .RELU(`KWS_CONV3_RELU), .CH_BITS(7),
                  .ROM_FILE("rtl/gen/xl_g12/conv3_bn.hex")) u3 (
         .clk(clk), .rst_n(rst_n),
-        .in_valid(iv), .in_ch(ich), .in_acc(iacc[`KWS_CONV3_ACC_BITS-1:0]),
+        .in_valid(ivs[1]), .in_ch(ich), .in_acc(iacc[`KWS_CONV3_ACC_BITS-1:0]),
         .out_valid(ov3), .out_ch(och3), .out_val(oval3));
 
     kws_affine #(.C(`KWS_CONV4_N_OUT),
@@ -80,7 +87,7 @@ module tb_affine;
                  .RELU(`KWS_CONV4_RELU), .CH_BITS(4),
                  .ROM_FILE("rtl/gen/xl_g12/conv4_bn.hex")) u4 (
         .clk(clk), .rst_n(rst_n),
-        .in_valid(iv), .in_ch(ich[3:0]), .in_acc(iacc[`KWS_CONV4_ACC_BITS-1:0]),
+        .in_valid(ivs[2]), .in_ch(ich[3:0]), .in_acc(iacc[`KWS_CONV4_ACC_BITS-1:0]),
         .out_valid(ov4), .out_ch(och4), .out_val(oval4));
 
     // ---- golden ---------------------------------------------------------- //
@@ -102,13 +109,15 @@ module tb_affine;
     // the testbench, and it makes a mismatch name its own channel and frame --
     // worth far more here than simulation speed.
     task drive;
+        input integer       which;      // 0 = conv2_pw, 1 = conv3, 2 = conv4
         input [6:0]         c;
         input signed [31:0] v;
         begin
             @(negedge clk);
-            iv = 1'b1; ich = c; iacc = v;
+            ivs = 3'b001 << which;
+            ich = c; iacc = v;
             @(negedge clk);
-            iv = 1'b0;
+            ivs = 3'b000;
             @(negedge clk);
             @(negedge clk);
         end
@@ -155,7 +164,7 @@ module tb_affine;
             for (ch = 0; ch < `KWS_CONV2_PW_N_OUT; ch = ch + 1)
                 for (t = 0; t < T; t = t + STEP) begin
                     idx = (n * `KWS_CONV2_PW_N_OUT + ch) * T + t;
-                    drive(ch[6:0], $signed(acc2[idx]));
+                    drive(0, ch[6:0], $signed(acc2[idx]));
                     expect("conv2_pw", ov2, oval2, $signed(exp2[idx]), ch, t);
                 end
         $display("ok   conv2_pw: %0d values", checked);
@@ -164,7 +173,7 @@ module tb_affine;
             for (ch = 0; ch < `KWS_CONV3_N_OUT; ch = ch + 1)
                 for (t = 0; t < T; t = t + STEP) begin
                     idx = (n * `KWS_CONV3_N_OUT + ch) * T + t;
-                    drive(ch[6:0], $signed(acc3[idx]));
+                    drive(1, ch[6:0], $signed(acc3[idx]));
                     expect("conv3", ov3, oval3, $signed(exp3[idx]), ch, t);
                 end
         $display("ok   conv3");
@@ -174,7 +183,7 @@ module tb_affine;
             for (ch = 0; ch < `KWS_CONV4_N_OUT; ch = ch + 1)
                 for (t = 0; t < T; t = t + 1) begin
                     idx = (n * `KWS_CONV4_N_OUT + ch) * T + t;
-                    drive(ch[6:0], $signed(acc4[idx]));
+                    drive(2, ch[6:0], $signed(acc4[idx]));
                     expect("conv4", ov4, oval4, $signed(exp4[idx]), ch, t);
                 end
         $display("ok   conv4");

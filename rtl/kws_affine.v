@@ -91,11 +91,22 @@ module kws_affine #(
             v1 <= 1'b0; ch1 <= {CH_BITS{1'b0}}; acc1 <= {ACC_BITS{1'b0}};
             a1 <= 32'sd0; b1 <= 32'sd0;
         end else begin
-            v1   <= in_valid;
-            ch1  <= in_ch;
-            acc1 <= in_acc;
-            a1   <= rom[{{(AW-CH_BITS){1'b0}}, in_ch}];
-            b1   <= rom[{{(AW-CH_BITS){1'b0}}, in_ch} + C_A];
+            v1 <= in_valid;
+            // Data and constants only move on a real push. Reading the ROM
+            // unconditionally means reading it at whatever in_ch happens to be
+            // while idle, and for a C that is not a power of two that address
+            // can be past the end of the array -- 12..15 on conv4's twelve
+            // channels reaches rom[24..27] for the offset, which does not
+            // exist. Harmless (v1 is low, so nothing uses it) and still worth
+            // not doing: it puts X into the pipeline registers, which makes a
+            // waveform much harder to read, and it burns a ROM access per idle
+            // cycle.
+            if (in_valid) begin
+                ch1  <= in_ch;
+                acc1 <= in_acc;
+                a1   <= rom[{{(AW-CH_BITS){1'b0}}, in_ch}];
+                b1   <= rom[{{(AW-CH_BITS){1'b0}}, in_ch} + C_A];
+            end
         end
     end
 
