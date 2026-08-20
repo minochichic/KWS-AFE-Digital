@@ -198,7 +198,12 @@ def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
         scale = float(1 << s.out_fmt.frac_bits)
         ref_q = torch.clamp(torch.round(ref * scale),
                             s.out_fmt.lo, s.out_fmt.hi)
-        fold_dev = float((y.double() - ref_q).abs().max())
+        # A max alone cannot tell "three boundary cases" from "off by one
+        # everywhere", and those need different answers. The count is what
+        # makes `fold=1.0` an observation rather than an assumption.
+        fold_diff = (y.double() - ref_q).abs()
+        fold_dev = float(fold_diff.max())
+        fold_n = int((fold_diff > 0).sum())
         grid_dev = float((y.double() / scale - ref).abs().max()) * scale
         clamped = int(((y == s.out_fmt.hi) | (y == s.out_fmt.lo)).sum())
         report.append({"name": s.name, "out_format": str(s.out_fmt),
@@ -209,6 +214,7 @@ def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
                        # only on exact ties, where torch.round goes to even and
                        # `(x + half) >> s` goes up.
                        "fold_dev_lsb": round(fold_dev, 4),
+                       "fold_dev_count": fold_n,
                        # <= 0.5 by construction: this is the grid itself, not
                        # an error the fold introduced.
                        "grid_dev_lsb": round(grid_dev, 4),
@@ -398,22 +404,28 @@ def main() -> None:
     if t:
         print("\ntail, integer path:")
         print(f"{'site':<10}{'out':>6}{'shift':>7}{'acc':>5}{'|acc| max':>11}"
-              f"{'bound':>12}{'used':>6}{'fold':>7}{'grid':>7}{'clamped':>14}")
+              f"{'bound':>12}{'used':>6}{'fold':>7}{'n off':>10}"
+              f"{'grid':>7}{'clamped':>14}")
         for st in t["sites"]:
             bound = (1 << (st["acc_bits"] - 1)) - 1
             used = max(1, int(st["acc_absmax"])).bit_length() + 1
             clamp = f"{st['clamped_values']}/{st['n_values']}"
+            off = f"{st['fold_dev_count']}/{st['n_values']}"
             print(f"{st['name']:<10}{st['out_format']:>6}{st['shift']:>7}"
                   f"{st['acc_bits']:>5}{st['acc_absmax']:>11}{bound:>12}"
-                  f"{used:>6}{st['fold_dev_lsb']:>7}{st['grid_dev_lsb']:>7}"
-                  f"{clamp:>14}")
+                  f"{used:>6}{st['fold_dev_lsb']:>7}{off:>10}"
+                  f"{st['grid_dev_lsb']:>7}{clamp:>14}")
         fx = [int(v) for v in (out / "predictions_fixed.txt").read_text().split()]
         agree = sum(int(a == b) for a, b in zip(fx, pred))
         print(f"\nfixed-point argmax agrees with the float model on "
               f"{agree}/{len(fx)} clips")
-        print("fold = does the integer path land on the same grid point as "
-              "float-then-round? 0 is what it must be; 1 is allowed only on an "
-              "exact tie. This is the fold's own error.")
+        print("fold / n off = does the integer path land on the same grid "
+              "point as float-then-round, and on how many values does it not? "
+              "A max of 1 on a handful of values is a boundary case: either an "
+              "exact tie (torch rounds to even, the hardware rounds up) or a "
+              "value within the fold's error of a rounding boundary. A max of "
+              "1 on MOST values would be a systematic off-by-one, which is a "
+              "different thing entirely -- hence the count.")
         print("grid = distance to the CONTINUOUS float value. <= 0.5 by "
               "construction -- it is the 1/64 grid itself, not something the "
               "fold introduced. Reporting this one alone was the earlier "
