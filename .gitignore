@@ -47,3 +47,4 @@ notebooks/lab.ipynb
 # rtl/tb/vectors/ is COMMITTED -- small seeded fixtures the testbench
 # needs on machines without torch. Waveforms are output, so ignored.
 *.vcd
+rtl/gen/active.vh

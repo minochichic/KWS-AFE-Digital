@@ -1,7 +1,7 @@
 // kws_block against the golden vectors: block input in, block output out.
 //
-// Input  : rtl/gen/xl_g12/golden/conv1_out.hex   (b1's block input)
-// Expect : rtl/gen/xl_g12/golden/b1_add_out.hex  (after the residual add)
+// Input  : <gen>/golden/conv1_out.hex   (b1's block input)
+// Expect : <gen>/golden/b1_add_out.hex  (after the residual add)
 //
 // Everything inside has already passed on its own, so what this adds is the
 // structure: that the skip is taken from the right frame, that the add happens
@@ -10,10 +10,15 @@
 // Note the push count. Two depthwise stages means the chain lags by 2*PAD, so
 // the caller pushes T + 2*PAD times and the outputs start 2*PAD pushes in.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh block
 
 `timescale 1ns/1ps
 `default_nettype none
+
+`include "rtl/gen/active.vh"
 
 module tb_block;
 
@@ -42,15 +47,15 @@ module tb_block;
     kws_block #(.C_IN(C_IN), .C_MID(C_MID), .C_OUT(C_OUT), .K(K), .PAD(PAD),
                 .S0_DW_ACC(5), .S0_PW_ACC(9), .S1_DW_ACC(5), .S1_PW_ACC(8),
                 .SKIP_ACC(9), .ADD_ACC(9), .WORD_BITS(WB),
-                .S0_DW_W("rtl/gen/xl_g12/b1_s0_dw_w.hex"),
-                .S0_DW_T("rtl/gen/xl_g12/b1_s0_dw_t.hex"),
-                .S0_PW_W("rtl/gen/xl_g12/b1_s0_pw_w.hex"),
-                .S0_PW_T("rtl/gen/xl_g12/b1_s0_pw_t.hex"),
-                .S1_DW_W("rtl/gen/xl_g12/b1_s1_dw_w.hex"),
-                .S1_DW_T("rtl/gen/xl_g12/b1_s1_dw_t.hex"),
-                .S1_PW_W("rtl/gen/xl_g12/b1_s1_pw_w.hex"),
-                .SKIP_W ("rtl/gen/xl_g12/b1_skip_w.hex"),
-                .ADD_T  ("rtl/gen/xl_g12/b1_add_t.hex")) dut (
+                .S0_DW_W(`KWS_ROM_B1_S0_DW_W),
+                .S0_DW_T(`KWS_ROM_B1_S0_DW_T),
+                .S0_PW_W(`KWS_ROM_B1_S0_PW_W),
+                .S0_PW_T(`KWS_ROM_B1_S0_PW_T),
+                .S1_DW_W(`KWS_ROM_B1_S1_DW_W),
+                .S1_DW_T(`KWS_ROM_B1_S1_DW_T),
+                .S1_PW_W(`KWS_ROM_B1_S1_PW_W),
+                .SKIP_W (`KWS_ROM_B1_SKIP_W),
+                .ADD_T  (`KWS_ROM_B1_ADD_T)) dut (
         .clk(clk), .rst_n(rst_n), .start(start),
         .in_push(in_push), .in_real(in_real), .in_frame(in_frame),
         .busy(busy), .out_valid(out_valid), .out_frame(out_frame));
@@ -89,8 +94,8 @@ module tb_block;
         $dumpfile("tb_block.vcd");
         $dumpvars(0, tb_block);
 
-        $readmemh("rtl/gen/xl_g12/golden/conv1_out.hex", in_mem);
-        $readmemh("rtl/gen/xl_g12/golden/b1_add_out.hex", exp_mem);
+        $readmemh(`KWS_GOLD_CONV1_OUT, in_mem);
+        $readmemh(`KWS_GOLD_B1_ADD_OUT, exp_mem);
 
         repeat (3) @(negedge clk);
         rst_n = 1'b1;

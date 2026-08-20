@@ -1,7 +1,7 @@
 // kws_top: the whole network, AFE frames in, a class index out.
 //
-// Input  : rtl/gen/xl_g12/golden/input.hex            (16 ch x 128, packed +-1)
-// Expect : rtl/gen/xl_g12/golden/predictions_fixed.txt
+// Input  : <gen>/golden/input.hex            (16 ch x 128, packed +-1)
+// Expect : <gen>/golden/predictions_fixed.txt
 //
 // Every module below has already been checked against its own golden vectors,
 // so what this adds is the five-phase sequence: that each plane is filled
@@ -17,12 +17,15 @@
 //
 // The slowest thing here: 2.87M cycles a clip.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh top
 
 `timescale 1ns/1ps
 `default_nettype none
 
-`include "rtl/gen/xl_g12/parameters.vh"
+`include "rtl/gen/active.vh"
 
 module tb_top;
 
@@ -45,8 +48,8 @@ module tb_top;
               .C1_K(`KWS_L0_CONV1_KERNEL), .C1_PAD(`KWS_L0_CONV1_PADDING),
               .C1_STRIDE(`KWS_L0_CONV1_STRIDE),
               .C1_ACC(`KWS_L0_CONV1_ACC_BITS),
-              .C1_W("rtl/gen/xl_g12/conv1_w.hex"),
-              .C1_T("rtl/gen/xl_g12/conv1_t.hex"),
+              .C1_W(`KWS_ROM_CONV1_W),
+              .C1_T(`KWS_ROM_CONV1_T),
 
               .B1_MID(`KWS_L3_B1_S0_PW_OUT_CH), .B1_OUT(`KWS_L5_B1_S1_PW_OUT_CH),
               .B1_K(`KWS_L2_B1_S0_DW_KERNEL), .B1_PAD(`KWS_L2_B1_S0_DW_PADDING),
@@ -56,15 +59,15 @@ module tb_top;
               .B1_S1PW_A(`KWS_L5_B1_S1_PW_ACC_BITS),
               .B1_SKIP_A(`KWS_L1_B1_SKIP_ACC_BITS),
               .B1_ADD_A(`KWS_L6_B1_ADD_ACC_BITS),
-              .B1_S0DW_W("rtl/gen/xl_g12/b1_s0_dw_w.hex"),
-              .B1_S0DW_T("rtl/gen/xl_g12/b1_s0_dw_t.hex"),
-              .B1_S0PW_W("rtl/gen/xl_g12/b1_s0_pw_w.hex"),
-              .B1_S0PW_T("rtl/gen/xl_g12/b1_s0_pw_t.hex"),
-              .B1_S1DW_W("rtl/gen/xl_g12/b1_s1_dw_w.hex"),
-              .B1_S1DW_T("rtl/gen/xl_g12/b1_s1_dw_t.hex"),
-              .B1_S1PW_W("rtl/gen/xl_g12/b1_s1_pw_w.hex"),
-              .B1_SKIP_W("rtl/gen/xl_g12/b1_skip_w.hex"),
-              .B1_ADD_T("rtl/gen/xl_g12/b1_add_t.hex"),
+              .B1_S0DW_W(`KWS_ROM_B1_S0_DW_W),
+              .B1_S0DW_T(`KWS_ROM_B1_S0_DW_T),
+              .B1_S0PW_W(`KWS_ROM_B1_S0_PW_W),
+              .B1_S0PW_T(`KWS_ROM_B1_S0_PW_T),
+              .B1_S1DW_W(`KWS_ROM_B1_S1_DW_W),
+              .B1_S1DW_T(`KWS_ROM_B1_S1_DW_T),
+              .B1_S1PW_W(`KWS_ROM_B1_S1_PW_W),
+              .B1_SKIP_W(`KWS_ROM_B1_SKIP_W),
+              .B1_ADD_T(`KWS_ROM_B1_ADD_T),
 
               .B2_K(`KWS_L7_B2_S0_DW_KERNEL), .B2_PAD(`KWS_L7_B2_S0_DW_PADDING),
               .B2_S0DW_A(`KWS_L7_B2_S0_DW_ACC_BITS),
@@ -73,14 +76,14 @@ module tb_top;
               .B2_S1PW_A(`KWS_L10_B2_S1_PW_ACC_BITS),
               .B2_SKIP_A(`KWS_L11_B2_ADD_ACC_BITS),
               .B2_ADD_A(`KWS_L11_B2_ADD_ACC_BITS),
-              .B2_S0DW_W("rtl/gen/xl_g12/b2_s0_dw_w.hex"),
-              .B2_S0DW_T("rtl/gen/xl_g12/b2_s0_dw_t.hex"),
-              .B2_S0PW_W("rtl/gen/xl_g12/b2_s0_pw_w.hex"),
-              .B2_S0PW_T("rtl/gen/xl_g12/b2_s0_pw_t.hex"),
-              .B2_S1DW_W("rtl/gen/xl_g12/b2_s1_dw_w.hex"),
-              .B2_S1DW_T("rtl/gen/xl_g12/b2_s1_dw_t.hex"),
-              .B2_S1PW_W("rtl/gen/xl_g12/b2_s1_pw_w.hex"),
-              .B2_ADD_T("rtl/gen/xl_g12/b2_add_t.hex"),
+              .B2_S0DW_W(`KWS_ROM_B2_S0_DW_W),
+              .B2_S0DW_T(`KWS_ROM_B2_S0_DW_T),
+              .B2_S0PW_W(`KWS_ROM_B2_S0_PW_W),
+              .B2_S0PW_T(`KWS_ROM_B2_S0_PW_T),
+              .B2_S1DW_W(`KWS_ROM_B2_S1_DW_W),
+              .B2_S1DW_T(`KWS_ROM_B2_S1_DW_T),
+              .B2_S1PW_W(`KWS_ROM_B2_S1_PW_W),
+              .B2_ADD_T(`KWS_ROM_B2_ADD_T),
 
               .B3_K(`KWS_L12_B3_S0_DW_KERNEL),
               .B3_PAD(`KWS_L12_B3_S0_DW_PADDING),
@@ -90,40 +93,40 @@ module tb_top;
               .B3_S1PW_A(`KWS_L15_B3_S1_PW_ACC_BITS),
               .B3_SKIP_A(`KWS_L16_B3_ADD_ACC_BITS),
               .B3_ADD_A(`KWS_L16_B3_ADD_ACC_BITS),
-              .B3_S0DW_W("rtl/gen/xl_g12/b3_s0_dw_w.hex"),
-              .B3_S0DW_T("rtl/gen/xl_g12/b3_s0_dw_t.hex"),
-              .B3_S0PW_W("rtl/gen/xl_g12/b3_s0_pw_w.hex"),
-              .B3_S0PW_T("rtl/gen/xl_g12/b3_s0_pw_t.hex"),
-              .B3_S1DW_W("rtl/gen/xl_g12/b3_s1_dw_w.hex"),
-              .B3_S1DW_T("rtl/gen/xl_g12/b3_s1_dw_t.hex"),
-              .B3_S1PW_W("rtl/gen/xl_g12/b3_s1_pw_w.hex"),
-              .B3_ADD_T("rtl/gen/xl_g12/b3_add_t.hex"),
+              .B3_S0DW_W(`KWS_ROM_B3_S0_DW_W),
+              .B3_S0DW_T(`KWS_ROM_B3_S0_DW_T),
+              .B3_S0PW_W(`KWS_ROM_B3_S0_PW_W),
+              .B3_S0PW_T(`KWS_ROM_B3_S0_PW_T),
+              .B3_S1DW_W(`KWS_ROM_B3_S1_DW_W),
+              .B3_S1DW_T(`KWS_ROM_B3_S1_DW_T),
+              .B3_S1PW_W(`KWS_ROM_B3_S1_PW_W),
+              .B3_ADD_T(`KWS_ROM_B3_ADD_T),
 
               .C2_K(`KWS_L17_CONV2_DW_KERNEL),
               .C2_PAD(`KWS_L17_CONV2_DW_PADDING),
               .C2_DIL(`KWS_L17_CONV2_DW_DILATION),
               .C2_ACC(`KWS_L17_CONV2_DW_ACC_BITS),
-              .C2_W("rtl/gen/xl_g12/conv2_dw_w.hex"),
-              .C2_T("rtl/gen/xl_g12/conv2_dw_t.hex"),
+              .C2_W(`KWS_ROM_CONV2_DW_W),
+              .C2_T(`KWS_ROM_CONV2_DW_T),
 
               .TL_C2_OUT(`KWS_CONV2_PW_N_OUT), .TL_C2_ACC(`KWS_CONV2_PW_ACC_BITS),
-              .TL_C2_W("rtl/gen/xl_g12/conv2_pw_w.hex"),
+              .TL_C2_W(`KWS_ROM_CONV2_PW_W),
               .TL_A2_G(`KWS_CONV2_PW_GAIN_BITS),
               .TL_A2_B(`KWS_CONV2_PW_BIAS_BITS),
               .TL_A2_S(`KWS_CONV2_PW_SHIFT), .TL_A2_O(`KWS_CONV2_PW_OUT_BITS),
-              .TL_A2_F("rtl/gen/xl_g12/conv2_pw_bn.hex"),
+              .TL_A2_F(`KWS_ROM_CONV2_PW_BN),
               .TL_C3_OUT(`KWS_CONV3_N_OUT), .TL_C3_W(`KWS_CONV3_W_BITS),
               .TL_C3_ACC(`KWS_CONV3_ACC_BITS),
-              .TL_C3_WF("rtl/gen/xl_g12/conv3_w.hex"),
+              .TL_C3_WF(`KWS_ROM_CONV3_W),
               .TL_A3_G(`KWS_CONV3_GAIN_BITS), .TL_A3_B(`KWS_CONV3_BIAS_BITS),
               .TL_A3_S(`KWS_CONV3_SHIFT), .TL_A3_O(`KWS_CONV3_OUT_BITS),
-              .TL_A3_F("rtl/gen/xl_g12/conv3_bn.hex"),
+              .TL_A3_F(`KWS_ROM_CONV3_BN),
               .TL_C4_OUT(`KWS_CONV4_N_OUT), .TL_C4_W(`KWS_CONV4_W_BITS),
               .TL_C4_ACC(`KWS_CONV4_ACC_BITS),
-              .TL_C4_WF("rtl/gen/xl_g12/conv4_w.hex"),
+              .TL_C4_WF(`KWS_ROM_CONV4_W),
               .TL_A4_G(`KWS_CONV4_GAIN_BITS), .TL_A4_B(`KWS_CONV4_BIAS_BITS),
               .TL_A4_S(`KWS_CONV4_SHIFT), .TL_A4_O(`KWS_CONV4_OUT_BITS),
-              .TL_A4_F("rtl/gen/xl_g12/conv4_bn.hex"),
+              .TL_A4_F(`KWS_ROM_CONV4_BN),
               .TL_POOL(`KWS_CONV4_POOL_BITS), .TL_C4O_B(4)) dut (
         .clk(clk), .rst_n(rst_n),
         .start(start), .in_valid(iv), .in_frame(frame),
@@ -143,9 +146,9 @@ module tb_top;
         $dumpfile("tb_top.vcd");
         $dumpvars(0, tb_top);
 
-        $readmemh("rtl/gen/xl_g12/golden/input.hex", xin,
+        $readmemh(`KWS_GOLD_INPUT, xin,
                   0, CLIPS * T_IN * NWI - 1);
-        fh = $fopen("rtl/gen/xl_g12/golden/predictions_fixed.txt", "r");
+        fh = $fopen(`KWS_GOLD_PREDICTIONS_FIXED, "r");
         if (fh == 0) begin
             $display("FAIL cannot open predictions_fixed.txt");
             $finish;

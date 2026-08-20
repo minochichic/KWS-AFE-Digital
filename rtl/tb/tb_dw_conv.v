@@ -1,9 +1,9 @@
 // kws_dw_conv against the real thing: trained weights, trained thresholds, and
 // the activations the network actually produced.
 //
-// Input  : rtl/gen/xl_g12/golden/conv1_out.hex   (b1's block input)
-// Expect : rtl/gen/xl_g12/golden/b1_s0_dw_out.hex
-// ROMs   : rtl/gen/xl_g12/b1_s0_dw_{w,t}.hex
+// Input  : <gen>/golden/conv1_out.hex   (b1's block input)
+// Expect : <gen>/golden/b1_s0_dw_out.hex
+// ROMs   : <gen>/b1_s0_dw_{w,t}.hex
 //
 // Nothing here is synthetic. If this passes, the line buffer, the tap gather,
 // the edge shift, n_valid and the fused threshold are all right together --
@@ -16,10 +16,15 @@
 // tell a stride-aware gather from a plain one -- b1_s0_dw would pass either
 // way. Only conv2_dw separates them.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh dw_conv
 
 `timescale 1ns/1ps
 `default_nettype none
+
+`include "rtl/gen/active.vh"
 
 module tb_dw_conv;
 
@@ -43,8 +48,8 @@ module tb_dw_conv;
     wire [C-1:0]     out_frame;
 
     kws_dw_conv #(.C(C), .K(K), .PAD(PAD), .ACC_BITS(ACC), .WORD_BITS(WB),
-                  .W_FILE("rtl/gen/xl_g12/b1_s0_dw_w.hex"),
-                  .T_FILE("rtl/gen/xl_g12/b1_s0_dw_t.hex")) dut (
+                  .W_FILE(`KWS_ROM_B1_S0_DW_W),
+                  .T_FILE(`KWS_ROM_B1_S0_DW_T)) dut (
         .clk(clk), .rst_n(rst_n), .start(start),
         .in_push(in_push), .in_real(in_real), .in_frame(in_frame),
         .busy(busy), .out_valid(out_valid), .out_frame(out_frame));
@@ -98,8 +103,8 @@ module tb_dw_conv;
 
     kws_dw_conv #(.C(DC), .K(DK), .PAD(DPAD), .DIL(DDIL), .ACC_BITS(DACC),
                   .WORD_BITS(WB),
-                  .W_FILE("rtl/gen/xl_g12/conv2_dw_w.hex"),
-                  .T_FILE("rtl/gen/xl_g12/conv2_dw_t.hex")) dut_d (
+                  .W_FILE(`KWS_ROM_CONV2_DW_W),
+                  .T_FILE(`KWS_ROM_CONV2_DW_T)) dut_d (
         .clk(clk), .rst_n(rst_n), .start(d_start),
         .in_push(d_push), .in_real(d_real), .in_frame(d_frame),
         .busy(d_busy), .out_valid(d_ov), .out_frame(d_of));
@@ -127,8 +132,8 @@ module tb_dw_conv;
         $dumpfile("tb_dw_conv.vcd");
         $dumpvars(0, tb_dw_conv);
 
-        $readmemh("rtl/gen/xl_g12/golden/conv1_out.hex",    in_mem);
-        $readmemh("rtl/gen/xl_g12/golden/b1_s0_dw_out.hex", exp_mem);
+        $readmemh(`KWS_GOLD_CONV1_OUT,    in_mem);
+        $readmemh(`KWS_GOLD_B1_S0_DW_OUT, exp_mem);
 
         repeat (3) @(negedge clk);
         rst_n = 1'b1;
@@ -174,8 +179,8 @@ module tb_dw_conv;
         end
 
         // ---- dilated ---------------------------------------------------- //
-        $readmemh("rtl/gen/xl_g12/golden/b3_add_out.hex",   d_in);
-        $readmemh("rtl/gen/xl_g12/golden/conv2_dw_out.hex", d_exp);
+        $readmemh(`KWS_GOLD_B3_ADD_OUT,   d_in);
+        $readmemh(`KWS_GOLD_CONV2_DW_OUT, d_exp);
 
         for (clip = 0; clip < CLIPS; clip = clip + 1) begin
             @(negedge clk); d_start = 1'b1;

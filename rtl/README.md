@@ -877,6 +877,38 @@ BRAM 1장으로 끝날 것을.
 
 ---
 
+## 3-11. 트랙을 바꿔도 RTL 은 안 바뀐다
+
+`xl_g12` 와 `fx_g12` 는 **다른 아날로그 프론트엔드**다. 그래도 RTL 은 한 줄도 안
+바뀐다 — `rtl/*.v` 에 태그가 **한 번도 안 나온다**. 바뀌는 건 `.hex` 와
+`parameters.vh` 뿐이다 (`docs/ICD.md`).
+
+```bash
+./rtl/run_tb.sh top            # xl_g12 (기본)
+./rtl/run_tb.sh top fx_g12     # 같은 RTL, 다른 export
+```
+
+### 경로도 생성물이다
+
+Verilog-2005 은 매크로와 리터럴을 이어붙여 문자열을 못 만든다. 그래서 **경로 전체**가
+매크로여야 한다:
+
+| 생성하는 것 | 무엇 |
+|---|---|
+| `<gen>/parameters.vh` | 폭·커널·시프트 |
+| `<gen>/paths.vh` | `` `KWS_ROM_CONV1_W `` 같은 ROM 경로 |
+| `<gen>/golden/paths.vh` | 골든 벡터 경로 |
+| `rtl/gen/active.vh` | 위 셋을 include — **`run_tb.sh` 가 태그로 생성** |
+
+테스트벤치는 `active.vh` **하나만** include 한다. 태그를 바꾸는 건 그 파일을 다시
+쓰는 것이고, 그게 전부다.
+
+> **`rtl_fixed/` 같은 복사본을 만들면 안 된다.** RTL 을 복사해야 한다면 이 구조가
+> 실패했다는 뜻이다 — 아날로그가 바뀔 때마다 RTL 편집이 필요해지고, 그게 정확히
+> `docs/ICD.md` 가 막으려는 것이다.
+
+---
+
 ## 4. 코딩 규약
 
 - **Verilog-2005 서브셋.** iverilog·Verilator·Vivado 가 똑같이 해석하게.

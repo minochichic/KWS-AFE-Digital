@@ -1,7 +1,7 @@
 // kws_affine against the golden vectors, for all three tail sites.
 //
-// Input  : rtl/gen/xl_g12/golden/<site>_acc.hex   (integer accumulator)
-// Expect : rtl/gen/xl_g12/golden/<site>_out.hex   (fixed-point activation)
+// Input  : <gen>/golden/<site>_acc.hex   (integer accumulator)
+// Expect : <gen>/golden/<site>_out.hex   (fixed-point activation)
 //
 // Three instances rather than one, because the whole claim of kws_affine is
 // that the sites differ ONLY in their constants -- conv2_pw's gain comes from a
@@ -18,12 +18,15 @@
 // VALUE, because the values are multi-bit and there is nothing to pack.
 // golden.json says which, in its `packed` field.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh affine
 
 `timescale 1ns/1ps
 `default_nettype none
 
-`include "rtl/gen/xl_g12/parameters.vh"
+`include "rtl/gen/active.vh"
 
 module tb_affine;
 
@@ -60,7 +63,7 @@ module tb_affine;
                  .SHIFT(`KWS_CONV2_PW_SHIFT),
                  .OUT_BITS(`KWS_CONV2_PW_OUT_BITS),
                  .RELU(`KWS_CONV2_PW_RELU), .CH_BITS(7),
-                 .ROM_FILE("rtl/gen/xl_g12/conv2_pw_bn.hex")) u2 (
+                 .ROM_FILE(`KWS_ROM_CONV2_PW_BN)) u2 (
         .clk(clk), .rst_n(rst_n),
         .in_valid(ivs[0]), .in_ch(ich),
         .in_acc(iacc[`KWS_CONV2_PW_ACC_BITS-1:0]),
@@ -73,7 +76,7 @@ module tb_affine;
                  .SHIFT(`KWS_CONV3_SHIFT),
                  .OUT_BITS(`KWS_CONV3_OUT_BITS),
                  .RELU(`KWS_CONV3_RELU), .CH_BITS(7),
-                 .ROM_FILE("rtl/gen/xl_g12/conv3_bn.hex")) u3 (
+                 .ROM_FILE(`KWS_ROM_CONV3_BN)) u3 (
         .clk(clk), .rst_n(rst_n),
         .in_valid(ivs[1]), .in_ch(ich), .in_acc(iacc[`KWS_CONV3_ACC_BITS-1:0]),
         .out_valid(ov3), .out_ch(och3), .out_val(oval3));
@@ -85,7 +88,7 @@ module tb_affine;
                  .SHIFT(`KWS_CONV4_SHIFT),
                  .OUT_BITS(`KWS_CONV4_OUT_BITS),
                  .RELU(`KWS_CONV4_RELU), .CH_BITS(4),
-                 .ROM_FILE("rtl/gen/xl_g12/conv4_bn.hex")) u4 (
+                 .ROM_FILE(`KWS_ROM_CONV4_BN)) u4 (
         .clk(clk), .rst_n(rst_n),
         .in_valid(ivs[2]), .in_ch(ich[3:0]), .in_acc(iacc[`KWS_CONV4_ACC_BITS-1:0]),
         .out_valid(ov4), .out_ch(och4), .out_val(oval4));
@@ -148,12 +151,12 @@ module tb_affine;
         $dumpfile("tb_affine.vcd");
         $dumpvars(0, tb_affine);
 
-        $readmemh("rtl/gen/xl_g12/golden/conv2_pw_acc.hex", acc2, 0, N2 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv2_pw_out.hex", exp2, 0, N2 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv3_acc.hex", acc3, 0, N3 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv3_out.hex", exp3, 0, N3 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv4_acc.hex", acc4, 0, N4 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv4_out.hex", exp4, 0, N4 - 1);
+        $readmemh(`KWS_GOLD_CONV2_PW_ACC, acc2, 0, N2 - 1);
+        $readmemh(`KWS_GOLD_CONV2_PW_OUT, exp2, 0, N2 - 1);
+        $readmemh(`KWS_GOLD_CONV3_ACC, acc3, 0, N3 - 1);
+        $readmemh(`KWS_GOLD_CONV3_OUT, exp3, 0, N3 - 1);
+        $readmemh(`KWS_GOLD_CONV4_ACC, acc4, 0, N4 - 1);
+        $readmemh(`KWS_GOLD_CONV4_OUT, exp4, 0, N4 - 1);
 
         repeat (3) @(negedge clk);
         rst_n = 1'b1;

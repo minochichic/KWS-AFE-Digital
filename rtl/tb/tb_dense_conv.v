@@ -1,9 +1,9 @@
 // kws_dense_conv against the golden accumulators, for conv3 and conv4.
 //
-// conv3:  in  rtl/gen/xl_g12/golden/conv2_pw_out.hex   (its input activations)
-//         out rtl/gen/xl_g12/golden/conv3_acc.hex
-// conv4:  in  rtl/gen/xl_g12/golden/conv3_out.hex
-//         out rtl/gen/xl_g12/golden/conv4_acc.hex
+// conv3:  in  <gen>/golden/conv2_pw_out.hex   (its input activations)
+//         out <gen>/golden/conv3_acc.hex
+// conv4:  in  <gen>/golden/conv3_out.hex
+//         out <gen>/golden/conv4_acc.hex
 //
 // Two instances, because the two layers differ in exactly the way the module
 // claims not to care about: 128 outputs against 12, and a channel count that is
@@ -18,12 +18,15 @@
 // 16,384 cycles per frame and the coverage from more frames is not worth the
 // wall clock.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh dense_conv
 
 `timescale 1ns/1ps
 `default_nettype none
 
-`include "rtl/gen/xl_g12/parameters.vh"
+`include "rtl/gen/active.vh"
 
 module tb_dense_conv;
 
@@ -47,7 +50,7 @@ module tb_dense_conv;
                      .W_BITS(`KWS_CONV3_W_BITS),
                      .ACC_BITS(`KWS_CONV3_ACC_BITS),
                      .CI_BITS(7), .CO_BITS(7),
-                     .W_FILE("rtl/gen/xl_g12/conv3_w.hex")) u3 (
+                     .W_FILE(`KWS_ROM_CONV3_W)) u3 (
         .clk(clk), .rst_n(rst_n),
         .in_valid(lv3), .in_ch(lc3), .in_val(lx3),
         .start(go3), .busy(bsy3),
@@ -66,7 +69,7 @@ module tb_dense_conv;
                      .W_BITS(`KWS_CONV4_W_BITS),
                      .ACC_BITS(`KWS_CONV4_ACC_BITS),
                      .CI_BITS(7), .CO_BITS(4),
-                     .W_FILE("rtl/gen/xl_g12/conv4_w.hex")) u4 (
+                     .W_FILE(`KWS_ROM_CONV4_W)) u4 (
         .clk(clk), .rst_n(rst_n),
         .in_valid(lv4), .in_ch(lc4), .in_val(lx4),
         .start(go4), .busy(bsy4),
@@ -104,10 +107,10 @@ module tb_dense_conv;
         $dumpfile("tb_dense_conv.vcd");
         $dumpvars(0, tb_dense_conv);
 
-        $readmemh("rtl/gen/xl_g12/golden/conv2_pw_out.hex", x3, 0, NX3 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv3_acc.hex",    a3, 0, NA3 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv3_out.hex",    x4, 0, NX4 - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv4_acc.hex",    a4, 0, NA4 - 1);
+        $readmemh(`KWS_GOLD_CONV2_PW_OUT, x3, 0, NX3 - 1);
+        $readmemh(`KWS_GOLD_CONV3_ACC,    a3, 0, NA3 - 1);
+        $readmemh(`KWS_GOLD_CONV3_OUT,    x4, 0, NX4 - 1);
+        $readmemh(`KWS_GOLD_CONV4_ACC,    a4, 0, NA4 - 1);
 
         repeat (3) @(negedge clk);
         rst_n = 1'b1;

@@ -1,7 +1,7 @@
 // kws_conv1 against the golden vectors.
 //
-// Input  : rtl/gen/xl_g12/golden/input.hex     (the AFE output, 16 ch x 128)
-// Expect : rtl/gen/xl_g12/golden/conv1_out.hex (128 ch x 64, packed +-1)
+// Input  : <gen>/golden/input.hex     (the AFE output, 16 ch x 128)
+// Expect : <gen>/golden/conv1_out.hex (128 ch x 64, packed +-1)
 //
 // Three things this layer does that no other one does, and each has its own way
 // of failing quietly:
@@ -19,12 +19,15 @@
 //
 // The slow one, alongside tb_tail: 22,528 cycles a frame.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh conv1
 
 `timescale 1ns/1ps
 `default_nettype none
 
-`include "rtl/gen/xl_g12/parameters.vh"
+`include "rtl/gen/active.vh"
 
 module tb_conv1;
 
@@ -52,8 +55,8 @@ module tb_conv1;
     kws_conv1 #(.C_IN(C_IN), .C_OUT(C_OUT), .K(K), .PAD(PAD), .STRIDE(STRIDE),
                 .T_IN(T_IN), .W_BITS(8), .ACC_BITS(`KWS_L0_CONV1_ACC_BITS),
                 .CO_BITS(7),
-                .W_FILE("rtl/gen/xl_g12/conv1_w.hex"),
-                .T_FILE("rtl/gen/xl_g12/conv1_t.hex")) dut (
+                .W_FILE(`KWS_ROM_CONV1_W),
+                .T_FILE(`KWS_ROM_CONV1_T)) dut (
         .clk(clk), .rst_n(rst_n), .start(start),
         .in_push(push), .in_real(real_f), .in_frame(frame),
         .busy(busy), .out_valid(ov), .out_frame(of));
@@ -77,9 +80,9 @@ module tb_conv1;
         $dumpfile("tb_conv1.vcd");
         $dumpvars(0, tb_conv1);
 
-        $readmemh("rtl/gen/xl_g12/golden/input.hex", xin,
+        $readmemh(`KWS_GOLD_INPUT, xin,
                   0, CLIPS * T_IN * NWI - 1);
-        $readmemh("rtl/gen/xl_g12/golden/conv1_out.hex", exp,
+        $readmemh(`KWS_GOLD_CONV1_OUT, exp,
                   0, CLIPS * T_OUT * NWO - 1);
 
         got_n = 0;

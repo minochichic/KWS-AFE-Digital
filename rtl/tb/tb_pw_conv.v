@@ -1,16 +1,21 @@
 // kws_pw_conv against the golden vectors, chained onto the layer below it.
 //
-// Input  : rtl/gen/xl_g12/golden/b1_s0_dw_out.hex   (verified by tb_dw_conv)
-// Expect : rtl/gen/xl_g12/golden/b1_s0_pw_out.hex
-// ROMs   : rtl/gen/xl_g12/b1_s0_pw_{w,t}.hex
+// Input  : <gen>/golden/b1_s0_dw_out.hex   (verified by tb_dw_conv)
+// Expect : <gen>/golden/b1_s0_pw_out.hex
+// ROMs   : <gen>/b1_s0_pw_{w,t}.hex
 //
 // The input is the output the depthwise module was just proven to produce, so
 // a failure here cannot be blamed on the activations reaching it.
+//
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
 //
 //   ./rtl/run_tb.sh pw_conv
 
 `timescale 1ns/1ps
 `default_nettype none
+
+`include "rtl/gen/active.vh"
 
 module tb_pw_conv;
 
@@ -32,8 +37,8 @@ module tb_pw_conv;
     wire [C_OUT-1:0]  out_frame;
 
     kws_pw_conv #(.C_IN(C_IN), .C_OUT(C_OUT), .ACC_BITS(ACC), .WORD_BITS(WB),
-                  .W_FILE("rtl/gen/xl_g12/b1_s0_pw_w.hex"),
-                  .T_FILE("rtl/gen/xl_g12/b1_s0_pw_t.hex")) dut (
+                  .W_FILE(`KWS_ROM_B1_S0_PW_W),
+                  .T_FILE(`KWS_ROM_B1_S0_PW_T)) dut (
         .clk(clk), .rst_n(rst_n),
         .in_valid(in_valid), .in_frame(in_frame),
         .busy(busy), .out_valid(out_valid), .out_frame(out_frame));
@@ -71,8 +76,8 @@ module tb_pw_conv;
         $dumpfile("tb_pw_conv.vcd");
         $dumpvars(0, tb_pw_conv);
 
-        $readmemh("rtl/gen/xl_g12/golden/b1_s0_dw_out.hex", in_mem);
-        $readmemh("rtl/gen/xl_g12/golden/b1_s0_pw_out.hex", exp_mem);
+        $readmemh(`KWS_GOLD_B1_S0_DW_OUT, in_mem);
+        $readmemh(`KWS_GOLD_B1_S0_PW_OUT, exp_mem);
 
         repeat (3) @(negedge clk);
         rst_n = 1'b1;

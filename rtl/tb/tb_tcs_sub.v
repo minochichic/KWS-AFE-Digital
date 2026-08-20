@@ -1,18 +1,23 @@
 // kws_tcs_sub end to end: the block input goes in, the sub-block output comes
 // out, and nothing in between is checked.
 //
-// Input  : rtl/gen/xl_g12/golden/conv1_out.hex     (b1's block input)
-// Expect : rtl/gen/xl_g12/golden/b1_s0_pw_out.hex
+// Input  : <gen>/golden/conv1_out.hex     (b1's block input)
+// Expect : <gen>/golden/b1_s0_pw_out.hex
 //
 // The two halves already pass separately, so this adds exactly one thing: that
 // the depthwise output reaches the pointwise unchanged and at the right time.
 // A handoff that dropped or duplicated a frame would still leave both halves
 // individually correct.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh tcs_sub
 
 `timescale 1ns/1ps
 `default_nettype none
+
+`include "rtl/gen/active.vh"
 
 module tb_tcs_sub;
 
@@ -40,10 +45,10 @@ module tb_tcs_sub;
 
     kws_tcs_sub #(.C_IN(C_IN), .C_OUT(C_OUT), .K(K), .PAD(PAD),
                   .DW_ACC(DWA), .PW_ACC(PWA), .WORD_BITS(WB),
-                  .DW_W_FILE("rtl/gen/xl_g12/b1_s0_dw_w.hex"),
-                  .DW_T_FILE("rtl/gen/xl_g12/b1_s0_dw_t.hex"),
-                  .PW_W_FILE("rtl/gen/xl_g12/b1_s0_pw_w.hex"),
-                  .PW_T_FILE("rtl/gen/xl_g12/b1_s0_pw_t.hex")) dut (
+                  .DW_W_FILE(`KWS_ROM_B1_S0_DW_W),
+                  .DW_T_FILE(`KWS_ROM_B1_S0_DW_T),
+                  .PW_W_FILE(`KWS_ROM_B1_S0_PW_W),
+                  .PW_T_FILE(`KWS_ROM_B1_S0_PW_T)) dut (
         .clk(clk), .rst_n(rst_n), .start(start),
         .in_push(in_push), .in_real(in_real), .in_frame(in_frame),
         .busy(busy), .out_valid(out_valid), .out_frame(out_frame));
@@ -82,8 +87,8 @@ module tb_tcs_sub;
         $dumpfile("tb_tcs_sub.vcd");
         $dumpvars(0, tb_tcs_sub);
 
-        $readmemh("rtl/gen/xl_g12/golden/conv1_out.hex",    in_mem);
-        $readmemh("rtl/gen/xl_g12/golden/b1_s0_pw_out.hex", exp_mem);
+        $readmemh(`KWS_GOLD_CONV1_OUT,    in_mem);
+        $readmemh(`KWS_GOLD_B1_S0_PW_OUT, exp_mem);
 
         repeat (3) @(negedge clk);
         rst_n = 1'b1;

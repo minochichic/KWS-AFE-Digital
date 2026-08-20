@@ -1,7 +1,7 @@
 // kws_tail end to end: conv2_dw's +-1 frames in, a class index out.
 //
-// Input  : rtl/gen/xl_g12/golden/conv2_dw_out.hex     (packed +-1, 64 channels)
-// Expect : rtl/gen/xl_g12/golden/predictions_fixed.txt
+// Input  : <gen>/golden/conv2_dw_out.hex     (packed +-1, 64 channels)
+// Expect : <gen>/golden/predictions_fixed.txt
 //
 // The parts have each been checked against their own golden vectors already,
 // so what this adds is the SEAMS -- that conv2_pw's raw accumulator reaches the
@@ -16,12 +16,15 @@
 //
 // This is the slow one -- 18,700 cycles a frame, 64 frames, two clips.
 //
+// <gen> is whichever export run_tb.sh selected; the second
+// argument picks it and defaults to xl_g12.
+//
 //   ./rtl/run_tb.sh tail
 
 `timescale 1ns/1ps
 `default_nettype none
 
-`include "rtl/gen/xl_g12/parameters.vh"
+`include "rtl/gen/active.vh"
 
 module tb_tail;
 
@@ -40,26 +43,26 @@ module tb_tail;
 
     kws_tail #(.C2_IN(C2_IN), .C2_OUT(`KWS_CONV2_PW_N_OUT),
                .C2_ACC(`KWS_CONV2_PW_ACC_BITS), .WORD_BITS(`KWS_WORD_BITS),
-               .C2_W_FILE("rtl/gen/xl_g12/conv2_pw_w.hex"),
+               .C2_W_FILE(`KWS_ROM_CONV2_PW_W),
                .A2_GAIN(`KWS_CONV2_PW_GAIN_BITS),
                .A2_BIAS(`KWS_CONV2_PW_BIAS_BITS),
                .A2_SHIFT(`KWS_CONV2_PW_SHIFT),
                .A2_OUT(`KWS_CONV2_PW_OUT_BITS),
-               .A2_FILE("rtl/gen/xl_g12/conv2_pw_bn.hex"),
+               .A2_FILE(`KWS_ROM_CONV2_PW_BN),
 
                .C3_OUT(`KWS_CONV3_N_OUT), .C3_W(`KWS_CONV3_W_BITS),
                .C3_ACC(`KWS_CONV3_ACC_BITS),
-               .C3_W_FILE("rtl/gen/xl_g12/conv3_w.hex"),
+               .C3_W_FILE(`KWS_ROM_CONV3_W),
                .A3_GAIN(`KWS_CONV3_GAIN_BITS), .A3_BIAS(`KWS_CONV3_BIAS_BITS),
                .A3_SHIFT(`KWS_CONV3_SHIFT), .A3_OUT(`KWS_CONV3_OUT_BITS),
-               .A3_FILE("rtl/gen/xl_g12/conv3_bn.hex"),
+               .A3_FILE(`KWS_ROM_CONV3_BN),
 
                .C4_OUT(`KWS_CONV4_N_OUT), .C4_W(`KWS_CONV4_W_BITS),
                .C4_ACC(`KWS_CONV4_ACC_BITS),
-               .C4_W_FILE("rtl/gen/xl_g12/conv4_w.hex"),
+               .C4_W_FILE(`KWS_ROM_CONV4_W),
                .A4_GAIN(`KWS_CONV4_GAIN_BITS), .A4_BIAS(`KWS_CONV4_BIAS_BITS),
                .A4_SHIFT(`KWS_CONV4_SHIFT), .A4_OUT(`KWS_CONV4_OUT_BITS),
-               .A4_FILE("rtl/gen/xl_g12/conv4_bn.hex"),
+               .A4_FILE(`KWS_ROM_CONV4_BN),
 
                .T_FRAMES(T), .POOL_BITS(`KWS_CONV4_POOL_BITS),
                .C2O_BITS(7), .C3O_BITS(7), .C4O_BITS(4)) dut (
@@ -83,10 +86,10 @@ module tb_tail;
         $dumpfile("tb_tail.vcd");
         $dumpvars(0, tb_tail);
 
-        $readmemh("rtl/gen/xl_g12/golden/conv2_dw_out.hex", xin,
+        $readmemh(`KWS_GOLD_CONV2_DW_OUT, xin,
                   0, CLIPS * T * NW - 1);
         // predictions_fixed.txt is one decimal integer per line
-        fh = $fopen("rtl/gen/xl_g12/golden/predictions_fixed.txt", "r");
+        fh = $fopen(`KWS_GOLD_PREDICTIONS_FIXED, "r");
         if (fh == 0) begin
             $display("FAIL cannot open predictions_fixed.txt");
             $finish;
