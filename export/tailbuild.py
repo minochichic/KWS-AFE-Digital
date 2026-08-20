@@ -130,7 +130,11 @@ def _bn_relu_site(name: str, conv: nn.Module, bn: nn.Module,
         absmax = int(q.abs().max())
         terms = conv.in_channels * conv.kernel_size[0]
         acc_bits = acc_bits_for_real_input(terms, absmax, in_fmt, in_nonneg=True)
-        w, wbits = q, 8
+        # the width the ROM is DECLARED at, so RTL sizes its array to match.
+        # int8 by construction here, but written from the value rather than
+        # assumed, because a two's-complement file read at the wrong width
+        # decodes to a different number rather than failing.
+        w, wbits = q, signed_bits(-absmax, absmax)
         site_kw = dict(n_terms=terms,
                        meta={"source": "gain = bn_g * int8_scale / 2^in_frac"})
     else:

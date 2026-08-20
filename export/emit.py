@@ -242,23 +242,39 @@ class Emitter:
                                     for v in q.reshape(-1).tolist()],
                             {"kind": "int8", "shape": list(q.shape),
                              "scale": [float(s) for s in scale],
-                             "note": "two's complement int8, row-major"})
+                             "weight_bits": 8, "hex_digits": 2,
+                             "note": "two's complement int8, row-major, "
+                                     "[out_ch][in_ch]. The ROM must be declared "
+                                     "exactly weight_bits wide: a 2-digit "
+                                     "negative read into a wider register "
+                                     "zero-extends, so -5 becomes 251."})
             words = q.numel()
         else:                                          # fixed-point head (conv4)
             op, terms, wname = "fixed", 0, f"{cname}_w"
             q = fixed_weights(conv)
             amax = int(q.abs().max())
-            self._write_hex(wname, [f"{int(v) & 0xFFFFFFFF:08x}"
+            # Same digit count as the width the manifest declares, so the two
+            # weight ROMs are read the same way. Written as 32 digits before,
+            # which happened to be right only because a wide two's complement
+            # truncates correctly -- while conv3's 2-digit form does NOT widen
+            # correctly. One form that works in exactly one declared width is
+            # better than two forms with different tolerances.
+            wbits = signed_bits(-amax, amax)
+            digits = (wbits + 3) // 4
+            self._write_hex(wname, [f"{int(v) & ((1 << wbits) - 1):0{digits}x}"
                                     for v in q.reshape(-1).tolist()],
                             {"kind": "fixed", "shape": list(q.shape),
                              "frac_bits": FRAC_BITS,
-                             "weight_bits": signed_bits(-amax, amax),
+                             "weight_bits": wbits, "hex_digits": digits,
                              "abs_max": amax,
                              "bias": ([float(b) for b in conv.bias.detach()]
                                       if conv.bias is not None else None),
-                             "note": f"two's complement, row-major, one shared "
-                                     f"scale 2^-{FRAC_BITS} -- the grid "
-                                     f"experiments/tail_fixedpoint.py measured"})
+                             "note": f"two's complement, row-major, "
+                                     f"[out_ch][in_ch], one shared scale "
+                                     f"2^-{FRAC_BITS} -- the grid "
+                                     f"experiments/tail_fixedpoint.py measured. "
+                                     f"Declare the ROM exactly weight_bits "
+                                     f"wide."})
             words = q.numel()
 
         epi = {"sign": "threshold", "relu": "bn_relu", "none": "logits"}[act]
@@ -343,6 +359,9 @@ class Emitter:
             row = {"name": s.name, "epilogue": s.kind,
                    "out_format": str(s.out_fmt), "shift": s.fold.shift,
                    "acc_bits": s.acc_bits, "n_out": s.fold.n_channels,
+                   # the conv in front of the epilogue, for kws_dense_conv
+                   "n_in": lay.in_ch, "n_terms": s.n_terms,
+                   "weight_bits": s.weight_bits,
                    # RTL sizes its multiplier and adder from these, so they go
                    # in the manifest rather than staying ROM metadata
                    "gain_bits": s.fold.gain_bits_used(),
@@ -539,6 +558,9 @@ def write_parameters_vh(man: Dict[str, Any], path: Path) -> None:
             a(f"`define {p}_OUT_BITS  {_fmt_bits(s['out_format'])}")
             a(f"`define {p}_SHIFT     {s['shift']}")
             a(f"`define {p}_N_OUT     {s['n_out']}")
+            a(f"`define {p}_N_IN      {s['n_in']}")
+            a(f"`define {p}_W_BITS    {s['weight_bits']}"
+              f"   // 0 = binary, the conv is not a dense one")
             a(f"`define {p}_GAIN_BITS {s['gain_bits']}")
             a(f"`define {p}_BIAS_BITS {s['bias_bits']}")
             a(f"`define {p}_RELU      {1 if s['relu'] else 0}")

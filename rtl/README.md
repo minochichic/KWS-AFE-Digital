@@ -80,7 +80,8 @@ kws_pw_conv   ✅  프레임 워드 스트리밍 + threshold
 kws_tcs_sub   ✅  dw → pw 배선
 kws_block     ✅  sub ×2 + residual add (정수 영역)
 kws_plane     ✅  활성 평면 (층 사이 BRAM, drain 주입 포함)
-kws_affine    ⬜  꼬리 epilogue — (A·acc + B + half) >> shift → relu → 포화
+kws_affine    ✅  꼬리 epilogue — (A·acc + B + half) >> shift → relu → 포화
+kws_dense_conv ⬜ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜 곱셈기)
 kws_top       ⬜  21개 층 시분할
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```
@@ -536,6 +537,22 @@ float 은 0.8445 였다. 모든 값을 4배 굵게 만들어도 0.0pp 이므로,
 항상 아래로 깎인다 (평균 0.5 손해). 나누는 수의 **절반을 미리 더하고** 버리면
 반올림이 된다 — 10 으로 나눌 때 5 를 더하는 것과 같다. 상수 덧셈 하나(누산기
 초기값으로 넣으면 사실상 공짜)이고, 진짜 반올림 로직은 비트를 봐야 해서 더 비싸다.
+
+### 가중치 ROM 은 선언된 폭 그대로 읽어야 한다
+
+2의 보수 파일은 **쓰인 폭에서만** 제대로 디코드된다.
+
+| 파일 내용 | 8비트 reg 로 읽으면 | 32비트 reg 로 읽으면 |
+|---|---|---|
+| `fb` (int8 −5) | **−5** ✓ | **251** ✗ |
+| `fffffffb` (int32 −5) | −5 ✓ | −5 ✓ |
+
+그래서 매니페스트가 `weight_bits`/`hex_digits` 를 들고 있고, RTL 은 배열을 **정확히
+그 폭으로** 선언한다. 「읽는 쪽이 알아서 자르겠지」에 기대는 건 이번 세션에 이미
+한 번 대가를 치른 종류다 (ROM 워드 오버플로).
+
+> 원래 `conv3_w` 는 2자리, `conv4_w` 는 8자리로 나갔다. 우연히 둘 다 8비트 reg
+> 에서는 맞았지만 **허용 오차가 서로 달랐다.** 이제 둘 다 선언 폭에 맞춘다.
 
 ROM 레이아웃은 threshold ROM 과 **모양만** 같다 (`n` 워드 A, 이어서 `n` 워드 B).
 RTL 이 `rom[{sel, ch}]` 로 똑같이 주소를 매기게 맞춘 것이다.
