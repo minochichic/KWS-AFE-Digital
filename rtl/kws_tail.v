@@ -310,6 +310,25 @@ module kws_tail #(
     assign busy = in_flight | (ast != S_IDLE);
 
 `ifdef KWS_ASSERT
+    // The sub-modules' busies are not wired into `busy` -- see above for why an
+    // OR of them has holes. They are not dead, though: they are how the claim
+    // gets checked. in_flight must cover every cycle any stage is working, and
+    // if it ever does not, the flag is missing something and the next push
+    // lands on a stage still using its operands.
+    //
+    // Only this direction. in_flight high while nothing is busy is the normal
+    // case -- those are exactly the gaps the flag exists to bridge.
+    //
+    // The edges line up: kws_pw_conv's `busy` is (st != S_IDLE) with st
+    // registered, so it rises the cycle after in_valid, which is the same cycle
+    // in_flight does.
+    always @(posedge clk)
+        if (rst_n && (pw_busy | d3_busy | d4_busy) && !in_flight) begin
+            $display("ASSERT %m: a stage is busy while the tail reports idle "
+                     "(pw=%b d3=%b d4=%b)", pw_busy, d3_busy, d4_busy);
+            $finish;
+        end
+
     always @(posedge clk) if (in_valid && busy) begin
         $display("ASSERT %m: frame pushed while the tail is still working");
         $finish;
