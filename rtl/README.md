@@ -81,7 +81,8 @@ kws_tcs_sub   ✅  dw → pw 배선
 kws_block     ✅  sub ×2 + residual add (정수 영역)
 kws_plane     ✅  활성 평면 (층 사이 BRAM, drain 주입 포함)
 kws_affine    ✅  꼬리 epilogue — (A·acc + B + half) >> shift → relu → 포화
-kws_dense_conv ⬜ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜 곱셈기)
+kws_dense_conv ✅ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜 곱셈기)
+kws_tail      ⬜  꼬리 전체 — 이진 프레임 → 클래스 인덱스
 kws_top       ⬜  21개 층 시분할
 kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
 ```
@@ -561,6 +562,38 @@ RTL 이 `rom[{sel, ch}]` 로 똑같이 주소를 매기게 맞춘 것이다.
 > 같은 필드에 넣으면 자료구조상으론 맞고 읽는 사람한테는 거짓말이 된다 — `thresholds`
 > 를 본 사람은 ROM 을 비교기에 물릴 것이고, **게인을 문턱값으로 읽으면 실패하지 않고
 > 그럴듯한 쓰레기가 나온다.** 두 가지 다른 것이니 이름도 둘이다.
+
+---
+
+## 3-075. 꼬리에는 평면이 없다
+
+상류는 접합부마다 평면이 필요했는데 꼬리는 아니다. `kws_affine` 은 사이클당 채널
+하나를 내보내고 `kws_dense_conv` 는 사이클당 하나를 싣는다 — **직결된다.**
+dense conv 의 `act[]` 가 곧 프레임 버퍼이고, 출력 채널 하나가 입력 채널 전부를
+건드리므로 **어차피 프레임을 들고 있어야** 한다.
+
+```
+conv2_pw acc → affine → dense(conv3) → affine → dense(conv4) → affine → pool
+```
+
+순서 제어가 필요한 건 **dense conv 에게 「프레임 다 들어왔다」고 알리는 것 둘**뿐이고,
+그건 생산자가 넘긴 채널 수를 세면 된다.
+
+### `busy` 는 하위 모듈 busy 의 OR 가 아니다
+
+같아 보이는데 아니다. **affine 세 단은 busy 가 아예 없고**, `d3_go` 는 레지스터라
+마지막 `a2_v` 와 `d3_busy` 상승 사이에 **OR 의 모든 항이 낮은 사이클**이 생긴다 —
+하필 프레임 버퍼가 막 다 찼고 곧 훑기 시작할 그 순간이다. 거기서 push 가 들어오면
+버퍼를 덮어쓴다.
+
+push 로 세우고 프레임 마지막 출력으로 내리는 **플래그 하나**를 쓴다. `kws_tcs_sub`
+가 정확히 이 모양의 한 사이클 구멍으로 이미 한 번 대가를 치렀다.
+
+### pool 은 나누지 않는다
+
+`adaptive_avg_pool1d` 는 12클래스를 **전부 같은 T** 로 나누고, argmax 는 공통 양수
+배수를 무시한다. 그래서 합을 T 배 넓게(T=64 면 6비트) 들고 간다 — 나눗셈기보다
+작고, 나눗셈과 달리 **정확**하다.
 
 ---
 
