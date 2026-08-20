@@ -313,8 +313,14 @@ module kws_top #(
                 if (in_valid && can_push && pc < T_IN[PC_BITS-1:0]) begin
                     c1_push  <= 1'b1; c1_real <= 1'b1; c1_frame <= in_frame;
                     pc       <= pc + {{(PC_BITS-1){1'b0}}, 1'b1};
+                // `!c1_ov` as well as `!pa_full`: the plane's wr_full lags
+                // conv1's out_valid by a cycle, so without it the FSM sees room
+                // that the frame in flight has already claimed and issues one
+                // flush too many. Harmless here -- conv1 ignores an off-phase
+                // push -- but it makes pc land somewhere the arithmetic does
+                // not predict, which is worse than the wasted cycle.
                 end else if (can_push && pc >= T_IN[PC_BITS-1:0] &&
-                             !pa_full) begin
+                             !pa_full && !c1_ov) begin
                     c1_push  <= 1'b1; c1_real <= 1'b0;
                     c1_frame <= {N_CH{1'b0}};
                     pc       <= pc + {{(PC_BITS-1){1'b0}}, 1'b1};
@@ -323,9 +329,9 @@ module kws_top #(
                     pa_rs <= 1'b1;
                 end
             end
-            S_B1: if (pa_done && pb_full) begin st <= S_B2; pb_rs <= 1'b1; end
-            S_B2: if (pb_done && pc_full) begin st <= S_B3; pc_rs <= 1'b1; end
-            S_B3: if (pc_done && pd_full) begin st <= S_TL; pd_rs <= 1'b1; end
+            S_B1: if (pa_seen && pb_full) begin st <= S_B2; pb_rs <= 1'b1; end
+            S_B2: if (pb_seen && pc_full) begin st <= S_B3; pc_rs <= 1'b1; end
+            S_B3: if (pc_seen && pd_full) begin st <= S_TL; pd_rs <= 1'b1; end
             S_TL: if (class_valid) st <= S_IDLE;
             default: st <= S_IDLE;
             endcase
@@ -349,16 +355,25 @@ module kws_top #(
         end
     end
 
-    // Plane D's rd_done does not sequence anything -- the tail's own frame
-    // count is what ends phase 5. It is not spare, though: it says the plane
-    // handed over everything it owed, including its 28 flushes, and that has to
-    // happen BEFORE a class comes out. If a class arrived first, the tail
-    // pooled fewer than T_OUT frames and the answer is over a partial clip.
-    reg pd_seen;
+    // Every rd_done is a ONE-CYCLE PULSE, and every phase ends on "the plane
+    // finished pushing AND the next plane filled". Those are never true in the
+    // same cycle: the done fires when the last frame is handed over, and the
+    // consumer needs another ~1,600 cycles to turn it into the last write. So
+    // the pulses are latched, and the phase tests the latch.
+    //
+    // Phase 5 had this from the start (pd_seen) and phases 2-4 did not, which
+    // is how a condition that can never be satisfied got written three times.
+    reg pa_seen, pb_seen, pc_seen, pd_seen;
     always @(posedge clk or negedge rst_n) begin
-        if (!rst_n)        pd_seen <= 1'b0;
-        else if (start)    pd_seen <= 1'b0;
-        else if (pd_done)  pd_seen <= 1'b1;
+        if (!rst_n || start) begin
+            pa_seen <= 1'b0; pb_seen <= 1'b0;
+            pc_seen <= 1'b0; pd_seen <= 1'b0;
+        end else begin
+            if (pa_done) pa_seen <= 1'b1;
+            if (pb_done) pb_seen <= 1'b1;
+            if (pc_done) pc_seen <= 1'b1;
+            if (pd_done) pd_seen <= 1'b1;
+        end
     end
 
 `ifdef KWS_ASSERT
