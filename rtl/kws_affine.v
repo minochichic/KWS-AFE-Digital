@@ -139,8 +139,18 @@ module kws_affine #(
     // relu zeroes it either way.
     wire signed [SUM_BITS-1:0] relud =
         (RELU != 0 && shifted[SUM_BITS-1]) ? {SUM_BITS{1'b0}} : shifted;
-    wire signed [SUM_BITS-1:0] sat =
-        (relud > OUT_HI) ? OUT_HI : ((relud < OUT_LO) ? OUT_LO : relud);
+
+    // The same two limits at the output's own width. Comparing needs them wide
+    // (relud is wide); the RESULT is OUT_BITS by construction, and building it
+    // wide and slicing later leaves SUM_BITS-OUT_BITS bits that are pure sign
+    // extension -- which is exactly what lint reported as unused. Narrowing
+    // here instead makes the truncation explicit and guarded: `relud` is only
+    // sliced on the branch where the comparison has already proved it fits.
+    localparam signed [OUT_BITS-1:0] SAT_HI = {1'b0, {(OUT_BITS-1){1'b1}}};
+    localparam signed [OUT_BITS-1:0] SAT_LO = {1'b1, {(OUT_BITS-1){1'b0}}};
+    wire signed [OUT_BITS-1:0] sat =
+        (relud > OUT_HI) ? SAT_HI :
+        ((relud < OUT_LO) ? SAT_LO : $signed(relud[OUT_BITS-1:0]));
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -149,7 +159,7 @@ module kws_affine #(
         end else begin
             out_valid <= v2;
             out_ch    <= ch2;
-            out_val   <= sat[OUT_BITS-1:0];
+            out_val   <= sat;
         end
     end
 
