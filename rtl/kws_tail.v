@@ -322,8 +322,14 @@ module kws_tail #(
     // The edges line up: kws_pw_conv's `busy` is (st != S_IDLE) with st
     // registered, so it rises the cycle after in_valid, which is the same cycle
     // in_flight does.
+    // No `rst_n &&` guard. It would make rst_n both an async reset (every other
+    // block here) and a synchronous term, which lint rightly flags -- and it is
+    // not needed: under reset every busy is low by construction (pw is
+    // st != S_IDLE with st reset to S_IDLE, the dense convs are run|vB with
+    // both reset), so the condition is already false. Before the first clock
+    // the registers are X, and `if (X)` does not fire either.
     always @(posedge clk)
-        if (rst_n && (pw_busy | d3_busy | d4_busy) && !in_flight) begin
+        if ((pw_busy | d3_busy | d4_busy) && !in_flight) begin
             $display("ASSERT %m: busy stage while idle: pw=%b d3=%b d4=%b",
                      pw_busy, d3_busy, d4_busy);
             $finish;

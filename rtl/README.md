@@ -670,6 +670,11 @@ BRAM 1장으로 끝날 것을.
     $display("ASSERT %m: gain %0d does not fit %0d",   // 문자열은 한 줄
              $signed(a1), GAIN_BITS);                  // 인자만 줄바꿈
     ```
+- **`rst_n` 은 비동기 전용.** 설계 블록은 전부 `posedge clk or negedge rst_n` 이다.
+  어서션 블록(`posedge clk` 만)에서 `rst_n &&` 로 가드하면 같은 신호가 동기·비동기
+  양쪽으로 쓰여 lint 가 잡는다(SYNCASYNCNET). **가드할 필요도 없다** — 리셋 중에는
+  busy·valid 류가 전부 0 이라 조건이 이미 거짓이고, 첫 클럭 전에는 X 라 `if (X)` 도
+  발화하지 않는다. 어서션은 `rst_n` 이 아니라 **valid 신호로 게이트**한다.
   `$countones`·`logic`·`always_ff` 안 씀. XSim 이 본선이 되면 재검토.
 - **폭은 명시적으로.** 암묵적 확장·잘림 금지. `verilator --lint-only -Wall` 이
   게이트다 (`rtl/run_tb.sh` 가 시뮬 전에 돌린다).
