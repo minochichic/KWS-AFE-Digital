@@ -127,43 +127,14 @@ def main() -> None:
     print("\nThe binary layers are exact, so this gap is entirely the tail's "
           "fixed point.")
 
+    # The reading lives in experiments/confusion.py on plain lists, so it can be
+    # unit tested without a checkpoint (tests/test_confusion.py). A diagnostic
+    # that is quietly wrong points the next month of work at the wrong problem.
     from data.speech_commands import class_names
-    names = class_names()
+    from experiments.confusion import report
 
-    per = confusion.sum(1)
-    acc_c = confusion.diag().double() / per.clamp(min=1).double()
-    order = acc_c.argsort()
-
-    # A per-class accuracy says WHICH class is weak; the confusion says what it
-    # is weak AGAINST, and those call for different work. A class losing to one
-    # specific other is a front end that cannot separate two sounds; a class
-    # losing to everything is capacity or data.
-    print(f"\nweakest classes on the FIXED path, and what they lose to:")
-    for c in order[:4].tolist():
-        row = confusion[c].clone()
-        row[c] = 0
-        top = row.argsort(descending=True)[:2].tolist()
-        to = ", ".join(f"{names[t]} {int(row[t])}" for t in top if row[t])
-        print(f"  {names[c]:<12} {acc_c[c]:.3f}  ({int(confusion[c, c])}"
-              f"/{int(per[c])})   -> {to}")
-
-    # Where effort is worth the most. Raising one class costs the same work
-    # regardless of how many clips it has, so the payoff is proportional to
-    # its share of the split.
-    TARGET = 0.85
-    print(f"\nwhat reaching {TARGET:.2f} on one class alone would add:")
-    gains = sorted(((float(TARGET - acc_c[c]) * float(per[c]) / n * 100, c)
-                    for c in range(len(names)) if acc_c[c] < TARGET),
-                   reverse=True)
-    for g, c in gains[:4]:
-        print(f"  {names[c]:<12} {g:+.2f} pp   ({int(per[c])} clips, "
-              f"{float(per[c])/n:.1%} of the split)")
-    short = (TARGET - fx_ok / n) * 100
-    if short > 0:
-        print(f"\ncurrently {short:.2f} pp short of the {TARGET:.2f} target in "
-              f"CLAUDE.md section 1.")
-    else:
-        print(f"\n{-short:.2f} pp above the {TARGET:.2f} target.")
+    print()
+    print(report(confusion.tolist(), class_names()))
 
 
 if __name__ == "__main__":
