@@ -1,0 +1,345 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1680 1180" width="1680" height="1180">
+<defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#2f6fd0"/></marker><marker id="g" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#8a8f9c"/></marker></defs>
+<rect width="1680" height="1180" fill="#ffffff"/>
+<text x="840.0" y="32" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="22" fill="#1c2333" text-anchor="middle" font-weight="700">KWS 가속기 — 상위 스키매틱</text>
+<text x="840.0" y="54" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="12.5" fill="#5b6478" text-anchor="middle" font-weight="400">비교기 16가닥이 들어가서 클래스 인덱스 하나가 나온다. 굵은 파랑 = 데이터(프레임), 회색 = 핸드셰이크.</text>
+<rect x="40" y="110" width="190" height="130" rx="4" fill="#fdeeec" stroke="#cc6155" stroke-width="1.6"/>
+<text x="44" y="104" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#cc6155" text-anchor="start" font-weight="700">U1</text>
+<text x="135.0" y="256" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#cc6155" text-anchor="middle" font-weight="700">kws_frame_ctrl</text>
+<text x="135.0" y="271" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">아날로그 경계 · ICD §5</text>
+<text x="47" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">clk</text>
+<line x1="31" y1="132" x2="40" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rst_n</text>
+<line x1="31" y1="147" x2="40" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">start</text>
+<line x1="31" y1="162" x2="40" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="181" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">cmp[15:0]</text>
+<line x1="31" y1="177" x2="40" y2="177" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="196" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">out_ready</text>
+<line x1="31" y1="192" x2="40" y2="192" stroke="#5b6478" stroke-width="1.2"/>
+<text x="223" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_valid</text>
+<line x1="230" y1="132" x2="239" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="223" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_frame</text>
+<line x1="230" y1="147" x2="239" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="223" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">busy</text>
+<line x1="230" y1="162" x2="239" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="360" y="110" width="190" height="130" rx="4" fill="#eef4fd" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="364" y="104" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#2f6fd0" text-anchor="start" font-weight="700">U2</text>
+<text x="455.0" y="256" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#2f6fd0" text-anchor="middle" font-weight="700">kws_conv1</text>
+<text x="455.0" y="271" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">int8 × ±1 · stride 2</text>
+<text x="367" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">clk</text>
+<line x1="351" y1="132" x2="360" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="367" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rst_n</text>
+<line x1="351" y1="147" x2="360" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="367" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">start</text>
+<line x1="351" y1="162" x2="360" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<text x="367" y="181" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_push</text>
+<line x1="351" y1="177" x2="360" y2="177" stroke="#5b6478" stroke-width="1.2"/>
+<text x="367" y="196" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_real</text>
+<line x1="351" y1="192" x2="360" y2="192" stroke="#5b6478" stroke-width="1.2"/>
+<text x="367" y="211" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_frame[15:0]</text>
+<line x1="351" y1="207" x2="360" y2="207" stroke="#5b6478" stroke-width="1.2"/>
+<text x="543" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">busy</text>
+<line x1="550" y1="132" x2="559" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="543" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_valid</text>
+<line x1="550" y1="147" x2="559" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="543" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_frame</text>
+<line x1="550" y1="162" x2="559" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="680" y="110" width="175" height="130" rx="4" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.6"/>
+<text x="684" y="104" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#c9902a" text-anchor="start" font-weight="700">U3</text>
+<text x="767.5" y="256" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#c9902a" text-anchor="middle" font-weight="700">kws_plane  A</text>
+<text x="767.5" y="271" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">128 ch × 64 · FLUSH 12</text>
+<text x="687" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_start</text>
+<line x1="671" y1="132" x2="680" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_valid</text>
+<line x1="671" y1="147" x2="680" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_frame</text>
+<line x1="671" y1="162" x2="680" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="181" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_start</text>
+<line x1="671" y1="177" x2="680" y2="177" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="196" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_ready</text>
+<line x1="671" y1="192" x2="680" y2="192" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">wr_full</text>
+<line x1="855" y1="132" x2="864" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_push</text>
+<line x1="855" y1="147" x2="864" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_real</text>
+<line x1="855" y1="162" x2="864" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="181" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_frame</text>
+<line x1="855" y1="177" x2="864" y2="177" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="196" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_done</text>
+<line x1="855" y1="192" x2="864" y2="192" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="985" y="110" width="190" height="130" rx="4" fill="#eef4fd" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="989" y="104" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#2f6fd0" text-anchor="start" font-weight="700">U4</text>
+<text x="1080.0" y="256" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#2f6fd0" text-anchor="middle" font-weight="700">kws_block  b1</text>
+<text x="1080.0" y="271" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">TCS ×2 + projection skip</text>
+<text x="992" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">clk</text>
+<line x1="976" y1="132" x2="985" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rst_n</text>
+<line x1="976" y1="147" x2="985" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">start</text>
+<line x1="976" y1="162" x2="985" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="181" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_push</text>
+<line x1="976" y1="177" x2="985" y2="177" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="196" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_real</text>
+<line x1="976" y1="192" x2="985" y2="192" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="211" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_frame[127:0]</text>
+<line x1="976" y1="207" x2="985" y2="207" stroke="#5b6478" stroke-width="1.2"/>
+<text x="1168" y="136" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">busy</text>
+<line x1="1175" y1="132" x2="1184" y2="132" stroke="#5b6478" stroke-width="1.2"/>
+<text x="1168" y="151" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_valid</text>
+<line x1="1175" y1="147" x2="1184" y2="147" stroke="#5b6478" stroke-width="1.2"/>
+<text x="1168" y="166" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_frame</text>
+<line x1="1175" y1="162" x2="1184" y2="162" stroke="#5b6478" stroke-width="1.2"/>
+<text x="135" y="86" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#cc6155" text-anchor="middle" font-weight="700">아날로그</text>
+<line x1="270" y1="80" x2="270" y2="290" stroke="#cc6155" stroke-width="1.4" stroke-dasharray="5 4"/>
+<text x="300" y="86" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10.5" fill="#5b6478" text-anchor="start" font-weight="400">여기부터 전부 동기 · 태그를 모른다</text>
+<path d="M239,147 L300,147 L300,207 L351,207" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="300" y="118" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">FRAME[15:0]</text>
+<path d="M559,162 L620,162 L620,162 L671,162" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="620" y="118" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">C1_OUT[127:0]</text>
+<path d="M864,177 L930,177 L930,207 L976,207" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="930" y="118" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">A_FRAME</text>
+<rect x="40" y="400" width="175" height="130" rx="4" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.6"/>
+<text x="44" y="394" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#c9902a" text-anchor="start" font-weight="700">U5</text>
+<text x="127.5" y="546" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#c9902a" text-anchor="middle" font-weight="700">kws_plane  B</text>
+<text x="127.5" y="561" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">64 ch × 64 · FLUSH 14</text>
+<text x="47" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_start</text>
+<line x1="31" y1="422" x2="40" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_valid</text>
+<line x1="31" y1="437" x2="40" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_frame</text>
+<line x1="31" y1="452" x2="40" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="471" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_start</text>
+<line x1="31" y1="467" x2="40" y2="467" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_ready</text>
+<line x1="31" y1="482" x2="40" y2="482" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">wr_full</text>
+<line x1="215" y1="422" x2="224" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_push</text>
+<line x1="215" y1="437" x2="224" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_real</text>
+<line x1="215" y1="452" x2="224" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="471" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_frame</text>
+<line x1="215" y1="467" x2="224" y2="467" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_done</text>
+<line x1="215" y1="482" x2="224" y2="482" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="345" y="400" width="190" height="130" rx="4" fill="#eef4fd" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="349" y="394" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#2f6fd0" text-anchor="start" font-weight="700">U6</text>
+<text x="440.0" y="546" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#2f6fd0" text-anchor="middle" font-weight="700">kws_block  b2</text>
+<text x="440.0" y="561" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">TCS ×2 + identity skip</text>
+<text x="352" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">clk</text>
+<line x1="336" y1="422" x2="345" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rst_n</text>
+<line x1="336" y1="437" x2="345" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">start</text>
+<line x1="336" y1="452" x2="345" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="471" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_push</text>
+<line x1="336" y1="467" x2="345" y2="467" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_real</text>
+<line x1="336" y1="482" x2="345" y2="482" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="501" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_frame[63:0]</text>
+<line x1="336" y1="497" x2="345" y2="497" stroke="#5b6478" stroke-width="1.2"/>
+<text x="528" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">busy</text>
+<line x1="535" y1="422" x2="544" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="528" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_valid</text>
+<line x1="535" y1="437" x2="544" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="528" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_frame</text>
+<line x1="535" y1="452" x2="544" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="680" y="400" width="175" height="130" rx="4" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.6"/>
+<text x="684" y="394" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#c9902a" text-anchor="start" font-weight="700">U7</text>
+<text x="767.5" y="546" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#c9902a" text-anchor="middle" font-weight="700">kws_plane  C</text>
+<text x="767.5" y="561" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">64 ch × 64 · FLUSH 16</text>
+<text x="687" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_start</text>
+<line x1="671" y1="422" x2="680" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_valid</text>
+<line x1="671" y1="437" x2="680" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_frame</text>
+<line x1="671" y1="452" x2="680" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="471" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_start</text>
+<line x1="671" y1="467" x2="680" y2="467" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_ready</text>
+<line x1="671" y1="482" x2="680" y2="482" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">wr_full</text>
+<line x1="855" y1="422" x2="864" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_push</text>
+<line x1="855" y1="437" x2="864" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_real</text>
+<line x1="855" y1="452" x2="864" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="471" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_frame</text>
+<line x1="855" y1="467" x2="864" y2="467" stroke="#5b6478" stroke-width="1.2"/>
+<text x="848" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_done</text>
+<line x1="855" y1="482" x2="864" y2="482" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="985" y="400" width="190" height="130" rx="4" fill="#eef4fd" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="989" y="394" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#2f6fd0" text-anchor="start" font-weight="700">U8</text>
+<text x="1080.0" y="546" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#2f6fd0" text-anchor="middle" font-weight="700">kws_block  b3</text>
+<text x="1080.0" y="561" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">TCS ×2 + identity skip</text>
+<text x="992" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">clk</text>
+<line x1="976" y1="422" x2="985" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rst_n</text>
+<line x1="976" y1="437" x2="985" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">start</text>
+<line x1="976" y1="452" x2="985" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="471" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_push</text>
+<line x1="976" y1="467" x2="985" y2="467" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="486" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_real</text>
+<line x1="976" y1="482" x2="985" y2="482" stroke="#5b6478" stroke-width="1.2"/>
+<text x="992" y="501" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_frame[63:0]</text>
+<line x1="976" y1="497" x2="985" y2="497" stroke="#5b6478" stroke-width="1.2"/>
+<text x="1168" y="426" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">busy</text>
+<line x1="1175" y1="422" x2="1184" y2="422" stroke="#5b6478" stroke-width="1.2"/>
+<text x="1168" y="441" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_valid</text>
+<line x1="1175" y1="437" x2="1184" y2="437" stroke="#5b6478" stroke-width="1.2"/>
+<text x="1168" y="456" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_frame</text>
+<line x1="1175" y1="452" x2="1184" y2="452" stroke="#5b6478" stroke-width="1.2"/>
+<path d="M1184,162 L1230,162 L1230,315 L18,315 L18,452 L31,452" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="1150" y="307" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">B1_OUT[63:0]</text>
+<path d="M224,467 L290,467 L290,497 L336,497" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M544,452 L620,452 L620,452 L671,452" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="620" y="408" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">B2_OUT</text>
+<path d="M864,467 L930,467 L930,497 L976,497" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="40" y="690" width="175" height="130" rx="4" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.6"/>
+<text x="44" y="684" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#c9902a" text-anchor="start" font-weight="700">U9</text>
+<text x="127.5" y="836" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#c9902a" text-anchor="middle" font-weight="700">kws_plane  D</text>
+<text x="127.5" y="851" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">64 ch × 64 · FLUSH 28</text>
+<text x="47" y="716" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_start</text>
+<line x1="31" y1="712" x2="40" y2="712" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="731" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_valid</text>
+<line x1="31" y1="727" x2="40" y2="727" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="746" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">wr_frame</text>
+<line x1="31" y1="742" x2="40" y2="742" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="761" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_start</text>
+<line x1="31" y1="757" x2="40" y2="757" stroke="#5b6478" stroke-width="1.2"/>
+<text x="47" y="776" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rd_ready</text>
+<line x1="31" y1="772" x2="40" y2="772" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="716" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">wr_full</text>
+<line x1="215" y1="712" x2="224" y2="712" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="731" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_push</text>
+<line x1="215" y1="727" x2="224" y2="727" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="746" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_real</text>
+<line x1="215" y1="742" x2="224" y2="742" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="761" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_frame</text>
+<line x1="215" y1="757" x2="224" y2="757" stroke="#5b6478" stroke-width="1.2"/>
+<text x="208" y="776" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">rd_done</text>
+<line x1="215" y1="772" x2="224" y2="772" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="345" y="690" width="190" height="130" rx="4" fill="#eef4fd" stroke="#2f6fd0" stroke-width="1.6"/>
+<text x="349" y="684" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#2f6fd0" text-anchor="start" font-weight="700">U10</text>
+<text x="440.0" y="836" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#2f6fd0" text-anchor="middle" font-weight="700">kws_dw_conv</text>
+<text x="440.0" y="851" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">conv2_dw · k=29 dil=2</text>
+<text x="352" y="716" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">clk</text>
+<line x1="336" y1="712" x2="345" y2="712" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="731" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rst_n</text>
+<line x1="336" y1="727" x2="345" y2="727" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="746" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">start</text>
+<line x1="336" y1="742" x2="345" y2="742" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="761" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_push</text>
+<line x1="336" y1="757" x2="345" y2="757" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="776" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_real</text>
+<line x1="336" y1="772" x2="345" y2="772" stroke="#5b6478" stroke-width="1.2"/>
+<text x="352" y="791" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_frame[63:0]</text>
+<line x1="336" y1="787" x2="345" y2="787" stroke="#5b6478" stroke-width="1.2"/>
+<text x="528" y="716" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">busy</text>
+<line x1="535" y1="712" x2="544" y2="712" stroke="#5b6478" stroke-width="1.2"/>
+<text x="528" y="731" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_valid</text>
+<line x1="535" y1="727" x2="544" y2="727" stroke="#5b6478" stroke-width="1.2"/>
+<text x="528" y="746" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">out_frame</text>
+<line x1="535" y1="742" x2="544" y2="742" stroke="#5b6478" stroke-width="1.2"/>
+<rect x="680" y="690" width="200" height="130" rx="4" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.6"/>
+<text x="684" y="684" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11.5" fill="#3f9a5d" text-anchor="start" font-weight="700">U11</text>
+<text x="780.0" y="836" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#3f9a5d" text-anchor="middle" font-weight="700">kws_tail</text>
+<text x="780.0" y="851" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="middle" font-weight="400">여기서 산술이 시작된다</text>
+<text x="687" y="716" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">clk</text>
+<line x1="671" y1="712" x2="680" y2="712" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="731" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">rst_n</text>
+<line x1="671" y1="727" x2="680" y2="727" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="746" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">start</text>
+<line x1="671" y1="742" x2="680" y2="742" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="761" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_valid</text>
+<line x1="671" y1="757" x2="680" y2="757" stroke="#5b6478" stroke-width="1.2"/>
+<text x="687" y="776" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="start" font-weight="400">in_frame[63:0]</text>
+<line x1="671" y1="772" x2="680" y2="772" stroke="#5b6478" stroke-width="1.2"/>
+<text x="873" y="716" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">busy</text>
+<line x1="880" y1="712" x2="889" y2="712" stroke="#5b6478" stroke-width="1.2"/>
+<text x="873" y="731" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">class_valid</text>
+<line x1="880" y1="727" x2="889" y2="727" stroke="#5b6478" stroke-width="1.2"/>
+<text x="873" y="746" font-family="'SF Mono','Menlo',monospace" font-size="9.5" fill="#1c2333" text-anchor="end" font-weight="400">class_idx[3:0]</text>
+<line x1="880" y1="742" x2="889" y2="742" stroke="#5b6478" stroke-width="1.2"/>
+<path d="M1184,452 L1230,452 L1230,605 L18,605 L18,742 L31,742" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="1150" y="597" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">B3_OUT[63:0]</text>
+<path d="M224,757 L290,757 L290,787 L336,787" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<path d="M544,742 L615,742 L615,772 L671,772" fill="none" stroke="#2f6fd0" stroke-width="1.6" marker-end="url(#a)"/>
+<text x="615" y="698" font-family="'SF Mono','Menlo',monospace" font-size="10" fill="#2f6fd0" text-anchor="middle" font-weight="600">C2_OUT</text>
+<path d="M889,742 L912,742 L912,840" fill="none" stroke="#2f6fd0" stroke-width="2.4" marker-end="url(#a)"/>
+<text x="912" y="858" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#2f6fd0" text-anchor="middle" font-weight="700">CLASS[3:0]</text>
+<text x="912" y="872" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="middle" font-weight="400">0..11</text>
+<rect x="950" y="730" width="700" height="118" rx="8" fill="#ffffff" stroke="#3f9a5d" stroke-width="1.3"/>
+<text x="966" y="750" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#3f9a5d" text-anchor="start" font-weight="700">U11 안쪽 — 여섯 단계가 접착제 없이 이어진다</text>
+<rect x="966" y="762" width="104" height="40" rx="5" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="1018.0" y="778" font-family="'SF Mono','Menlo',monospace" font-size="8.5" fill="#1c2333" text-anchor="middle" font-weight="700">kws_pw_conv</text>
+<text x="1018.0" y="790" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">conv2_pw</text>
+<text x="1018.0" y="799" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">이진 MAC</text>
+<rect x="1080" y="762" width="104" height="40" rx="5" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="1132.0" y="778" font-family="'SF Mono','Menlo',monospace" font-size="8.5" fill="#1c2333" text-anchor="middle" font-weight="700">kws_affine</text>
+<text x="1132.0" y="790" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">→ 8.6, relu</text>
+<line x1="1070" y1="782" x2="1078" y2="782" stroke="#3f9a5d" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="1194" y="762" width="104" height="40" rx="5" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="1246.0" y="778" font-family="'SF Mono','Menlo',monospace" font-size="8.5" fill="#1c2333" text-anchor="middle" font-weight="700">kws_dense_conv</text>
+<text x="1246.0" y="790" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">conv3</text>
+<text x="1246.0" y="799" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">int8 MAC</text>
+<line x1="1184" y1="782" x2="1192" y2="782" stroke="#3f9a5d" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="1308" y="762" width="104" height="40" rx="5" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="1360.0" y="778" font-family="'SF Mono','Menlo',monospace" font-size="8.5" fill="#1c2333" text-anchor="middle" font-weight="700">kws_affine</text>
+<text x="1360.0" y="790" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">→ 5.6, relu</text>
+<line x1="1298" y1="782" x2="1306" y2="782" stroke="#3f9a5d" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="1422" y="762" width="104" height="40" rx="5" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="1474.0" y="778" font-family="'SF Mono','Menlo',monospace" font-size="8.5" fill="#1c2333" text-anchor="middle" font-weight="700">kws_dense_conv</text>
+<text x="1474.0" y="790" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">conv4</text>
+<text x="1474.0" y="799" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">고정 MAC</text>
+<line x1="1412" y1="782" x2="1420" y2="782" stroke="#3f9a5d" stroke-width="1.4" marker-end="url(#a)"/>
+<rect x="1536" y="762" width="104" height="40" rx="5" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.1"/>
+<text x="1588.0" y="778" font-family="'SF Mono','Menlo',monospace" font-size="8.5" fill="#1c2333" text-anchor="middle" font-weight="700">kws_affine</text>
+<text x="1588.0" y="790" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="8" fill="#5b6478" text-anchor="middle" font-weight="400">→ 8.6 logits</text>
+<line x1="1526" y1="782" x2="1534" y2="782" stroke="#3f9a5d" stroke-width="1.4" marker-end="url(#a)"/>
+<text x="966" y="818" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="10" fill="#5b6478" text-anchor="start" font-weight="400">affine 은 사이클당 채널 하나를 내보내고 dense 는 하나를 싣는다 — 직결이라 평면이 필요 없다. 마지막에 T=64 프레임 합 → argmax.</text>
+<rect x="24" y="900" width="1632" height="150" rx="10" fill="#f2f0fa" stroke="#6b5bb5" stroke-width="1.6"/>
+<text x="44" y="924" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="14" fill="#6b5bb5" text-anchor="start" font-weight="700">kws_top 의 시퀀서 — 열한 개 모듈을 다섯 단계로</text>
+<text x="44" y="943" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="start" font-weight="400">층 L 이 클립을 다 끝낸 뒤에 L+1 이 읽는다. 그래서 접합부마다 평면 한 장이면 되고 핑퐁이 필요 없다.</text>
+<rect x="44" y="956" width="290" height="74" rx="6" fill="#ffffff" stroke="#6b5bb5" stroke-width="1.2"/>
+<text x="56" y="976" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#6b5bb5" text-anchor="start" font-weight="700">S_C1</text>
+<text x="134" y="976" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">U2 → U3</text>
+<text x="56" y="996" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">기다리는 것: U3 가 찰 때까지</text>
+<text x="56" y="1009" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">(flush 4개 자체 생성)</text>
+<rect x="360" y="956" width="290" height="74" rx="6" fill="#ffffff" stroke="#6b5bb5" stroke-width="1.2"/>
+<text x="372" y="976" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#6b5bb5" text-anchor="start" font-weight="700">S_B1</text>
+<text x="450" y="976" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">U3 → U4 → U5</text>
+<text x="372" y="996" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">기다리는 것: pa_done ∧ pb_full</text>
+<line x1="336" y1="993" x2="354" y2="993" stroke="#6b5bb5" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="676" y="956" width="290" height="74" rx="6" fill="#ffffff" stroke="#6b5bb5" stroke-width="1.2"/>
+<text x="688" y="976" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#6b5bb5" text-anchor="start" font-weight="700">S_B2</text>
+<text x="766" y="976" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">U5 → U6 → U7</text>
+<text x="688" y="996" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">기다리는 것: pb_done ∧ pc_full</text>
+<line x1="652" y1="993" x2="670" y2="993" stroke="#6b5bb5" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="992" y="956" width="290" height="74" rx="6" fill="#ffffff" stroke="#6b5bb5" stroke-width="1.2"/>
+<text x="1004" y="976" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#6b5bb5" text-anchor="start" font-weight="700">S_B3</text>
+<text x="1082" y="976" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">U7 → U8 → U9</text>
+<text x="1004" y="996" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">기다리는 것: pc_done ∧ pd_full</text>
+<line x1="968" y1="993" x2="986" y2="993" stroke="#6b5bb5" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="1308" y="956" width="290" height="74" rx="6" fill="#ffffff" stroke="#6b5bb5" stroke-width="1.2"/>
+<text x="1320" y="976" font-family="'SF Mono','Menlo',monospace" font-size="12" fill="#6b5bb5" text-anchor="start" font-weight="700">S_TL</text>
+<text x="1398" y="976" font-family="'SF Mono','Menlo',monospace" font-size="10.5" fill="#1c2333" text-anchor="start" font-weight="400">U9 → U10 → U11</text>
+<text x="1320" y="996" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">기다리는 것: class_valid</text>
+<line x1="1284" y1="993" x2="1302" y2="993" stroke="#6b5bb5" stroke-width="1.6" marker-end="url(#a)"/>
+<rect x="44" y="1075" width="22" height="22" rx="3" fill="#eef4fd" stroke="#2f6fd0" stroke-width="1.4"/>
+<text x="76" y="1086" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="700">이진 데이터패스</text>
+<text x="76" y="1101" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">곱셈기 없음 · XNOR+popcount</text>
+<rect x="449" y="1075" width="22" height="22" rx="3" fill="#fdf3e3" stroke="#c9902a" stroke-width="1.4"/>
+<text x="481" y="1086" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="700">평면 (BRAM)</text>
+<text x="481" y="1101" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">층 사이 · 「6프레임 전」이 주소가 된다</text>
+<rect x="854" y="1075" width="22" height="22" rx="3" fill="#e9f5ec" stroke="#3f9a5d" stroke-width="1.4"/>
+<text x="886" y="1086" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="700">고정소수점 꼬리</text>
+<text x="886" y="1101" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">BN 이 살아남아 곱셈기가 필요</text>
+<rect x="1259" y="1075" width="22" height="22" rx="3" fill="#fdeeec" stroke="#cc6155" stroke-width="1.4"/>
+<text x="1291" y="1086" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#1c2333" text-anchor="start" font-weight="700">아날로그 경계</text>
+<text x="1291" y="1101" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="9.5" fill="#5b6478" text-anchor="start" font-weight="400">유일한 비동기 · 2FF 동기화</text>
+<text x="840.0" y="1137" font-family="'Apple SD Gothic Neo','Noto Sans KR','Helvetica Neue',sans-serif" font-size="11" fill="#5b6478" text-anchor="middle" font-weight="400">모든 폭·커널·ROM 경로는 export 가 만든 parameters.vh 에서 온다 — RTL 소스에는 태그도 숫자도 없다 (docs/ICD.md, rtl/RUNNING.md).</text>
+</svg>
