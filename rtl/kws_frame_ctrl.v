@@ -191,8 +191,7 @@ module kws_frame_ctrl #(
     // the one failure here that is about the SYSTEM rather than this module.
     // It would otherwise show up as a frame quietly overwritten.
     always @(posedge clk) if (frame_edge && pending) begin
-        $display("ASSERT %m: frame boundary while the previous frame is still "
-                 "unread -- the network is slower than FRAME_CYCLES");
+        $display("ASSERT %m: frame edge with the previous frame unread");
         $finish;
     end
     always @(posedge clk) if (start && busy) begin
