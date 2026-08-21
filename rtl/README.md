@@ -87,8 +87,15 @@ kws_dense_conv ✅ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜
 kws_tail      ✅  꼬리 전체 — 이진 프레임 → 클래스 인덱스
 kws_conv1     ✅  int8 가중치 × ±1 — 곱셈기 없는 부호 누산 (stride 2)
 kws_top       ✅  conv1 + b1~b3 + conv2_dw + 평면 4장 → kws_tail
-kws_frame_ctrl ⬜ 아날로그 경계 — 2FF 동기화 + sticky OR + 14/14 패딩 (ICD §5)
+kws_frame_ctrl ✅ 아날로그 경계 — 2FF 동기화 + sticky OR + 14/14 패딩 (ICD §5)
 ```
+
+**RTL 은 여기까지다.** 열두 모듈 전부 골든 벡터에 대해 검증됐고, 사슬이 양쪽 끝에서
+닫힌다 — `tb_frame_ctrl` 은 **비교기 배선이 흔들리는 데서** 출발해 `input.hex` 에
+도달하고, `tb_top` 은 그 `input.hex` 에서 출발해 **클래스 인덱스**에 도달한다.
+
+다음은 성격이 다른 단계다: **Vivado 합성** — 점유율, 타이밍 클로저, BRAM/DSP 추론.
+지금까지가 「논리가 맞나」였다면 그건 「**보드에 들어가나**」다.
 
 ---
 
