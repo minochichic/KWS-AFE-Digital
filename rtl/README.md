@@ -3,6 +3,8 @@
 `docs/ICD.md`가 아날로그 경계를 정한다면, 여기는 **경계 오른쪽의 설계 결정**을 적는다.
 결정을 바꾸려면 여기부터 고친다.
 
+> **돌리는 법은 `rtl/RUNNING.md`.** 여기는 왜 그렇게 설계했나이고, 거기는 명령어다.
+
 ---
 
 ## 1. 제로 패딩은 −1이 아니다 ★
@@ -85,7 +87,7 @@ kws_dense_conv ✅ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜
 kws_tail      ✅  꼬리 전체 — 이진 프레임 → 클래스 인덱스
 kws_conv1     ✅  int8 가중치 × ±1 — 곱셈기 없는 부호 누산 (stride 2)
 kws_top       ✅  conv1 + b1~b3 + conv2_dw + 평면 4장 → kws_tail
-kws_frame_ctrl ⬜ 2FF 동기화 + sticky OR (ICD §5)
+kws_frame_ctrl ⬜ 아날로그 경계 — 2FF 동기화 + sticky OR + 14/14 패딩 (ICD §5)
 ```
 
 ---
