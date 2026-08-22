@@ -131,10 +131,52 @@ def main() -> None:
     # unit tested without a checkpoint (tests/test_confusion.py). A diagnostic
     # that is quietly wrong points the next month of work at the wrong problem.
     from data.speech_commands import class_names
-    from experiments.confusion import report
+    from experiments.confusion import class_stats, report
 
+    names = class_names()
     print()
-    print(report(confusion.tolist(), class_names()))
+    print(report(confusion.tolist(), names))
+
+    # WHAT THE NETWORK SAYS WHEN THE INPUT SAYS NOTHING.
+    #
+    # An all -1 image is not a hypothetical. An absolute-threshold front end
+    # produces exactly this for a clip too quiet to light any channel, which
+    # docs/ROADMAP.md names as track 2's failure mode -- at -18 dB fx_* falls to
+    # 0.248 because the image goes uniformly -1.
+    #
+    # The answer is a fixed property of the weights, not of any clip: with no
+    # information to go on the network still has to pick, and whichever class it
+    # picks collects every uninformative clip. That is what turns one class into
+    # a sink, so the class named here should be the same one the block above
+    # flags as absorbing. If they match, the fix is where the thresholds sit --
+    # not the architecture, and not the tail.
+    with torch.no_grad():
+        quiet = -torch.ones(1, cfg.afe.n_channels, cfg.model.T)
+        h2 = conv2_pw.register_forward_pre_hook(pre_hook)
+        try:
+            fl_q = int(model(quiet).argmax(1)[0])
+            fx_q = int(fixed_logits(model, sites, grabbed["acc"]).argmax(1)[0])
+        finally:
+            h2.remove()
+
+    print(f"\nwith nothing in the input at all (every channel -1, every frame):")
+    print(f"  float says {names[fl_q]}, the integer path says {names[fx_q]}")
+    sinks = [s for s in class_stats(confusion.tolist(), names) if s.absorbing]
+    if not sinks:
+        print("  No class is absorbing, so this fallback is not costing "
+              "anything yet.")
+    else:
+        worst = min(sinks, key=lambda s: s.precision)
+        if worst.idx == fx_q:
+            print(f"  {worst.name} is also the class absorbing its neighbours "
+                  f"(recall {worst.recall:.3f},\n  precision "
+                  f"{worst.precision:.3f}). Same class, so the quiet clips are "
+                  f"landing there:\n  a threshold placement problem, not an "
+                  f"architecture one.")
+        else:
+            print(f"  The absorbing class is {worst.name}, not {names[fx_q]}, "
+                  f"so the sink is not\n  simply where silence goes -- look at "
+                  f"the pairs above instead.")
 
 
 if __name__ == "__main__":

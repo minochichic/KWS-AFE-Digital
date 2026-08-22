@@ -157,3 +157,21 @@ def test_report_names_the_real_finding_on_the_measured_shape() -> None:
     # is drowning in noise and says nothing
     head = out.split("most confused pairs")[1].splitlines()[1]
     assert "go" in head and "no" in head and "mutual" in head
+
+
+def test_the_worst_sink_is_picked_by_precision_not_by_recall() -> None:
+    """fixed_accuracy names one class as THE sink and compares it against what
+    the network answers for an empty input, so the pick has to be the class
+    taking in the most it should not -- lowest precision. Ranking by recall
+    would pick whichever absorbing class happens to also be good at its own
+    job, which is the opposite of the question.
+    """
+    m = eye(len(NAMES), diag=300)
+    m[1][1] -= 96; m[1][9] += 96                    # no -> go, the big one
+    m[6][6] -= 34; m[6][9] += 34                    # on -> go
+    m[11][11] -= 38; m[11][9] += 38                 # unknown -> go
+    m[0][0] -= 20; m[0][3] += 20                    # a milder sink at down
+
+    sinks = [s for s in class_stats(m, NAMES) if s.absorbing]
+    assert {s.name for s in sinks} == {"go", "down"}
+    assert min(sinks, key=lambda s: s.precision).name == "go"
