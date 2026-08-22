@@ -15,6 +15,7 @@ from __future__ import annotations
 import pytest
 
 from experiments.trace_to_frames import (N_CH, NATIVE_T, PAD_LEFT, T,
+                                         diff_frames, read_frames,
                                          frames_from_trace, pad, read_trace,
                                          to_hex, write_vectors)
 
@@ -157,3 +158,89 @@ def test_channels_are_independent() -> None:
     fr = frames_from_trace(rows(*[(5.0, c, 1) for c in range(N_CH)],
                                 *[(5.0 + c, c, 0) for c in range(N_CH)]))
     assert fr[0] == (1 << N_CH) - 1
+
+
+def test_a_run_ending_exactly_on_a_boundary_does_not_light_the_next_window() -> None:
+    """The half-open convention [start, end), stated so it cannot drift.
+
+    docs/ASK_ANALOG 3.4 promises this to the analog side as one of the six
+    hidden conditions behind "1 if it ever fired". If a colleague folds their
+    own frames with the closed interval instead, every run that happens to end
+    on a boundary lights one extra window -- a small, plausible-looking
+    difference that no amount of staring at the frames would explain.
+    """
+    exact = frames_from_trace(rows((5.0, 0, 1), (10.0, 0, 0)))
+    assert exact[0] == 1
+    assert exact[1] == 0, "a run ending AT the boundary stays in window 0"
+
+    over = frames_from_trace(rows((5.0, 0, 1), (10.001, 0, 0)))
+    assert over[0] == 1 and over[1] == 1, "a hair past it does reach window 1"
+
+
+def test_a_run_starting_exactly_on_a_boundary_belongs_to_the_new_window() -> None:
+    fr = frames_from_trace(rows((10.0, 0, 1), (12.0, 0, 0)))
+    assert fr[0] == 0 and fr[1] == 1
+
+
+# ---- their folded frames, checked against ours (docs/ASK_ANALOG 3.4) --------
+
+def test_frames_read_as_hex_words_or_as_bit_rows(tmp_path) -> None:
+    """We are asking someone else for this file, so both natural spellings of a
+    16-bit row have to land on the same number."""
+    h = tmp_path / "h.txt"
+    h.write_text("00000001\n00008000\n0000000c\n")
+    b = tmp_path / "b.txt"
+    b.write_text("0000000000000001\n1000000000000000\n0000000000001100\n")
+    assert read_frames(h) == read_frames(b) == [1, 1 << 15, 0b1100]
+
+
+def test_a_bit_row_is_read_channel_15_first(tmp_path) -> None:
+    """Reading it the other way mirrors the filterbank, and a mirrored
+    spectrum still classifies -- into the wrong word."""
+    p = tmp_path / "b.txt"
+    p.write_text("1" + "0" * 15 + "\n")
+    assert read_frames(p) == [1 << 15], "leftmost character is channel 15"
+
+
+@pytest.mark.parametrize("bad,msg", [
+    ("00010000\n", "above channel"),
+    ("nonsense\n", "neither a hex word"),
+])
+def test_a_malformed_frame_file_is_refused_by_name(tmp_path, bad, msg) -> None:
+    p = tmp_path / "bad.txt"
+    p.write_text(bad)
+    with pytest.raises(ValueError, match=msg):
+        read_frames(p)
+
+
+def test_diff_counts_disagreeing_bits_per_channel() -> None:
+    ours   = [0b0001, 0b0010, 0b0100]
+    theirs = [0b0001, 0b0011, 0b0000]
+    #  XOR  = [0b0000, 0b0001, 0b0100]  -> ch0 in frame 1, ch2 in frame 2
+    d = diff_frames(ours, theirs)
+    assert (d[0], d[1], d[2]) == (1, 0, 1)
+    assert sum(d) == 2
+
+
+def test_diff_refuses_a_different_number_of_frames() -> None:
+    """A shorter file is a different span, and comparing the overlap would
+    report a small disagreement for what is really a timing mistake."""
+    with pytest.raises(ValueError, match="frames"):
+        diff_frames([1, 2, 3], [1, 2])
+
+
+def test_identical_folding_agrees_bit_for_bit() -> None:
+    """The case that earns the right to send frames from then on."""
+    ev = rows(*[e for c, t in enumerate((1.2, 13.4, 26.0, 41.7))
+                for e in ((t, c, 1), (t + 3.0, c, 0))])
+    fr = frames_from_trace(ev)
+    assert diff_frames(fr, list(fr)) == [0] * N_CH
+
+
+def test_a_window_offset_shows_up_as_near_total_disagreement() -> None:
+    """Getting t0 wrong is the failure this whole check exists to catch: the
+    frames look completely plausible and are wrong everywhere."""
+    ev = rows((5.0, 0, 1), (8.0, 0, 0), (25.0, 3, 1), (33.0, 3, 0))
+    ours = frames_from_trace(ev)
+    theirs = frames_from_trace(ev, t0=0.010)     # their grid starts 10 ms late
+    assert sum(diff_frames(ours, theirs)) > 0

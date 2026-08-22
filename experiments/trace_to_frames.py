@@ -120,6 +120,46 @@ def to_hex(frames: List[int], n_ch: int = N_CH,
     return "\n".join(lines) + "\n"
 
 
+def read_frames(path: Path, n_ch: int = N_CH) -> List[int]:
+    """Someone else's folded frames, for checking their folder against ours.
+
+    Accepts either a hex word per line (`00007ffc`, what we emit) or a row of
+    0/1 characters. A 0/1 row is written MSB first -- channel 15 leftmost --
+    because that is how a person writes a bit pattern and how our own dumps
+    print one; reading it the other way silently mirrors the filterbank.
+    """
+    out: List[int] = []
+    for i, raw in enumerate(path.read_text().split(), 1):
+        s = raw.strip()
+        if not s:
+            continue
+        if set(s) <= {"0", "1"} and len(s) == n_ch:
+            out.append(int(s, 2))                  # ch15 ... ch0
+        else:
+            try:
+                v = int(s, 16)
+            except ValueError:
+                raise ValueError(
+                    f"{path}:{i}: {s!r} is neither a hex word nor "
+                    f"{n_ch} bits of 0/1") from None
+            if v >> n_ch:
+                raise ValueError(f"{path}:{i}: {s!r} sets a bit above "
+                                 f"channel {n_ch - 1}")
+            out.append(v)
+    return out
+
+
+def diff_frames(ours: List[int], theirs: List[int],
+                n_ch: int = N_CH) -> List[int]:
+    """Disagreeing bits per channel. Lengths must match -- a shorter file is a
+    different clip length, not something to compare the overlap of."""
+    if len(ours) != len(theirs):
+        raise ValueError(f"{len(ours)} frames vs {len(theirs)}: compare the "
+                         f"same span, or fix --t0")
+    return [sum(((a ^ b) >> c) & 1 for a, b in zip(ours, theirs))
+            for c in range(n_ch)]
+
+
 def write_vectors(frames: List[int], out: Path, want: int) -> None:
     """A directory rtl/run_tb.sh can point tb_top at.
 
@@ -160,6 +200,9 @@ def main() -> None:
     ap.add_argument("--vectors", type=Path,
                     help="write a tb_top vector dir here (needs --compare and "
                          "--wav: the expected class comes from our pipeline)")
+    ap.add_argument("--verify-frames", type=Path,
+                    help="THEIR folded frames for the same clip -- checks that "
+                         "their folding rule matches the hardware's")
     args = ap.parse_args()
 
     rows = read_trace(args.trace)
@@ -182,6 +225,9 @@ def main() -> None:
         args.out.write_text(to_hex(frames))
         print(f"\nwrote {args.out}")
 
+    if args.verify_frames:
+        _verify_frames(frames_from_trace(rows, t0=args.t0), args.verify_frames)
+
     ours_class = None
     if args.compare:
         if not args.wav:
@@ -201,6 +247,51 @@ def main() -> None:
         print("  a mismatch there is the MEASUREMENT, not a broken bench: the "
               "circuit's\n  bits chose a different word than our simulation's "
               "bits did.")
+
+
+def _verify_frames(ours: List[int], path: Path, n_ch: int = N_CH) -> None:
+    """Their folding against ours, on the raw trace they folded.
+
+    This is what buys the right to send frames instead of transitions from then
+    on: fold one clip both ways, and if the bits agree the rule is confirmed.
+    docs/ASK_ANALOG 3.4 lists the six things that can differ, so the report
+    names the shapes each one leaves rather than only printing a count.
+    """
+    theirs = read_frames(path, n_ch)
+    per_ch = diff_frames(ours, theirs, n_ch)
+    tot, n = sum(per_ch), len(ours) * n_ch
+    print(f"\ntheir frames vs ours, folded from the same trace: "
+          f"{tot} of {n} bits differ ({tot / n:.2%})")
+    if tot == 0:
+        print("  Their folding rule matches the hardware's. From here they can "
+              "send\n  frames instead of transitions -- a thousandth the file "
+              "size.")
+        return
+    print("  per channel: " + "  ".join(f"{c}:{d}" for c, d in
+                                        enumerate(per_ch) if d))
+
+    # Each of the six conditions in ASK_ANALOG 3.4 leaves a different mark, so
+    # say which one the data looks like instead of just reporting a number.
+    if all(per_ch) and len(set(per_ch)) == 1:
+        print("  Every channel off by the same amount: one global thing is "
+              "wrong --\n  t0, the window width, or the frame count. Not the "
+              "circuit.")
+    shifted = [sum(((a ^ b) >> c) & 1
+                   for a, b in zip(ours[1:], theirs[:-1])) for c in range(n_ch)]
+    if sum(shifted) < tot // 2:
+        print(f"  Shifting one frame drops it to {sum(shifted)}: their grid is "
+              f"offset by\n  a window. Fix --t0, not the circuit.")
+    rev = diff_frames(ours, [sum(((f >> c) & 1) << (n_ch - 1 - c)
+                                 for c in range(n_ch)) for f in theirs], n_ch)
+    if sum(rev) < tot // 2:
+        print(f"  Reversing the channel order drops it to {sum(rev)}: ch0 is "
+              f"their highest\n  frequency, not their lowest.")
+    ones_o = sum(bin(f).count("1") for f in ours)
+    ones_t = sum(bin(f).count("1") for f in theirs)
+    if ones_t < ones_o * 0.7:
+        print(f"  They light far fewer bits ({ones_t} vs {ones_o}): a fold that "
+              f"samples\n  the window instead of OR-ing it -- the case "
+              f"ASK_ANALOG 3.1 draws.")
 
 
 def _compare(theirs: List[int], run: Path, wav: Path) -> int:
