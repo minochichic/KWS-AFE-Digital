@@ -34,6 +34,7 @@ Run (needs the checkpoint and the dataset, so on the training box):
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 from typing import List, Tuple
 
@@ -264,17 +265,42 @@ def main() -> None:
                 best_name, best_delta, best_test = name, d, a1
 
     base = accuracy(lt, yt, zero)
-    print(f"\nVERDICT: ", end="")
-    if best_test <= base:
-        print(f"do NOT ship. The best method scores {best_test:.4f} on test "
-              f"against\n  {base:.4f} unchanged. The correction is real on val "
-              f"and absent on test,\n  which means the imbalance it removes is "
-              f"not stable across splits.")
-    else:
-        print(f"{best_name} gains {(best_test - base) * 100:+.2f}pp on test "
-              f"({base:.4f} -> {best_test:.4f}).\n  Small, but it costs one ROM "
-              f"word per class and nothing else.")
     delta = best_delta
+
+    # McNemar, because this is a PAIRED comparison on the same clips. Quoting
+    # a change against the standard error of a single split overstates the
+    # precision -- most clips are untouched and carry no information about the
+    # difference. What matters is how many clips CHANGED and how lopsided that
+    # change was; under the null those flips split evenly, so the net has a
+    # standard error of sqrt(flips).
+    ok0 = lt.argmax(1) == yt
+    ok1 = (lt + delta).argmax(1) == yt
+    broke = int((ok0 & ~ok1).sum())
+    fixed = int((~ok0 & ok1).sum())
+    flips = broke + fixed
+    z = (fixed - broke) / math.sqrt(flips) if flips else 0.0
+    print(f"\naccuracy change on TEST, tested properly (McNemar):")
+    print(f"  {flips} clips changed answer: {fixed} fixed, {broke} broken, "
+          f"net {fixed - broke:+d}")
+    print(f"  z = {z:+.2f}" + ("  -- beyond noise" if abs(z) > 2 else
+                               "  -- inside noise, this is a coin flip"))
+
+    print(f"\nVERDICT: ", end="")
+    if abs(z) <= 2.0:
+        print(f"the accuracy change is NOT REAL "
+              f"({base:.4f} -> {best_test:.4f}, z={z:+.2f}).")
+        print("  Which is the expected result: the correction trades precision "
+              "for recall,\n  and a trade nets to zero unless one side was "
+              "genuinely mispriced. Look at\n  the false wake line instead -- "
+              "the error MIX can move even when the total\n  does not, and for "
+              "an always-on spotter the mix is what is felt.")
+    elif best_test > base:
+        print(f"{best_name} gains {(best_test - base) * 100:+.2f}pp on test "
+              f"({base:.4f} -> {best_test:.4f}),\n  beyond noise at z={z:+.2f}. "
+              f"It costs one ROM word per class and nothing else.")
+    else:
+        print(f"do NOT ship: {best_name} LOSES "
+              f"{(base - best_test) * 100:.2f}pp on test at z={z:+.2f}.")
 
     pred0 = lt.argmax(1)
     pred1 = (lt + delta).argmax(1)
@@ -295,8 +321,15 @@ def main() -> None:
     w0 = int(torch.isin(pred0[is_nk], torch.tensor(kw)).sum())
     w1 = int(torch.isin(pred1[is_nk], torch.tensor(kw)).sum())
     tot_nk = int(is_nk.sum())
+    se = math.sqrt((w0 / tot_nk) * (1 - w0 / tot_nk) / tot_nk) * 100
+    move = (w1 - w0) / tot_nk * 100
     print(f"\nfalse wakes: {w0} -> {w1} of {tot_nk} non-keyword clips "
-          f"({w0 / tot_nk:.1%} -> {w1 / tot_nk:.1%})")
+          f"({w0 / tot_nk:.1%} -> {w1 / tot_nk:.1%}, {move:+.1f}pp)")
+    print(f"  one standard error on this rate is about {se:.1f}pp, so "
+          f"{abs(move) / se:.1f} of them.")
+    print("  This is the number an always-on spotter actually pays: a "
+          "non-keyword scored\n  as a keyword wakes the device, and accuracy "
+          "averages it away against\n  errors nobody notices.")
 
     _emit(model, delta, cfg, names)
 
