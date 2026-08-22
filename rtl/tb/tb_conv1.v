@@ -31,7 +31,11 @@
 
 module tb_conv1;
 
-    localparam integer CLIPS  = 2;
+    // The export decides how many clips the vectors hold (export/golden.py
+    // --clips), so reading it from the generated header is the only way the
+    // two cannot drift. Hardcoding 2 against a default of 8 checked a quarter
+    // of the vectors and still printed ok.
+    localparam integer CLIPS  = `KWS_GOLD_CLIPS;
     localparam integer C_IN   = `KWS_L0_CONV1_IN_CH;
     localparam integer C_OUT  = `KWS_L0_CONV1_OUT_CH;
     localparam integer K      = `KWS_L0_CONV1_KERNEL;

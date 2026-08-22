@@ -35,7 +35,11 @@ module tb_frame_ctrl;
     localparam integer NATIVE_T = `KWS_NATIVE_T;
     localparam integer PAD_L    = `KWS_PAD_LEFT;
     localparam integer FC       = 24;      // stand-in for 1,000,000
-    localparam integer CLIPS    = 2;
+    // The export decides how many clips the vectors hold (export/golden.py
+    // --clips), so reading it from the generated header is the only way the
+    // two cannot drift. Hardcoding 2 against a default of 8 checked a quarter
+    // of the vectors and still printed ok.
+    localparam integer CLIPS    = `KWS_GOLD_CLIPS;
     localparam integer NW       = (N_CH + `KWS_WORD_BITS - 1) / `KWS_WORD_BITS;
 
     reg clk = 1'b0, rst_n = 1'b0;

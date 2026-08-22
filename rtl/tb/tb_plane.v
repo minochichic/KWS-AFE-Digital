@@ -32,7 +32,11 @@ module tb_plane;
     localparam integer NWI   = C_IN  / WB;
     localparam integer NWO   = C_OUT / WB;
     localparam integer T     = 64;
-    localparam integer CLIPS = 2;
+    // The export decides how many clips the vectors hold (export/golden.py
+    // --clips), so reading it from the generated header is the only way the
+    // two cannot drift. Hardcoding 2 against a default of 8 checked a quarter
+    // of the vectors and still printed ok.
+    localparam integer CLIPS = `KWS_GOLD_CLIPS;
     localparam integer FLUSH = 2 * PAD;      // kws_block has two depthwise stages
 
     reg  clk = 1'b0;

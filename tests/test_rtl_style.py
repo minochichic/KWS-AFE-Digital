@@ -92,3 +92,22 @@ def test_assertions_are_compiled_out_of_the_bitstream(path):
             total += 1
             guarded += depth > 0
     assert guarded == total, f"{total - guarded} of {total} outside KWS_ASSERT"
+
+
+@pytest.mark.parametrize("path", sorted((RTL / "tb").glob("tb_*.v")),
+                         ids=lambda p: p.name)
+def test_clip_count_comes_from_the_export_not_a_literal(path):
+    """A testbench must not decide how many golden clips there are.
+
+    export/golden.py writes `KWS_GOLD_CLIPS` and defaults to --clips 8. Every
+    testbench used to hardcode 2, so an 8-clip export was checked a quarter of
+    the way and still printed ok -- the failure mode of a literal here is
+    silent under-testing, which is the kind a green run hides.
+    """
+    txt = path.read_text()
+    if "CLIPS" not in txt:
+        pytest.skip("no clip loop")
+    m = re.search(r"localparam integer\s+CLIPS\s*=\s*(.+?);", txt)
+    assert m, "CLIPS is used but never declared as a localparam"
+    assert m.group(1).strip() == "`KWS_GOLD_CLIPS", (
+        f"CLIPS = {m.group(1).strip()} -- read it from the export instead")

@@ -30,7 +30,11 @@
 
 module tb_dense_conv;
 
-    localparam integer CLIPS  = 2;
+    // The export decides how many clips the vectors hold (export/golden.py
+    // --clips), so reading it from the generated header is the only way the
+    // two cannot drift. Hardcoding 2 against a default of 8 checked a quarter
+    // of the vectors and still printed ok.
+    localparam integer CLIPS  = `KWS_GOLD_CLIPS;
     localparam integer T      = 64;
     localparam integer FRAMES = 4;      // which frames: 0, 1, 17, 63 below
 
