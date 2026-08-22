@@ -132,11 +132,36 @@ def main() -> None:
     if float(moved) < 10.0:
         print("  Training barely moved them, so the placement is the "
               "INITIALISER's.\n  data/afe.py:730 uses the channel mean; the "
-              "table above shows where\n  that lands relative to the median.")
+              "table above shows where\n  that lands relative to the median. "
+              "Changing it is a one-line fix.")
     else:
-        print("  Training moved them substantially, so this placement is one "
-              "the\n  optimiser chose. Changing the initialiser would likely "
-              "be undone.")
+        print("  Training moved them a long way, so this placement is one the "
+              "optimiser\n  worked for rather than one it was handed.")
+        print("  That does NOT make it init-independent. A large move from a "
+              "bad start can\n  still end in a basin the start chose; the only "
+              "way to know is to begin\n  somewhere else and see where it "
+              "lands. Moving is evidence about the\n  journey, not about the "
+              "destination.")
+
+    # Separating the two ways this loses information, because they have
+    # different fixes. Being dark is about where the thresholds sit on average;
+    # being uneven is about them disagreeing with each other. Entropy is
+    # concave, so at a fixed mean firing rate the even allocation carries the
+    # most -- which makes the gap a price the uneven one is paying.
+    mean_rate = sum(1.0 - quantile_of(flat[c], float(trained[c]))
+                    for c in range(n_ch)) / n_ch
+    even = n_ch * entropy_bits(mean_rate)
+    full = n_ch * entropy_bits(0.5)
+    print(f"\n  where the {n_ch - total_bits:.2f} missing bits went:")
+    print(f"    {full - even:>5.2f} to being dark    (mean firing "
+          f"{mean_rate:.1%}, not 50%)")
+    print(f"    {even - total_bits:>5.2f} to being uneven  (the same mean, "
+          f"spread across channels)")
+    print("  The second number is what the optimiser chose to pay: it spent "
+          "sixteen free\n  parameters making channels disagree, and that costs "
+          "information by itself.\n  It was optimising classification, not "
+          "information, so this is a description\n  of the trade rather than a "
+          "verdict on it.")
 
     # What another placement would give, measured rather than assumed. Each
     # channel's threshold is put at the same quantile OF ITS OWN distribution,
