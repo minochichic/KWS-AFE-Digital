@@ -98,3 +98,60 @@ def test_balanced_as_the_objective_lifts_the_small_class() -> None:
     zero = torch.zeros(n_c, dtype=torch.double)
     d = fit_delta(logits, y, n_c, objective="balanced")
     assert balanced(logits, y, d, n_c) > balanced(logits, y, zero, n_c) + 0.05
+
+
+# ---- the one-parameter alternative, added after twelve overfitted ----------
+
+def test_prior_recovers_a_planted_offset_too() -> None:
+    """With only a strength to fit, the direction still has to be right."""
+    from experiments.logit_bias import fit_prior
+    logits, y = planted()
+    d = fit_prior(logits, y, 4)
+    rel = d - d[2]
+    for c in (0, 1, 3):
+        assert float(rel[c]) > 0, f"class {c} should be pushed above class 2"
+    assert accuracy(logits, y, d) > accuracy(
+        logits, y, torch.zeros(4, dtype=torch.double)) + 0.10
+
+
+def test_prior_direction_comes_from_the_count_mismatch() -> None:
+    """An over-predicted class goes down, an under-predicted one goes up. That
+    ordering is the whole reason this generalises better than a free search."""
+    from experiments.logit_bias import fit_prior
+    logits, y = planted()
+    d = fit_prior(logits, y, 4)
+    pred = torch.bincount(logits.argmax(1), minlength=4)
+    true = torch.bincount(y, minlength=4)
+    over = [c for c in range(4) if pred[c] > true[c]]
+    under = [c for c in range(4) if pred[c] < true[c]]
+    assert over and under, "fixture must have both directions"
+    assert max(float(d[c]) for c in over) < min(float(d[c]) for c in under)
+
+
+def test_prior_is_a_no_op_when_the_counts_already_match() -> None:
+    """No mismatch means no direction, so nothing to travel along -- the guard
+    against inventing a correction out of a fair problem."""
+    from experiments.logit_bias import fit_prior
+    n_c = 3
+    y = torch.tensor([0, 1, 2] * 300)
+    logits = torch.zeros(len(y), n_c, dtype=torch.double)
+    logits[torch.arange(len(y)), y] = 1.0        # every clip already correct
+    d = fit_prior(logits, y, n_c)
+    assert float(d.abs().max()) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_split_half_exposes_a_method_that_only_fits_what_it_saw() -> None:
+    """Pure noise: nothing to learn, so a free search should show a gain on the
+    half it fitted and about nothing on the half it did not."""
+    from experiments.logit_bias import fit_delta, fit_prior, halves
+    g = torch.Generator().manual_seed(3)
+    n_c = 6
+    y = torch.randint(n_c, (1200,), generator=g)
+    logits = torch.randn(1200, n_c, generator=g, dtype=torch.double)
+
+    seen, held = halves(logits, y, n_c, fit_delta, "accuracy")
+    assert seen > 0.02, "twelve-ish free params should fit noise it can see"
+    assert held < seen / 2, "and should not carry to the half it cannot"
+
+    seen_p, held_p = halves(logits, y, n_c, fit_prior, "accuracy")
+    assert seen_p <= seen, "one parameter cannot fit more noise than many"
