@@ -175,3 +175,44 @@ def test_the_worst_sink_is_picked_by_precision_not_by_recall() -> None:
     sinks = [s for s in class_stats(m, NAMES) if s.absorbing]
     assert {s.name for s in sinks} == {"go", "down"}
     assert min(sinks, key=lambda s: s.precision).name == "go"
+
+
+def test_a_two_to_one_flow_is_not_called_mutual() -> None:
+    """The fx_d0 numbers that exposed a single cut at 0.5 as too permissive.
+
+    no/go ran 96 against 49 -- a symmetry of 0.51, which the old two-band split
+    reported as "the input does not separate these two sounds" when half of it
+    is one class simply winning. xl_g12's genuinely mutual go/no sits at 0.765,
+    so the two cases have to land in different words.
+    """
+    m = eye(len(NAMES), diag=400)
+    m[1][1] -= 96; m[1][9] += 96                    # fx_d0: no -> go
+    m[9][9] -= 49; m[9][1] += 49                    #        go -> no
+    by = {(min(NAMES[p.lo], NAMES[p.hi]), max(NAMES[p.lo], NAMES[p.hi])): p
+          for p in pairs(m)}
+    p = by[("go", "no")]
+    assert 0.50 < p.symmetry < 0.52
+    assert p.kind == "leaning" and not p.mutual
+    assert NAMES[p.preferred()] == "go"
+
+    m2 = eye(len(NAMES), diag=400)
+    m2[9][9] -= 34; m2[9][1] += 34                  # xl_g12: go -> no
+    m2[1][1] -= 26; m2[1][9] += 26                  #         no -> go
+    q = [p for p in pairs(m2)][0]
+    assert q.symmetry > 0.75 and q.kind == "mutual"
+
+
+def test_the_three_bands_are_ordered_and_cover_everything() -> None:
+    """No gap and no overlap: every pair gets exactly one word."""
+    seen = {}
+    for a, b in [(10, 10), (10, 7), (10, 6), (10, 5), (10, 4),
+                 (10, 3), (10, 2), (10, 0)]:
+        m = eye(len(NAMES), diag=400)
+        m[0][0] -= a; m[0][4] += a
+        if b:
+            m[4][4] -= b; m[4][0] += b
+        p = pairs(m)[0]
+        seen.setdefault(p.kind, []).append(p.symmetry)
+    assert set(seen) == {"mutual", "leaning", "one way"}
+    assert max(seen["one way"]) <= min(seen["leaning"])
+    assert max(seen["leaning"]) <= min(seen["mutual"])

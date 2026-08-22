@@ -98,9 +98,18 @@ def main() -> None:
     n = fl_ok = fx_ok = same = 0
     confusion = torch.zeros(cfg.model.n_classes, cfg.model.n_classes,
                             dtype=torch.int64)
+    # How often each channel is +1 across the whole split. A channel stuck at
+    # one value carries no information no matter how well the network is
+    # trained, and an absolute threshold has no way to notice: speech energy
+    # falls with frequency, so one fixed threshold per channel sits at a
+    # different place on each channel's dynamic range.
+    fire = torch.zeros(cfg.afe.n_channels, dtype=torch.int64)
+    fire_n = 0
     try:
         for wav, labels in te:
             x = afe(wav, target_T=cfg.model.T)
+            fire += (x > 0).sum(dim=(0, 2))
+            fire_n += x.shape[0] * x.shape[2]
             float_logits = model(x)                 # the hook fires in here
             fx = fixed_logits(model, sites, grabbed["acc"])
 
@@ -158,6 +167,39 @@ def main() -> None:
             fx_q = int(fixed_logits(model, sites, grabbed["acc"]).argmax(1)[0])
         finally:
             h2.remove()
+
+    # WHAT THE INPUT ACTUALLY CARRIES, BEFORE ASKING ANYTHING OF THE NETWORK.
+    #
+    # Each channel is one bit per frame, so a channel that is +1 (or -1) almost
+    # always spends its bit saying nothing. Entropy puts a number on it: a
+    # channel firing half the time carries a full bit, one firing 1% of the
+    # time carries 0.08. Summed over sixteen channels this is the ceiling on
+    # what any network downstream could possibly separate.
+    #
+    # This is where an absolute threshold is structurally exposed. Speech energy
+    # falls with frequency, so a per-channel fixed threshold lands at a
+    # different point on each channel's range -- the loud low bands saturate and
+    # the quiet high bands go dark, both at the same time. A relative threshold
+    # divides that tilt out.
+    import math
+    rate = (fire.double() / max(1, fire_n)).tolist()
+    bits = [0.0 if r <= 0 or r >= 1 else
+            -(r * math.log2(r) + (1 - r) * math.log2(1 - r)) for r in rate]
+    print(f"\nwhat each channel actually carries (over all "
+          f"{fire_n // cfg.model.T} clips; ch0 is the lowest band):")
+    print(f"  {'ch':>2} {'fires':>7} {'bits':>6}")
+    for c, (r, b) in enumerate(zip(rate, bits)):
+        mark = ("  <- saturated" if r > 0.9 else
+                "  <- dark" if r < 0.05 else "")
+        bar = "#" * int(round(b * 20))
+        print(f"  {c:>2} {r:>6.1%} {b:>6.2f}  {bar}{mark}")
+    print(f"  total {sum(bits):.2f} of {cfg.afe.n_channels} bits per frame "
+          f"({sum(bits) / cfg.afe.n_channels:.0%} of the input's capacity)")
+    stuck = [c for c, r in enumerate(rate) if r > 0.9 or r < 0.05]
+    if stuck:
+        print(f"  channels {stuck} spend their bit saying nothing. No amount of "
+              f"training\n  recovers a channel that is constant -- the "
+              f"threshold is in the wrong place.")
 
     print(f"\nwith nothing in the input at all (every channel -1, every frame):")
     print(f"  float says {names[fl_q]}, the integer path says {names[fx_q]}")

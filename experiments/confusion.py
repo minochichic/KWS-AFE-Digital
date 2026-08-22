@@ -66,8 +66,25 @@ class Pair(NamedTuple):
         return min(self.lo_to_hi, self.hi_to_lo) / big if big else 0.0
 
     @property
+    def kind(self) -> str:
+        """"mutual", "leaning" or "one way".
+
+        Two bands were not enough. fx_d0's no/go runs 96 against 49, and a
+        single cut at 0.5 called that mutual -- reporting a two-to-one flow as
+        "the input cannot separate these sounds" when half of it is one class
+        winning. xl_g12's genuinely mutual go/no sits at 0.765 for comparison.
+
+        The middle band is where both readings are true at once: the sounds do
+        overlap AND one side takes more, so neither a front end fix nor a
+        boundary fix alone accounts for it.
+        """
+        if self.symmetry > 0.6:
+            return "mutual"
+        return "leaning" if self.symmetry > 0.3 else "one way"
+
+    @property
     def mutual(self) -> bool:
-        return self.symmetry > 0.5
+        return self.kind == "mutual"
 
     def preferred(self) -> int:
         """The class the confusion flows TOWARD. Meaningless when mutual."""
@@ -153,12 +170,15 @@ def report(m: Matrix, names: Sequence[str], target: float = 0.85,
 
     L.append("")
     L.append("most confused pairs, and whether the confusion is mutual:")
+    said = {
+        "mutual": "mutual -- the input does not separate these two sounds",
+        "leaning": "leaning to {} -- the sounds overlap AND one side wins",
+        "one way": "one way -- {} is preferred",
+    }
     for p in pairs(m)[:n_pairs]:
-        kind = ("mutual -- the input does not separate these two sounds"
-                if p.mutual else
-                f"one way -- {names[p.preferred()]} is preferred")
         L.append(f"  {names[p.lo]:<10} <-> {names[p.hi]:<10} {p.total:>4}  "
-                 f"({p.lo_to_hi} / {p.hi_to_lo})  {kind}")
+                 f"({p.lo_to_hi} / {p.hi_to_lo})  {p.symmetry:.2f}  "
+                 f"{said[p.kind].format(names[p.preferred()])}")
 
     L.append("")
     L.append(f"what reaching {target:.2f} on one class alone would add:")
