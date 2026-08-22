@@ -247,7 +247,20 @@ class AFEConfig:
     agc_attack_ms: float = 10.0
     agc_release_ms: float = 250.0
     agc_max_gain_db: float = 20.0
+    # WHICH statistic init_thresholds() places each threshold on. Read only
+    # since 2026-08-23: the field existed before that and nothing looked at it,
+    # so a config setting it got the mean regardless.
+    #   "channel_mean" = Cerutti IV-A, and the baseline
+    #   "quantile"     = threshold_init_quantile of the channel's own envelopes
+    # They are far apart on this data. The mean of a right-skewed distribution
+    # sits above its median, and how far apart is what separates the tracks:
+    # measured mean/median is 12.7x for fx_d0 and 2.7x for xl_g12, because a
+    # relative threshold divides the skew out before the comparator sees it.
     threshold_init: str = "channel_mean"
+    # Only read when threshold_init == "quantile", and only for k=1: with
+    # several comparators the i/(k+1) spread is what keeps them distinct.
+    # 0.5 = the median = every channel starts firing half the time.
+    threshold_init_quantile: float = 0.5
     threshold_trainable: bool = True
     ste: str = "hardtanh"               # STE flavor for the step function
     ste_clip: float = 1.0
@@ -387,6 +400,18 @@ class Config:
                 f"model.in_channels ({m.in_channels}) must equal "
                 f"afe.n_channels * afe.comparators_per_channel "
                 f"({a.n_channels} * {k} = {a.n_channels * k})"
+            )
+        if a.threshold_init not in ("channel_mean", "quantile"):
+            raise ValueError(
+                f"afe.threshold_init must be 'channel_mean' or 'quantile', "
+                f"got {a.threshold_init!r}"
+            )
+        if not 0.0 < a.threshold_init_quantile < 1.0:
+            # 0 and 1 are the degenerate ends: every channel firing always or
+            # never, which is no input at all rather than a bold choice.
+            raise ValueError(
+                f"afe.threshold_init_quantile must be strictly inside (0, 1), "
+                f"got {a.threshold_init_quantile}"
             )
         if a.envelope_win_ms <= 0:
             raise ValueError(

@@ -1010,3 +1010,82 @@ def test_chunking_does_not_change_the_estimates() -> None:
     b.init_fixed_scale(w); b.init_thresholds(w)
     assert float(a.xmax_floor) == float(b.xmax_floor)
     assert torch.equal(a.threshold.data, b.threshold.data)
+
+
+# ---- threshold_init, which was declared and never read until 2026-08-23 ----
+
+def _tiny_afe(**over):
+    """An AFE small enough to init in a test, with overrides applied."""
+    from train.config import AFEConfig
+    from data.afe import AFEFrontend
+    cfg = AFEConfig(n_channels=4, normalize="minmax", **over)
+    return AFEFrontend(cfg).eval()
+
+
+def _skewed_batch(n: int = 24, sr: int = 16000, seed: int = 0):
+    """Speech-like in the way that matters here: mostly quiet, rarely loud."""
+    g = torch.Generator().manual_seed(seed)
+    w = torch.randn(n, sr, generator=g) * 0.01
+    for i in range(n):                       # a short burst in each clip
+        a = int(torch.randint(0, sr - 2000, (1,), generator=g))
+        w[i, a:a + 1500] += torch.randn(1500, generator=g) * 0.5
+    return w
+
+
+def test_threshold_init_mean_and_quantile_differ_on_skewed_data() -> None:
+    """The whole reason the option exists. If these came out equal the choice
+    would be cosmetic, and the fx_d0 measurement says they are not."""
+    w = _skewed_batch()
+    a = _tiny_afe(threshold_init="channel_mean")
+    a.init_thresholds(w)
+    mean_thr = a.threshold.detach().clone()
+
+    b = _tiny_afe(threshold_init="quantile", threshold_init_quantile=0.5)
+    b.init_thresholds(w)
+    med_thr = b.threshold.detach().clone()
+
+    assert torch.all(mean_thr > med_thr), (
+        "on right-skewed data the mean must sit above the median")
+
+
+def test_the_quantile_lands_where_it_says() -> None:
+    """A threshold at quantile q must leave 1-q of the envelopes above it."""
+    w = _skewed_batch(seed=1)
+    for q in (0.25, 0.5, 0.9):
+        a = _tiny_afe(threshold_init="quantile", threshold_init_quantile=q)
+        a.init_thresholds(w)
+        env = a.envelopes(w, raw=False)
+        for c in range(env.shape[1]):
+            below = float((env[:, c] <= a.threshold[c]).double().mean())
+            assert abs(below - q) < 0.02, f"channel {c} at q={q}: {below:.3f}"
+
+
+def test_the_default_is_byte_identical_to_before_the_option_existed() -> None:
+    """Every recorded number came from the mean. Adding a branch must not move
+    the baseline, or the run table stops meaning what it says."""
+    w = _skewed_batch(seed=2)
+    a = _tiny_afe()                                   # no override at all
+    a.init_thresholds(w)
+    env = a.envelopes(w, raw=False)
+    assert torch.allclose(a.threshold, env.mean(dim=(0, 2)))
+
+
+def test_an_unknown_threshold_init_is_refused_not_ignored() -> None:
+    """The failure this replaces: the field was never read, so a config asking
+    for something else got the mean and said nothing."""
+    w = _skewed_batch(seed=3)
+    a = _tiny_afe()
+    a.cfg.threshold_init = "median"                   # plausible, and wrong
+    with pytest.raises(ValueError, match="threshold_init"):
+        a.init_thresholds(w)
+
+
+def test_config_rejects_a_quantile_outside_the_open_interval() -> None:
+    from train.config import Config
+    import dataclasses
+    for bad in (0.0, 1.0, -0.1, 1.5):
+        cfg = Config()
+        cfg.afe = dataclasses.replace(cfg.afe, threshold_init="quantile",
+                                      threshold_init_quantile=bad)
+        with pytest.raises(ValueError, match="threshold_init_quantile"):
+            cfg.validate()

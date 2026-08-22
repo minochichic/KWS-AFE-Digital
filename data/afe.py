@@ -705,11 +705,23 @@ class AFEFrontend(nn.Module):
 
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:
-        """Set each threshold to its channel's mean envelope (Cerutti IV-A).
+        """Place each channel's threshold on its own envelope distribution.
 
         Pass a representative batch of training waveforms. The normalization
         inside envelopes() already applies the same min-max scaling to the
-        features, so the mean is directly in threshold coordinates.
+        features, so the statistic is directly in threshold coordinates.
+
+        `threshold_init` picks WHICH statistic:
+
+          "channel_mean"  the mean, which is Cerutti IV-A and the baseline
+          "quantile"      `threshold_init_quantile` of the channel, 0.5 being
+                          the median
+
+        They are not close together. The mean of a right-skewed distribution
+        sits well above its median, and speech energy is heavily right-skewed
+        because most frames are quiet -- on fx_d0 the mean lands near the 89th
+        percentile, so the mean start has every channel firing about a tenth of
+        the time before training has done anything.
         """
         if self.cfg.normalize in _NEEDS_SCALE and not self._scale_ready:
             # Order matters and used to be documented only. For "minmax" it did
@@ -726,14 +738,36 @@ class AFEFrontend(nn.Module):
                 f"순서: init_fixed_scale(w) -> init_thresholds(w)")
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self._envelopes_chunked(waves, raw=False)
-        if self.n_comparators == 1:
+        mode = getattr(self.cfg, "threshold_init", "channel_mean")
+        if mode not in ("channel_mean", "quantile"):
+            raise ValueError(
+                f"threshold_init={mode!r}; expected 'channel_mean' or "
+                f"'quantile'. This field was declared but never read until "
+                f"now, so a config that set it got the mean silently.")
+        if self.n_comparators == 1 and mode == "channel_mean":
             thr = env.mean(dim=(0, 2))
+        elif self.n_comparators == 1:
+            # A QUANTILE of the channel's own distribution, which the mean only
+            # coincides with when the distribution is symmetric. Speech energy
+            # is not: measured on fx_d0 the channel mean lands near the 89th
+            # percentile, so every channel starts firing about a tenth of the
+            # time and the network has to climb out of that.
+            #
+            # Whether it CAN climb out is the open question. Training moves the
+            # thresholds a long way (experiments/threshold_placement.py reports
+            # 206% for fx_d0), but a long move from a bad start can still end in
+            # a basin that start chose. This exists so the same run can begin
+            # somewhere else and settle the question.
+            q = float(getattr(self.cfg, "threshold_init_quantile", 0.5))
+            flat = env.permute(1, 0, 2).reshape(self.cfg.n_channels, -1)
+            thr = torch.quantile(flat, q, dim=1)
         else:
             # k comparators must NOT start on top of each other, or they encode
             # one bit twice and the second one is wasted. Spread them over the
-            # channel's own distribution at quantiles i/(k+1), which for k=1
-            # would be the median -- close to the mean it replaces, but the k=1
-            # path keeps the mean exactly so the existing baseline is untouched.
+            # channel's own distribution at quantiles i/(k+1). threshold_init
+            # does not reach here: with several comparators the spread is what
+            # keeps them distinct, and a single target quantile would collapse
+            # them back onto each other.
             flat = env.permute(1, 0, 2).reshape(self.cfg.n_channels, -1)
             qs = torch.arange(1, self.n_comparators + 1, device=flat.device,
                               dtype=flat.dtype) / (self.n_comparators + 1)

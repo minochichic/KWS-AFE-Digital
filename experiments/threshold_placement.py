@@ -113,19 +113,40 @@ def main() -> None:
 
     print("did training move the threshold, or is this where init left it?")
     print(f"  {'ch':>2} {'init(mean)':>11} {'trained':>9} {'moved':>8} "
-          f"{'median':>8} {'trained sits at':>16} {'fires':>7} {'bits':>6}")
+          f"{'median':>8} {'skew':>6} {'sits at':>9} {'fires':>7} {'bits':>6}")
     total_bits = 0.0
+    skews = []
     for c in range(n_ch):
-        t, i0 = float(trained[c]), float(init[c])
+        t, i0, med = float(trained[c]), float(init[c]), float(median[c])
         q = quantile_of(flat[c], t)
         fires = 1.0 - q
         b = entropy_bits(fires)
         total_bits += b
         rel = (t - i0) / abs(i0) * 100 if i0 else float("nan")
+        skew = i0 / med if med else float("nan")
+        skews.append(skew)
         print(f"  {c:>2} {i0:>11.4f} {t:>9.4f} {rel:>+7.1f}% "
-              f"{float(median[c]):>8.4f} {q:>15.1%} {fires:>6.1%} {b:>6.2f}")
+              f"{med:>8.4f} {skew:>6.1f} {q:>8.1%} {fires:>6.1%} {b:>6.2f}")
     print(f"  total {total_bits:.2f} of {n_ch} bits per frame "
           f"({total_bits / n_ch:.0%} of capacity)")
+
+    # `skew` is mean/median, and it is the number that separates the tracks.
+    # A symmetric distribution has skew 1 and the mean init would be the
+    # median; speech energy is nothing like symmetric, because most frames are
+    # quiet and a few are loud. Measured: 12.7 for fx_d0 against 2.7 for
+    # xl_g12, since a relative threshold divides the skew out before the
+    # comparator ever sees it. Everything downstream -- how dark the init is,
+    # how unevenly one threshold can cut the distribution -- follows from this.
+    mean_skew = sum(s for s in skews if s == s) / max(1, len(skews))
+    print(f"\n  mean/median across channels: {mean_skew:.1f}")
+    if mean_skew > 5.0:
+        print("  Heavily right-skewed, so the mean init starts every channel "
+              "far into the\n  tail and one threshold cuts the distribution "
+              "very unevenly.")
+    else:
+        print("  Only mildly skewed, so the mean init is close to the median "
+              "and a single\n  threshold cuts nearer the middle of the "
+              "distribution.")
 
     moved = ((trained - init).abs() / init.abs().clamp(min=1e-9)).mean() * 100
     print(f"\n  mean |move| from the initial value: {float(moved):.1f}%")
