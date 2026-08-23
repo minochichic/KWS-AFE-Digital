@@ -293,3 +293,65 @@ def test_minmax_still_needs_no_scale() -> None:
     from data.afe import AFEFrontend
     cfg = load_config(BASE, {"afe.normalize": "minmax", "afe.envelope_win_ms": 10.0})
     AFEFrontend(cfg.afe).init_thresholds(torch.randn(4, 16000))
+
+
+# ---- the CLI has to be able to train the tracks it is asked about ---------
+
+def _afe_init_calls() -> list[str]:
+    """Names of the afe.init_* calls in _run_speech_commands, in call order.
+
+    Read from the AST rather than from the text: the first version of this
+    checked string positions and failed on a COMMENT that named the two calls
+    in the other order. A test that a comment can break is testing prose.
+    """
+    import ast
+    import inspect
+    from train.train import _run_speech_commands
+    tree = ast.parse(inspect.getsource(_run_speech_commands).lstrip())
+    out = []
+    for node in ast.walk(tree):
+        if (isinstance(node, ast.Call)
+                and isinstance(node.func, ast.Attribute)
+                and node.func.attr.startswith("init_")):
+            out.append((node.lineno, node.func.attr))
+    return [name for _, name in sorted(out)]
+
+
+def test_the_cli_inits_the_scale_before_the_thresholds() -> None:
+    """train/train.py used to call init_thresholds alone.
+
+    Every normalize mode carrying a dataset-level constant raises without
+    init_fixed_scale first, so that entry point could only train "minmax" --
+    while every track under discussion (fixed, xlse) is in the other list. The
+    order matters as much as the presence: delta has to exist before the
+    thresholds are placed relative to it.
+    """
+    calls = _afe_init_calls()
+    assert "init_fixed_scale" in calls, "the CLI cannot train any scaled mode"
+    assert calls.index("init_fixed_scale") < calls.index("init_thresholds"), \
+        f"init_fixed_scale must come first, got {calls}"
+
+
+def test_the_cli_uses_enough_clips_for_the_quantile_to_hold_still() -> None:
+    """One batch is not enough for delta, which is a 2% quantile: frames inside
+    a clip are correlated, so its effective sample size tracks clips. Measured
+    at 2.4x between seeds on one batch, and delta is the V_ref offset the
+    analog side builds."""
+    import inspect
+    from train.train import _run_speech_commands
+    src = inspect.getsource(_run_speech_commands)
+    assert "collect_init_batch" in src
+    assert "next(iter(train_loader))" not in src
+
+
+def test_notebook_and_cli_agree_on_which_modes_need_the_scale() -> None:
+    """The notebook produced every recorded run; the CLI has to match it or a
+    CLI run is not comparable to the table. A literal copy of the list in
+    either place drifts silently when a mode is added."""
+    from data.afe import _NEEDS_SCALE
+    nb = (Path(__file__).resolve().parents[1]
+          / "notebooks" / "make_lab.py").read_text()
+    assert "from data.afe import _NEEDS_SCALE" in nb, \
+        "notebooks/make_lab.py must import the list, not restate it"
+    assert set(_NEEDS_SCALE) >= {"fixed", "xlse"}, \
+        "both live tracks must be covered"

@@ -216,7 +216,10 @@ md("""## 4. 러너 — `run(tag, over)`
 code('''# --- 공용 러너 -----------------------------------------------------------
 import json, yaml
 
-_NEEDS_SCALE = ('fixed', 'agc', 'xmax', 'xmix', 'xlse')
+# data/afe.py 에서 가져온다. 여기에 리터럴로 다시 적어 두면 새 normalize 모드가
+# 생겼을 때 노트북만 조용히 빠뜨린다 -- 그러면 init_fixed_scale 이 안 불리고,
+# 증상은 학습이 안 되는 게 아니라 *잘못된 상수로* 학습되는 것이다.
+from data.afe import _NEEDS_SCALE
 _NEEDS_FLOOR = ('xmax', 'xmix', 'xlse')
 
 def build_cfg(tag, over=None, epochs=None):

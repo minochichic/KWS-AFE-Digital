@@ -330,7 +330,7 @@ def _run_overfit_smoke(args) -> None:
 
 def _run_speech_commands(args) -> None:
     """Real Speech Commands v2 training (Colab: downloads on first call)."""
-    from data.afe import AFEFrontend
+    from data.afe import AFEFrontend, _NEEDS_SCALE, collect_init_batch
     from data.speech_commands import build_dataloaders
     from models.binary_matchboxnet import BinaryMatchboxNet
 
@@ -343,8 +343,22 @@ def _run_speech_commands(args) -> None:
     train_loader, val_loader, test_loader = build_dataloaders(
         cfg.data, cfg.train.batch_size, cfg.afe.sample_rate, seed=cfg.train.seed)
 
-    waves, _ = next(iter(train_loader))
-    afe.init_thresholds(waves)                       # Cerutti IV-A
+    # The same two-step init the notebook does, because that is the path every
+    # recorded run came from and a CLI run has to be comparable to them.
+    #
+    # It used to be one batch and init_thresholds alone, which is wrong twice.
+    # Every normalize mode carrying a dataset-level constant needs
+    # init_fixed_scale FIRST -- "fixed", "agc", "xmax", "xmix", "xlse" -- and
+    # without it this entry point simply raises, so it could only ever train
+    # "minmax". And one batch is too few: delta is a 2% quantile and frames
+    # inside a clip are correlated, so its effective sample size tracks CLIPS,
+    # not frames. Measured across two seeds it moved 2.4x on one batch
+    # (data/afe.py collect_init_batch). That number is the V_ref offset handed
+    # to the analog side.
+    waves = collect_init_batch(train_loader)         # 2048 clips
+    if cfg.afe.normalize in _NEEDS_SCALE:
+        afe.init_fixed_scale(waves)                  # delta first
+    afe.init_thresholds(waves)                       # then the thresholds
 
     trainer = Trainer(cfg, model, afe=afe)
     trainer.fit(train_loader, val_loader, resume=args.resume)
