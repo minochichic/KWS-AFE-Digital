@@ -221,10 +221,16 @@ class Trainer:
             self._write_history(wall)
 
             if cfg.train.log_every:
+                # lr is in `row` and has always been written to history.json,
+                # but it was not on screen -- and it is the one number that
+                # separates "converged" from "ReduceLROnPlateau collapsed the
+                # rate early and the run has been frozen since". A flat loss
+                # curve looks identical either way without it.
                 msg = (f"epoch {epoch:3d}/{cfg.train.epochs}  "
                        f"loss {row['train_loss']:.4f}  acc {row['train_acc']:.3f}")
                 if "val_acc" in row:
                     msg += f"  val_acc {row['val_acc']:.3f}"
+                msg += f"  lr {row['lr']:.2e}"
                 print(msg)
 
         return self.history
