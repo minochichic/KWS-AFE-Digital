@@ -82,9 +82,13 @@ class Trainer:
 
         sch = cfg.train.scheduler
         if sch == "plateau":
-            # Cerutti VI-A: lr /10 when stuck for 10 epochs
+            # Cerutti VI-A: lr /10 when stuck for 10 epochs. Both numbers are
+            # config now -- see train/config.py lr_factor for why the default
+            # is harsher on a binary run than on a continuous one.
             self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode="min", factor=0.1, patience=10,
+                self.optimizer, mode="min",
+                factor=float(getattr(cfg.train, "lr_factor", 0.1)),
+                patience=int(getattr(cfg.train, "lr_patience", 10)),
                 min_lr=cfg.train.min_lr)
         elif sch == "none":
             self.scheduler = None

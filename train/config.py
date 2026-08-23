@@ -369,6 +369,15 @@ class TrainConfig:
     weight_decay: float = 0.0
     betas: List[float] = field(default_factory=lambda: [0.9, 0.999])
     scheduler: str = "plateau"    # "plateau" | "warmup_hold_decay" | "none"
+    # ReduceLROnPlateau's aggression, exposed 2026-08-23 because it was
+    # strangling the binary runs and nothing else. A binary input makes val_loss
+    # jump -- the activations flip in discrete steps -- and plateau reads a jump
+    # as a stall. fx_mean_ctl hit min_lr at epoch 35 of 100 and sat there for 65
+    # dead epochs; fx_nobin, whose loss is smooth, kept 1e-3 until epoch 65.
+    # The same schedule is therefore harsher on exactly the runs we care about.
+    # Gentler = larger patience, or a factor nearer 1.
+    lr_factor: float = 0.1        # multiply lr by this on a plateau
+    lr_patience: int = 10         # epochs without improvement before dropping
     warmup_ratio: float = 0.05    # WHD only (MatchboxNet 4.1)
     hold_ratio: float = 0.45
     label_smoothing: float = 0.0
