@@ -1,5 +1,8 @@
 # 실험 로그 (running ledger)
 
+> **한 줄 색인은 [`ABLATIONS.md`](ABLATIONS.md) 에 있다.**
+> "이거 해봤나?" 는 거기서 답하고, 여기는 왜 그랬는지를 적는다.
+
 지금까지의 모든 학습 실행과 결과. 새 실행이 끝나면 표에 한 줄 추가.
 설계·사양은 [`first_task_result.md`](first_task_result.md), AFE 변수는
 [`afe_config.md`](afe_config.md) 참고. 모든 실행은 GSC v2, 12-class, T4/Colab.
