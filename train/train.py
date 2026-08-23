@@ -362,9 +362,31 @@ def _run_speech_commands(args) -> None:
 
     trainer = Trainer(cfg, model, afe=afe)
     trainer.fit(train_loader, val_loader, resume=args.resume)
-    test = trainer.evaluate(test_loader)
-    print(f"\ntest: loss {test['loss']:.4f}  acc {test['acc']:.3f}  "
-          f"({'MEETS' if test['acc'] >= 0.85 else 'below'} 85% target)")
+
+    # Score best.pt, not whatever the last epoch happened to leave behind.
+    # fit() does not restore it, and every downstream script -- fixed_accuracy,
+    # threshold_placement, export.emit -- loads best.pt. Reporting the final
+    # epoch here meant the headline number and the number everything else
+    # works from were two different models, agreeing only when the last epoch
+    # happened to be the best one.
+    last = trainer.evaluate(test_loader)
+    best_path = trainer.run_dir / "best.pt"
+    if best_path.is_file():
+        state = torch.load(best_path, map_location="cpu", weights_only=True)
+        model.load_state_dict(state["model"])
+        if afe is not None and "afe" in state:
+            afe.load_state_dict(state["afe"])
+        best = trainer.evaluate(test_loader)
+        print(f"\ntest (best.pt, epoch {state.get('epoch', '?')}): "
+              f"loss {best['loss']:.4f}  acc {best['acc']:.3f}  "
+              f"({'MEETS' if best['acc'] >= 0.85 else 'below'} 85% target)")
+        if abs(best["acc"] - last["acc"]) > 0.002:
+            print(f"  (the final epoch scored {last['acc']:.3f}; best.pt is "
+                  f"what every other script reads)")
+    else:
+        print(f"\ntest (final epoch, no best.pt): loss {last['loss']:.4f}  "
+              f"acc {last['acc']:.3f}  "
+              f"({'MEETS' if last['acc'] >= 0.85 else 'below'} 85% target)")
 
 
 if __name__ == "__main__":

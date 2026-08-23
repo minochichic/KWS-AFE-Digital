@@ -355,3 +355,16 @@ def test_notebook_and_cli_agree_on_which_modes_need_the_scale() -> None:
         "notebooks/make_lab.py must import the list, not restate it"
     assert set(_NEEDS_SCALE) >= {"fixed", "xlse"}, \
         "both live tracks must be covered"
+
+
+def test_the_cli_reports_the_checkpoint_everything_else_reads() -> None:
+    """fit() does not restore best.pt, so scoring the model in hand scores the
+    LAST epoch. Every downstream script -- fixed_accuracy, threshold_placement,
+    export.emit -- loads best.pt. Those are two different models whenever the
+    last epoch was not the best one, and the headline number was the one nobody
+    else ever used."""
+    import inspect
+    from train.train import _run_speech_commands
+    src = inspect.getsource(_run_speech_commands)
+    assert "best.pt" in src, "the CLI must score best.pt, not the last epoch"
+    assert src.index("trainer.fit") < src.index("best.pt")
