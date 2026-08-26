@@ -138,7 +138,13 @@ def main() -> int:
         rows.append([k, fc, dc] + swings)
 
     a = np.array(rows)
-    print("\n* = 그 진폭에서 수렴 실패해 더 낮은 진폭으로 재서 선형 환산한 값")
+    # 마크다운을 파싱하는 것보다 CSV 를 읽는 게 낫다 -- 표 서식이 바뀌면
+    # 파서가 조용히 다른 열을 집는다 (실제로 여유 표의 f_c 를 채널 번호로 주웠다).
+    out = BOARD / "artifacts" / "swing_board.csv"
+    hdr2 = "ch,f_c_hz,Venv_DC_V," + ",".join(f"swing_V_at_{x:g}Vamp" for x in args.amp)
+    np.savetxt(out, a, delimiter=",", header=hdr2, comments="", fmt="%.9g")
+    print(f"\n저장: {out.relative_to(BOARD.parent.parent)}")
+    print("* = 그 진폭에서 수렴 실패해 더 낮은 진폭으로 재서 선형 환산한 값")
     print(f"Venv_DC {a[:, 2].min()*1e3:.2f}~{a[:, 2].max()*1e3:.2f} mV")
     for i, amp in enumerate(args.amp):
         s = a[:, 3 + i]

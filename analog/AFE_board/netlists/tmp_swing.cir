@@ -30,7 +30,7 @@ C2 Net-_C2-Pad1_ Net-_U1--_ {C1}
 R1 vin Net-_U1-+_ {R1}
 C1 0.9V Net-_U1-+_ {C1}
 RA1 Net-_C2-Pad1_ Net-_U1-+_ {RA}
-V4 v_mic Net-_V3-Pad1_ DC 0 SIN(0 0.0001 5000 0 0 0)
+V4 v_mic Net-_V3-Pad1_ DC 0 SIN(0 0.0004 5000 0 0 0)
 Rmic1 v_mic Net-_Cc1-Pad1_ {Rmic}
 Cc1 Net-_Cc1-Pad1_ v_pre {Cc}
 Rpre1 v_pre 0.9V {Rpre1}
@@ -41,7 +41,7 @@ Rpre3 Net-_U5--_ 0.9V {Rpre3}
 .param R1 = 562000
 .param R2 = 100000
 .param R4 = 50000
-.param R5 = 125000
+.param R5 = 500000
 .param R6 = 45450
 .param R7 = 472220
 .param R8 = 527780
