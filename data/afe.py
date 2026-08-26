@@ -235,8 +235,27 @@ class AFEFrontend(nn.Module):
                 # undo the per-channel peak-norm: weight |H| by the true linear
                 # passband gain (gain_dB col in the design table) -> restores the
                 # real cross-channel spectral tilt.
-                dp = p.parent / "filterbank_design.csv"
+                # The design table must be the one that PRODUCED this matrix.
+                # design_filterbank.py --suffix writes the pair
+                # filterbank_{matrix,design}<suffix>.csv, so carry the suffix
+                # across; hardcoding "filterbank_design.csv" silently applied
+                # the 50-8000 gains to a 125-5000 bank.
+                if not p.name.startswith("filterbank_matrix"):
+                    raise ValueError(
+                        f"spice_gain_restore needs the design table that produced "
+                        f"{p.name}, but the name does not start with "
+                        f"'filterbank_matrix' so the suffix cannot be derived.")
+                dp = p.parent / p.name.replace("filterbank_matrix",
+                                               "filterbank_design", 1)
+                if not dp.exists():
+                    raise FileNotFoundError(
+                        f"spice_gain_restore: {dp} not found next to {p.name}. "
+                        f"Re-run design_filterbank.py for this band -- it writes "
+                        f"the matrix and the design table together.")
                 gdb = np.loadtxt(dp, delimiter=",", skiprows=1)[:, 5]   # gain_dB
+                if gdb.shape[0] != cfg.n_channels:
+                    raise ValueError(
+                        f"{dp} has {gdb.shape[0]} rows, expected {cfg.n_channels}.")
                 m = m * (10.0 ** (gdb / 20.0))[:, None]                 # amplitude
             self.register_buffer("spice_fbank",
                                  torch.tensor(m, dtype=torch.float32))
