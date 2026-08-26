@@ -87,6 +87,14 @@ def main() -> None:
     if args.vos is not None:
         cfg.afe.comparator_vos = args.vos
     afe = AFEFrontend(cfg.afe).eval()
+    model = BinaryMatchboxNet(cfg.model).eval()
+    ck = torch.load(run / "best.pt", map_location="cpu", weights_only=True)
+    model.load_state_dict(ck["model"])
+    load_afe_state(afe, ck["afe"])
+    # ⚠️ 반드시 load_afe_state 뒤에. 앞에 두면 체크포인트의 threshold 가
+    #    주입한 draw 를 덮어써서 --vos-fixed 가 조용히 무효가 된다
+    #    (실제로 그렇게 넣었다가 vos 0.005/0.01/0.02 가 전부 같은
+    #    정확도를 내놨다 -- 결과가 아니라 버그였다).
     if args.vos is not None and args.vos_fixed and args.vos > 0.0:
         # 실물 비교기의 Vos 는 소자별 고정 DC 오차다. data/afe.py 는 클립마다
         # 다시 뽑는데(학습 강건성용) 그건 실제보다 가혹하다 -- 캘리브레이션으로
@@ -94,15 +102,19 @@ def main() -> None:
         # 뽑아 임계값에 그냥 더해두고, forward 의 랜덤 주입은 끈다.
         g = torch.Generator().manual_seed(args.vos_seed)
         draw = args.vos * torch.randn(afe.threshold.numel(), generator=g)
+        before = afe.threshold.detach().clone()
         with torch.no_grad():
             afe.threshold += draw.to(afe.threshold.dtype)
+        # 이 주입이 무효가 되는 방식은 조용하다 (같은 정확도가 그냥 다시 나온다).
+        # 그러니 실제로 움직였는지 여기서 확인한다.
+        moved = (afe.threshold.detach() - before).abs().max().item()
+        if moved < 1e-9:
+            raise SystemExit(
+                "--vos-fixed 가 threshold 를 못 움직였다. 주입이 "
+                "load_afe_state() 보다 앞에 있으면 덮어써진다.")
         afe.cfg.comparator_vos = 0.0
         print(f"오프셋 고정 draw (seed {args.vos_seed}), 정규화 단위:")
         print("  " + " ".join(f"{v:+.4f}" for v in draw.tolist()))
-    model = BinaryMatchboxNet(cfg.model).eval()
-    ck = torch.load(run / "best.pt", map_location="cpu", weights_only=True)
-    model.load_state_dict(ck["model"])
-    load_afe_state(afe, ck["afe"])
 
     sites = tail_plan(model)
     conv2_pw = model.stages["conv2"].pw
