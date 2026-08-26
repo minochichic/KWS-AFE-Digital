@@ -1,0 +1,60 @@
+.title KiCad schematic with shared OPA379 preamplifier
+.include "OPA379.LIB"
+.include "BAT54WT.lib"
+.include "LPV7215.lib"
+
+* Board-wide microphone and preamplifier defaults. Generated run parameters
+* override these values without changing this tracked template.
+
+
+
+XU2 Net-_U2-+_ Net-_U1--_ 1.8V GND Net-_C2-Pad1_ OPA379
+R3 0.9V Net-_U2-+_ {R2}
+R2 Net-_U2-+_ v_filt {R2}
+V2 1.8V 0.9V DC 0.9
+V3 Net-_V3-Pad1_ GND DC {VMIC}
+V1 0.9V GND DC 0.9
+R6 0.9V Net-_U3-+_ {R6}
+R4 v_filt Net-_D1-A_ {R4}
+R5 Net-_D1-A_ v_env {R5}
+D1 Net-_D1-A_ Net-_D1-K_ Dbat54wt1
+XU3 Net-_U3-+_ Net-_D1-A_ 1.8V GND Net-_D1-K_ OPA379
+D2 Net-_D1-K_ v_env Dbat54wt1
+R7 v_thr 1.8V {R7}
+R8 GND v_thr {R8}
+C3 v_env GND {C3}
+XU4 v_env v_thr 1.8V GND v_comp LPV7215
+RA2 Net-_U1--_ v_filt {RA}
+XU1 Net-_U1-+_ Net-_U1--_ 1.8V GND v_filt OPA379
+C2 Net-_C2-Pad1_ Net-_U1--_ {C1}
+R1 vin Net-_U1-+_ {R1}
+C1 0.9V Net-_U1-+_ {C1}
+RA1 Net-_C2-Pad1_ Net-_U1-+_ {RA}
+V4 v_mic Net-_V3-Pad1_ DC 0 SIN(0 0.0003 125 0 0 0)
+Rmic1 v_mic Net-_Cc1-Pad1_ {Rmic}
+Cc1 Net-_Cc1-Pad1_ v_pre {Cc}
+Rpre1 v_pre 0.9V {Rpre1}
+XU5 v_pre Net-_U5--_ 1.8V GND vin OPA379
+Rpre2 vin Net-_U5--_ {Rpre2}
+Rpre3 Net-_U5--_ 0.9V {Rpre3}
+.param RA = 127000
+.param R1 = 576000
+.param R2 = 100000
+.param R4 = 50000
+.param R5 = 500000
+.param R6 = 45450
+.param R7 = 455560
+.param R8 = 544440
+.param C1 = 1e-08
+.param C3 = 3.9e-08
+.param VMIC = 0.55
+.param Rmic = 5100
+.param Cc = 1e-07
+.param Rpre1 = 470000
+.param Rpre2 = 90000
+.param Rpre3 = 10000
+.control
+  tran 2u 20m
+  wrdata dbg.csv v(v_pre) v(vin) v(v_filt) v(v_env)
+.endc
+.end
