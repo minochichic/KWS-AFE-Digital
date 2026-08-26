@@ -15,9 +15,28 @@ swing is at comparator-offset level is parked always-OFF. R8 = 1000k*Vthr/1.8,
 R7 = 1000k - R8, rounded to 0.01 kOhm.
 
 Output: artifacts/r7r8_real.md   Run from repo root.
+
+THREE THINGS ARE ARGUMENTS NOW, and any of them moving forces a new --out.
+
+  --design   read RA/C/R1 from a filterbank_design*.csv instead of the table
+             below, so a re-solved band can be measured
+  --opamp    force ONE part on every channel instead of picking the larger
+             swing per channel -- this is the "can OPA379 do all sixteen"
+             question, and it is a detector swap: XU3 only. The GIC filter is
+             OPA379 in every case.
+  --out      the artifacts filename
+
+r7r8_real.md is the shipped table and analog/README.md marks the tuning folder
+frozen, so it must not be written by an exploratory run. A margin table that
+silently describes a different part or a different band is worse than no table.
+
+  python analog/AFE_tuning/scripts/swing_real.py \
+      --design analog/AFE/artifacts/filterbank_design_125_5000.csv \
+      --opamp OPA379 --out r7r8_opa379_125_5000.md
 """
 from __future__ import annotations
 
+import argparse
 import re
 import subprocess
 from pathlib import Path
@@ -39,6 +58,31 @@ CH = {
  14:(5754,"10.89k","2.19n","55.2k"),15:(6761,"10.61k","1.86n","53.4k"),
 }
 UPPER = range(10, 16)      # also try TLV9041D here
+
+
+def eng(x, unit):
+    """SI float -> the netlist's k/n notation, e.g. 12340.0 -> '12.34k'."""
+    for scale, suf in ((1e-9, "n"), (1e-6, "u"), (1e-3, "m"),
+                       (1.0, ""), (1e3, "k"), (1e6, "meg")):
+        if abs(x) < scale * 1000 or suf == "meg":
+            return f"{x / scale:.2f}{suf}"
+    return f"{x:.2f}"
+
+
+def load_design(path):
+    """ch -> (f_c, RA, C, R1) from a filterbank_design*.csv (SI units)."""
+    import csv as _csv
+    out = {}
+    with open(path) as f:
+        for row in _csv.DictReader(f):
+            ch = int(float(row["ch"]))
+            out[ch] = (int(round(float(row["fc_sim"]))),
+                       eng(float(row["RA"]), "ohm"),
+                       eng(float(row["C"]), "F"),
+                       eng(float(row["R1"]), "ohm"))
+    if len(out) != 16:
+        raise SystemExit(f"{path}: 16채널이 아니라 {len(out)}채널이다")
+    return out
 OPAMP_LIB = {"OPA379": None, "TLV9041D": "TLV9041D.lib"}
 AMP, F_TRIP, FLOOR_MV = 5e-3, 0.38, 3.0
 SUP, TOT = 1.8, 1000.0
@@ -76,12 +120,33 @@ def sim(ch, opamp, signal):
 
 
 def main():
+    global CH, UPPER
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--design", help="filterbank_design*.csv for RA/C/R1")
+    ap.add_argument("--opamp", choices=sorted(OPAMP_LIB),
+                    help="force this part on every channel (detector, XU3)")
+    ap.add_argument("--out", default="r7r8_real.md")
+    args = ap.parse_args()
+    if (args.design or args.opamp) and args.out == "r7r8_real.md":
+        raise SystemExit(
+            "--design/--opamp change what is being measured, so --out must "
+            "change too. r7r8_real.md is the shipped table (analog/README.md "
+            "marks AFE_tuning frozen) and a margin table that quietly "
+            "describes a different part or band is worse than none.")
+    if args.design:
+        CH = load_design(args.design)
+        print(f"부품표: {args.design}")
+    if args.opamp:
+        UPPER = ()                     # no per-channel choice; one part wins
+        print(f"검출기 op-amp 를 {args.opamp} 로 고정 (GIC 필터는 늘 OPA379)")
+
     venv_dc = {op: sim(0, op, False) for op in OPAMP_LIB}   # channel-independent
     print("Venv_DC:", {k: round(v*1e3, 1) for k, v in venv_dc.items()})
 
     rows = []
     for ch in CH:
-        cands = ["OPA379"] + (["TLV9041D"] if ch in UPPER else [])
+        cands = ([args.opamp] if args.opamp
+                 else ["OPA379"] + (["TLV9041D"] if ch in UPPER else []))
         best = None
         for op in cands:
             vmax = sim(ch, op, True)
@@ -120,8 +185,13 @@ def main():
     md += ["```", "",
            "추정판(swing_per_channel.md) 대비: 저역 swing이 실측에서 더 크고, HF는 TLV9041D로",
            "OPA379 대비 3~4배 개선되나 ch14/15는 여전히 오프셋 수준 → 프리앰프 필요."]
-    ART.joinpath("r7r8_real.md").write_text("\n".join(md) + "\n")
-    print("\n저장: artifacts/r7r8_real.md")
+    ok = sum(1 for r in md if r.startswith("| ") and r.endswith("✅ |"))
+    md += ["", f"이 표의 조건: 부품표 {args.design or '내장(50-8000)'}, "
+               f"검출기 op-amp {args.opamp or '채널별 큰 쪽 선택'}.",
+           f"마진 하한 {FLOOR_MV:.0f} mV 를 넘긴 채널 {ok}/16."]
+    ART.joinpath(args.out).write_text("\n".join(md) + "\n")
+    print(f"\n하한 통과 {ok}/16")
+    print(f"저장: artifacts/{args.out}")
 
 
 if __name__ == "__main__":
