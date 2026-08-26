@@ -51,8 +51,13 @@ def load_bom(chan_csv: Path, common_csv: Path):
     return ch, co
 
 
-def run_channel(net_tmpl: str, row, co, out: Path) -> tuple:
-    """.ac sweep on the ML STFT grid; returns (f, |H| linear at /v_filt)."""
+def run_channel(net_tmpl: str, row, co, out: Path, fine: Path) -> tuple:
+    """Two .ac sweeps at /v_filt.
+
+    Returns (grid_f, grid_mag, fine_f, fine_mag): the first pair is on the
+    ML STFT grid and becomes a matrix row; the second is a fine log sweep
+    used only to measure f_c / Q / gain.
+    """
     # 257-point grid = DC + 256 linear points at exactly 31.25 Hz spacing.
     # .ac cannot start at DC, so sweep 1..256 and prepend 0 (a bandpass is 0
     # at DC anyway).
@@ -79,9 +84,20 @@ def run_channel(net_tmpl: str, row, co, out: Path) -> tuple:
     # a missing key becomes an ngspice error instead of a silent stale default.
     net = re.sub(r"^\.param .*$", "", net, flags=re.M)
     decl = "\n".join(f".param {k} = {v:.10g}" for k, v in params.items())
+    # TWO sweeps, and they are not interchangeable.
+    #  - the STFT grid is what training multiplies against, so the matrix must
+    #    land exactly on it;
+    #  - but f_c / Q / gain must NOT be read off that grid. At 31.25 Hz spacing
+    #    a low channel is only ~1-2 points across its -3 dB width, so the true
+    #    peak falls between samples: measured gain reads low and measured BW
+    #    reads wide. That is exactly what happened to ch2 (219 Hz), which came
+    #    out 24.28 dB / Q 3.14 against 25.9 dB / Q 4.5 for its neighbours.
+    #    So characterize on a fine log sweep, 200 points per decade.
     ctrl = (f"\n.control\n"
             f"  ac lin {N_FFT // 2} {df:.10g} {SR / 2:.10g}\n"
             f"  wrdata {out.as_posix()} vdb(v_filt)\n"
+            f"  ac dec 200 10 100k\n"
+            f"  wrdata {fine.as_posix()} vdb(v_filt)\n"
             f".endc\n")
     net = net.replace(".end", decl + ctrl + ".end")
 
@@ -89,11 +105,14 @@ def run_channel(net_tmpl: str, row, co, out: Path) -> tuple:
     tmp.write_text(net)
     r = subprocess.run(["ngspice", "-b", tmp.name], cwd=BOARD / "netlists",
                        capture_output=True, text=True, timeout=120)
-    if not out.exists():
-        raise RuntimeError(f"ngspice produced no output:\n{r.stdout}\n{r.stderr}")
-    d = np.loadtxt(out)
-    f, gdb = d[:, 0], d[:, 1]
-    return np.concatenate([[0.0], f]), np.concatenate([[0.0], 10 ** (gdb / 20.0)])
+    for want in (out, fine):
+        if not want.exists():
+            raise RuntimeError(
+                f"ngspice produced no {want.name}:\n{r.stdout}\n{r.stderr}")
+    d, e = np.loadtxt(out), np.loadtxt(fine)
+    return (np.concatenate([[0.0], d[:, 0]]),
+            np.concatenate([[0.0], 10 ** (d[:, 1] / 20.0)]),
+            e[:, 0], 10 ** (e[:, 1] / 20.0))
 
 
 def measure(f: np.ndarray, mag: np.ndarray) -> tuple:
@@ -136,8 +155,10 @@ def main() -> int:
     grid, matrix, rows = stft_grid(), [], []
     for k in range(N_CH):
         row = ch[k]
-        f, mag = run_channel(net_tmpl, row, co, BOARD / "sim" / f"ac_{k}.csv")
-        fc, q, gdb = measure(f, mag)
+        f, mag, ff, fmag = run_channel(
+            net_tmpl, row, co, BOARD / "sim" / f"ac_{k}.csv",
+            BOARD / "sim" / f"fine_{k}.csv")
+        fc, q, gdb = measure(ff, fmag)          # fine sweep, never the grid
         tgt = float(row["f_c_hz"])
         vthr = 1.8 * row["R8_kohm"] / (row["R7_kohm"] + row["R8_kohm"])
         print(f"{k:>3}{tgt:>10.1f}{fc:>10.1f}{100*(fc-tgt)/tgt:>7.1f}"
