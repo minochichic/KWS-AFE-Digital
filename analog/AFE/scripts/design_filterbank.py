@@ -5,13 +5,30 @@ set by R1 (f_c-independent, Q ~ R1/RA). So each channel is designed by
 (1) bisecting RA to the mel center f_c, then (2) setting R1 = Q_target*RA and
 refining once. C is chosen per channel to keep RA in a sane range.
 
-Outputs (AFE/sim/):
+Outputs (AFE/artifacts/):
   filterbank_design.csv   per-channel (f_c target/sim, Q target/sim, RA, C, R1, gain)
   filterbank_matrix.csv   [16, 257] |H_k(f)| on the ML STFT grid (0..8000 Hz)
-Run from repo root:  .venv/bin/python AFE/scripts/design_filterbank.py
+
+Run from repo root:
+  .venv/bin/python analog/AFE/scripts/design_filterbank.py
+
+THE BAND IS A CLI ARGUMENT, AND MOVING IT WRITES A NEW FILE. Training reads
+filterbank_matrix.csv every run (train/config.py spice_matrix_path), and
+analog/README.md marks the shipped pair as frozen, so a re-run at a different
+band must not land on top of them -- every recorded number would silently start
+describing a front end nobody chose. --f-min/--f-max therefore default to the
+shipped 50/8000 and any other band requires --suffix:
+
+  python analog/AFE/scripts/design_filterbank.py --f-min 125 --f-max 5000 \
+         --suffix _125_5000
+  python -m train.train --config runs/fx_ste0003/config.yaml --tag fx_band125 \
+         afe.spice_matrix_path=analog/AFE/artifacts/filterbank_matrix_125_5000.csv
+
+Needs ngspice on PATH: the design bisects RA per channel with real .ac runs.
 """
 from __future__ import annotations
 
+import argparse
 import math
 import sys
 from pathlib import Path
@@ -23,7 +40,7 @@ from channel import char                                    # noqa: E402
 
 AFE = Path(__file__).resolve().parents[1]
 N_CH = 16
-F_MIN, F_MAX = 50.0, 8000.0
+F_MIN, F_MAX = 50.0, 8000.0      # the shipped band; overridden by --f-min/--f-max
 SR, N_FFT = 16000, 512
 
 
@@ -35,9 +52,9 @@ def mel2hz(m):
     return 700.0 * (10.0 ** (m / 2595.0) - 1.0)
 
 
-def mel_targets():
+def mel_targets(f_min=F_MIN, f_max=F_MAX):
     """torchaudio-style: n+2 mel points; centers + FWHM-based target Q."""
-    pts = mel2hz(np.linspace(hz2mel(F_MIN), hz2mel(F_MAX), N_CH + 2))
+    pts = mel2hz(np.linspace(hz2mel(f_min), hz2mel(f_max), N_CH + 2))
     centers = pts[1:-1]
     # triangular filter k spans [pts[k], pts[k+2]]; FWHM = half the base
     fwhm = (pts[2:] - pts[:-2]) / 2.0
@@ -74,8 +91,25 @@ def design_channel(fc_t, q_t):
 
 
 def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--f-min", type=float, default=F_MIN)
+    ap.add_argument("--f-max", type=float, default=F_MAX)
+    ap.add_argument("--suffix", default="",
+                    help="appended to both output filenames; REQUIRED when the "
+                         "band is not the shipped one, so the frozen matrix "
+                         "cannot be overwritten")
+    args = ap.parse_args()
+    if (args.f_min, args.f_max) != (F_MIN, F_MAX) and not args.suffix:
+        raise SystemExit(
+            f"--f-min/--f-max moved to {args.f_min}/{args.f_max} but --suffix "
+            f"is empty. That would overwrite filterbank_matrix.csv, which every "
+            f"recorded run reads (analog/README.md marks it frozen). Pass e.g. "
+            f"--suffix _{args.f_min:.0f}_{args.f_max:.0f}")
     (AFE / "sim").mkdir(exist_ok=True)
-    centers, qtar = mel_targets()
+    (AFE / "artifacts").mkdir(exist_ok=True)
+    print(f"band {args.f_min:.0f}-{args.f_max:.0f} Hz -> "
+          f"filterbank_matrix{args.suffix}.csv\n")
+    centers, qtar = mel_targets(args.f_min, args.f_max)
     print(f"{'ch':>3}{'fc_target':>11}{'fc_sim':>9}{'err%':>7}"
           f"{'Q_tgt':>7}{'Q_sim':>7}{'gain':>7}{'RA[k]':>8}{'C[nF]':>8}{'R1[k]':>8}")
     print("-" * 82)
@@ -95,9 +129,10 @@ def main():
         rows.append([k, centers[k], d["fc"], qtar[k], d["Q"], d["gain"],
                      d["RA"], d["C"], d["R1"]])
 
-    np.savetxt(AFE / "artifacts" / "filterbank_matrix.csv", np.array(matrix),
-               delimiter=",")
-    np.savetxt(AFE / "artifacts" / "filterbank_design.csv", np.array(rows),
+    np.savetxt(AFE / "artifacts" / f"filterbank_matrix{args.suffix}.csv",
+               np.array(matrix), delimiter=",")
+    np.savetxt(AFE / "artifacts" / f"filterbank_design{args.suffix}.csv",
+               np.array(rows),
                delimiter=",",
                header="ch,fc_target,fc_sim,Q_target,Q_sim,gain_dB,RA,C,R1",
                comments="")
@@ -106,7 +141,11 @@ def main():
     print("-" * 82)
     print(f"f_c 커버: {min(fcs):.0f}..{max(fcs):.0f} Hz | "
           f"평균 f_c 오차 {np.mean(errs):.1f}% | 최대 {max(errs):.1f}%")
-    print(f"저장: sim/filterbank_matrix.csv [16,{len(grid)}], filterbank_design.csv")
+    print(f"저장: artifacts/filterbank_matrix{args.suffix}.csv [16,{len(grid)}], "
+          f"filterbank_design{args.suffix}.csv")
+    if args.suffix:
+        print(f"\n학습에 쓰려면:\n  afe.spice_matrix_path="
+              f"analog/AFE/artifacts/filterbank_matrix{args.suffix}.csv")
 
 
 if __name__ == "__main__":
