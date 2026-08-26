@@ -24,6 +24,7 @@ or the disk; everything else is pure and unit-tested with in-memory items.
 
 from __future__ import annotations
 
+import warnings
 import random
 from typing import List, Optional, Sequence, Tuple
 
@@ -194,6 +195,13 @@ class SpeechCommands12(Dataset):
 
         import torchaudio  # local import: not needed for the pure-logic path
 
+        # Before committing to a 2.26 GB download, look where the notebook puts
+        # it. notebooks/make_lab.py sets DATA_ROOT=~/datasets/speech_commands_v2
+        # and overrides cfg.data.root; the CLI does not, so it reads base.yaml's
+        # repo-relative "datasets/..." and starts downloading a SECOND copy of a
+        # corpus already on disk. Silent, slow, and 4.5 GB by the end.
+        _warn_if_dataset_exists_elsewhere(cfg.root)
+
         # torchaudio downloads the tarball straight into `root` and assumes it
         # already exists -- create it, otherwise the .partial temp file fails
         # with FileNotFoundError.
@@ -241,6 +249,40 @@ def _load_noise_waves(base) -> List[torch.Tensor]:
             w, _sr = torchaudio.load(os.path.join(root, name))
             waves.append(w.reshape(-1))
     return waves
+
+
+#: Places the corpus is known to land, in preference order. The first is what
+#: notebooks/make_lab.py uses; base.yaml's default is repo-relative, so the two
+#: disagree whenever the CLI is driven without a data.root override.
+_KNOWN_ROOTS = ("~/datasets/speech_commands_v2",)
+
+
+def dataset_ready(root: str) -> bool:
+    """True if `root` holds a COMPLETE extract.
+
+    testing_list.txt, not the directory: an interrupted extract leaves the
+    directory behind and then fails deep inside torchaudio.
+    """
+    import os
+    return os.path.isfile(os.path.join(
+        os.path.expanduser(root), "SpeechCommands",
+        "speech_commands_v0.02", "testing_list.txt"))
+
+
+def _warn_if_dataset_exists_elsewhere(root: str) -> None:
+    """Loudly point at an existing copy instead of downloading a second one."""
+    import os
+    if dataset_ready(root):
+        return
+    for cand in _KNOWN_ROOTS:
+        full = os.path.expanduser(cand)
+        if os.path.abspath(full) != os.path.abspath(root) and dataset_ready(full):
+            warnings.warn(
+                f"\ndata.root={root!r} 에는 데이터셋이 없지만 {full!r} 에는 "
+                f"있다. 이대로 두면 2.26 GB 를 다시 받는다.\n"
+                f"멈추고 다음을 붙여 다시 실행할 것:  data.root={full}\n",
+                stacklevel=3)
+            return
 
 
 def ensure_dataset(root: str, cache_tar: Optional[str] = None) -> str:
