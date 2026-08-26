@@ -66,6 +66,14 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--tag", required=True)
     ap.add_argument("--runs", default="runs")
+    ap.add_argument("--vos", type=float, default=None,
+                    help="평가 시 비교기 오프셋(정규화 단위). 체크포인트가 학습된 "
+                         "값과 무관하게 덮어쓴다. 3 mV / K=100 mV -> 0.03")
+    ap.add_argument("--vos-fixed", action="store_true",
+                    help="오프셋을 채널당 하나로 고정(실물에 충실). 기본값은 "
+                         "data/afe.py 처럼 클립마다 새로 뽑는 것 = 훨씬 가혹하다")
+    ap.add_argument("--vos-seed", type=int, default=0,
+                    help="--vos-fixed 의 draw. 보드 한 장 = seed 하나")
     ap.add_argument("--limit", type=int, default=0,
                     help="stop after this many clips (0 = the whole split)")
     args = ap.parse_args()
@@ -76,7 +84,21 @@ def main() -> None:
 
     run = Path(args.runs) / args.tag
     cfg = load_config(str(run / "config.yaml"))
+    if args.vos is not None:
+        cfg.afe.comparator_vos = args.vos
     afe = AFEFrontend(cfg.afe).eval()
+    if args.vos is not None and args.vos_fixed and args.vos > 0.0:
+        # 실물 비교기의 Vos 는 소자별 고정 DC 오차다. data/afe.py 는 클립마다
+        # 다시 뽑는데(학습 강건성용) 그건 실제보다 가혹하다 -- 캘리브레이션으로
+        # 없앨 수 있는 것과 없는 것이 그 차이에 걸려 있다. 여기서는 채널당 하나를
+        # 뽑아 임계값에 그냥 더해두고, forward 의 랜덤 주입은 끈다.
+        g = torch.Generator().manual_seed(args.vos_seed)
+        draw = args.vos * torch.randn(afe.threshold.numel(), generator=g)
+        with torch.no_grad():
+            afe.threshold += draw.to(afe.threshold.dtype)
+        afe.cfg.comparator_vos = 0.0
+        print(f"오프셋 고정 draw (seed {args.vos_seed}), 정규화 단위:")
+        print("  " + " ".join(f"{v:+.4f}" for v in draw.tolist()))
     model = BinaryMatchboxNet(cfg.model).eval()
     ck = torch.load(run / "best.pt", map_location="cpu", weights_only=True)
     model.load_state_dict(ck["model"])
