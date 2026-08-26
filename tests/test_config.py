@@ -7,6 +7,7 @@ quietly binarize the first or last layer.
 from __future__ import annotations
 
 import copy
+import os
 from pathlib import Path
 
 import pytest
@@ -208,3 +209,15 @@ def test_the_shipped_band_does_not_warn() -> None:
     with warnings.catch_warnings():
         warnings.simplefilter("error", UserWarning)
         cfg.validate()
+
+
+def test_data_root_tilde_is_expanded() -> None:
+    """base.yaml ships "~/datasets/...", so one default serves the notebook and
+    the CLI. If the tilde survives, torchaudio makes a directory literally named
+    "~" and downloads 2.26 GB into it next to a corpus that already exists."""
+    cfg = load_config(str(BASE))
+    assert "~" not in cfg.data.root
+    assert os.path.isabs(cfg.data.root)
+    # and an override is expanded on the same path
+    cfg2 = load_config(str(BASE), {"data.root": "~/elsewhere"})
+    assert cfg2.data.root == os.path.expanduser("~/elsewhere")

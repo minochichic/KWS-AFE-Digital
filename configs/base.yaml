@@ -196,7 +196,7 @@ model:
 
 data:
   name: speech_commands_v2
-  root: datasets/speech_commands_v2
+  root: ~/datasets/speech_commands_v2
   version: v0.02
   # QUOTE these: unquoted yes/no/on/off parse as YAML booleans (the "Norway
   # problem"), corrupting the list to [true, false, ...]. The data pipeline

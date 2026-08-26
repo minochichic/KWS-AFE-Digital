@@ -17,6 +17,7 @@ Python 3.9-compatible (Colab is newer, but local dev here is 3.9).
 
 from __future__ import annotations
 
+import os
 import dataclasses
 import warnings
 from dataclasses import dataclass, field, asdict
@@ -400,6 +401,12 @@ class Config:
     # ------------------------------------------------------------------ #
     def validate(self) -> None:
         m, a = self.model, self.afe
+
+        # data.root may be written with a leading ~ so one default serves both
+        # the notebook and the CLI. Expand it HERE, once: torchaudio would
+        # otherwise create a directory literally named "~" and then download a
+        # fresh copy into it.
+        self.data.root = os.path.expanduser(self.data.root)
 
         k = getattr(a, "comparators_per_channel", 1)
         if k < 1:
