@@ -413,6 +413,38 @@ def test_fixed_scale_is_absolute_threshold() -> None:
     assert torch.all(fe.threshold.grad != 0)
 
 
+def test_minmax_is_gain_invariant_and_fixed_is_not() -> None:
+    """The hardware threshold is a FIXED R7/R8 divider. It cannot track how loud
+    the room is, so a louder sound MUST fire more comparators.
+
+    normalize="minmax" rescales per clip, so doubling the volume leaves the
+    binary image bit-identical -- a perfect AGC, and unbuildable. "fixed" divides
+    by dataset-level constants, so level survives. This is the whole reason
+    track 2 exists; it fails loudly if base.yaml is ever pointed at "minmax".
+    """
+    wave = noise(4)
+    quiet, loud = wave * 0.5, wave * 2.0
+
+    # sqrt to match configs/base.yaml; xlse requires it, and minmax is
+    # invariant under either (log makes gain additive, sqrt multiplicative,
+    # and a per-clip affine rescale cancels both).
+    mm = make_frontend(normalize="minmax", compression="sqrt", envelope_win_ms=10.0)
+    mm.init_thresholds(wave)
+    with torch.no_grad():
+        assert torch.equal(mm(quiet, target_T=128), mm(loud, target_T=128))
+
+    for mode in ("fixed", "xlse"):                     # both absolute-threshold
+        fe = make_frontend(normalize=mode, compression="sqrt",
+                           envelope_win_ms=10.0)
+        fe.init_fixed_scale(wave)
+        fe.init_thresholds(wave)
+        with torch.no_grad():
+            a, b = fe(quiet, target_T=128), fe(loud, target_T=128)
+        assert not torch.equal(a, b), f"{mode} is gain-invariant, so it is an AGC"
+        assert (b > 0).float().mean() > (a > 0).float().mean(), \
+            f"{mode}: louder input must not fire FEWER comparators"
+
+
 def test_fixed_scale_in_state_dict_and_noop_elsewhere() -> None:
     wave = noise(2)
     fe = make_frontend(normalize="fixed", envelope_win_ms=10.0)
