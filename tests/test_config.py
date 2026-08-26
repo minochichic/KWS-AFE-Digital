@@ -174,3 +174,37 @@ def test_non_paper_envelope_window_warns_but_is_allowed() -> None:
 
     with pytest.raises(ValueError, match="positive"):      # still guarded
         load_config("configs/base.yaml", {"afe.envelope_win_ms": 0.0})
+
+
+def test_spice_bank_warns_that_f_min_f_max_do_nothing() -> None:
+    """data/afe.py reads f_min/f_max only in the "mel" branch, and base.yaml
+    ships filterbank_source='spice'. So `afe.f_max=5000` on a normal run is a
+    silent no-op -- and a sweep that changes nothing is indistinguishable from
+    a sweep that found no effect."""
+    cfg = load_config(BASE, overrides={"afe.filterbank_source": "spice",
+                                       "afe.f_min": 125.0,
+                                       "afe.f_max": 5000.0})
+    with pytest.warns(UserWarning, match="IGNORED"):
+        cfg.validate()
+
+
+def test_the_mel_bank_takes_the_band_without_complaint() -> None:
+    """The same override IS meaningful under 'mel', which is how the band
+    should be swept in software before anyone re-solves sixteen filters."""
+    import warnings
+    cfg = load_config(BASE, overrides={"afe.filterbank_source": "mel",
+                                       "afe.f_min": 125.0,
+                                       "afe.f_max": 5000.0})
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        cfg.validate()
+
+
+def test_the_shipped_band_does_not_warn() -> None:
+    """50-8000 is what the matrix was extracted at, so it is consistent."""
+    import warnings
+    cfg = load_config(BASE)
+    assert cfg.afe.filterbank_source == "spice"
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", UserWarning)
+        cfg.validate()

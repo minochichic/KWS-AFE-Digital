@@ -440,6 +440,22 @@ class Config:
                 f"{a.clip_ms / a.envelope_win_ms:.0f}; set model.T to match.",
                 stacklevel=2,
             )
+        if a.filterbank_source == "spice" and (a.f_min != 50.0
+                                               or a.f_max != 8000.0):
+            # The SPICE bank is a [C, n_freqs] matrix loaded from a file at
+            # whatever centre frequencies it was extracted at (166-6761 Hz).
+            # data/afe.py reads f_min/f_max ONLY in the "mel" branch, so setting
+            # them here changes nothing at all -- and a sweep that changes
+            # nothing looks exactly like a sweep that found no effect. Moving
+            # the band for real means re-running design_filterbank.py and
+            # re-extracting the matrix (analog/AFE/README.md), which also means
+            # 48 new component values on the board.
+            warnings.warn(
+                f"afe.f_min={a.f_min} / f_max={a.f_max} are IGNORED when "
+                f"filterbank_source='spice': the band comes from "
+                f"{a.spice_matrix_path}, not from these fields. Use "
+                f"filterbank_source='mel' to sweep the band in software, or "
+                f"regenerate the SPICE matrix to move it for real.")
         if a.f_max > a.sample_rate / 2:
             raise ValueError(
                 f"afe.f_max ({a.f_max}) exceeds Nyquist ({a.sample_rate / 2})"
