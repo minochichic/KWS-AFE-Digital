@@ -232,6 +232,13 @@ def test_afe_to_model_pipeline() -> None:
 
     torch.manual_seed(0)
     wave = 0.1 * torch.randn(2, 16000)
+    # base.yaml is normalize="fixed" now, whose lo/hi are dataset constants.
+    # Skipping the init leaves them at 0/1 and the placeholder threshold 0.5,
+    # so with ste_clip=0.003 no sample lands inside the STE window and the
+    # threshold gradient is silently zero. train/train.py runs these two in
+    # this order; a test that skips them is testing a path nobody trains on.
+    afe.init_fixed_scale(wave)
+    afe.init_thresholds(wave)
     logits = model(afe(wave, target_T=cfg.model.T))
     assert logits.shape == (2, 12)
 

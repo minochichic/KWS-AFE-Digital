@@ -57,14 +57,44 @@ afe:
   envelope_tau_ms: 0.0
 
   # --- binarization (comparator + learnable threshold) ---
-  # ---- 확정 프론트엔드 (2026-08-11) ----------------------------------------
-  # 다이오드-OR 은 max 가 아니라 log-sum-exp 를 만든다(지수 I-V 때문에 지는 채널도
-  # 계속 흘린다). 그 soft max 로 학습한 결과가 하드 max 보다 +6.7pp 높았고
-  # (0.8445 vs 0.7778) 부품은 하나도 안 늘었다. 그래서 이게 baseline 이다.
-  # 근거: docs/EXPERIMENT_MAP.md A-1, docs/diagrams/14_diode_softmax.svg
+  # ---- 확정 프론트엔드 --------------------------------------------------------
+  #
+  # 결정 기록 (2026-08-26, 사용자 승인): **트랙 2 (`fixed`, 절대 임계)** 로 간다.
+  #   "학습된 임계값을 이용해 저항비를 고정하여 PCB 를 만든다."
+  #
+  # 트랙 1(`xlse`, 다이오드-OR)이 정확도는 더 높다 (0.8445 vs 0.817). 하지만
+  # xlse 의 임계값은 채널 고유값이 아니라 **16채널 공통 노드 기준의 분압**이라
+  # 다이오드-OR 회로가 실제로 만들어져야 성립한다. 그게 불확실해서 트랙 2 가
+  # 주력이 됐다. 트랙 2 는 lo/hi 가 데이터셋 상수이므로 `env >= thr` 이 그대로
+  # 절대 임계이고, **채널마다 R7/R8 분압 하나**로 떨어진다.
+  # 근거: docs/ABLATIONS.md 트랙 2 표, data/afe.py init_fixed_scale().
+  #       트랙 1 은 docs/EXPERIMENT_MAP.md A-1 에 그대로 보존.
+  #
   filterbank_source: spice  # 실제 GIC 응답 (mel 삼각형이 아니라)
+  # ⚠️ 미결: 밴드. 지금은 config.py 기본값 filterbank_matrix.csv (50-8000) 를 쓴다.
+  #    ⚠️ 아래 f_min/f_max 로는 못 바꾼다 -- spice 경로에서 그 둘은 안 읽힌다.
+  #    밴드는 행렬 CSV 안에 있으므로 spice_matrix_path 를 바꿔야 한다.
+  #    2026-08-26 현재 50-8000 에는 **쓸 수 있는 부품이 없다**: 최상단 ch15(6761 Hz)
+  #    가 OPA379 로 1.16 mV 라 비교기 3 mV 문턱 아래로 붕괴하고, 대안이던
+  #    TLV9041D 는 비보상(gain>=10 V/V)이라 우리 검출기 4.7 V/V 에서 못 쓴다.
+  #    125-5000 은 OPA379 단독으로 16/16 통과하고 정확도 대가는 -0.3pp(잡음)다.
+  #    확정하면: spice_matrix_path: analog/AFE/artifacts/filterbank_matrix_125_5000.csv
+  #    근거: analog/AFE_tuning/artifacts/{opamp_gain_per_channel,r7r8_opa379_125_5000}.md
   compression: sqrt         # 검출기가 진폭에 선형 -> sqrt 가 회로에 충실
-  normalize: xlse           # 다이오드-OR 의 soft max. 위 주석 참조
+  normalize: fixed          # 데이터셋 전역 min-max -> 절대 임계 = 고정 R7/R8.
+                            # ⚠️ `minmax` 는 이것과 다른 것이다: 클립마다 스케일을
+                            # 다시 잡는 AGC 라 볼륨을 2배로 해도 비트가 하나도 안
+                            # 바뀐다. 저항으로 만들 수 없다.
+                            # 가드: tests/test_afe.py
+                            #       test_minmax_is_gain_invariant_and_fixed_is_not
+  fixed_scale_quantile: 0.75  # ⚠️ 기본값 1.0 을 쓰면 안 된다. 1.0 은 전역 max =
+                            # 이상치 클립 하나라 전형적 클립이 [0,1] 의 얇은 조각으로
+                            # 눌리고, threshold 가 0.002~0.010 에 앉아 Adam 한 스텝이
+                            # 15% 씩 움직인다. 실제로 fx_g12 가 0.5763 + 죽은 비교기
+                            # 4개로 끝났다. q 스윕: 1.0 -> 0.693 / **0.75 -> 0.726** /
+                            # 0.6 -> 0.653 (증강 없는 조건).
+  # 아래 둘은 normalize=xlse 전용이라 지금은 **읽히지 않는다.** 트랙 1 로 되돌릴
+  # 때를 위해 값과 근거를 남겨둔다.
   lse_temp_frac: 0.78       # = n*V_T / 요구 스윙. 즉 26mV/0.78 = 33 mV 를 요구한다.
                             # 평탄대는 13~50 mV -- 한 점이 아니다(EXPERIMENTS.md 8).
   xmax_floor_frac: 0.0      # -> delta = 0. 측정으로 확정 (EXPERIMENT_MAP A-3):
@@ -82,8 +112,14 @@ afe:
   threshold_trainable: true # learn the thresholds end-to-end with the net (2.4).
   ste: hardtanh             # straight-through estimator for the step comparison
                             #   (sign has zero gradient; STE lets it train).
-  ste_clip: 1.0             # STE gradient passes where |env - thr| <= ste_clip.
-                            #   Envelopes are in [0,1], so every element is inside.
+  ste_clip: 0.003           # STE gradient passes where |env - thr| <= ste_clip.
+                            #   1.0 은 엔벨로프가 [0,1] 이라 전부 통과 = 사실상 무제한
+                            #   이었고, 그 아래서 임계값은 무음 프레임 다수결에 끌려
+                            #   85~89 분위까지 올라갔다. 좁히면 경계 근처만 표를
+                            #   던져서 54~87 분위로 내려온다.
+                            #   측정: 1.0 -> 0.7169 / 0.1 -> 0.767 / 0.03 -> 0.800 /
+                            #   0.01 -> 0.811 / **0.003 -> 0.817** (트랙 2 최고).
+                            #   docs/ABLATIONS.md 트랙 2 표.
 
 model:
   C: 64
