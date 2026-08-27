@@ -262,6 +262,12 @@ class AFEConfig:
     # several comparators the i/(k+1) spread is what keeps them distinct.
     # 0.5 = the median = every channel starts firing half the time.
     threshold_init_quantile: float = 0.5
+    # "measured" 로 쓸 때, 실제 보드에서 잰 채널별 트립 포인트 파일 (정규화 단위,
+    # 한 줄에 하나). 보드가 만들어지면 오프셋은 상수이므로 상쇄할 필요가 없고
+    # ALGO 가 그 값을 알기만 하면 된다 -- 그래서 이 경로 + threshold_trainable
+    # false 조합이 트림 정밀도 요구와 강건성 세금을 동시에 없앤다.
+    threshold_measured_path: str = ""
+
     threshold_trainable: bool = True
     ste: str = "hardtanh"               # STE flavor for the step function
     ste_clip: float = 1.0
@@ -417,9 +423,14 @@ class Config:
                 f"afe.n_channels * afe.comparators_per_channel "
                 f"({a.n_channels} * {k} = {a.n_channels * k})"
             )
-        if a.threshold_init not in ("channel_mean", "quantile"):
+        if a.threshold_init == "measured" and not a.threshold_measured_path:
             raise ValueError(
-                f"afe.threshold_init must be 'channel_mean' or 'quantile', "
+                'afe.threshold_init="measured" requires '
+                "afe.threshold_measured_path")
+        if a.threshold_init not in ("channel_mean", "quantile", "measured"):
+            raise ValueError(
+                f"afe.threshold_init must be 'channel_mean', 'quantile' or "
+                f"'measured', "
                 f"got {a.threshold_init!r}"
             )
         if not 0.0 < a.threshold_init_quantile < 1.0:

@@ -625,6 +625,31 @@ class AFEFrontend(nn.Module):
         return torch.cat([self.envelopes(waves[i:i + chunk], raw=raw)
                           for i in range(0, waves.shape[0], chunk)])
 
+    def _measured_thresholds(self) -> torch.Tensor:
+        """threshold_measured_path -> [n_channels * k] in normalised units."""
+        path = getattr(self.cfg, "threshold_measured_path", "") or ""
+        if not path:
+            raise ValueError(
+                'threshold_init="measured" 는 afe.threshold_measured_path 가 '
+                "있어야 한다 (채널당 한 줄, 정규화 단위).")
+        p = Path(path)
+        if not p.is_file():
+            raise FileNotFoundError(f"threshold_measured_path={p} 가 없다.")
+        v = np.loadtxt(p, delimiter=",", ndmin=1).reshape(-1)
+        want = self.cfg.n_channels * self.n_comparators
+        if v.size != want:
+            raise ValueError(
+                f"{p} 에 값이 {v.size}개인데 {want}개여야 한다 "
+                f"(n_channels {self.cfg.n_channels} x k {self.n_comparators}).")
+        t = torch.tensor(v, dtype=torch.float32)
+        # 정규화 단위 밖이면 K 환산이 틀렸거나 파일 단위가 mV 인 것이다.
+        if float(t.min()) < -0.5 or float(t.max()) > 1.5:
+            raise ValueError(
+                f"{p} 의 값이 {float(t.min()):.3g}~{float(t.max()):.3g} 로 "
+                f"[0,1] 을 크게 벗어난다. mV 를 그대로 넣었거나 K 환산이 "
+                f"틀렸을 가능성이 높다.")
+        return t
+
     @torch.no_grad()
     def init_fixed_scale(self, waves: torch.Tensor) -> None:
         """Set the dataset-level lo/hi for normalize="fixed" (Cerutti IV-A).
@@ -758,11 +783,27 @@ class AFEFrontend(nn.Module):
         waves = waves.to(self.threshold.device)      # dataloader batches are CPU
         env = self._envelopes_chunked(waves, raw=False)
         mode = getattr(self.cfg, "threshold_init", "channel_mean")
-        if mode not in ("channel_mean", "quantile"):
+        if mode not in ("channel_mean", "quantile", "measured"):
             raise ValueError(
-                f"threshold_init={mode!r}; expected 'channel_mean' or "
-                f"'quantile'. This field was declared but never read until "
-                f"now, so a config that set it got the mean silently.")
+                f"threshold_init={mode!r}; expected 'channel_mean', "
+                f"'quantile' or 'measured'. This field was declared but never "
+                f"read until now, so a config that set it got the mean "
+                f"silently.")
+        if mode == "measured":
+            # A BUILT board's trip points, in normalised units. Not a starting
+            # guess -- the hardware already decided these, so pair this with
+            # threshold_trainable=false and let the 106k weights adapt instead.
+            #
+            # This is what makes per-board weights the answer to comparator
+            # offset: the offset does not have to be cancelled, only KNOWN. The
+            # resistor divider and the comparator's own Vos are one number per
+            # channel once the board exists, so measure the combined trip point
+            # and train against it. No trim precision required, and no
+            # robustness tax for offsets that never vary.
+            thr = self._measured_thresholds()
+            with torch.no_grad():
+                self.threshold.copy_(thr.to(self.threshold.dtype))
+            return
         if self.n_comparators == 1 and mode == "channel_mean":
             thr = env.mean(dim=(0, 2))
         elif self.n_comparators == 1:

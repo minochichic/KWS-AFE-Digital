@@ -1121,3 +1121,47 @@ def test_config_rejects_a_quantile_outside_the_open_interval() -> None:
                                       threshold_init_quantile=bad)
         with pytest.raises(ValueError, match="threshold_init_quantile"):
             cfg.validate()
+
+
+def test_measured_thresholds_are_loaded_and_frozen(tmp_path) -> None:
+    """A built board's trip points go in as-is, and training must not move them.
+
+    This is what makes per-board weights the answer to comparator offset: the
+    offset need not be cancelled, only known. Whatever the divider and the
+    comparator's own Vos add up to is one constant per channel once the board
+    exists, so it is measured and trained against.
+    """
+    vals = [0.05 + 0.01 * i for i in range(16)]
+    p = tmp_path / "trip.csv"
+    p.write_text("\n".join(str(v) for v in vals))
+
+    wave = noise(4)
+    fe = make_frontend(normalize="fixed", compression="sqrt",
+                       envelope_win_ms=10.0, threshold_init="measured",
+                       threshold_measured_path=str(p),
+                       threshold_trainable=False)
+    fe.init_fixed_scale(wave)
+    fe.init_thresholds(wave)
+    assert torch.allclose(fe.threshold.detach(),
+                          torch.tensor(vals, dtype=torch.float32), atol=1e-6)
+    assert not fe.threshold.requires_grad          # hardware decided these
+
+    # wrong count and out-of-range values must fail loudly, not be padded or
+    # rescaled: both mean the volts->normalised conversion went wrong.
+    bad = tmp_path / "short.csv"
+    bad.write_text("\n".join(str(v) for v in vals[:8]))
+    with pytest.raises(ValueError, match="8개"):
+        fe2 = make_frontend(normalize="fixed", compression="sqrt",
+                            envelope_win_ms=10.0, threshold_init="measured",
+                            threshold_measured_path=str(bad))
+        fe2.init_fixed_scale(wave)
+        fe2.init_thresholds(wave)
+
+    mv = tmp_path / "mv.csv"                       # mV pasted in by mistake
+    mv.write_text("\n".join(str(v * 1000) for v in vals))
+    with pytest.raises(ValueError, match=r"\[0,1\]"):
+        fe3 = make_frontend(normalize="fixed", compression="sqrt",
+                            envelope_win_ms=10.0, threshold_init="measured",
+                            threshold_measured_path=str(mv))
+        fe3.init_fixed_scale(wave)
+        fe3.init_thresholds(wave)
