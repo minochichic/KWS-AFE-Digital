@@ -47,6 +47,8 @@ def main() -> None:
                     help="체크포인트 대신 전 채널 공통 공칭 임계값을 쓴다. "
                          "동료가 저항을 대충 한 값으로 박는 경우")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--force", action="store_true",
+                    help="같은 이름의 CSV 를 덮어쓴다")
     args = ap.parse_args()
 
     if args.nominal is not None:
@@ -65,8 +67,20 @@ def main() -> None:
     draw = args.vos * torch.randn(16, generator=g).double()
     trip = base + draw
 
+    # 이름에 --nominal 이 들어가야 한다. 안 그러면 체크포인트 기반 실행과 공칭
+    # 기반 실행이 같은 파일에 쓰고, 먼저 학습한 런의 config.yaml 이 가리키는
+    # 내용이 조용히 바뀐다 -- 실제로 한 번 덮어썼다.
+    stem = (f"trip_points_nom{args.nominal:g}" if args.nominal is not None
+            else f"trip_points_{args.tag}")
+    tag = (f"bd_nom{args.nominal:g}_trip_s{args.seed}" if args.nominal is not None
+           else f"{args.tag}_trip_s{args.seed}")
     out = Path(args.out or ROOT / "analog/AFE_board/artifacts"
-               / f"trip_points_{args.tag}_vos{args.vos:g}_s{args.seed}.csv")
+               / f"{stem}_vos{args.vos:g}_s{args.seed}.csv")
+    if out.exists() and not args.force:
+        raise SystemExit(
+            f"{rel(out)} 가 이미 있다. 덮어쓰면 그 파일로 학습한 런의 "
+            f"config.yaml 이 가리키는 내용이 바뀐다. --force 로 강제하거나 "
+            f"--out 으로 다른 이름을 줄 것.")
     out.parent.mkdir(parents=True, exist_ok=True)
     np.savetxt(out, trip.numpy(), fmt="%.6f")
 
@@ -90,7 +104,7 @@ def main() -> None:
     print(f"\n저장: {rel(out)}")
     print("\n재학습:")
     print(f"  python -m train.train --config configs/base.yaml \\\n"
-          f"    --tag {args.tag}_trip_s{args.seed} \\\n"
+          f"    --tag {tag} \\\n"
           f"    afe.spice_matrix_path=analog/AFE/artifacts/filterbank_matrix_board.csv \\\n"
           f"    afe.threshold_init=measured \\\n"
           f"    afe.threshold_measured_path={rel(out)} \\\n"
