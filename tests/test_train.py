@@ -364,7 +364,16 @@ def test_the_cli_reports_the_checkpoint_everything_else_reads() -> None:
     last epoch was not the best one, and the headline number was the one nobody
     else ever used."""
     import inspect
-    from train.train import _run_speech_commands
-    src = inspect.getsource(_run_speech_commands)
-    assert "best.pt" in src, "the CLI must score best.pt, not the last epoch"
-    assert src.index("trainer.fit") < src.index("best.pt")
+    from train.train import _report, _run_analog_csv, _run_speech_commands
+
+    assert "best.pt" in inspect.getsource(_report), \
+        "_report must score best.pt, not the last epoch"
+
+    # Both entry points, because the analog-CSV path is a second place this can
+    # be forgotten: it trains without an AFE and could easily have reported
+    # whatever the last epoch left behind.
+    for fn in (_run_speech_commands, _run_analog_csv):
+        src = inspect.getsource(fn)
+        assert "_report(" in src, f"{fn.__name__} must call _report"
+        assert src.index("trainer.fit") < src.index("_report("), \
+            f"{fn.__name__} must report AFTER training"

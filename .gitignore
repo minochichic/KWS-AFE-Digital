@@ -48,3 +48,4 @@ notebooks/lab.ipynb
 # needs on machines without torch. Waveforms are output, so ignored.
 *.vcd
 rtl/gen/active.vh
+transfer_v3_*/

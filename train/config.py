@@ -337,6 +337,12 @@ class DataConfig:
     name: str = "speech_commands_v2"
     root: str = "datasets/speech_commands_v2"
     version: str = "v0.02"
+    # 동료 아날로그 모델이 뽑아준 이진 스펙트로그램 디렉터리 (<word>/<clip>.csv,
+    # 각 [16,100] {0,1}). 비면 평소대로 파형 -> AFE 시뮬 경로를 쓴다. 채워지면
+    # AFE 를 아예 만들지 않는다 -- 회로가 이미 이진화까지 끝냈으므로 normalize /
+    # compression / comparator_vos / threshold_* 는 그 경로에서 읽히지 않는다.
+    # `data.root` 는 그래도 필요하다: 공식 분할 목록을 거기서 읽는다.
+    analog_csv_root: str = ""
     # 12-class setup (Cerutti IV-A)
     keywords: List[str] = field(default_factory=lambda: [
         "yes", "no", "up", "down", "left", "right", "on", "off", "stop", "go",
@@ -612,7 +618,19 @@ def load_config(path, overrides: Optional[Dict[str, Any]] = None) -> Config:
 def _set_dotted(cfg: Config, dotted: str, value: Any) -> None:
     parts = dotted.split(".")
     obj: Any = cfg
-    for p in parts[:-1]:
+    for i, p in enumerate(parts[:-1]):
+        # model.stages 는 리스트라 속성으로 못 들어간다. 다음 조각을 스테이지
+        # 이름으로 읽어서 "model.stages.conv4.channels_abs=10" 을 가능하게 한다.
+        # 이게 없으면 n_classes 를 바꾸는 순간 conv4 의 channels_abs 와 어긋나
+        # validate() 에서 막히고, 우회할 방법이 설정 파일 복제뿐이었다.
+        if isinstance(obj, list):
+            names = [getattr(s, "name", None) for s in obj]
+            if p not in names:
+                raise ValueError(
+                    f"override {dotted!r}: no stage named {p!r}; "
+                    f"stages are {[n for n in names if n]}")
+            obj = obj[names.index(p)]
+            continue
         if not hasattr(obj, p):
             raise ValueError(f"override {dotted!r}: no such section {p!r}")
         obj = getattr(obj, p)

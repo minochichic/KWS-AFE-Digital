@@ -305,6 +305,27 @@ def main() -> None:
         _run_speech_commands(args)
 
 
+def _run_analog_csv(args, cfg) -> None:
+    """동료 아날로그 모델의 이진 스펙트로그램으로 학습 (AFE 없음).
+
+    회로가 필터 + 검출기 + 비교기를 이미 다 통과시켰으므로 여기서 흉내낼 것이
+    없다. Trainer 는 afe=None 을 이미 지원한다.
+    """
+    from data.analog_spectrogram import build_analog_dataloaders
+    from models.binary_matchboxnet import BinaryMatchboxNet
+
+    set_seed(cfg.train.seed)
+    model = BinaryMatchboxNet(cfg.model)
+    train_loader, val_loader, test_loader = build_analog_dataloaders(
+        cfg.data, cfg.train.batch_size, target_T=cfg.model.T)
+
+    print(f"[analog] AFE 없음 -- 입력이 이미 이진이다. "
+          f"n_classes={cfg.model.n_classes}")
+    trainer = Trainer(cfg, model, afe=None)
+    trainer.fit(train_loader, val_loader, resume=args.resume)
+    _report(trainer, model, None, test_loader)
+
+
 def _base_overrides(args, default_tag: str) -> dict:
     from experiments.inspect_config import _parse_overrides
     overrides = _parse_overrides(args.overrides)
@@ -345,6 +366,9 @@ def _run_speech_commands(args) -> None:
     from models.binary_matchboxnet import BinaryMatchboxNet
 
     cfg = load_config(args.config, _base_overrides(args, "sc_v2"))
+    if getattr(cfg.data, "analog_csv_root", ""):
+        _run_analog_csv(args, cfg)
+        return
 
     set_seed(cfg.train.seed)
     afe = AFEFrontend(cfg.afe)
@@ -373,6 +397,13 @@ def _run_speech_commands(args) -> None:
     trainer = Trainer(cfg, model, afe=afe)
     trainer.fit(train_loader, val_loader, resume=args.resume)
 
+    _report(trainer, model, afe, test_loader)
+
+
+def _report(trainer, model, afe, test_loader) -> None:
+    """best.pt 를 점수 낸다. fit() 이 복원해주지 않고, 하류 스크립트는
+    전부 best.pt 를 읽으므로 마지막 에폭을 보고하면 헤드라인 숫자와
+    나머지가 보는 모델이 서로 다른 것이 된다."""
     # Score best.pt, not whatever the last epoch happened to leave behind.
     # fit() does not restore it, and every downstream script -- fixed_accuracy,
     # threshold_placement, export.emit -- loads best.pt. Reporting the final
