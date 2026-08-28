@@ -619,4 +619,16 @@ def _set_dotted(cfg: Config, dotted: str, value: Any) -> None:
     leaf = parts[-1]
     if not hasattr(obj, leaf):
         raise ValueError(f"override {dotted!r}: no such key {leaf!r}")
+    # bool 필드에 문자열이 들어오면 여기서 잡는다. CLI 는 _parse_overrides 가
+    # "false" -> False 로 바꿔주지만, 프로그램에서 직접 부르면 그 단계를 건너뛴다.
+    # 그리고 빈 문자열이 아닌 "false" 는 파이썬에서 참이라, 놓치면 정반대로
+    # 동작한다 -- 실제로 놓쳤을 때 에러가 torch 안쪽 TypeError 로 나왔다.
+    cur = getattr(obj, leaf)
+    if isinstance(cur, bool) and isinstance(value, str):
+        low = value.strip().lower()
+        if low not in ("true", "false"):
+            raise ValueError(
+                f"override {dotted!r}={value!r}: bool 필드다. "
+                f"true/false 를 쓸 것 ('{value}' 는 참으로 평가된다).")
+        value = low == "true"
     setattr(obj, leaf, value)
