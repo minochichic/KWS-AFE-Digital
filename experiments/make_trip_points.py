@@ -76,13 +76,22 @@ def main() -> None:
            else f"{args.tag}_trip_s{args.seed}")
     out = Path(args.out or ROOT / "analog/AFE_board/artifacts"
                / f"{stem}_vos{args.vos:g}_s{args.seed}.csv")
-    if out.exists() and not args.force:
-        raise SystemExit(
-            f"{rel(out)} 가 이미 있다. 덮어쓰면 그 파일로 학습한 런의 "
-            f"config.yaml 이 가리키는 내용이 바뀐다. --force 로 강제하거나 "
-            f"--out 으로 다른 이름을 줄 것.")
+    # 내용이 같으면 막을 이유가 없다. 이 파일들은 리포에 커밋되므로(런의
+    # config.yaml 이 가리킨다) pull 만 해도 존재하고, 그때마다 --force 를
+    # 요구하면 가드가 잡으려던 것과 무관한 마찰만 생긴다.
+    new = "\n".join(f"{v:.6f}" for v in trip.tolist()) + "\n"
+    if out.exists():
+        same = out.read_text() == new
+        if same:
+            print(f"({rel(out)} 가 이미 같은 내용이다 -- 그대로 둔다)\n")
+        elif not args.force:
+            raise SystemExit(
+                f"{rel(out)} 가 있고 내용이 다르다. 덮어쓰면 그 파일로 학습한 "
+                f"런의 config.yaml 이 가리키는 내용이 바뀐다. --force 로 "
+                f"강제하거나 --out 으로 다른 이름을 줄 것.")
     out.parent.mkdir(parents=True, exist_ok=True)
-    np.savetxt(out, trip.numpy(), fmt="%.6f")
+    if not out.exists() or out.read_text() != new:
+        out.write_text(new)
 
     print(f"공칭 출처: {src}")
     print(f"오프셋:    std {args.vos:g} (정규화), seed {args.seed}\n")
