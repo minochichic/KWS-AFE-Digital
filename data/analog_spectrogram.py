@@ -40,6 +40,38 @@ from data.speech_commands import KEYWORDS
 N_CH, N_FRAMES = 16, 100
 
 
+def row_order(root: Path) -> Optional[List[int]]:
+    """export_settings.json 의 row_order -> CSV 행 -> 채널번호 매핑.
+
+    v3 전송본은 행을 **역순**으로 쓴다 (행0 = ch15). 그대로 읽으면 우리 모델의
+    ch0(최저역) 자리에 최고역이 들어간다. 하드코딩하지 않고 매니페스트에서 읽는다
+    -- 다음 전송본이 순서를 바꿔도 조용히 틀리면 안 된다.
+    """
+    import json
+    text = None
+    if root.is_dir():
+        f = root / "export_settings.json"
+        if f.is_file():
+            text = f.read_text()
+    else:
+        with tarfile.open(root, "r:*") as tf:
+            for m in tf:
+                if m.name.endswith("export_settings.json") and m.isfile():
+                    buf = tf.extractfile(m)
+                    if buf is not None:
+                        text = buf.read().decode("utf-8")
+                    break
+    if text is None:
+        return None
+    names = (json.loads(text).get("matrix") or {}).get("row_order")
+    if not names:
+        return None
+    if len(names) != N_CH:
+        raise ValueError(f"row_order 가 {len(names)}개다; {N_CH}개여야 한다.")
+    # "ch07" -> 7. perm[i] = i번째 CSV 행이 담고 있는 채널 번호.
+    return [int(str(n).lower().lstrip("ch")) for n in names]
+
+
 def _split_lists(gsc_root: str) -> Dict[str, str]:
     """"<word>/<clip>" -> "val" | "test". 목록에 없으면 train 이다."""
     leaf = Path(os.path.expanduser(gsc_root)) / "SpeechCommands" / "speech_commands_v0.02"
@@ -121,10 +153,14 @@ def load_all(csv_root: str, cache: bool = True) -> Tuple[np.ndarray, np.ndarray,
     keys = [k for _, _, k in items]
     if cache and cache_path.is_file():
         z = np.load(cache_path, allow_pickle=False)
-        if list(z["keys"]) == keys:
+        want = row_order(root) or list(range(N_CH))
+        if list(z["keys"]) == keys and list(z.get("perm", want)) == want:
             return z["bits"], z["labels"], keys
         print(f"[analog] 캐시가 현재 파일 목록과 다르다 -> 다시 읽는다 ({cache_path})")
 
+    perm = row_order(root)
+    if perm is not None and perm != list(range(N_CH)):
+        print(f"[analog] row_order 가 표준이 아니다 -> 재배열한다 (행0 = ch{perm[0]:02d})")
     print(f"[analog] CSV {len(items)}개 읽는 중 ({'디렉터리' if root.is_dir() else 'tar'}) ...")
     idx = {w: i for i, w in enumerate(KEYWORDS)}
     order = {k: i for i, (_, _, k) in enumerate(items)}
@@ -134,6 +170,10 @@ def load_all(csv_root: str, cache: bool = True) -> Tuple[np.ndarray, np.ndarray,
     for key, word, a in _iter_source(root):
         if a.shape != (N_CH, N_FRAMES):
             raise ValueError(f"{key} 가 {a.shape} 이다; ({N_CH}, {N_FRAMES}) 여야 한다.")
+        if perm is not None:
+            out = np.empty_like(a)
+            out[perm] = a                 # CSV 행 j -> 채널 perm[j]
+            a = out
         i = order[key]                    # tar 순서와 정렬 순서가 달라도 맞춘다
         bits[i], labels[i] = a, idx[word]
         seen += 1
@@ -142,7 +182,8 @@ def load_all(csv_root: str, cache: bool = True) -> Tuple[np.ndarray, np.ndarray,
     if cache:
         try:
             np.savez_compressed(cache_path, bits=bits, labels=labels,
-                                keys=np.array(keys))
+                                keys=np.array(keys),
+                                perm=np.array(perm if perm else list(range(N_CH))))
             print(f"[analog] 캐시 저장: {cache_path}")
         except OSError as e:                       # 읽기 전용 매체 등
             print(f"[analog] 캐시 저장 실패(무시): {e}")
