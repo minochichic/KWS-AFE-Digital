@@ -4,6 +4,11 @@ datasets/
 *.tar.gz
 *.zip
 
+# 예외: 동료 전송본은 낱개 CSV(161 MB / 38k 파일) 대신 tar 하나로 버전 관리한다.
+# 위의 *.tar.gz 가 이걸 조용히 삼켜서 model_package_snapshot 만 커밋되고
+# 정작 데이터는 빠진 적이 있다 (커밋 7252e30).
+!analog/AFE_board/transfer_v3/spectrogram-v1.tar.gz
+
 # --- experiment outputs ---
 runs/
 checkpoints/
