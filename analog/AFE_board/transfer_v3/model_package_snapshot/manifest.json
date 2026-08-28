@@ -1,0 +1,273 @@
+{
+  "schema_version": 3,
+  "model_id": "transfer_v3_20260827_201857_ba6ef035f9",
+  "created_at": "2026-08-27T20:18:57+09:00",
+  "application_version": "16.0",
+  "status": "draft",
+  "component_revision": 4,
+  "circuit_mode": "preamp",
+  "reference_topology": "microphone_preamp_gic_active_detector",
+  "comparator_included": false,
+  "actual_nodes": {
+    "actual_input": "/v_mic",
+    "filter_input": "/vin",
+    "filter_output": "/v_filt",
+    "detector_output": "/v_env"
+  },
+  "analog_output_node": "/v_env",
+  "threshold_stage": {
+    "mode": "external",
+    "analog_input_node": "/v_env",
+    "comparison": "v_env >= v_thr",
+    "default_vthr_v_by_channel": {
+      "0": 0.97,
+      "1": 0.97,
+      "2": 0.97,
+      "3": 0.97,
+      "4": 0.98,
+      "5": 0.98,
+      "6": 0.98,
+      "7": 0.98,
+      "8": 0.97,
+      "9": 0.97,
+      "10": 0.97,
+      "11": 0.97,
+      "12": 0.96,
+      "13": 0.96,
+      "14": 0.96,
+      "15": 0.96
+    },
+    "quantization_v": 0.005
+  },
+  "shared_front_end": {
+    "bias_v": 0.55,
+    "resistance_kohm": 5.1,
+    "coupling_uf": 0.1,
+    "rpre1_kohm": 470.0,
+    "rpre2_kohm": 90.0,
+    "rpre3_kohm": 10.0
+  },
+  "sample_rate_hz": 16000.0,
+  "input_sample_rate_hz": 16000.0,
+  "output_sample_rate_hz": 16000.0,
+  "internal_sample_rate_hz": 64000.0,
+  "internal_oversample_factor": 4,
+  "amplitude_unit": "Vpeak",
+  "ngspice_version": "ngspice-46 : Circuit level simulation program",
+  "analysis_settings": {
+    "sample_rate_hz": 16000.0,
+    "internal_oversample_factor": 4,
+    "pwl_input_vpp_v": 0.005,
+    "ac_start_hz": 10.0,
+    "ac_stop_hz": 20000.0,
+    "ac_points_per_decade": 100,
+    "maximum_filter_order": 4,
+    "passband_weight": 4.0,
+    "response_floor_db": -60.0,
+    "holdout_stride": 5,
+    "window_seconds": 0.01,
+    "input_node": "/v_mic",
+    "filter_input_node": "/vin",
+    "filter_output_node": "/v_filt",
+    "detector_output_node": "/v_env",
+    "store_full_trace_npz": false,
+    "thresholds": {
+      "magnitude_max_db": 0.25,
+      "magnitude_rmse_db": 0.1,
+      "phase_max_deg": 8.0,
+      "center_frequency_relative": 0.01,
+      "bandwidth_relative": 0.03,
+      "q_relative": 0.03,
+      "detector_steady_relative": 0.05,
+      "detector_nrmse": 0.05,
+      "attack_time_relative": 0.1,
+      "release_time_relative": 0.1
+    },
+    "word_balanced_retune": {
+      "selection_seed": 20260827,
+      "tune_files_per_word": 3,
+      "validation_files_per_word": 2,
+      "reference_jobs": 800,
+      "reference_workers": 10,
+      "circuit_basis": "125Hz/Q4.5/R5 500kOhm PreAMP table"
+    }
+  },
+  "selected_pwl": {
+    "word_balanced_retune": {
+      "selection": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\ngspice_v16_for_html\\app\\results\\codex_word_balanced_retune_seed20260827\\selection.json",
+      "selection_sha256": "4761c7ff033322a3a789ab73d256462bef59139f28aa87df1a5be144dfff5baf",
+      "validation": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\ngspice_v16_for_html\\app\\results\\codex_word_balanced_retune_seed20260827\\validation_summary.json",
+      "validation_sha256": "eacc7418795972c72b9123bc8a83250405977dc07dbf35ac8f5ae79a9b8f6af2",
+      "tail_validation": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\ngspice_v16_for_html\\app\\results\\codex_word_balanced_retune_seed20260827\\tail_extrapolation_prototype\\summary.json",
+      "tail_validation_sha256": "d8da2bdb427e3a865215b47d88c27216807e10e040dd6b1756cb1b16e9700ece",
+      "end_to_end_validation": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\ngspice_v16_for_html\\app\\results\\codex_word_balanced_retune_seed20260827\\tail_package_end_to_end\\summary.json",
+      "end_to_end_validation_sha256": "81959dfe877ef2e7b13d88360e01de76db4d2cdfd440f55cd80c456b3bff9f41",
+      "base_end_to_end_validation": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\ngspice_v16_for_html\\app\\results\\codex_word_balanced_retune_seed20260827\\base_package_end_to_end\\summary.json",
+      "base_end_to_end_validation_sha256": "c9758e94a3d6b2b86c5575cd487d9981708aaadf23866a0b1097a2f1d5a6475a"
+    },
+    "package_provenance": {
+      "source_model_id": "transfer_v3_20260827_200901_ba6ef035f9",
+      "source_commit": "c162f0719d746bec33084eca0073b9b5a7298479",
+      "payload_reused_without_retuning": true
+    }
+  },
+  "algorithm_versions": {
+    "filter": "oversampled_complex_iir_v2",
+    "detector": "instantaneous_peak_hold_v2"
+  },
+  "runtime_required_fields": [
+    "sample_rate_hz",
+    "circuit_mode",
+    "reference_topology",
+    "analog_output_node",
+    "threshold_stage",
+    "channels[].filter_model",
+    "channels[].detector_model"
+  ],
+  "channels": [
+    {
+      "channel": 0,
+      "status": "warning",
+      "filter_model": "ch00/filter_model.json",
+      "detector_model": "ch00/detector_model.json",
+      "validation_summary": "ch00/validation_summary.json",
+      "component_snapshot": "ch00/component_snapshot.json",
+      "op_baselines": "ch00/op_baselines.json"
+    },
+    {
+      "channel": 1,
+      "status": "warning",
+      "filter_model": "ch01/filter_model.json",
+      "detector_model": "ch01/detector_model.json",
+      "validation_summary": "ch01/validation_summary.json",
+      "component_snapshot": "ch01/component_snapshot.json",
+      "op_baselines": "ch01/op_baselines.json"
+    },
+    {
+      "channel": 2,
+      "status": "warning",
+      "filter_model": "ch02/filter_model.json",
+      "detector_model": "ch02/detector_model.json",
+      "validation_summary": "ch02/validation_summary.json",
+      "component_snapshot": "ch02/component_snapshot.json",
+      "op_baselines": "ch02/op_baselines.json"
+    },
+    {
+      "channel": 3,
+      "status": "warning",
+      "filter_model": "ch03/filter_model.json",
+      "detector_model": "ch03/detector_model.json",
+      "validation_summary": "ch03/validation_summary.json",
+      "component_snapshot": "ch03/component_snapshot.json",
+      "op_baselines": "ch03/op_baselines.json"
+    },
+    {
+      "channel": 4,
+      "status": "warning",
+      "filter_model": "ch04/filter_model.json",
+      "detector_model": "ch04/detector_model.json",
+      "validation_summary": "ch04/validation_summary.json",
+      "component_snapshot": "ch04/component_snapshot.json",
+      "op_baselines": "ch04/op_baselines.json"
+    },
+    {
+      "channel": 5,
+      "status": "warning",
+      "filter_model": "ch05/filter_model.json",
+      "detector_model": "ch05/detector_model.json",
+      "validation_summary": "ch05/validation_summary.json",
+      "component_snapshot": "ch05/component_snapshot.json",
+      "op_baselines": "ch05/op_baselines.json"
+    },
+    {
+      "channel": 6,
+      "status": "warning",
+      "filter_model": "ch06/filter_model.json",
+      "detector_model": "ch06/detector_model.json",
+      "validation_summary": "ch06/validation_summary.json",
+      "component_snapshot": "ch06/component_snapshot.json",
+      "op_baselines": "ch06/op_baselines.json"
+    },
+    {
+      "channel": 7,
+      "status": "warning",
+      "filter_model": "ch07/filter_model.json",
+      "detector_model": "ch07/detector_model.json",
+      "validation_summary": "ch07/validation_summary.json",
+      "component_snapshot": "ch07/component_snapshot.json",
+      "op_baselines": "ch07/op_baselines.json"
+    },
+    {
+      "channel": 8,
+      "status": "warning",
+      "filter_model": "ch08/filter_model.json",
+      "detector_model": "ch08/detector_model.json",
+      "validation_summary": "ch08/validation_summary.json",
+      "component_snapshot": "ch08/component_snapshot.json",
+      "op_baselines": "ch08/op_baselines.json"
+    },
+    {
+      "channel": 9,
+      "status": "warning",
+      "filter_model": "ch09/filter_model.json",
+      "detector_model": "ch09/detector_model.json",
+      "validation_summary": "ch09/validation_summary.json",
+      "component_snapshot": "ch09/component_snapshot.json",
+      "op_baselines": "ch09/op_baselines.json"
+    },
+    {
+      "channel": 10,
+      "status": "warning",
+      "filter_model": "ch10/filter_model.json",
+      "detector_model": "ch10/detector_model.json",
+      "validation_summary": "ch10/validation_summary.json",
+      "component_snapshot": "ch10/component_snapshot.json",
+      "op_baselines": "ch10/op_baselines.json"
+    },
+    {
+      "channel": 11,
+      "status": "warning",
+      "filter_model": "ch11/filter_model.json",
+      "detector_model": "ch11/detector_model.json",
+      "validation_summary": "ch11/validation_summary.json",
+      "component_snapshot": "ch11/component_snapshot.json",
+      "op_baselines": "ch11/op_baselines.json"
+    },
+    {
+      "channel": 12,
+      "status": "warning",
+      "filter_model": "ch12/filter_model.json",
+      "detector_model": "ch12/detector_model.json",
+      "validation_summary": "ch12/validation_summary.json",
+      "component_snapshot": "ch12/component_snapshot.json",
+      "op_baselines": "ch12/op_baselines.json"
+    },
+    {
+      "channel": 13,
+      "status": "warning",
+      "filter_model": "ch13/filter_model.json",
+      "detector_model": "ch13/detector_model.json",
+      "validation_summary": "ch13/validation_summary.json",
+      "component_snapshot": "ch13/component_snapshot.json",
+      "op_baselines": "ch13/op_baselines.json"
+    },
+    {
+      "channel": 14,
+      "status": "warning",
+      "filter_model": "ch14/filter_model.json",
+      "detector_model": "ch14/detector_model.json",
+      "validation_summary": "ch14/validation_summary.json",
+      "component_snapshot": "ch14/component_snapshot.json",
+      "op_baselines": "ch14/op_baselines.json"
+    },
+    {
+      "channel": 15,
+      "status": "warning",
+      "filter_model": "ch15/filter_model.json",
+      "detector_model": "ch15/detector_model.json",
+      "validation_summary": "ch15/validation_summary.json",
+      "component_snapshot": "ch15/component_snapshot.json",
+      "op_baselines": "ch15/op_baselines.json"
+    }
+  ]
+}

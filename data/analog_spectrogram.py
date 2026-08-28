@@ -25,7 +25,9 @@
 """
 from __future__ import annotations
 
+import io
 import os
+import tarfile
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -53,21 +55,58 @@ def _split_lists(gsc_root: str) -> Dict[str, str]:
     return out
 
 
+def _iter_source(root: Path):
+    """(키, 단어, [16,100] uint8) 을 순서대로. 디렉터리도 tar.gz 도 받는다.
+
+    CSV 38,546개를 낱개로 커밋하면 161 MB / 38k 오브젝트라 clone 과 status 가
+    영구히 느려진다. tar.gz 는 5.8 MB 한 덩어리이고 순차 읽기가 오히려 빠르다
+    (3초 vs 6초). 그래서 리포에는 tar 를 넣고 여기서 바로 읽는다.
+    """
+    if root.is_dir():
+        for f in sorted(root.glob("*/*.csv")):
+            yield f"{f.parent.name}/{f.stem}", f.parent.name, np.loadtxt(
+                f, delimiter=",", dtype=np.uint8, ndmin=2)
+        return
+    with tarfile.open(root, "r:*") as tf:
+        for m in tf:
+            # macOS 가 만드는 AppleDouble(._foo) 은 CSV 가 아니다.
+            name = Path(m.name)
+            if not m.isfile() or name.suffix != ".csv" or name.name.startswith("._"):
+                continue
+            buf = tf.extractfile(m)
+            if buf is None:
+                continue
+            yield (f"{name.parent.name}/{name.stem}", name.parent.name,
+                   np.loadtxt(io.BytesIO(buf.read()), delimiter=",",
+                              dtype=np.uint8, ndmin=2))
+
+
 def _scan(csv_root: str) -> List[Tuple[Path, int, str]]:
     """(csv 경로, 라벨, "<word>/<clip>") 목록. 라벨은 KEYWORDS 순서를 따른다."""
     root = Path(os.path.expanduser(csv_root))
-    if not root.is_dir():
+    if not root.exists():
         raise FileNotFoundError(f"analog_csv_root={root} 가 없다.")
     idx = {w: i for i, w in enumerate(KEYWORDS)}
     items: List[Tuple[Path, int, str]] = []
-    for word in sorted(d.name for d in root.iterdir() if d.is_dir()):
+    if root.is_dir():
+        names = [(f, f"{f.parent.name}/{f.stem}") for f in sorted(root.glob("*/*.csv"))]
+    else:
+        with tarfile.open(root, "r:*") as tf:
+            names = []
+            for m in tf.getmembers():
+                n = Path(m.name)
+                if (m.isfile() and n.suffix == ".csv"
+                        and not n.name.startswith("._")):
+                    names.append((n, f"{n.parent.name}/{n.stem}"))
+        names.sort(key=lambda t: t[1])
+    for f, key in names:
+        word = key.split("/", 1)[0]
         if word not in idx:
             raise ValueError(
                 f"{root} 안의 '{word}' 는 KEYWORDS 에 없다. 이 로더는 키워드 10개만 "
                 f"다룬다 -- _silence_/_unknown_ 이 들어오면 클래스 정의를 먼저 정해야 "
                 f"한다.")
-        for f in sorted(root.glob(f"{word}/*.csv")):
-            items.append((f, idx[word], f"{word}/{f.stem}"))
+        items.append((f, idx[word], key))
     if not items:
         raise ValueError(f"{root} 에서 CSV 를 하나도 못 찾았다.")
     return items
@@ -76,7 +115,8 @@ def _scan(csv_root: str) -> List[Tuple[Path, int, str]]:
 def load_all(csv_root: str, cache: bool = True) -> Tuple[np.ndarray, np.ndarray, List[str]]:
     """모든 클립을 [N, 16, 100] uint8 로. 38k 개를 매 에폭 파싱할 수는 없다."""
     root = Path(os.path.expanduser(csv_root))
-    cache_path = root / "_cache_bits.npz"
+    cache_path = (root / "_cache_bits.npz" if root.is_dir()
+                  else root.parent / f"_cache_{root.name.split('.')[0]}.npz")
     items = _scan(csv_root)
     keys = [k for _, _, k in items]
     if cache and cache_path.is_file():
@@ -85,14 +125,20 @@ def load_all(csv_root: str, cache: bool = True) -> Tuple[np.ndarray, np.ndarray,
             return z["bits"], z["labels"], keys
         print(f"[analog] 캐시가 현재 파일 목록과 다르다 -> 다시 읽는다 ({cache_path})")
 
-    print(f"[analog] CSV {len(items)}개 읽는 중 ...")
+    print(f"[analog] CSV {len(items)}개 읽는 중 ({'디렉터리' if root.is_dir() else 'tar'}) ...")
+    idx = {w: i for i, w in enumerate(KEYWORDS)}
+    order = {k: i for i, (_, _, k) in enumerate(items)}
     bits = np.zeros((len(items), N_CH, N_FRAMES), dtype=np.uint8)
     labels = np.zeros(len(items), dtype=np.int64)
-    for i, (path, lab, _) in enumerate(items):
-        a = np.loadtxt(path, delimiter=",", dtype=np.uint8, ndmin=2)
+    seen = 0
+    for key, word, a in _iter_source(root):
         if a.shape != (N_CH, N_FRAMES):
-            raise ValueError(f"{path} 가 {a.shape} 이다; ({N_CH}, {N_FRAMES}) 여야 한다.")
-        bits[i], labels[i] = a, lab
+            raise ValueError(f"{key} 가 {a.shape} 이다; ({N_CH}, {N_FRAMES}) 여야 한다.")
+        i = order[key]                    # tar 순서와 정렬 순서가 달라도 맞춘다
+        bits[i], labels[i] = a, idx[word]
+        seen += 1
+    if seen != len(items):
+        raise ValueError(f"{seen}개만 읽혔다 (목록은 {len(items)}개).")
     if cache:
         try:
             np.savez_compressed(cache_path, bits=bits, labels=labels,

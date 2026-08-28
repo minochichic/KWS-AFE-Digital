@@ -1,2 +1,3 @@
 sim/
 tmp_board.cir
+_cache_*.npz
