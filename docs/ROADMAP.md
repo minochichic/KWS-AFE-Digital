@@ -309,7 +309,7 @@ room −0.09pp, **frac 낙폭 +4.8pp**. 아무것도 못 얻고 나빠졌다. 96
 | **P5-1** | **비트폭 실측** | ✅ 완료 (`xl_g12`, `runs/xl_g12/ranges.json`) — **결론: 재지 말고 경계로 잡는다** |
 | P5-c | 매니페스트 + ROM `.hex` + `parameters.vh` 생성 | ⬜ P5-1 뒤 (비트폭이 입력) |
 | P5-d | **골든 벡터** (층별 중간 활성) | ⬜ 없으면 RTL 디버깅 불가 |
-| P5-e | RTL 바텀업 | 🔵 `bin_mac`·`dw_conv`·`pw_conv`·`tcs_sub`·`block` **5개 검증 완료**. 남은 것: `plane`·`top`·`frame_ctrl` |
+| P5-e | RTL 바텀업 | ✅ **열두 모듈 전부 골든 벡터 검증 완료** (`rtl/README.md` 79-93). 사슬이 양쪽 끝에서 닫힌다: `tb_frame_ctrl` 이 비교기 배선에서 `input.hex` 까지, `tb_top` 이 거기서 클래스 인덱스까지 |
 | P5-h | 꼬리 고정소수점 포맷 | ✅ **소수부 6비트 확정** (`rtl/README.md` 3-07). 측정 하한 4b, margin 분석과 교차 검산 |
 | P5-f | 검증 — 골든 벡터와 **비트 정확** 일치 | ⬜ |
 | P5-g | 합성 · 타이밍 · 보드 | ⬜ |
