@@ -1,0 +1,147 @@
+{
+  "schema_version": 1,
+  "status": "complete",
+  "binary_mode": "default",
+  "package_content_hash": "ea94c6b2affda5984ae613a39c9d6d11",
+  "package_analog_hash": "3982078f429468baec4b6fcf7839a1e2",
+  "input_vpp_mv": 5.0,
+  "thresholds_v_ch00_to_ch15": [
+    0.98,
+    0.98,
+    0.98,
+    0.98,
+    0.99,
+    0.99,
+    0.99,
+    0.99,
+    0.99,
+    0.99,
+    0.99,
+    0.99,
+    0.97,
+    0.97,
+    0.97,
+    0.97
+  ],
+  "pwl_root": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\speech_commands_pwl",
+  "words": {
+    "down": {
+      "pwl_count": 3917,
+      "completed_count": 3917,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 33,
+      "columns_max": 100,
+      "manifest": "down/manifest.json"
+    },
+    "go": {
+      "pwl_count": 3880,
+      "completed_count": 3880,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 35,
+      "columns_max": 100,
+      "manifest": "go/manifest.json"
+    },
+    "left": {
+      "pwl_count": 3801,
+      "completed_count": 3801,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 30,
+      "columns_max": 100,
+      "manifest": "left/manifest.json"
+    },
+    "no": {
+      "pwl_count": 3941,
+      "completed_count": 3941,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 39,
+      "columns_max": 100,
+      "manifest": "no/manifest.json"
+    },
+    "off": {
+      "pwl_count": 3745,
+      "completed_count": 3745,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 40,
+      "columns_max": 100,
+      "manifest": "off/manifest.json"
+    },
+    "on": {
+      "pwl_count": 3845,
+      "completed_count": 3845,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 39,
+      "columns_max": 100,
+      "manifest": "on/manifest.json"
+    },
+    "right": {
+      "pwl_count": 3778,
+      "completed_count": 3778,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 39,
+      "columns_max": 100,
+      "manifest": "right/manifest.json"
+    },
+    "stop": {
+      "pwl_count": 3872,
+      "completed_count": 3872,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 37,
+      "columns_max": 100,
+      "manifest": "stop/manifest.json"
+    },
+    "up": {
+      "pwl_count": 3723,
+      "completed_count": 3723,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 30,
+      "columns_max": 100,
+      "manifest": "up/manifest.json"
+    },
+    "yes": {
+      "pwl_count": 4044,
+      "completed_count": 4044,
+      "trigger_missing_count": 0,
+      "failed_count": 0,
+      "columns_min": 39,
+      "columns_max": 100,
+      "manifest": "yes/manifest.json"
+    }
+  },
+  "pwl_count": 38546,
+  "csv_count": 38546,
+  "trigger_missing_count": 0,
+  "analog_cache_hits": 0,
+  "analog_cache_misses": 38546,
+  "analog_cache_write_errors": 0,
+  "matrix_shape": [
+    16,
+    "variable_by_source_duration"
+  ],
+  "row_order": [
+    "ch15",
+    "ch14",
+    "ch13",
+    "ch12",
+    "ch11",
+    "ch10",
+    "ch09",
+    "ch08",
+    "ch07",
+    "ch06",
+    "ch05",
+    "ch04",
+    "ch03",
+    "ch02",
+    "ch01",
+    "ch00"
+  ]
+}

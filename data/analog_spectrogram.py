@@ -167,9 +167,22 @@ def load_all(csv_root: str, cache: bool = True) -> Tuple[np.ndarray, np.ndarray,
     bits = np.zeros((len(items), N_CH, N_FRAMES), dtype=np.uint8)
     labels = np.zeros(len(items), dtype=np.int64)
     seen = 0
+    short = 0
     for key, word, a in _iter_source(root):
-        if a.shape != (N_CH, N_FRAMES):
-            raise ValueError(f"{key} 가 {a.shape} 이다; ({N_CH}, {N_FRAMES}) 여야 한다.")
+        if a.shape[0] != N_CH:
+            raise ValueError(f"{key} 의 행이 {a.shape[0]}개다; {N_CH}개여야 한다.")
+        if a.shape[1] > N_FRAMES:
+            raise ValueError(
+                f"{key} 가 {a.shape[1]}열이다; {N_FRAMES}열을 넘을 수 없다 "
+                f"(1초 = 100 bin).")
+        if a.shape[1] < N_FRAMES:
+            # 클립 원래 타이밍 export 는 열 수가 소스 길이를 따른다
+            # ("columns": "source_duration_10ms_bins"). 짧은 wav 는 **뒤가** 비므로
+            # 뒤로 채운다 -- data/speech_commands.py 의 _fix 가 파형에 하는 것과
+            # 같다 (F.pad(wave, (0, length - n))). 가운데 정렬로 채우면 시간축이
+            # 원본과 어긋난다.
+            a = np.pad(a, ((0, 0), (0, N_FRAMES - a.shape[1])))
+            short += 1
         if perm is not None:
             out = np.empty_like(a)
             out[perm] = a                 # CSV 행 j -> 채널 perm[j]
@@ -179,6 +192,9 @@ def load_all(csv_root: str, cache: bool = True) -> Tuple[np.ndarray, np.ndarray,
         seen += 1
     if seen != len(items):
         raise ValueError(f"{seen}개만 읽혔다 (목록은 {len(items)}개).")
+    if short:
+        print(f"[analog] {short:,}개가 {N_FRAMES}열 미만이라 뒤를 0 으로 채웠다 "
+              f"({short/len(items)*100:.1f}%)")
     if cache:
         try:
             np.savez_compressed(cache_path, bits=bits, labels=labels,

@@ -8,6 +8,7 @@ datasets/
 # 위의 *.tar.gz 가 이걸 조용히 삼켜서 model_package_snapshot 만 커밋되고
 # 정작 데이터는 빠진 적이 있다 (커밋 7252e30).
 !analog/AFE_board/transfer_v3/spectrogram-v1.tar.gz
+!analog/AFE_board/transfer_v3_native/spectrogram-native.tar.gz
 
 # --- experiment outputs ---
 runs/
@@ -53,4 +54,7 @@ notebooks/lab.ipynb
 # needs on machines without torch. Waveforms are output, so ignored.
 *.vcd
 rtl/gen/active.vh
-transfer_v3_*/
+# 루트에 풀어놓은 동료 전송 폴더만. 앞의 / 가 없으면 어느 깊이든 잡아서
+# analog/AFE_board/transfer_v3_native/ 까지 삼킨다 (실제로 삼켰다).
+/transfer_v3_*/
+/vpp_5mV/

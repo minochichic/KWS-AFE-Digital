@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "condition_hash": "baa4b4c4145d976fad96a5cedab12356",
+  "spectrogram_algorithm_version": "spectrogram-v1",
+  "component_source": "selected_package_snapshot",
+  "package": {
+    "name": "ea94c6b2affda5984ae613a39c9d6d11",
+    "source_path": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\ngspice_v16_for_html\\app\\model_packages_fast\\transfer_v3_20260829_022926_0257aa0e72",
+    "content_hash": "ea94c6b2affda5984ae613a39c9d6d11",
+    "analog_hash": "3982078f429468baec4b6fcf7839a1e2",
+    "status": "draft",
+    "manifest_status": "draft",
+    "filter_valid": true,
+    "detector_valid": false,
+    "criteria_version": "waveform-similarity-v2",
+    "status_reason": "Detector 파형/DC/피크 미통과: ch00, ch01, ch02, ch03, ch04, ch05, ch06, ch07, ch08, ch09, ch10, ch11, ch12, ch13, ch14, ch15; Detector 채널 균등 평균 80점 또는 개별 70점 기준 미통과",
+    "circuit_mode": "preamp",
+    "warnings": [
+      "draft package: Detector 파형/DC/피크 미통과: ch00, ch01, ch02, ch03, ch04, ch05, ch06, ch07, ch08, ch09, ch10, ch11, ch12, ch13, ch14, ch15; Detector 채널 균등 평균 80점 또는 개별 70점 기준 미통과",
+      "보장 Vthr band 없음: ch00, ch01, ch02, ch03, ch04, ch05, ch06, ch07, ch08, ch09, ch10, ch11, ch12, ch13, ch14, ch15"
+    ],
+    "snapshot_path": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\ngspice_v16_for_html\\app\\results\\spectrogram\\transfer_v3_20260829_022926_0257aa0e72_3982078f\\model_package_snapshots\\ea94c6b2affda5984ae613a39c9d6d11"
+  },
+  "topology": {
+    "boundary": "microphone/preamp/gic/active_detector:/v_env",
+    "comparator_included": false,
+    "excluded_components": [
+      "R7",
+      "R8",
+      "U4"
+    ]
+  },
+  "sample_rate_hz": 16000.0,
+  "input_vpp_mv": 5.0,
+  "threshold_source": "ui_snapshot",
+  "binary_mode": "default",
+  "matrix": {
+    "rows": 16,
+    "columns": "source_duration_10ms_bins",
+    "row_order": [
+      "ch15",
+      "ch14",
+      "ch13",
+      "ch12",
+      "ch11",
+      "ch10",
+      "ch09",
+      "ch08",
+      "ch07",
+      "ch06",
+      "ch05",
+      "ch04",
+      "ch03",
+      "ch02",
+      "ch01",
+      "ch00"
+    ],
+    "bin_ms": 10.0,
+    "trigger": null,
+    "tail_padding": null
+  },
+  "shared_front_end": {
+    "bias_v": 0.55,
+    "resistance_kohm": 5.1,
+    "coupling_uf": 0.1,
+    "rpre1_kohm": 470.0,
+    "rpre2_kohm": 90.0,
+    "rpre3_kohm": 10.0
+  },
+  "thresholds": [
+    {
+      "channel": 0,
+      "vthr_v": 0.98,
+      "vmargin_v": 0.041898306260100604,
+      "op_baseline_v": 0.9381016937398994
+    },
+    {
+      "channel": 1,
+      "vthr_v": 0.98,
+      "vmargin_v": 0.041896805295388195,
+      "op_baseline_v": 0.9381031947046118
+    },
+    {
+      "channel": 2,
+      "vthr_v": 0.98,
+      "vmargin_v": 0.04189764109734728,
+      "op_baseline_v": 0.9381023589026527
+    },
+    {
+      "channel": 3,
+      "vthr_v": 0.98,
+      "vmargin_v": 0.04189845651651147,
+      "op_baseline_v": 0.9381015434834885
+    },
+    {
+      "channel": 4,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.05189682071734336,
+      "op_baseline_v": 0.9381031792826566
+    },
+    {
+      "channel": 5,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.05189752754452148,
+      "op_baseline_v": 0.9381024724554785
+    },
+    {
+      "channel": 6,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.051898468739143944,
+      "op_baseline_v": 0.938101531260856
+    },
+    {
+      "channel": 7,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.051896920384001954,
+      "op_baseline_v": 0.938103079615998
+    },
+    {
+      "channel": 8,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.05189780401523303,
+      "op_baseline_v": 0.938102195984767
+    },
+    {
+      "channel": 9,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.051896289517610494,
+      "op_baseline_v": 0.9381037104823895
+    },
+    {
+      "channel": 10,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.051897084949461325,
+      "op_baseline_v": 0.9381029150505387
+    },
+    {
+      "channel": 11,
+      "vthr_v": 0.99,
+      "vmargin_v": 0.051897967737398853,
+      "op_baseline_v": 0.9381020322626011
+    },
+    {
+      "channel": 12,
+      "vthr_v": 0.97,
+      "vmargin_v": 0.03189641562431622,
+      "op_baseline_v": 0.9381035843756838
+    },
+    {
+      "channel": 13,
+      "vthr_v": 0.97,
+      "vmargin_v": 0.03189707010649234,
+      "op_baseline_v": 0.9381029298935076
+    },
+    {
+      "channel": 14,
+      "vthr_v": 0.97,
+      "vmargin_v": 0.031897613117302326,
+      "op_baseline_v": 0.9381023868826976
+    },
+    {
+      "channel": 15,
+      "vthr_v": 0.97,
+      "vmargin_v": 0.03189844364494032,
+      "op_baseline_v": 0.9381015563550597
+    }
+  ],
+  "channel_components": [
+    {
+      "channel": 0,
+      "ch": 0,
+      "f_c_hz": 125.0,
+      "q": 4.5,
+      "ra_kohm": 127.0,
+      "c_nf": 10.0,
+      "r1_kohm": 576.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 39.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 1,
+      "ch": 1,
+      "f_c_hz": 159.8505049249676,
+      "q": 4.5,
+      "ra_kohm": 100.0,
+      "c_nf": 10.0,
+      "r1_kohm": 442.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 39.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 2,
+      "ch": 2,
+      "f_c_hz": 204.41747139813674,
+      "q": 4.5,
+      "ra_kohm": 115.0,
+      "c_nf": 6.8,
+      "r1_kohm": 511.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 39.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 3,
+      "ch": 3,
+      "f_c_hz": 261.40988814781826,
+      "q": 4.5,
+      "ra_kohm": 130.0,
+      "c_nf": 4.7,
+      "r1_kohm": 576.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 39.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 4,
+      "ch": 4,
+      "f_c_hz": 334.29202090246446,
+      "q": 4.5,
+      "ra_kohm": 100.0,
+      "c_nf": 4.7,
+      "r1_kohm": 453.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 15.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 5,
+      "ch": 5,
+      "f_c_hz": 427.4939866691741,
+      "q": 4.5,
+      "ra_kohm": 113.0,
+      "c_nf": 3.3,
+      "r1_kohm": 499.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 15.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 6,
+      "ch": 6,
+      "f_c_hz": 546.6810369716388,
+      "q": 4.5,
+      "ra_kohm": 130.0,
+      "c_nf": 2.2,
+      "r1_kohm": 590.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 15.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 7,
+      "ch": 7,
+      "f_c_hz": 699.0979183425709,
+      "q": 4.5,
+      "ra_kohm": 102.0,
+      "c_nf": 2.2,
+      "r1_kohm": 453.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 15.0,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 8,
+      "ch": 8,
+      "f_c_hz": 894.0092419124297,
+      "q": 4.5,
+      "ra_kohm": 118.0,
+      "c_nf": 1.5,
+      "r1_kohm": 523.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 5.6,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 9,
+      "ch": 9,
+      "f_c_hz": 1143.2626298183152,
+      "q": 4.5,
+      "ra_kohm": 90.9,
+      "c_nf": 1.5,
+      "r1_kohm": 402.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 5.6,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 10,
+      "ch": 10,
+      "f_c_hz": 1462.008869106432,
+      "q": 4.5,
+      "ra_kohm": 105.0,
+      "c_nf": 1.0,
+      "r1_kohm": 464.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 5.6,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 11,
+      "ch": 11,
+      "f_c_hz": 1869.6228474515524,
+      "q": 4.5,
+      "ra_kohm": 121.0,
+      "c_nf": 0.68,
+      "r1_kohm": 536.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 5.6,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 12,
+      "ch": 12,
+      "f_c_hz": 2390.8812494750905,
+      "q": 4.5,
+      "ra_kohm": 93.1,
+      "c_nf": 0.68,
+      "r1_kohm": 412.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 2.2,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 13,
+      "ch": 13,
+      "f_c_hz": 3057.4685995538457,
+      "q": 4.5,
+      "ra_kohm": 105.0,
+      "c_nf": 0.47,
+      "r1_kohm": 453.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 2.2,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 14,
+      "ch": 14,
+      "f_c_hz": 3909.9031954473267,
+      "q": 4.5,
+      "ra_kohm": 115.0,
+      "c_nf": 0.33,
+      "r1_kohm": 487.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 2.2,
+      "detector_opamp": "OPA379"
+    },
+    {
+      "channel": 15,
+      "ch": 15,
+      "f_c_hz": 4999.999999999995,
+      "q": 4.5,
+      "ra_kohm": 130.0,
+      "c_nf": 0.22,
+      "r1_kohm": 562.0,
+      "gain_db": 0.0,
+      "r2_kohm": 100.0,
+      "r4_kohm": 50.0,
+      "r5_kohm": 500.0,
+      "r6_kohm": 45.45,
+      "c3_nf": 2.2,
+      "detector_opamp": "OPA379"
+    }
+  ],
+  "base_threshold_preset": "channel-groups-980-990-990-970-v1",
+  "pwl_root": "C:\\Users\\duyou\\Desktop\\Personal\\10_Study\\10_SemiContest\\10_AI_Project\\speech_commands_pwl",
+  "words": [
+    "down",
+    "go",
+    "left",
+    "no",
+    "off",
+    "on",
+    "right",
+    "stop",
+    "up",
+    "yes"
+  ]
+}
