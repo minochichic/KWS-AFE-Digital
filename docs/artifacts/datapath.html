@@ -1,0 +1,483 @@
+<title>Folded 데이터패스 실행기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;450;600&display=swap">
+
+<style>
+:root{
+  --paper:#EEF1F4; --card:#FFFFFF; --sunk:#E4E9ED;
+  --ink:#141A21; --dim:#5C6A77; --faint:#8A97A3;
+  --rule:#CFD7DE;
+  --analog:#A85B2A; --analog-bg:#F7EDE5;
+  --digital:#116B66; --digital-bg:#E1EFED;
+  --live:#C2410C; --live-glow:rgba(194,65,12,.16);
+  --mem:#5B4B8A; --mem-bg:#EDEAF5;
+  --ok:#3F7A45; --warn:#9E3A31;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1216; --card:#161D23; --sunk:#11171C;
+    --ink:#E6ECF1; --dim:#93A1AD; --faint:#67757F;
+    --rule:#28323A;
+    --analog:#E09155; --analog-bg:#291C13;
+    --digital:#48B7AE; --digital-bg:#0E2523;
+    --live:#F97D3C; --live-glow:rgba(249,125,60,.2);
+    --mem:#A99AD6; --mem-bg:#1F1A2E;
+    --ok:#6FB076; --warn:#E0796D;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1216; --card:#161D23; --sunk:#11171C;
+  --ink:#E6ECF1; --dim:#93A1AD; --faint:#67757F;
+  --rule:#28323A;
+  --analog:#E09155; --analog-bg:#291C13;
+  --digital:#48B7AE; --digital-bg:#0E2523;
+  --live:#F97D3C; --live-glow:rgba(249,125,60,.2);
+  --mem:#A99AD6; --mem-bg:#1F1A2E;
+  --ok:#6FB076; --warn:#E0796D;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  font-size:15px; line-height:1.6;
+}
+.wrap{max-width:1120px; margin:0 auto; padding:40px 20px 72px}
+code,.m{font-family:"IBM Plex Mono","IBM Plex Sans KR",ui-monospace,monospace}
+
+header{border-bottom:1px solid var(--rule); padding-bottom:22px; margin-bottom:30px}
+.eyebrow{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin:0 0 10px;
+}
+h1{font-size:clamp(27px,4.4vw,40px); line-height:1.1; margin:0 0 12px; font-weight:700; letter-spacing:-.02em; text-wrap:balance}
+.lede{max-width:66ch; color:var(--dim); margin:0}
+
+section{margin-top:46px}
+h2{font-size:21px; margin:0 0 6px; font-weight:700; letter-spacing:-.01em}
+.sub{color:var(--dim); margin:0 0 20px; max-width:64ch; font-size:14.5px}
+
+/* ---- console ---- */
+.console{background:var(--card); border:1px solid var(--rule); border-radius:4px; overflow:hidden}
+.bar{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  padding:11px 14px; border-bottom:1px solid var(--rule); background:var(--sunk);
+}
+button.b{
+  font:inherit; font-size:13px; font-weight:600; cursor:pointer;
+  padding:6px 14px; border-radius:3px; border:1px solid var(--rule);
+  background:var(--card); color:var(--ink); transition:.14s;
+  font-family:"IBM Plex Sans","IBM Plex Sans KR",sans-serif;
+}
+button.b:hover{border-color:var(--dim)}
+button.b:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+button.b.pri{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+button.b:disabled{opacity:.4; cursor:default}
+.spd{display:flex; align-items:center; gap:7px; margin-left:auto; color:var(--dim); font-size:12.5px}
+.spd input{width:110px; accent-color:var(--live)}
+
+.stagebar{
+  display:flex; gap:0; padding:0; border-bottom:1px solid var(--rule);
+  overflow-x:auto; background:var(--card);
+}
+.ph{
+  flex:1 0 auto; min-width:104px; padding:9px 12px; text-align:center;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11.5px;
+  color:var(--faint); border-right:1px solid var(--rule); white-space:nowrap;
+  transition:.18s;
+}
+.ph:last-child{border-right:none}
+.ph b{display:block; font-size:13px; font-weight:600}
+.ph.done{color:var(--dim)}
+.ph.done b{color:var(--ok)}
+.ph.act{background:var(--live-glow); color:var(--live)}
+.ph.act b{color:var(--live)}
+
+.svgwrap{overflow-x:auto; background:var(--card)}
+svg{display:block; min-width:940px; width:100%; height:auto}
+
+.readout{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(132px,1fr));
+  border-top:1px solid var(--rule); background:var(--sunk);
+}
+.rd{padding:10px 14px; border-right:1px solid var(--rule)}
+.rd:last-child{border-right:none}
+.rd .k{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+.rd .v{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:15px;
+  font-weight:600; font-variant-numeric:tabular-nums; margin-top:1px;
+}
+.rd .v.hi{color:var(--live)}
+.rd .v.lo{color:var(--faint)}
+.note{padding:11px 14px; border-top:1px solid var(--rule); font-size:13.5px; color:var(--dim); min-height:44px}
+.note b{color:var(--ink); font-weight:600}
+
+/* svg bits */
+.blk rect{fill:var(--card); stroke:var(--rule); stroke-width:1.5; rx:3}
+.blk.on rect{stroke:var(--live); stroke-width:2.5; fill:var(--live-glow)}
+.blk text.n{font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:600; fill:var(--ink)}
+.blk text.s{font-family:"IBM Plex Mono",monospace; font-size:9.5px; fill:var(--faint)}
+.blk.on text.n,.blk.on text.s{fill:var(--live)}
+.pln rect{fill:var(--mem-bg); stroke:var(--mem); stroke-width:1.2; rx:2; opacity:.55}
+.pln.full rect{opacity:1}
+.pln text{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--mem); font-weight:600}
+.wire{stroke:var(--rule); stroke-width:1.6; fill:none}
+.wire.on{stroke:var(--live); stroke-width:2.2}
+.pkt{fill:var(--live)}
+.bnd{stroke:var(--analog); stroke-width:1.3; stroke-dasharray:5 4; fill:none}
+.lbl{font-family:"IBM Plex Mono",monospace; font-size:9.5px; fill:var(--faint)}
+.lbl.a{fill:var(--analog)}
+
+/* ---- build flow ---- */
+.flow{display:grid; gap:10px}
+.step{
+  display:grid; grid-template-columns:26px 1fr; gap:14px; align-items:start;
+  background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:14px 16px;
+}
+.step .i{
+  width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  border:1.5px solid var(--digital); color:var(--digital);
+  font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600;
+}
+.step h3{margin:0 0 3px; font-size:14.5px; font-weight:600}
+.step h3 code{font-size:13px}
+.step p{margin:0; color:var(--dim); font-size:13.5px; max-width:70ch}
+.step p+p{margin-top:6px}
+.step .out{
+  margin-top:8px; font-family:"IBM Plex Mono",monospace; font-size:11.5px;
+  background:var(--sunk); border-radius:3px; padding:8px 11px; color:var(--dim);
+  overflow-x:auto; white-space:pre;
+}
+
+/* ---- lab plan ---- */
+.cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px}
+.col{background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:18px}
+.col.here{border-top:3px solid var(--digital)}
+.col.there{border-top:3px solid var(--live)}
+.col h3{margin:0 0 3px; font-size:16px; font-weight:700}
+.col .when{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--faint); margin-bottom:12px}
+.col ol{margin:0; padding-left:19px; font-size:14px}
+.col li{margin-bottom:9px}
+.col li:last-child{margin-bottom:0}
+.col li b{font-weight:600}
+.col li .t{display:block; color:var(--dim); font-size:12.5px; margin-top:1px}
+.est{margin-top:14px; padding-top:12px; border-top:1px solid var(--rule); font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--dim)}
+
+.flag{
+  margin-top:14px; padding:13px 16px; border-radius:4px;
+  background:var(--analog-bg); border:1px solid transparent; font-size:13.5px;
+}
+.flag b{color:var(--analog)}
+footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--rule); color:var(--faint); font-size:12px; font-family:"IBM Plex Mono",monospace}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">KWS-AFE-Digital · rtl/kws_top.v · 시퀀서 FSM</p>
+  <h1>Folded 데이터패스 실행기</h1>
+  <p class="lede">
+    한 번에 한 단계만 돈다. 층 사이의 활성값은 BRAM 평면 네 장에 주차되고, 시퀀서가
+    <code class="m">S_C1 → S_B1 → S_B2 → S_B3 → S_TL</code> 로 넘기며 같은 엔진을 다시 쓴다.
+    재생을 눌러 클립 하나가 클래스 인덱스가 되기까지를 본다.
+  </p>
+</header>
+
+<section style="margin-top:34px">
+  <div class="console">
+    <div class="bar">
+      <button class="b pri" id="play">▶ 재생</button>
+      <button class="b" id="step">한 단계</button>
+      <button class="b" id="reset">처음으로</button>
+      <label class="spd">속도 <input type="range" id="spd" min="1" max="10" value="5"></label>
+    </div>
+
+    <div class="stagebar" id="phases"></div>
+
+    <div class="svgwrap">
+      <svg viewBox="0 0 1040 330" id="dia" role="img" aria-label="folded 데이터패스 블록 다이어그램"></svg>
+    </div>
+
+    <div class="readout">
+      <div class="rd"><div class="k">FSM 상태</div><div class="v" id="rSt">S_IDLE</div></div>
+      <div class="rd"><div class="k">pc (프레임)</div><div class="v" id="rPc">0</div></div>
+      <div class="rd"><div class="k">in_valid</div><div class="v lo" id="rIv">0</div></div>
+      <div class="rd"><div class="k">in_ready</div><div class="v lo" id="rIr">0</div></div>
+      <div class="rd"><div class="k">busy</div><div class="v lo" id="rBs">0</div></div>
+      <div class="rd"><div class="k">class_valid</div><div class="v lo" id="rCv">0</div></div>
+    </div>
+    <div class="note" id="note">재생을 누르면 <b>start</b> 가 뜨고 평면 네 장이 비워진다.</div>
+  </div>
+</section>
+
+<section>
+  <h2>.xdc 와 .tcl 이 어디에 붙는가</h2>
+  <p class="sub">
+    위 다이어그램에서 <b>왼쪽 점선 바깥</b>이 제약 파일의 관할이다. 안쪽 로직은 Verilog 가
+    정하고, 바깥으로 나가는 신호의 전기적 성질과 타이밍은 <code>.xdc</code> 가 정한다.
+  </p>
+  <div class="flow">
+    <div class="step">
+      <div class="i">X</div>
+      <div>
+        <h3><code>kws_top.xdc</code> — 세 줄이 전부 다른 문제를 푼다</h3>
+        <p><code>create_clock</code> 은 <b>얼마나 빨라야 하는가</b>. Verilog 어디에도 이 숫자가 없다.</p>
+        <p><code>set_false_path -from [get_ports {cmp[*]}]</code> 은 <b>분석하지 말라</b>. 비교기는 우리 클럭과 무관하게 흔들리므로 첫 플립플롭은 정의상 셋업/홀드를 만족할 수 없다. 안 빼면 도구가 없는 경로를 맞추려다 로직을 비튼다.</p>
+        <p><code>ASYNC_REG TRUE</code> 는 <b>두 FF 를 붙여 놓아라</b>. 같은 슬라이스에 두면 메타스테이빌리티가 가라앉을 시간이 길어진다.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="i">1</div>
+      <div>
+        <h3><code>build.tcl</code> — .hex 를 run 디렉터리로 옮긴다</h3>
+        <p>Icarus 는 리포 루트에서 돌아 <code>rtl/gen/…/x.hex</code> 를 찾지만, Vivado 는 합성 run 디렉터리에서 찾아 <b>하나도 못 찾는다</b>. 그런데 에러가 아니다 — ROM 이 X 로 남고 합성은 성공한다.</p>
+        <div class="out">.hex 35 개 → out/synth/&lt;part&gt;/inc/
+paths.vh 를 파일명만 남긴 사본으로 재작성</div>
+      </div>
+    </div>
+    <div class="step">
+      <div class="i">2</div>
+      <div>
+        <h3><code>kws_top_synth.v</code> — ROM 경로를 꽂는다</h3>
+        <p><code>kws_top</code> 의 경로 파라미터는 기본값이 <code>""</code> 이고 RTL 이 그걸 걸러낸다. 그냥 합성하면 <b>가중치가 하나도 없는 회로</b>가 조용히 나온다. 래퍼가 테스트벤치와 같은 매크로 35 개를 꽂는다.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="i">3</div>
+      <div>
+        <h3><code>synth_design</code> → 리포트</h3>
+        <p>Verilog 가 LUT · FF · BRAM 으로 바뀐다. <code>-flatten_hierarchy none</code> 이라 모듈별로 나온다.</p>
+        <div class="out">report_utilization -hierarchical
+report_timing_summary
+== BRAM 셀 N 개 ==      ← 0 이면 1 단계가 실패한 것</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>연구실 실습시간 최소화</h2>
+  <p class="sub">
+    연구실에서만 할 수 있는 일은 <b>파트 라이선스가 필요한 합성</b>과 <b>보드에 굽기</b> 둘뿐이다.
+    나머지는 전부 여기서 끝낼 수 있고, 끝내 두면 거기서는 리포트만 읽으면 된다.
+  </p>
+  <div class="cols">
+    <div class="col here">
+      <h3>여기서 끝낼 것</h3>
+      <div class="when">GPU 박스 · Vivado 불필요</div>
+      <ol>
+        <li><b>Verilator 린트 <code>-Wall</code></b><span class="t">폭 truncation, 의도 안 한 래치. 설치 0분</span></li>
+        <li><b>yosys 합성 한 번</b><span class="t">합성 불가 구문과 <code>$readmemh</code> 로드 여부. apt 1분</span></li>
+        <li><b>임계값 확정 → 동료 SPICE → 재학습</b><span class="t">가중치가 정해져야 <code>.hex</code> 가 정해진다</span></li>
+        <li><b><code>export</code> 재실행</b><span class="t">최종 태그로 <code>.hex</code> · <code>paths.vh</code> · 골든 벡터 생성</span></li>
+        <li><b>Icarus 12개 테스트벤치 재통과</b><span class="t">새 가중치로도 골든 벡터가 맞는지</span></li>
+      </ol>
+      <div class="est">→ 연구실 도착 시점에 남는 것: 파트 하나</div>
+    </div>
+    <div class="col there">
+      <h3>연구실에서 할 것</h3>
+      <div class="when">Vivado Enterprise · 보드</div>
+      <ol>
+        <li><b><code>build.tcl</code> 한 줄</b><span class="t">파트만 XC7K325T 로. 첫 실행은 문법 조정이 있을 수 있다</span></li>
+        <li><b>로그 세 줄 확인</b><span class="t">BRAM 셀 개수 · Critical Warning · WNS</span></li>
+        <li><b>핀 배치 작성</b><span class="t">비교기 전압 레벨이 정해진 뒤. <code>.xdc</code> 2 절만</span></li>
+        <li><b><code>-impl</code> 로 배치배선 · 비트스트림</b></li>
+        <li><b>보드에 굽고 <code>tb_top</code> 벡터로 대조</b><span class="t">같은 입력 <code>.hex</code> 가 같은 클래스를 내는지</span></li>
+      </ol>
+      <div class="est">→ 1~2 가 깨끗하면 나머지는 절차다</div>
+    </div>
+  </div>
+  <div class="flag">
+    <b>가장 크게 시간을 아끼는 것</b>은 순서다. 가중치가 확정되기 전에 합성하면
+    <code>.hex</code> 가 바뀔 때 전부 다시 해야 한다. 반대로 RTL 구조 문제는 가중치와
+    무관하므로 <b>지금 yosys 로 털어낼 수 있다</b> — 그 둘을 분리하면 연구실에서
+    <code>build.tcl</code> 한 번으로 끝난다.
+  </div>
+</section>
+
+<footer>rtl/kws_top.v 시퀀서 · rtl/build.tcl · rtl/constraints/kws_top.xdc · 2026-08-29</footer>
+</div>
+
+<script>
+const SVG="http://www.w3.org/2000/svg";
+const dia=document.getElementById("dia");
+const BY=76, BH=52, PY=222, PH=38;
+
+// 실제 배선: conv1 → pA → b1 → pB → b2 → pC → b3 → pD → conv2_dw → tail
+const BLOCKS={
+  fc  :{x:22 ,w:96 ,y:BY, n:"frame_ctrl", s:"2FF + sticky OR"},
+  c1  :{x:172,w:104,y:BY, n:"conv1",      s:"int8 × ±1, /2"},
+  b1  :{x:352,w:88 ,y:BY, n:"b1",         s:"k=13"},
+  b2  :{x:516,w:88 ,y:BY, n:"b2",         s:"k=15"},
+  b3  :{x:680,w:88 ,y:BY, n:"b3",         s:"k=17"},
+  c2  :{x:858,w:92 ,y:BY, n:"conv2_dw",   s:"k=29, dil 2"},
+  tl  :{x:858,w:92 ,y:PY, n:"kws_tail",   s:"→ argmax"},
+};
+// 평면은 블록 사이 빈 구간에만 놓는다 -- 겹치면 배선이 거꾸로 흐르는 것처럼 보인다
+const PLANES={
+  pa:{x:282,w:64,n:"plane A"}, pb:{x:446,w:64,n:"plane B"},
+  pc:{x:610,w:64,n:"plane C"}, pd:{x:780,w:64,n:"plane D"},
+};
+
+function el(t,a){const e=document.createElementNS(SVG,t);for(const k in a)e.setAttribute(k,a[k]);return e;}
+const gWire=el("g",{}), gNode=el("g",{}), gPkt=el("g",{});
+
+const bnd=el("path",{class:"bnd",d:"M150 24 L150 300"}); gWire.appendChild(bnd);
+const bl=el("text",{class:"lbl a",x:22,y:20}); bl.textContent="◀ 아날로그 (ICD 경계)"; gWire.appendChild(bl);
+const bl2=el("text",{class:"lbl",x:158,y:20}); bl2.textContent="디지털 — 여기부터 우리 RTL. .xdc 관할은 이 선을 넘는 신호다"; gWire.appendChild(bl2);
+
+// 블록은 아래쪽 왼편으로 받고 아래쪽 오른편으로 내보낸다. 평면은 그 사이에 있다.
+const YB=BY+BH, YP=PY+PH/2;
+const WIRES=[
+  ["w_in", `M118 ${BY+BH/2} H172`],
+  ["w_c1", `M250 ${YB} V${YP} H282`],
+  ["w_b1i",`M346 ${YP} H372 V${YB}`],
+  ["w_b1o",`M420 ${YB} V${YP} H446`],
+  ["w_b2i",`M510 ${YP} H536 V${YB}`],
+  ["w_b2o",`M584 ${YB} V${YP} H610`],
+  ["w_b3i",`M674 ${YP} H700 V${YB}`],
+  ["w_b3o",`M748 ${YB} V${YP} H780`],
+  ["w_c2i",`M844 ${YP} H880 V${YB}`],
+  ["w_tl", `M904 ${YB} V${PY}`],
+];
+const wireEl={};
+for(const [id,d] of WIRES){
+  const p=el("path",{class:"wire",d,id}); gWire.appendChild(p); wireEl[id]=p;
+}
+const outp=el("path",{class:"wire",d:`M950 ${YP} H1016`}); gWire.appendChild(outp);
+const outt=el("text",{class:"lbl",x:958,y:YP-8}); outt.textContent="class_idx"; gWire.appendChild(outt);
+
+const blkEl={};
+for(const k in BLOCKS){
+  const b=BLOCKS[k], g=el("g",{class:"blk"});
+  g.appendChild(el("rect",{x:b.x,y:b.y,width:b.w,height:BH}));
+  const t1=el("text",{class:"n",x:b.x+b.w/2,y:b.y+22,"text-anchor":"middle"}); t1.textContent=b.n;
+  const t2=el("text",{class:"s",x:b.x+b.w/2,y:b.y+37,"text-anchor":"middle"}); t2.textContent=b.s;
+  g.append(t1,t2); gNode.appendChild(g); blkEl[k]=g;
+}
+const plnEl={};
+for(const k in PLANES){
+  const p=PLANES[k], g=el("g",{class:"pln"});
+  g.appendChild(el("rect",{x:p.x,y:PY,width:p.w,height:PH}));
+  const t=el("text",{x:p.x+p.w/2,y:PY+17,"text-anchor":"middle"}); t.textContent=p.n;
+  const t2=el("text",{x:p.x+p.w/2,y:PY+30,"text-anchor":"middle"}); t2.textContent="BRAM";
+  g.append(t,t2); gNode.appendChild(g); plnEl[k]=g;
+}
+dia.append(gWire,gNode,gPkt);
+
+// ---- 단계 정의 (kws_top.v 시퀀서 그대로) ----
+const PH_DEF=[
+  {st:"S_C1", lab:"프레임 적재", sub:"128 → conv1",
+   wire:"w_in", blk:"c1", fill:null, n:128,
+   note:"<b>in_valid / in_ready</b> 악수로 한 프레임씩 들어온다. conv1 은 stride 2 라 두 프레임에 하나를 낸다."},
+  {st:"S_C1", lab:"conv1 → A", sub:"64 프레임",
+   wire:"w_c1", blk:"c1", fill:"pa", n:64,
+   note:"conv1 출력이 <b>plane A</b> 를 채운다. 다 차면 시퀀서가 S_B1 로 넘어가고 <code>pa_rs</code> 로 읽기를 시작한다."},
+  {st:"S_B1", lab:"b1", sub:"A → B",
+   wire:"w_b1i", blk:"b1", fill:"pb", n:64, w2:"w_b1o", drain:"pa",
+   note:"<b>같은 엔진을 다시 쓴다.</b> conv1 은 이제 놀고 b1 만 돈다 — 이것이 folded 의 뜻이다."},
+  {st:"S_B2", lab:"b2", sub:"B → C",
+   wire:"w_b2i", blk:"b2", fill:"pc", n:64, w2:"w_b2o", drain:"pb",
+   note:"TCS sub-block 둘 + residual. 이진 내적은 <code>2·popcount(XNOR) − N</code> 이라 곱셈기가 없다."},
+  {st:"S_B3", lab:"b3", sub:"C → D",
+   wire:"w_b3i", blk:"b3", fill:"pd", n:64, w2:"w_b3o", drain:"pc",
+   note:"BN 은 추론 시 <b>정수 threshold 비교 한 번</b>으로 융합돼 있다. α 는 거기 접혀 하드웨어에 안 남는다."},
+  {st:"S_TL", lab:"conv2 + tail", sub:"D → 클래스",
+   wire:"w_c2i", blk:"c2", fill:null, n:64, w2:"w_tl", blk2:"tl", drain:"pd",
+   note:"conv2_dw 뒤 꼬리가 <code>conv2_pw → conv3 → conv4 → avg pool → argmax</code>. 마지막 층은 절대 이진화하지 않는다."},
+];
+
+const phasesEl=document.getElementById("phases");
+PH_DEF.forEach((p,i)=>{
+  const d=document.createElement("div"); d.className="ph"; d.id="ph"+i;
+  d.innerHTML=`<b>${p.st}</b>${p.lab}`;
+  phasesEl.appendChild(d);
+});
+
+const R={st:document.getElementById("rSt"),pc:document.getElementById("rPc"),
+  iv:document.getElementById("rIv"),ir:document.getElementById("rIr"),
+  bs:document.getElementById("rBs"),cv:document.getElementById("rCv")};
+const noteEl=document.getElementById("note");
+
+let idx=-1, prog=0, playing=false, raf=null, last=0;
+const speed=()=>Number(document.getElementById("spd").value);
+
+function setBit(el,v){el.textContent=v?"1":"0"; el.className="v "+(v?"hi":"lo");}
+function clearHL(){
+  for(const k in blkEl) blkEl[k].classList.remove("on");
+  for(const id in wireEl) wireEl[id].classList.remove("on");
+  gPkt.innerHTML="";
+}
+function reset(){
+  pause(); idx=-1; prog=0; clearHL();
+  for(const k in plnEl) plnEl[k].classList.remove("full");
+  PH_DEF.forEach((_,i)=>document.getElementById("ph"+i).className="ph");
+  R.st.textContent="S_IDLE"; R.pc.textContent="0";
+  setBit(R.iv,0); setBit(R.ir,0); setBit(R.bs,0); setBit(R.cv,0);
+  noteEl.innerHTML="재생을 누르면 <b>start</b> 가 뜨고 평면 네 장이 비워진다.";
+}
+function render(){
+  clearHL();
+  if(idx<0) return;
+  const p=PH_DEF[idx];
+  PH_DEF.forEach((_,i)=>{
+    const e=document.getElementById("ph"+i);
+    e.className="ph"+(i<idx?" done":i===idx?" act":"");
+  });
+  blkEl[p.blk].classList.add("on");
+  if(p.blk2) blkEl[p.blk2].classList.add("on");
+  wireEl[p.wire].classList.add("on");
+  if(p.w2) wireEl[p.w2].classList.add("on");
+
+  R.st.textContent=p.st;
+  const done=Math.floor(prog*p.n);
+  R.pc.textContent=(idx===0?done:p.n)+" / "+p.n;
+  setBit(R.iv, idx===0 && prog<1); setBit(R.ir, idx===0 && prog<1);
+  setBit(R.bs, 1); setBit(R.cv, idx===PH_DEF.length-1 && prog>=1);
+  noteEl.innerHTML=p.note;
+
+  // 패킷: 활성 배선을 따라 흐른다
+  for(const wid of [p.wire, p.w2].filter(Boolean)){
+    const path=wireEl[wid], L=path.getTotalLength();
+    for(let k=0;k<4;k++){
+      const t=(prog*1.4 + k*0.16)%1;
+      const pt=path.getPointAtLength(t*L);
+      gPkt.appendChild(el("circle",{class:"pkt",cx:pt.x,cy:pt.y,r:3.4,opacity:1-Math.abs(t-.5)*.5}));
+    }
+  }
+  if(p.fill) plnEl[p.fill].classList.toggle("full", prog>0.15);
+  if(p.drain && prog>0.85) plnEl[p.drain].classList.remove("full");
+}
+function tick(ts){
+  if(!playing) return;
+  if(!last) last=ts;
+  prog += (ts-last)/1000 * (speed()/6);
+  last=ts;
+  if(prog>=1){
+    if(idx<PH_DEF.length-1){ idx++; prog=0; }
+    else { prog=1; render(); pause(); return; }
+  }
+  render(); raf=requestAnimationFrame(tick);
+}
+function play(){
+  if(idx>=PH_DEF.length-1 && prog>=1) reset();
+  if(idx<0){ idx=0; prog=0; }
+  playing=true; last=0;
+  document.getElementById("play").textContent="⏸ 일시정지";
+  raf=requestAnimationFrame(tick);
+}
+function pause(){
+  playing=false; if(raf) cancelAnimationFrame(raf); raf=null;
+  document.getElementById("play").textContent="▶ 재생";
+}
+document.getElementById("play").onclick=()=>playing?pause():play();
+document.getElementById("reset").onclick=reset;
+document.getElementById("step").onclick=()=>{
+  pause();
+  if(idx>=PH_DEF.length-1){ reset(); return; }
+  idx++; prog=1; render();
+};
+reset();
+</script>
