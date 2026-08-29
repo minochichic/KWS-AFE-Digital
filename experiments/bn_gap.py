@@ -14,7 +14,7 @@ train 은 그걸 흡수하고 eval 은 못 흡수한다면, running 통계를 **
 
   eval(그대로)     저장된 running 통계
   eval(재보정)     학습셋을 forward 해서 running 통계를 다시 채운 뒤
-  train-BN         배치 통계 그대로 (상한; 실제 배포에는 못 쓴다)
+  train-BN         배치 통계 그대로 (**셔플한 로더에서만** 의미가 있다)
 
 재보정이 크게 올리면 원인은 BN 이고, 고치는 방법도 그것이다. 셋이 비슷하면 BN 이
 아니므로 다른 데를 봐야 한다.
@@ -41,8 +41,15 @@ def evaluate(model, loader, device) -> float:
 
 
 def evaluate_batch_stats(model, loader, device) -> float:
-    """BN 을 train 모드로 두고 평가 = 배치 통계. 상한이지 배포 가능한 값이 아니다
-    (추론 때 배치가 없다)."""
+    """BN 을 train 모드로 두고 평가 = 배치 통계.
+
+    ⚠️ **평가 로더에서는 이 숫자를 상한으로 읽으면 안 된다.** shuffle=False 이고
+    클립이 단어순으로 정렬돼 있어서 배치 하나가 거의 한 클래스로 채워진다. 그
+    배치의 통계로 정규화하면 무너진다 -- an_bn 에서 0.16 이 나왔고, 그건 BN 에
+    대한 정보가 아니라 배치 구성에 대한 정보다.
+
+    셔플된 로더에서만 의미가 있으므로 호출부가 그 사실을 표시한다.
+    """
     model.train()
     ok = n = 0
     with torch.no_grad():
@@ -99,9 +106,14 @@ def main() -> None:
     a_t = evaluate(model, test_loader, device)
     print(f"{'eval (그대로)':22s}{a_v:>9.4f}{a_t:>9.4f}")
 
-    b_v = evaluate_batch_stats(model, val_loader, device)
-    b_t = evaluate_batch_stats(model, test_loader, device)
-    print(f"{'train-BN (배치통계)':22s}{b_v:>9.4f}{b_t:>9.4f}   <- 상한")
+    # 셔플해서 재야 배치가 한 클래스로 쏠리지 않는다.
+    from torch.utils.data import DataLoader
+    sh = {n: DataLoader(l.dataset, batch_size=l.batch_size, shuffle=True)
+          for n, l in (("val", val_loader), ("test", test_loader))}
+    b_v = evaluate_batch_stats(model, sh["val"], device)
+    b_t = evaluate_batch_stats(model, sh["test"], device)
+    print(f"{'train-BN (배치통계)':22s}{b_v:>9.4f}{b_t:>9.4f}   "
+          f"<- 셔플 필수 (안 하면 배치가 한 클래스로 쏠려 무너진다)")
 
     recalibrate_bn(model, train_loader, device, args.batches)
     c_v = evaluate(model, val_loader, device)
@@ -110,6 +122,9 @@ def main() -> None:
 
     print()
     gain = c_t - a_t
+    print("\n주의: 이 진단은 **최종 체크포인트 하나**를 본다. 학습 중 에폭 사이의\n"
+          "val 진동을 직접 재는 것이 아니라, '저장된 running 통계가 낡았는가'만\n"
+          "답한다. 둘은 관련은 있어도 같지 않다.")
     if gain > 0.02:
         print(f"→ 재보정만으로 test +{gain*100:.1f}pp. **원인은 BN running 통계다.**")
         print("   고치는 법: bn_momentum 을 낮추거나(창을 늘리거나), 학습 끝에")
