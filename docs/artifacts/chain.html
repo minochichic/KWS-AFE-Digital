@@ -1,0 +1,461 @@
+<title>BinaryMatchboxNet 신호 사슬</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;450;600&display=swap">
+
+<style>
+:root{
+  --paper:#F1F4F6; --card:#FFFFFF; --ink:#141A21; --dim:#5A6773;
+  --rule:#D3DAE0; --rule-soft:#E4E9ED;
+  --analog:#A85B2A; --analog-bg:#F7EDE5; --analog-line:#DFC3AC;
+  --digital:#136C67; --digital-bg:#E3F0EE; --digital-line:#A8CDC9;
+  --warn:#9E3A31; --warn-bg:#F8E9E7;
+  --ok:#3F7A45;
+  --shadow:0 1px 2px rgba(20,26,33,.06),0 8px 24px rgba(20,26,33,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1318; --card:#161D24; --ink:#E4EAEF; --dim:#94A3AF;
+    --rule:#2A343D; --rule-soft:#212A32;
+    --analog:#E09155; --analog-bg:#2A1D14; --analog-line:#5C3D26;
+    --digital:#4EBAB1; --digital-bg:#0F2624; --digital-line:#255C57;
+    --warn:#E0796D; --warn-bg:#2B1815;
+    --ok:#6FB076;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1318; --card:#161D24; --ink:#E4EAEF; --dim:#94A3AF;
+  --rule:#2A343D; --rule-soft:#212A32;
+  --analog:#E09155; --analog-bg:#2A1D14; --analog-line:#5C3D26;
+  --digital:#4EBAB1; --digital-bg:#0F2624; --digital-line:#255C57;
+  --warn:#E0796D; --warn-bg:#2B1815;
+  --ok:#6FB076;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.3);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","IBM Plex Sans KR","Helvetica Neue",Arial,sans-serif;
+  font-size:15px; line-height:1.62; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1080px; margin:0 auto; padding:44px 22px 80px}
+code,.mono{font-family:"IBM Plex Mono","IBM Plex Sans KR",ui-monospace,Menlo,monospace}
+.cond{font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif}
+
+/* ---------- header ---------- */
+header{border-bottom:1px solid var(--rule); padding-bottom:26px; margin-bottom:34px}
+.eyebrow{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--dim); margin:0 0 12px;
+}
+h1{
+  font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif; font-weight:700;
+  font-size:clamp(30px,5vw,46px); line-height:1.08; margin:0 0 14px;
+  letter-spacing:-.015em; text-wrap:balance;
+}
+.lede{max-width:64ch; color:var(--dim); margin:0; font-size:16px}
+.statline{
+  display:flex; flex-wrap:wrap; gap:8px 28px; margin-top:22px;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:12.5px;
+}
+.statline b{font-weight:600; font-variant-numeric:tabular-nums}
+.statline span{color:var(--dim)}
+
+/* ---------- section ---------- */
+section{margin-top:52px}
+h2{
+  font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif; font-weight:700;
+  font-size:23px; margin:0 0 6px; letter-spacing:-.01em;
+}
+.sub{color:var(--dim); margin:0 0 22px; max-width:62ch; font-size:14.5px}
+
+/* ---------- chain ---------- */
+.chain{display:grid; grid-template-columns:1fr; gap:0}
+.stage{
+  display:grid; grid-template-columns:78px 1fr; gap:16px; align-items:stretch;
+}
+.rail{position:relative; display:flex; justify-content:flex-end; padding-right:2px}
+.rail::before{
+  content:""; position:absolute; right:11px; top:0; bottom:0; width:2px;
+  background:var(--rule);
+}
+.stage.an .rail::before{background:var(--analog-line)}
+.stage.di .rail::before{background:var(--digital-line)}
+.dot{
+  position:relative; z-index:1; width:24px; height:24px; margin-top:16px;
+  border-radius:50%; border:2px solid var(--rule); background:var(--card);
+  display:grid; place-items:center;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:10px; font-weight:600;
+  color:var(--dim);
+}
+.stage.an .dot{border-color:var(--analog); color:var(--analog)}
+.stage.di .dot{border-color:var(--digital); color:var(--digital)}
+.shape{
+  position:absolute; right:44px; top:19px; white-space:nowrap;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px; color:var(--dim);
+  opacity:0; transition:opacity .2s; pointer-events:none;
+}
+body.shapes .shape{opacity:1}
+
+.node{
+  width:100%; text-align:left; cursor:pointer; margin:5px 0;
+  background:var(--card); border:1px solid var(--rule); border-radius:3px;
+  border-left:3px solid var(--rule);
+  padding:13px 16px; font:inherit; color:inherit;
+  transition:border-color .15s, box-shadow .15s, transform .15s;
+}
+.stage.an .node{border-left-color:var(--analog)}
+.stage.di .node{border-left-color:var(--digital)}
+.node:hover{box-shadow:var(--shadow); transform:translateX(2px)}
+.node:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+.node[aria-expanded="true"]{box-shadow:var(--shadow)}
+.node .nm{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-weight:600; font-size:14px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+}
+.node .desc{color:var(--dim); font-size:13.5px; margin-top:3px}
+.tag{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:10px; font-weight:500;
+  letter-spacing:.06em; text-transform:uppercase;
+  padding:2px 7px; border-radius:2px; white-space:nowrap;
+}
+.tag.an{background:var(--analog-bg); color:var(--analog)}
+.tag.di{background:var(--digital-bg); color:var(--digital)}
+.tag.ok{color:var(--ok); border:1px solid currentColor; padding:1px 6px}
+.body{display:none; padding:2px 16px 16px 19px; font-size:14px}
+.body.open{display:block}
+.body p{margin:0 0 10px; max-width:62ch}
+.body p:last-child{margin-bottom:0}
+.kv{
+  display:grid; grid-template-columns:auto 1fr; gap:4px 14px;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:12.5px; margin:10px 0;
+}
+.kv dt{color:var(--dim)}
+.kv dd{margin:0; font-variant-numeric:tabular-nums}
+
+/* boundary */
+.boundary{
+  margin:14px 0 14px 94px; padding:12px 16px; border-radius:3px;
+  border:1px dashed var(--rule); background:transparent;
+}
+.boundary .t{
+  font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif; font-weight:600;
+  font-size:14px; letter-spacing:.02em;
+}
+.boundary .d{color:var(--dim); font-size:13px; margin-top:2px}
+
+/* ---------- controls ---------- */
+.controls{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 20px}
+.ctl{
+  font:inherit; font-size:13px; cursor:pointer; padding:6px 13px;
+  border-radius:2px; border:1px solid var(--rule); background:var(--card);
+  color:var(--dim); transition:all .15s;
+  font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif; font-weight:600;
+}
+.ctl:hover{border-color:var(--dim); color:var(--ink)}
+.ctl:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+.ctl[aria-pressed="true"]{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+
+/* ---------- build cards ---------- */
+.grid3{display:grid; grid-template-columns:repeat(auto-fit,minmax(268px,1fr)); gap:14px}
+.card{
+  background:var(--card); border:1px solid var(--rule); border-radius:3px;
+  padding:18px; display:flex; flex-direction:column; gap:9px;
+}
+.card h3{
+  margin:0; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:13.5px; font-weight:600;
+}
+.card .role{
+  font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif; font-size:11px;
+  letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
+}
+.card p{margin:0; font-size:13.5px; color:var(--ink)}
+.card .note{color:var(--dim); font-size:12.5px}
+
+/* ---------- trap demo ---------- */
+.trap{
+  border:1px solid var(--warn-bg); background:var(--warn-bg);
+  border-radius:3px; padding:18px; margin-top:16px;
+}
+.trap h3{
+  margin:0 0 4px; font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif;
+  font-size:16px; font-weight:700; color:var(--warn);
+}
+.trap>p{margin:0 0 14px; font-size:14px; max-width:62ch}
+.two{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px}
+.pane{background:var(--card); border:1px solid var(--rule); border-radius:3px; padding:14px}
+.pane .who{
+  font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif; font-weight:700; font-size:14px;
+  margin-bottom:8px;
+}
+.pane pre{
+  margin:0; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11.5px;
+  line-height:1.75; overflow-x:auto; color:var(--dim);
+}
+.pane pre b{color:var(--ink); font-weight:500}
+.verdict{
+  margin-top:10px; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:12px;
+  font-weight:600;
+}
+.verdict.bad{color:var(--warn)}
+.verdict.good{color:var(--ok)}
+
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:3px; background:var(--card)}
+th,td{padding:9px 14px; text-align:left; border-bottom:1px solid var(--rule-soft)}
+th{
+  font-family:"IBM Plex Sans Condensed","IBM Plex Sans KR",sans-serif; font-size:11px;
+  letter-spacing:.1em; text-transform:uppercase; color:var(--dim); font-weight:600;
+}
+tr:last-child td{border-bottom:none}
+td.n{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-variant-numeric:tabular-nums; text-align:right}
+
+footer{
+  margin-top:56px; padding-top:20px; border-top:1px solid var(--rule);
+  color:var(--dim); font-size:12.5px; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace;
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (max-width:560px){
+  .stage{grid-template-columns:44px 1fr; gap:10px}
+  .rail::before{right:10px}
+  .shape{display:none}
+  .boundary{margin-left:54px}
+}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">KWS-AFE-Digital · RTL 12/12 검증 · P5-g 대기</p>
+  <h1>마이크에서 클래스 인덱스까지</h1>
+  <p class="lede">
+    아날로그 필터뱅크 16채널이 만든 이진 이미지가 FPGA 안에서 12개 클래스 중
+    하나가 되기까지. 각 단을 눌러 무엇을 하는지, 무엇이 그 경계를 넘는지 확인한다.
+  </p>
+  <div class="statline">
+    <span>정확도 <b>0.825</b> (bd_base)</span>
+    <span>입력 <b>16 × 128</b> 이진</span>
+    <span>파라미터 <b>106,240</b></span>
+    <span>KC705 점유 <b>~1.3%</b></span>
+  </div>
+</header>
+
+<section>
+  <h2>신호 사슬</h2>
+  <p class="sub">
+    구리색은 아날로그(동료 담당), 청록색은 디지털(우리 담당)이다. 둘 사이의 점선이
+    <code>docs/ICD.md</code> 가 정의하는 경계이고, 그 위를 넘는 것은 비교기 16가닥과
+    프레임 타이밍뿐이다.
+  </p>
+
+  <div class="controls">
+    <button class="ctl" id="shapeBtn" aria-pressed="false">데이터 모양 보기</button>
+    <button class="ctl" id="allBtn" aria-pressed="false">전부 펼치기</button>
+  </div>
+
+  <div class="chain" id="chain"></div>
+</section>
+
+<section>
+  <h2>연구실 가기 전에 만든 것</h2>
+  <p class="sub">
+    RTL 은 Icarus 로 12개 모듈 전부 골든 벡터 검증을 마쳤다. 남은 것은 합성이고,
+    Vivado 는 Icarus 가 봐주던 것들을 봐주지 않는다. 아래 셋이 그 간극을 메운다.
+  </p>
+  <div class="grid3">
+    <div class="card">
+      <div class="role">제약</div>
+      <h3>rtl/constraints/kws_top.xdc</h3>
+      <p>클럭 주기, 비동기 입력의 false path, 동기화기의 <code>ASYNC_REG</code>. 파트와 무관한 절반이다.</p>
+      <p class="note">핀 배치는 비워뒀다 — 파트와 비교기 전압 레벨(ICD §7)이 정해져야 쓸 수 있고, 합성만 할 거면 없어도 된다.</p>
+    </div>
+    <div class="card">
+      <div class="role">빌드</div>
+      <h3>rtl/build.tcl</h3>
+      <p>GUI 없이 한 줄로 합성하고 utilization·타이밍 리포트를 남긴다. 파트는 인자다.</p>
+      <p class="note">GUI 로 하면 누가 뭘 눌렀는지 기록이 안 남아 결과가 재현되지 않는다.</p>
+    </div>
+    <div class="card">
+      <div class="role">래퍼</div>
+      <h3>rtl/synth/kws_top_synth.v</h3>
+      <p>테스트벤치와 같은 매크로로 ROM 경로 35개를 꽂아준다. 파라미터 블록은 <code>tb_top.v</code> 에서 기계적으로 추출했다.</p>
+      <p class="note">베껴 쓰면 언젠가 어긋나고, 어긋나도 합성은 성공한다. 테스트가 둘을 대조한다.</p>
+    </div>
+  </div>
+
+  <div class="trap">
+    <h3>왜 래퍼가 필요한가 — 두 번 다 조용히 실패한다</h3>
+    <p>
+      Vivado 로 넘어갈 때 실제로 깨지는 건 Verilog 가 아니라 <b>파일 경로</b>다.
+      그리고 둘 다 에러를 내지 않는다. 합성은 성공하고, 가중치만 없다.
+    </p>
+    <div class="two">
+      <div class="pane">
+        <div class="who">Icarus (지금)</div>
+        <pre><b>run_tb.sh</b> 가 리포 루트로 cd
+$readmemh("<b>rtl/gen/xl_g12/conv1_w.hex</b>")
+  → 찾음. ROM 채워짐.</pre>
+        <div class="verdict good">✓ 가중치 실림</div>
+      </div>
+      <div class="pane">
+        <div class="who">Vivado (고치기 전)</div>
+        <pre>cwd = <b>project.runs/synth_1/</b>
+$readmemh("rtl/gen/xl_g12/conv1_w.hex")
+  → 없음. <b>경고조차 없음.</b>
+  → ROM 은 X 로 남음.</pre>
+        <div class="verdict bad">✗ 가중치 없는 회로가 합성 성공</div>
+      </div>
+    </div>
+    <p style="margin:14px 0 0">
+      <code>build.tcl</code> 이 <code>.hex</code> 를 run 디렉터리로 복사하고
+      <code>paths.vh</code> 를 파일명만 남긴 사본으로 바꾼다. 그리고 합성 뒤
+      BRAM 이 실제로 추론됐는지 세어 로그에 남긴다 — 0 이면 다시 그 함정에 빠진 것이다.
+    </p>
+  </div>
+</section>
+
+<section>
+  <h2>Vivado 세 단계</h2>
+  <p class="sub">GUI 왼쪽 Flow Navigator 의 버튼 순서와 같다. 지금 준비된 건 첫 단계까지다.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>단계</th><th>하는 일</th><th>산출물</th><th>지금</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">Synthesis</td><td>Verilog → LUT / FF / BRAM / DSP</td><td>utilization 리포트</td><td><span class="tag ok">준비됨</span></td></tr>
+        <tr><td class="mono">Implementation</td><td>게이트를 칩의 실제 위치에 배치·배선</td><td>timing 리포트</td><td>핀 제약 필요</td></tr>
+        <tr><td class="mono">Bitstream</td><td>배선 결과 → <code>.bit</code></td><td>보드에 쓸 파일</td><td>파트 확정 필요</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sub" style="margin-top:16px">
+    <b>라이선스</b>: XC7K325T 는 무료 Vivado ML Standard 대상이 아니다(Enterprise 필요).
+    다만 프로젝트 파일은 에디션과 무관하므로, 무료 파트로 먼저 합성해 RTL 문제를 털어낸 뒤
+    연구실에서 파트만 바꿔 다시 돌리면 된다.
+  </p>
+</section>
+
+<footer>
+  rtl/README.md · docs/ICD.md · docs/ROADMAP.md P5-g · 2026-08-29
+</footer>
+</div>
+
+<script>
+const STAGES = [
+ {side:"an", n:"1", nm:"마이크 + 프리앰프 ×10", tag:"아날로그",
+  desc:"진폭 약 0.4 mV. 프리앰프가 ×10 으로 올린다.",
+  shape:"0.4 mV",
+  body:`<p>프리앰프는 스윙을 키워 비교기 오프셋(~3 mV)을 이기려고 있다. 우리 소프트웨어 모델은 오프셋이 0 이라 <b>이 부품의 효과를 볼 수 없다</b> — 시뮬과 실물의 격차가 가장 구체적으로 드러나는 자리다.</p>`,
+  kv:[["이득","1 + 90k/10k = 10"],["결합","Cc 100 nF"]]},
+
+ {side:"an", n:"2", nm:"GIC 대역통과 ×16", tag:"아날로그",
+  desc:"125 – 5000 Hz, 로그 등간격, Q 4.5 고정.",
+  shape:"16 채널",
+  body:`<p>동료 확정 보드의 필터뱅크다. 우리 자체 설계(mel 등간격 + 상승 Q)보다 <b>+0.8pp 높았다</b> — 밴드가 아니라 배치와 Q 가 달랐던 것이다.</p><p>ngspice <code>.ac</code> 로 재서 <code>filterbank_matrix_board.csv</code> [16, 257] 로 만들고, 학습이 매 스텝 그걸 곱한다.</p>`,
+  kv:[["f_c 오차","전 채널 ±1.4% 이내"],["Q 실측","4.39 – 4.64"],["통과대역 이득","25.35 – 25.96 dB"]]},
+
+ {side:"an", n:"3", nm:"정밀정류 + C3 평활", tag:"아날로그",
+  desc:"envelope = 정류 후 평활된 에너지 윤곽.",
+  shape:"V+ 톱니",
+  body:`<p>다이오드 강하 0.6 V 로는 mV 급 신호를 못 다루므로 op-amp 피드백 안에 다이오드를 넣는다. 그래서 “active” 다.</p><p>C3 가 <b>빠른 충전 · 느린 방전</b>을 만든다. 동료 BOM 이 처음으로 실제 τ 값을 줬다: 하위 채널 21.45 ms 에서 상위 1.21 ms 까지. 우리 모델은 아직 τ 를 안 쓴다(<code>envelope_tau_ms: 0</code>).</p>`,
+  kv:[["검출기 이득","R5/R4 = 10"],["Venv_DC","938.10 mV"],["스윙 @0.4 mV","15.99 – 107.83 mV"]]},
+
+ {side:"an", n:"4", nm:"비교기 ×16 (LPV7215)", tag:"아날로그",
+  desc:"V+ ≷ Vthr → 이진 펄스. R7/R8 분압이 임계값.",
+  shape:"{0,1} ×16",
+  body:`<p><b>여기가 이 프로젝트의 전부다.</b> 이 한 비트가 정확도의 20pp 를 먹는다 — 이진화를 끄면 0.917 이 나온다(하드웨어로는 만들 수 없는 상한).</p><p>임계값은 학습되지만 실물에서는 저항비로 고정된다. 오프셋(~3 mV)이 학습된 임계값 6개보다 크다는 것이 지금의 미해결 문제다.</p>`,
+  kv:[["전류","0.58 µA"],["임계값","Vthr = 1.8 · R8/(R7+R8)"],["동료 설정","0.950 – 0.990 V"]]},
+
+ {bound:true, t:"ICD 경계 — docs/ICD.md",
+  d:"이 선을 넘는 것은 비교기 16가닥과 프레임 타이밍뿐이다. f_c · τ · 임계값 · 프리앰프 이득은 전부 왼쪽에 남는다. 아날로그가 바뀌면 바뀌는 것은 가중치이지 RTL 이 아니다."},
+
+ {side:"di", n:"5", nm:"kws_frame_ctrl", tag:"디지털",
+  desc:"2FF 동기화 + sticky OR + 14/14 제로패딩.",
+  shape:"[16, 128]",
+  body:`<p>비동기 신호를 클럭 도메인으로 들이는 유일한 지점이다. 2단 플립플롭으로 받고, 10 ms 창 안에 <b>한 번이라도 1이면 1</b>(sticky OR)로 뭉친다 — CLAUDE.md §2.8 의 규칙 그대로다.</p><p>1초 = 100 프레임을 좌우 14씩 패딩해 128 로 만든다. 패딩 값은 0 이 아니라 −1 이다: 이진 도메인에 0 은 없고, −1 이 “채널 꺼짐”이다.</p>`,
+  kv:[["동기화","2 FF, ASYNC_REG"],["최소 펄스 폭","≥ 100 ns"],["프레임","10 ms"]]},
+
+ {side:"di", n:"6", nm:"kws_conv1", tag:"디지털",
+  desc:"int8 가중치 × ±1 — 곱셈기 없는 부호 누산, stride 2.",
+  shape:"[128, 64]",
+  body:`<p>이름은 INT8 이지만 입력이 ±1 이라 <b>곱셈기가 필요 없다</b> — 가중치를 부호에 따라 더하거나 뺀다. 첫 층을 이진화하지 않는 것은 CLAUDE.md §3.3 의 절대 규칙이다.</p>`,
+  kv:[["커널","k=11, pad 5"],["출력 채널","128"],["누산 폭","14 bit"]]},
+
+ {side:"di", n:"7", nm:"kws_block ×3 (b1·b2·b3)", tag:"디지털",
+  desc:"TCS sub-block ×2 + residual add. 여기가 이진 영역.",
+  shape:"[64, 64]",
+  body:`<p>각 블록은 <code>kws_tcs_sub</code> 둘과 residual 덧셈이다. sub 하나는 depthwise → BN/Sign → pointwise → BN/Sign 이고, 이진 내적은 <code>2·popcount(XNOR) − N</code> 으로 계산한다. 곱셈기가 없다.</p><p>BN 은 추론 시 <b>정수 threshold 비교 한 번</b>으로 융합된다. α(가중치 스케일)는 그 threshold 에 접혀 하드웨어에 남지 않는다.</p>`,
+  kv:[["커널","b1 13 / b2 15 / b3 17"],["구성","dw → pw, ×2, + skip"],["정밀도","이진 (dw·pw 모두)"]]},
+
+ {side:"di", n:"8", nm:"kws_plane ×4", tag:"디지털",
+  desc:"층 사이 활성 평면 — BRAM, drain 주입 포함.",
+  shape:"BRAM",
+  body:`<p>folded 데이터패스라 층을 시분할한다. 그 사이 활성값이 어딘가 있어야 하고, 그게 평면이다. 프레임-메이저 레이아웃을 골랐다 — pointwise 가 훨씬 많고 항 수도 크기 때문이고, 골든 벡터와 레이아웃이 같아 테스트벤치가 변환 없이 비교한다.</p>`,
+  kv:[["레이아웃","프레임-메이저"],["장수","4"]]},
+
+ {side:"di", n:"9", nm:"kws_tail", tag:"디지털",
+  desc:"conv2_pw → conv3 → conv4 → avg pool → argmax.",
+  shape:"12 클래스",
+  body:`<p>꼬리는 <code>kws_affine</code>(<code>(A·acc + B + half) >> shift → relu → 포화</code>)과 <code>kws_dense_conv</code>(진짜 곱셈기를 쓰는 정수 MAC)로 이뤄진다. 마지막 층은 절대 이진화하지 않는다 — 고정소수점이고 소수부 6비트로 확정됐다.</p><p>정수 경로와 float 경로가 <b>0.9965 비율로 같은 클래스</b>를 고른다. 양자화는 사실상 공짜다.</p>`,
+  kv:[["conv2","k=29, dilation 2, separable"],["출력","12 클래스 인덱스"],["꼬리 포맷","고정소수점, 소수부 6b"]]},
+];
+
+const chain = document.getElementById("chain");
+let uid = 0;
+for (const s of STAGES){
+  if (s.bound){
+    const d = document.createElement("div");
+    d.className = "boundary";
+    d.innerHTML = `<div class="t">${s.t}</div><div class="d">${s.d}</div>`;
+    chain.appendChild(d);
+    continue;
+  }
+  const id = "b" + (uid++);
+  const wrap = document.createElement("div");
+  wrap.className = "stage " + s.side;
+  const kv = (s.kv||[]).map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+  wrap.innerHTML = `
+    <div class="rail">
+      <span class="shape">${s.shape}</span>
+      <span class="dot">${s.n}</span>
+    </div>
+    <div>
+      <button class="node" aria-expanded="false" aria-controls="${id}">
+        <span class="nm">${s.nm}<span class="tag ${s.side}">${s.tag}</span></span>
+        <span class="desc">${s.desc}</span>
+      </button>
+      <div class="body" id="${id}">
+        ${s.body}
+        ${kv ? `<dl class="kv">${kv}</dl>` : ""}
+      </div>
+    </div>`;
+  chain.appendChild(wrap);
+}
+
+function toggle(btn, force){
+  const body = document.getElementById(btn.getAttribute("aria-controls"));
+  const open = force === undefined ? btn.getAttribute("aria-expanded") !== "true" : force;
+  btn.setAttribute("aria-expanded", String(open));
+  body.classList.toggle("open", open);
+}
+chain.addEventListener("click", e => {
+  const btn = e.target.closest(".node");
+  if (btn) toggle(btn);
+});
+
+const shapeBtn = document.getElementById("shapeBtn");
+shapeBtn.addEventListener("click", () => {
+  const on = shapeBtn.getAttribute("aria-pressed") !== "true";
+  shapeBtn.setAttribute("aria-pressed", String(on));
+  document.body.classList.toggle("shapes", on);
+});
+
+const allBtn = document.getElementById("allBtn");
+allBtn.addEventListener("click", () => {
+  const on = allBtn.getAttribute("aria-pressed") !== "true";
+  allBtn.setAttribute("aria-pressed", String(on));
+  allBtn.textContent = on ? "전부 접기" : "전부 펼치기";
+  document.querySelectorAll(".node").forEach(b => toggle(b, on));
+});
+</script>
