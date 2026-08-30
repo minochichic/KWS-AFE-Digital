@@ -410,7 +410,11 @@ def _report(trainer, model, afe, test_loader) -> None:
     # epoch here meant the headline number and the number everything else
     # works from were two different models, agreeing only when the last epoch
     # happened to be the best one.
+    # 이 숫자를 파일로도 남긴다. 화면에만 찍고 끝내면 런이 여러 개일 때
+    # 스크롤백을 뒤져야 하고, 긴 학습 로그 뒤에서는 사실상 못 찾는다.
+    out = {}
     last = trainer.evaluate(test_loader)
+    out["final_epoch"] = {"loss": last["loss"], "acc": last["acc"]}
     best_path = trainer.run_dir / "best.pt"
     if best_path.is_file():
         state = torch.load(best_path, map_location="cpu", weights_only=True)
@@ -418,6 +422,8 @@ def _report(trainer, model, afe, test_loader) -> None:
         if afe is not None and "afe" in state:
             afe.load_state_dict(state["afe"])
         best = trainer.evaluate(test_loader)
+        out["best"] = {"loss": best["loss"], "acc": best["acc"],
+                       "epoch": state.get("epoch")}
         print(f"\ntest (best.pt, epoch {state.get('epoch', '?')}): "
               f"loss {best['loss']:.4f}  acc {best['acc']:.3f}  "
               f"({'MEETS' if best['acc'] >= 0.85 else 'below'} 85% target)")
@@ -428,6 +434,9 @@ def _report(trainer, model, afe, test_loader) -> None:
         print(f"\ntest (final epoch, no best.pt): loss {last['loss']:.4f}  "
               f"acc {last['acc']:.3f}  "
               f"({'MEETS' if last['acc'] >= 0.85 else 'below'} 85% target)")
+    out["tag"] = trainer.cfg.tag
+    (trainer.run_dir / "test.json").write_text(json.dumps(out, indent=2))
+    print(f"  기록: {trainer.run_dir / 'test.json'}")
 
 
 if __name__ == "__main__":
