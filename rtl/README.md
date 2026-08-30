@@ -1001,9 +1001,24 @@ ERROR: Multiple edge sensitive events found for this signal!
 크기: 4 평면 × 128 프레임 × 64 비트 = 32,768 비트. 분산 RAM 으로 떨어져도 1천 LUT
 남짓이라 KC705 에서는 문제가 안 된다 — **정확도나 동작이 아니라 자원 이야기다.**
 
-### 고칠 수 있지만 검증된 RTL 을 건드린다
+### 고쳤다 (2026-08-30) — "기다려 보자" 는 틀린 판단이었다
 
-메모리 쓰기를 리셋 없는 별도 always 로 떼면 yosys 도 통과하고 BRAM 추론도 확실해진다.
-리셋 분기가 `mem` 을 안 건드리므로 **동작은 완전히 같다.** 다만 `kws_plane` 은 골든
-벡터로 검증된 모듈이라, 바꾸면 `./rtl/run_tb.sh plane` 을 다시 통과시켜야 한다.
-지금은 안 바꾸고 기록만 해 둔다 — Vivado 가 BRAM 을 뽑아주면 할 일이 없다.
+처음에는 기록만 하고 Vivado 결과를 보자고 했다. 근거가 "자원 문제일 뿐" 이었는데
+**그 근거가 틀렸다.** UG901 이 명시한다:
+
+> Sequential functionality in device resources, such as block RAM components, can be
+> set or reset **synchronously only**. If you use asynchronously set or reset
+> registers, you **cannot leverage device resources** or are configured sub-optimally.
+
+그리고 대안이 분산 RAM 이 아니라 **레지스터**일 수 있다 — 위 코드 주석이 피하려던
+그 "wall of flops" 로, 평면 한 장에 8,192 FF, 네 장이면 **32,768 FF** 다.
+
+그래서 `mem` 쓰기를 리셋 없는 별도 `always @(posedge clk)` 로 분리했다. `rst_n` 을
+그 블록에 동기 항으로 끌어오지는 않는다 — `tests/test_rtl_style.py` 가 막고, 이유가
+옳다(비동기이면서 동기인 리셋은 lint 의 SYNCASYNCNET 이고 리셋 트리가 모호해진다).
+
+**동작 차이 하나**: 리셋 중 호출자가 `wr_valid` 를 올리면 이제 쓰기가 일어난다.
+리셋이 `wp` 를 0 에 붙들고 있어 전부 `mem[0]` 으로 가고 `wr_start` 뒤 첫 프레임이
+덮으므로 무해하다. 읽기는 `wr_full` 뒤에야 시작한다.
+
+`fbuf` / `xdly` 는 그대로 둔다 — 그건 정말 플립플롭이다.

@@ -70,13 +70,31 @@ module kws_plane #(
     reg [CW-1:0] wp;                 // write pointer
     assign wr_full = (wp >= T_C);
 
+    // 포인터와 메모리를 **다른 블록**에 둔다. 한 블록에 같이 있으면 그 블록이
+    // `posedge clk or negedge rst_n` 두 엣지를 갖고, UG901 이 말하듯 블록 RAM 은
+    // 동기 리셋만 되므로 도구가 BRAM 을 못 뽑는다 -- 대신 8192 플립플롭이 나오고,
+    // 평면 네 장이면 32,768 개다. 위 주석이 피하려던 바로 그 "wall of flops" 다.
+    // yosys 는 아예 거부한다 ("Multiple edge sensitive events", rtl/README.md).
+    //
+    // mem 에는 리셋을 걸지 않는다 -- BRAM 배열은 리셋할 수 없고, rst_n 을 동기
+    // 항으로 끌어오면 그건 그것대로 문제다(tests/test_rtl_style.py: rst_n 이
+    // 비동기이면서 동기이면 lint 의 SYNCASYNCNET 이고 리셋 트리가 모호해진다).
+    //
+    // 그래서 한 가지만 원래와 다르다: 리셋 중에 호출자가 wr_valid 를 올리면
+    // 이제 쓰기가 한 번 일어난다. 무해하다 -- 리셋이 wp 를 0 에 붙들고 있으므로
+    // 그 쓰기는 전부 mem[0] 으로 가고, wr_start 뒤 도착하는 첫 프레임이 같은
+    // 자리를 덮는다. 읽기는 wr_full 뒤에야 시작한다(kws_top 시퀀서).
+    wire wr_en = wr_valid && !wr_full && !wr_start;
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n)          wp <= {CW{1'b0}};
         else if (wr_start)   wp <= {CW{1'b0}};
-        else if (wr_valid && !wr_full) begin
-            mem[wp[AW-1:0]] <= wr_frame;
+        else if (wr_en)
             wp <= wp + {{(CW-1){1'b0}}, 1'b1};
-        end
+    end
+
+    always @(posedge clk) begin
+        if (wr_en) mem[wp[AW-1:0]] <= wr_frame;
     end
 
     // ---- read FSM ------------------------------------------------------- //
