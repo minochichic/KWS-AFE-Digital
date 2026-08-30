@@ -135,9 +135,32 @@ def main() -> None:
     for c in order:
         print(f"{c:>3}{sw[c]:>9.1f}{int(flips[c]):>11,}"
               f"{100*int(flips[c])/max(1,tot):>7.1f}%")
-    print("\n  스윙이 작은 채널이 위쪽에 몰리면 노파심이 맞았던 것이다.")
-    print("  대응은 아날로그 쪽이다: 검출기 이득을 낮춰 고역 루프여유를 되찾거나,")
-    print("  최상단 f_c 를 내리거나. 학습으로 고칠 수 있는 종류가 아니다.")
+    # 이 스크립트를 쓸 때는 스윙이 순위를 정할 것이라 예상했다. bd_base 에서는
+    # 아니었다: 순위상관이 임계값과 +0.98, 스윙과는 +0.49 다. 가장 분명한 반례가
+    # ch2 -- 스윙 90.1 mV 로 두 번째로 큰데 뒤집힘 2 위다. 임계값이 0.008 이라서다.
+    #
+    # 이유: 임계값이 낮으면 엔벨로프 분포의 **밀집 구간**에 앉는다. 거기서는 조금만
+    # 밀어도 많은 프레임이 경계를 넘는다. 임계값이 높으면 꼬리에 앉아 주변이 성기다.
+    # firing_stability 가 같은 것을 다른 각도로 보여준다: 임계값 낮은 채널은 발화율
+    # 30~36% (분포 한가운데), 높은 채널은 8~10% (꼬리) 였다.
+    tr = [float(thr0[c]) for c in range(C)]
+    def _rank(x):
+        import statistics as st
+        r = sorted(range(len(x)), key=lambda i: x[i])
+        out = [0.0] * len(x)
+        for pos, i in enumerate(r):
+            out[i] = pos
+        m = st.mean(out); sd = st.pstdev(out) or 1.0
+        return [(v - m) / sd for v in out]
+    fr = _rank([-int(flips[c]) for c in range(C)])
+    print(f"\n  순위상관 — 뒤집힘 vs 임계값 "
+          f"{sum(a*b for a, b in zip(_rank(tr), fr))/C:+.2f}, "
+          f"vs 스윙 {sum(a*b for a, b in zip(_rank(list(sw)), fr))/C:+.2f}")
+    print("  임계값 쪽이 크면 이건 아날로그가 아니라 **우리** 문제다: 임계값이")
+    print("  분포 한가운데 앉아 있어서다. 모델 선택이나 임계값 하한으로 움직인다.")
+    print("  스윙 쪽이 크면 아날로그다 -- 검출기 이득이나 최상단 f_c.")
+    print("\n  주의: 위 오차는 전 채널이 공차 한계에 있는 최악 가정이다(크기 고정,")
+    print("  부호만 무작위). 실제 분포라면 낙폭은 이보다 작다.")
 
 
 if __name__ == "__main__":
