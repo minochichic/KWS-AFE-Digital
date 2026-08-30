@@ -1,0 +1,435 @@
+<title>시뮬 충실도 장부</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;450;600;700&display=swap">
+
+<style>
+:root{
+  --paper:#F2F4F6; --card:#FFFFFF; --sunk:#E7ECEF;
+  --ink:#151B22; --dim:#5B6874; --faint:#8D99A4;
+  --rule:#D2D9DF; --hair:#E6EBEF;
+  --exact:#1C6B5C; --exact-bg:#E2EFEB;
+  --approx:#8A6A1F; --approx-bg:#F6EFDC;
+  --absent:#9A3B33; --absent-bg:#F8E8E6;
+  --analog:#A85B2A; --digital:#116B66;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0E1216; --card:#171E24; --sunk:#121920;
+    --ink:#E7EDF2; --dim:#95A2AD; --faint:#6A7883;
+    --rule:#2A343C; --hair:#212A31;
+    --exact:#4FB79F; --exact-bg:#102621;
+    --approx:#D6AC55; --approx-bg:#261F0F;
+    --absent:#E07A6E; --absent-bg:#2A1614;
+    --analog:#E09155; --digital:#48B7AE;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0E1216; --card:#171E24; --sunk:#121920;
+  --ink:#E7EDF2; --dim:#95A2AD; --faint:#6A7883;
+  --rule:#2A343C; --hair:#212A31;
+  --exact:#4FB79F; --exact-bg:#102621;
+  --approx:#D6AC55; --approx-bg:#261F0F;
+  --absent:#E07A6E; --absent-bg:#2A1614;
+  --analog:#E09155; --digital:#48B7AE;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  font-size:15px; line-height:1.62;
+}
+.wrap{max-width:1000px; margin:0 auto; padding:42px 20px 80px}
+code,.m{font-family:"IBM Plex Mono","IBM Plex Sans KR",ui-monospace,monospace; font-size:.93em}
+
+header{border-bottom:2px solid var(--ink); padding-bottom:24px; margin-bottom:32px}
+.eyebrow{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin:0 0 11px;
+}
+h1{font-size:clamp(28px,4.6vw,42px); line-height:1.08; margin:0 0 14px;
+   font-weight:700; letter-spacing:-.02em; text-wrap:balance}
+.thesis{max-width:60ch; margin:0; font-size:16.5px}
+.thesis b{font-weight:600}
+
+section{margin-top:50px}
+h2{font-size:22px; margin:0 0 7px; font-weight:700; letter-spacing:-.01em}
+.sub{color:var(--dim); margin:0 0 22px; max-width:64ch; font-size:14.5px}
+h3{font-size:16px; margin:26px 0 8px; font-weight:600}
+
+/* chips */
+.chip{
+  display:inline-block; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace;
+  font-size:10.5px; font-weight:600; letter-spacing:.05em;
+  padding:2px 8px; border-radius:2px; white-space:nowrap;
+}
+.chip.e{background:var(--exact-bg); color:var(--exact)}
+.chip.a{background:var(--approx-bg); color:var(--approx)}
+.chip.x{background:var(--absent-bg); color:var(--absent)}
+
+/* ledger */
+.ledger{display:grid; gap:0; border:1px solid var(--rule); border-radius:4px;
+        overflow:hidden; background:var(--card)}
+.row{display:grid; grid-template-columns:158px 1fr 118px; gap:0;
+     border-bottom:1px solid var(--hair)}
+.row:last-child{border-bottom:none}
+.row.hd{background:var(--sunk); font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace;
+        font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+.row.hd>*{padding:9px 14px}
+.row>.c1{padding:13px 14px; border-right:1px solid var(--hair)}
+.row>.c2{padding:13px 14px; border-right:1px solid var(--hair); font-size:13.8px}
+.row>.c3{padding:13px 14px; text-align:right}
+.c1 .n{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace;
+       font-weight:600; font-size:13px}
+.c1 .w{font-size:11.5px; color:var(--faint); margin-top:2px}
+.c2 .no{color:var(--dim); margin-top:5px; font-size:13px}
+.c2 .no b{color:var(--absent); font-weight:600}
+.side{width:4px; height:100%}
+
+/* stage cards */
+.stack{display:grid; gap:12px}
+.st{background:var(--card); border:1px solid var(--rule); border-radius:4px;
+    border-left:4px solid var(--rule); padding:16px 18px}
+.st.e{border-left-color:var(--exact)}
+.st.a{border-left-color:var(--approx)}
+.st.x{border-left-color:var(--absent)}
+.st h4{margin:0 0 3px; font-size:15px; font-weight:600;
+       display:flex; gap:10px; align-items:baseline; flex-wrap:wrap}
+.st h4 code{font-size:13px; font-weight:600}
+.st p{margin:7px 0 0; font-size:13.8px; color:var(--dim); max-width:72ch}
+.st p b,.st p strong{color:var(--ink); font-weight:600}
+.ev{
+  margin-top:10px; padding:9px 12px; background:var(--sunk); border-radius:3px;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11.8px;
+  color:var(--dim); overflow-x:auto;
+}
+.ev b{color:var(--ink); font-weight:600}
+
+/* bias */
+.bias{display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:14px}
+.bx{background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:18px}
+.bx h3{margin:0 0 4px; font-size:16px}
+.bx .dir{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px;
+         letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-bottom:11px}
+.bx ul{margin:0; padding-left:18px; font-size:13.8px}
+.bx li{margin-bottom:7px; color:var(--dim)}
+.bx li:last-child{margin-bottom:0}
+.bx li b{color:var(--ink); font-weight:600}
+
+.scroll{overflow-x:auto; border:1px solid var(--rule); border-radius:4px; background:var(--card)}
+table{border-collapse:collapse; width:100%; font-size:13.6px}
+th,td{padding:9px 14px; text-align:left; border-bottom:1px solid var(--hair)}
+th{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:10.5px;
+   letter-spacing:.1em; text-transform:uppercase; color:var(--faint); font-weight:600}
+tr:last-child td{border-bottom:none}
+td.n{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; text-align:right}
+td.hi{font-weight:600}
+
+.call{margin-top:18px; padding:15px 18px; border-radius:4px;
+      background:var(--card); border:1px solid var(--rule); border-left:4px solid var(--ink)}
+.call p{margin:0; font-size:14.2px; max-width:70ch}
+.call p+p{margin-top:9px}
+
+.chain{display:grid; gap:10px; margin-bottom:6px}
+.grp{background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:13px 15px}
+.grp.sw{border-left:4px solid var(--analog)}
+.grp.hw{border-left:4px solid var(--digital)}
+.grp .lab{font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:10.5px;
+          letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin-bottom:9px}
+.grp .items{display:flex; flex-wrap:wrap; gap:7px; align-items:center}
+.grp .items span{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:12px; font-weight:500;
+  background:var(--sunk); border-radius:3px; padding:4px 9px; white-space:nowrap;
+}
+.grp .items span.off{opacity:.45; text-decoration:line-through}
+.grp .items span:not(:last-child)::after{content:" →"; color:var(--faint); margin-left:7px}
+.bdy{text-align:center; font-family:"IBM Plex Sans KR",sans-serif; font-size:12.5px;
+     font-weight:600; color:var(--analog); padding:2px}
+.bdy small{font-weight:400; color:var(--faint); font-size:11.5px}
+footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule);
+        color:var(--faint); font-size:12px; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">KWS-AFE-Digital · 시뮬 ↔ 실물 대조 · 2026-08-30</p>
+  <h1>시뮬 충실도 장부</h1>
+  <p class="thesis">
+    <b>필터까지는 회로에서 직접 측정한 값이고, 그 뒤는 이상화다.</b>
+    무엇이 담겼고 무엇이 안 담겼는지, 안 담긴 것이 얼마짜리인지,
+    그리고 그 결과 <code>0.825</code> 라는 숫자를 어떻게 읽어야 하는지.
+  </p>
+</header>
+
+<section style="margin-top:36px">
+  <h2>한눈에</h2>
+  <p class="sub">
+    실제 신호 사슬을 단으로 끊고, 각 단이 시뮬에 얼마나 들어와 있는지.
+    <span class="chip e">실측</span> 은 회로에서 잰 값,
+    <span class="chip a">근사</span> 는 형태는 맞고 값이 이상화된 것,
+    <span class="chip x">없음</span> 은 모델에 존재하지 않는 것.
+  </p>
+
+  <div class="ledger">
+    <div class="row hd"><div>단</div><div>시뮬이 하는 일</div><div>충실도</div></div>
+
+    <div class="row">
+      <div class="c1"><div class="n">마이크 + 프리앰프</div><div class="w">×10, Cc 100 nF</div></div>
+      <div class="c2">체인에 포함해 <code>.ac</code> 로 잼. 대역 내 평탄이라 피크 정규화에서 상쇄된다
+        <div class="no">그래서 <b>정확도에 영향이 0 이다</b> — 프리앰프의 진짜 목적(오프셋 이기기)은 모델에 없다</div></div>
+      <div class="c3"><span class="chip e">실측</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">GIC 대역통과 ×16</div><div class="w">125–5000 Hz, Q 4.5</div></div>
+      <div class="c2">동료 넷리스트 + BOM 을 ngspice <code>.ac</code> 로 재서 <code>[16, 257]</code> 행렬로.
+        선형 단이라 정확히 잴 수 있다
+        <div class="no">f_c 오차 전 채널 ±1.4% 이내, Q 4.39–4.64 (목표 4.5)</div></div>
+      <div class="c3"><span class="chip e">실측</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">시간–주파수 분해</div><div class="w">STFT 25 ms / 10 ms</div></div>
+      <div class="c2">실제는 연속시간 필터, 시뮬은 프레임. 창 25 ms 의 분해능이 ~40 Hz
+        <div class="no">ch0 대역폭이 <b>27.5 Hz</b> 라 원리적으로 분해 불가 — 하위 채널을 실제보다 뭉툭하게 본다</div></div>
+      <div class="c3"><span class="chip a">근사</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">정밀정류</div><div class="w">active detector</div></div>
+      <div class="c2"><code>sqrt(power)</code> = 이상적 진폭. 정류의 <b>형태</b>는 맞다
+        <div class="no">데드존 <b>7.29 mV</b>(1 kHz 실측)와 슬루 제한이 없다</div></div>
+      <div class="c3"><span class="chip a">근사</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">검출기 이득</div><div class="w">R5/R4 = 10</div></div>
+      <div class="c2">전 채널 동일한 상수라 <b>전역 정규화가 흡수</b>한다
+        <div class="no">균일하므로 안 담아도 무해하다 — 이것만 예외다</div></div>
+      <div class="c3"><span class="chip e">무해</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">검출기 효율</div><div class="w">루프여유 = GBW/(f_c·G)</div></div>
+      <div class="c2">필터 행렬이 <b>행별 피크 정규화</b>라 16채널이 모델 안에서 같은 동적 범위를 갖는다
+        <div class="no">실물은 ch2 <b>90.13 mV</b> vs ch15 <b>15.99 mV</b> — <b>6.7배 격차가 통째로 빠졌다</b></div></div>
+      <div class="c3"><span class="chip x">없음</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">C3 평활 (τ)</div><div class="w">동료 BOM: 1.21–21.45 ms</div></div>
+      <div class="c2"><code>envelope_tau_ms: 0</code>. 대신 10 ms max-pool 이 훨씬 거친 평활을 한다
+        <div class="no">하위 채널 τ 가 <b>10 ms 창보다 길다</b> — 평활이 프레임을 넘어 번지는데 모델은 모른다</div></div>
+      <div class="c3"><span class="chip x">없음</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">이산화</div><div class="w">10 ms, sticky OR</div></div>
+      <div class="c2">max-pool 후 threshold = threshold 후 OR. <b>수학적으로 동일</b>하다
+        <div class="no">CLAUDE.md §2.8 의 "한 번이라도 1이면 1" 이 정확히 구현돼 있다</div></div>
+      <div class="c3"><span class="chip e">동등</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">비교기</div><div class="w">LPV7215 ×16</div></div>
+      <div class="c2"><code>env ≥ thr</code>. 학습된 임계값이 곧 R7/R8 분압
+        <div class="no">오프셋 <code>comparator_vos: 0.0</code>, 히스테리시스·에지속도·구동능력 전부 없음</div></div>
+      <div class="c3"><span class="chip x">없음</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">부품 공차</div><div class="w">R7/R8 저항</div></div>
+      <div class="c2">이상적 저항 가정
+        <div class="no">1% 면 Vthr 이 <b>±4.7 mV</b>, 0.1% 라도 ±0.47 mV — 임계값 전체 범위가 19 mV 다</div></div>
+      <div class="c3"><span class="chip x">없음</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">취득 타이밍</div><div class="w">이벤트 기반</div></div>
+      <div class="c2">동기 10 ms 프레임으로 근사
+        <div class="no">실제는 비교기 에지마다 인터럽트(CLAUDE.md §2.7). 전력 추정의 근거가 없다</div></div>
+      <div class="c3"><span class="chip x">없음</span></div>
+    </div>
+
+    <div class="row">
+      <div class="c1"><div class="n">잡음 · 온도</div><div class="w">—</div></div>
+      <div class="c2">전혀 없음
+        <div class="no">OPA379 잡음 80 nV/√Hz, 온도 드리프트 미측정</div></div>
+      <div class="c3"><span class="chip x">없음</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>소프트웨어가 담당하는 경계</h2>
+  <p class="sub">
+    시뮬은 <b>비교기 왼쪽 전체</b>를 소프트웨어로 흉내내고, 오른쪽은 RTL 이 진짜로 계산한다.
+    그 경계가 <code>docs/ICD.md</code> 이고, 넘어가는 것은 비교기 16가닥과 프레임 타이밍뿐이다.
+  </p>
+  <div class="chain">
+    <div class="grp sw">
+      <div class="lab">소프트웨어가 아날로그를 대신하는 구간</div>
+      <div class="items">
+        <span>STFT</span><span>[16,257] 행렬</span><span>sqrt</span>
+        <span class="off">데드존</span><span class="off">τ</span>
+        <span>10 ms max</span><span>정규화</span><span>≷ thr</span>
+      </div>
+    </div>
+    <div class="bdy">ICD 경계<br><small>비교기 16가닥 + 프레임 타이밍만 넘어간다</small></div>
+    <div class="grp hw">
+      <div class="lab">RTL 이 진짜 계산</div>
+      <div class="items"><span>frame_ctrl</span><span>conv1 → b1·b2·b3 → tail</span></div>
+    </div>
+  </div>
+  <p class="sub" style="margin-top:14px">
+    <b>아날로그 파라미터는 오른쪽으로 넘어가지 않는다</b> — f_c · τ · 임계값 · 프리앰프 이득이
+    전부 왼쪽에 남는다. 아날로그가 바뀌면 바뀌는 것은 <b>가중치</b>이지 RTL 이 아니고,
+    그래서 가중치는 BRAM 에 <code>$readmemh</code> 로 싣는다 (CLAUDE.md §5).
+  </p>
+</section>
+
+<section>
+  <h2>안 담긴 것이 얼마짜리인가</h2>
+  <p class="sub">추측이 아니라 측정된 값만. 각 행이 어느 실험에서 나왔는지 함께.</p>
+  <div class="scroll">
+    <table>
+      <thead><tr><th>빠진 것</th><th>실험</th><th class="n">정확도</th><th class="n">기준 대비</th></tr></thead>
+      <tbody>
+        <tr><td>없음 (기준)</td><td class="m">bd_base</td><td class="n hi">0.8249</td><td class="n">—</td></tr>
+        <tr><td>물리 오차 0.5 mV<sup>※</sup></td><td class="m">swing_sensitivity</td><td class="n">0.6569</td><td class="n">−16.8pp</td></tr>
+        <tr><td>물리 오차 2.0 mV<sup>※</sup></td><td class="m">swing_sensitivity</td><td class="n">0.4133</td><td class="n">−41.2pp</td></tr>
+        <tr><td>비교기 오프셋 3 mV (모르고)</td><td class="m">fixed_accuracy --vos-fixed</td><td class="n">0.3065</td><td class="n">−51.8pp</td></tr>
+        <tr><td>같은 오프셋 (알고 재학습)</td><td class="m">bd_base_trip_s0</td><td class="n">0.734</td><td class="n">−9.1pp</td></tr>
+        <tr><td>오프셋 강건 학습</td><td class="m">bd_vos003</td><td class="n">0.689</td><td class="n">−13.6pp</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="sub" style="margin-top:12px">
+    <sup>※</sup> 크기를 고정하고 부호만 무작위로 준 <b>최악 가정</b>이다 — 전 채널이 공차 한계에
+    정확히 걸린 경우. 실제 분포라면 낙폭이 이보다 작다. 진짜 값은 0 과 이 숫자 사이다.
+  </p>
+
+  <div class="call">
+    <p><b>가장 큰 발견은 원인이 스윙이 아니라 임계값 높이였다는 것이다.</b>
+      뒤집힌 비트와의 순위상관이 임계값 <b>+0.98</b>, 스윙 <b>+0.49</b>. 임계값이 낮으면
+      엔벨로프 분포의 밀집 구간에 앉아 작은 이동에도 많은 프레임이 경계를 넘는다.</p>
+    <p>가장 분명한 반례가 <code>ch2</code> — 스윙이 90.13 mV 로 두 번째로 큰데
+      뒤집힘 2 위다. 임계값이 0.008 이라서다. 임계값 0.003–0.009 인 네 채널
+      (15 · 2 · 13 · 10)이 전체 뒤집힘의 <b>67.5%</b> 를 만든다.</p>
+    <p>그래서 대응이 아날로그가 아니라 <b>우리 쪽</b>이 된다: 모델 선택,
+      또는 임계값 하한(<code>afe.threshold_min</code>).</p>
+  </div>
+</section>
+
+<section>
+  <h2>오차가 어느 쪽으로 치우쳤는가</h2>
+  <p class="sub">
+    빠진 항목들이 전부 같은 방향으로 미는 것은 아니다. 두 방향을 나눠 놓아야
+    <code>0.825</code> 를 제대로 읽을 수 있다.
+  </p>
+  <div class="bias">
+    <div class="bx" style="border-top:3px solid var(--absent)">
+      <h3>시뮬이 낙관적인 쪽</h3>
+      <div class="dir">실물은 이보다 나쁘다</div>
+      <ul>
+        <li><b>비교기 오프셋 0</b> — 실물 ~3 mV 가정, 데이터시트 미확인</li>
+        <li><b>이상적 저항</b> — 1% 면 ±4.7 mV, 임계값 범위 19 mV 를 압도</li>
+        <li><b>채널 강도 균일</b> — 실물은 6.7 배 격차</li>
+        <li><b>데드존 없음</b> — 실측 7.29 mV 아래는 검출기가 무반응</li>
+        <li><b>잡음 · 드리프트 없음</b></li>
+      </ul>
+    </div>
+    <div class="bx" style="border-top:3px solid var(--exact)">
+      <h3>시뮬이 비관적인 쪽</h3>
+      <div class="dir">실물은 이보다 낫다</div>
+      <ul>
+        <li><b>STFT 분해능 40 Hz</b> — ch0 의 실제 대역폭은 27.5 Hz. 하위 채널을
+          실제보다 뭉툭하게 보므로 그 채널들의 변별력을 과소평가한다</li>
+        <li><b>τ 없음</b> — C3 평활이 잡음을 눌러줄 텐데 그 이득이 안 잡혀 있다
+          (다만 방향만 알고 크기는 미측정)</li>
+      </ul>
+    </div>
+  </div>
+  <div class="call">
+    <p><b>낙관 쪽이 훨씬 크고 훨씬 많다.</b> 그래서 <code>0.825</code> 는
+      <b>상한으로 읽어야 한다</b> — "이 필터뱅크로 얻을 수 있는 최대"이지
+      "이 보드를 만들면 나올 값"이 아니다.</p>
+    <p>다만 낙관 항목 대부분이 <b>미지수가 아니라 결정 사항</b>이다. 저항 공차는
+      살 수 있는 스펙이고, 오프셋은 실물에서 재서 학습에 넣을 수 있으며
+      (<code>threshold_init=measured</code>), 채널 격차는 검출기 이득을
+      채널별로 두면 줄어든다. <b>재보고 대응할 수 있는 것들이다.</b></p>
+  </div>
+</section>
+
+<section>
+  <h2>각 구멍을 메우는 비용</h2>
+  <div class="stack">
+    <div class="st x">
+      <h4>검출기 효율 (6.7배 격차) <span class="chip x">없음</span></h4>
+      <p><b>가장 값싸고 효과가 크다.</b> 행렬 각 행에 <code>swing_c / max(swing)</code> 을 곱하면
+        정규화 도메인이 전압에 비례해진다. 그러면 물리 오차가 전 채널에 균일한 정규화
+        오차가 되어, 지금 6.7배로 벌어진 민감도 격차가 모델 안에서 사라진다.</p>
+      <p><code>spice_gain_restore</code> 가 이미 있지만 그건 <b>필터의</b> 통과대역 이득
+        (폭 0.61 dB)을 복원한다. 정작 큰 것은 <b>검출기의</b> 6.7 배다 — 같은 메커니즘, 다른 숫자.</p>
+      <div class="ev">입력: <b>analog/AFE_board/artifacts/swing_board.csv</b> (이미 있음) · 재학습 1회</div>
+    </div>
+
+    <div class="st x">
+      <h4>C3 시상수 τ <span class="chip x">없음</span></h4>
+      <p>동료 BOM 이 <b>처음으로 실제 값</b>을 줬다 — ch0–3 21.45 ms, ch12–15 1.21 ms.
+        CLAUDE.md §3.2 가 τ 를 baseline 에서 뺀 근거 두 개 중 "논문에 수치가 없어 임의값이
+        된다"가 이제 성립하지 않는다. 다른 하나 "τ &lt; window 면 효과가 거의 없다"도
+        <b>하위 8채널에서는 틀렸다</b> — 10 ms 창보다 길다.</p>
+      <p>다만 CLAUDE.md §5 가 "baseline 에 켜지 말 것"이라고 못박고 있어 <b>별도 결정 사항</b>이다.</p>
+      <div class="ev">입력: BOM 의 C3 열 · <code>afe.envelope_tau_ms</code> · 재학습 1회</div>
+    </div>
+
+    <div class="st x">
+      <h4>비교기 오프셋 <span class="chip x">없음</span></h4>
+      <p><b>미루는 것이 맞다.</b> 실물 보드에서 재는 것이 정답이고, 추측값을 baseline 에
+        넣으면 정확도 미달 시 원인 분리가 불가능해진다 (<code>config.py:117</code>).</p>
+      <p>그리고 재고 나면 <b>상쇄할 필요도 없다</b>: 보드가 생기면 오프셋은 상수이므로
+        알기만 하면 된다. <code>threshold_init=measured</code> 로 그 값을 학습에 넣으면
+        트림 정밀도도, 강건성 세금도 필요 없다.</p>
+      <div class="ev">필요: LPV7215 데이터시트 + 실물 측정 · <b>구현은 이미 있음</b></div>
+    </div>
+
+    <div class="st a">
+      <h4>STFT 분해능 <span class="chip a">근사</span></h4>
+      <p>ch0 를 제대로 보려면 창을 25 ms → 50 ms 로 늘려야 하는데, 그러면 시간 해상도가
+        절반이 된다. <b><code>n_fft</code> 를 키우는 것으로는 안 된다</b> — 제로패딩은 빈을
+        촘촘히 할 뿐 분해능을 못 올린다 (분해능 = 1/창길이).</p>
+      <p>비관 쪽 오차이므로 급하지 않다. 고치면 숫자가 <b>올라간다</b>.</p>
+      <div class="ev">비용: STFT 프론트엔드 변경 = 전 실험 재실행</div>
+    </div>
+
+    <div class="st a">
+      <h4>데드존 <span class="chip a">근사</span></h4>
+      <p><code>spice_deadzone</code> 플래그가 이미 있고 채널별 학습 가능한 하한으로 모델링돼
+        있다. 초기값 0 이라 정확한 no-op. 실측 7.29 mV(1 kHz)는 있지만 주파수 의존성은
+        미측정이다.</p>
+      <div class="ev">구현 있음 · <code>afe.spice_deadzone=true</code> · 미실행</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>그래서 0.825 를 어떻게 읽나</h2>
+  <div class="call">
+    <p><b>"동료 보드의 필터뱅크로 얻을 수 있는 정확도"</b> 다. 그 이상도 이하도 아니다.</p>
+    <p>고정 저항비 시나리오인 것은 <b>맞다</b> — <code>normalize: fixed</code> 에 학습된
+      임계값 16개는 추론 시 상수이고 그게 곧 R7/R8 이다. 오차만 0 이라고 가정한 것이다.</p>
+    <p>실물에서 이 숫자가 나오려면 세 가지가 필요하다:
+      <b>(1)</b> 저항 공차가 충분히 좋을 것, <b>(2)</b> 비교기 오프셋을 재서 학습에 넣을 것,
+      <b>(3)</b> 그 런의 가중치와 임계값을 <b>한 쌍으로</b> 넘길 것 — 임계값은 런마다
+      달라지므로 A 런의 저항에 B 런의 가중치를 실으면 둘 다 못 쓴다.</p>
+  </div>
+</section>
+
+<footer>
+  근거: docs/ABLATIONS.md · docs/ICD.md · analog/AFE_board/README.md ·
+  analog/AFE_board/artifacts/swing_board.md · rtl/README.md
+</footer>
+</div>
