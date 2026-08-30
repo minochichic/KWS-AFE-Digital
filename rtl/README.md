@@ -1022,3 +1022,18 @@ ERROR: Multiple edge sensitive events found for this signal!
 덮으므로 무해하다. 읽기는 `wr_full` 뒤에야 시작한다.
 
 `fbuf` / `xdly` 는 그대로 둔다 — 그건 정말 플립플롭이다.
+
+**검증 완료 (2026-08-30):**
+
+```
+run_tb.sh plane  lint clean · 128 frames checked, 0 failures
+run_tb.sh top    lint clean · clip0 class 5, clip1 class 11, 0 failures
+```
+
+`top` 이 통과한 것이 핵심이다. 평면이 조용히 달라졌다면 사슬 끝의 클래스 인덱스가
+바뀌었을 텐데 그대로다. lint clean 은 `SYNCASYNCNET` 이 안 생겼다는 뜻이기도 하다
+(`rst_n` 을 동기 항으로 안 끌어왔다).
+
+**남은 확인은 Vivado 다.** 이 변경의 목적이 BRAM 추론이므로, `build.tcl` 의
+`== BRAM 셀 N 개 ==` 가 0 이 아니어야 목적을 달성한 것이다. 그 전까지는 "동작은
+같고 추론될 가능성이 높아진 상태" 다.
