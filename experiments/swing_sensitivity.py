@@ -70,6 +70,14 @@ def main() -> None:
     # 실제 스윙이 다르므로 "그 채널에서 정규화 1.0 에 해당하는 mV" 는 스윙 자체다.
     # 따라서 물리 e mV 는 그 채널에서 e/swing_c 만큼의 정규화 이동이다.
     per_mv = 1.0 / sw                                   # 정규화 단위 / mV
+    # 학습에 이미 스윙 배율이 들어갔으면 환산이 달라진다. 그때는 정규화 도메인이
+    # 전압에 비례하므로 물리 오차가 전 채널에 **균일**하게 작용한다 -- 여기서
+    # 다시 1/swing_c 를 곱하면 이중 적용이라 없는 격차를 만들어낸다.
+    scaled = bool(getattr(cfg.afe, "spice_swing_path", "") or "")
+    if scaled:
+        per_mv = np.full_like(per_mv, 1.0 / sw.max())
+        print("⚠️ 이 런은 spice_swing_path 로 학습됐다 -> 환산이 전 채널 균일하다"
+              f" ({per_mv[0]:.4f}/mV). 격차 열은 전부 1.0x 가 정상이다.\n")
 
     afe = AFEFrontend(cfg.afe).eval()
     model = BinaryMatchboxNet(cfg.model).eval()

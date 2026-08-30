@@ -85,6 +85,28 @@ class AFEConfig:
     # thresholds + global min-max absorb most of it, so expect a small effect.
     spice_gain_restore: bool = False
 
+    # 검출기 효율을 채널별 배율로 반영한다. 비면 끔 = 정확한 no-op.
+    #
+    # 필터 행렬은 행별 peak-normalize 라 모델 안에서 16채널이 같은 동적 범위를
+    # 갖는다. 실물은 아니다 -- 검출기의 루프여유가 고주파에서 줄어 0.4 mV 입력에서
+    # ch2 는 90.13 mV, ch15 는 15.99 mV 를 흔든다. 그 손실은 필터 뒤에 있어서
+    # `.ac` 로 잰 행렬에 안 들어 있다.
+    #
+    # 결과가 뒤집혀 있었다: 모델은 ch15 를 평균 엔벨로프 0.81 로 **가장 센 채널**
+    # 축으로 보고 임계값을 0.003 에 뒀는데, 실물에서는 가장 약한 채널이다. 그래서
+    # 물리 오차 1 mV 가 ch15 임계값의 2085% 가 된다.
+    #
+    # 각 행에 swing_c / max(swing) 을 곱하면 정규화 도메인이 전압에 비례해지고,
+    # 물리 오차가 전 채널에 균일한 정규화 오차가 된다.
+    #
+    # ⚠️ spice_gain_restore 와 같이 쓰면 안 된다: 스윙은 마이크에서 v_env 까지
+    # 재므로 필터 통과대역 이득이 **이미 들어 있다**. 둘 다 켜면 이중 계산이다.
+    #
+    # 한계: 스윙은 f_c 정현파 한 진폭에서 잰 스칼라다. 검출기는 비선형이라
+    # 진폭에 따라서도 달라지고(100 mV 근처에서 압축), 대역 안에서도 평탄하지
+    # 않다. 지배적인 항(f_c 에서의 루프여유)만 잡는 근사다.
+    spice_swing_path: str = ""
+
     # Stage-2 circuit fidelity: the analog detector has a DEADZONE (precision
     # rectifier can't rectify signals below ~a few mV, slew-limited). Modeled as
     # a learnable per-channel floor on the amplitude: relu(sqrt(power) - dz_c),

@@ -17,7 +17,9 @@ from __future__ import annotations
 
 import math
 import warnings
+from pathlib import Path
 
+import numpy as np
 import pytest
 import torch
 
@@ -1208,3 +1210,54 @@ def test_threshold_min_zero_is_an_exact_noop() -> None:
         fe.init_thresholds(wave)
         outs.append(fe(wave, target_T=128))
     assert torch.equal(outs[0], outs[1])
+
+
+def test_spice_swing_path_scales_rows_and_refuses_double_counting() -> None:
+    """검출기 효율을 반영하면 약한 채널이 약하게 보여야 한다.
+
+    행렬은 행별 peak-normalize 라 모델 안에서 16채널이 같은 동적 범위를 갖는다.
+    실물은 ch2 90.13 mV vs ch15 15.99 mV 라, 모델이 가장 약한 채널을 가장 센 쪽으로
+    보고 임계값을 바닥에 두는 일이 벌어졌다. 이 스케일이 그걸 뒤집는다.
+    """
+    root = Path(__file__).resolve().parents[1]
+    csv = root / "analog/AFE_board/artifacts/swing_board.csv"
+    mat = "analog/AFE/artifacts/filterbank_matrix_board.csv"
+    if not (csv.is_file() and (root / mat).is_file()):
+        pytest.skip("보드 산출물이 없다")
+
+    base = make_frontend(filterbank_source="spice", spice_matrix_path=mat,
+                         compression="sqrt", normalize="fixed",
+                         envelope_win_ms=10.0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        scaled = make_frontend(filterbank_source="spice", spice_matrix_path=mat,
+                               spice_swing_path=str(csv.relative_to(root)),
+                               compression="sqrt", normalize="fixed",
+                               envelope_win_ms=10.0)
+
+    b, s = base.spice_fbank, scaled.spice_fbank
+    ratio = s.amax(dim=1) / b.amax(dim=1)
+    assert torch.isclose(ratio.max(), torch.tensor(1.0), atol=1e-5)   # 최강은 1.0
+    assert float(ratio.min()) < 0.2                                   # 최약은 크게 준다
+    # 가장 약해진 채널이 스윙이 가장 작은 채널이어야 한다
+    sw = np.loadtxt(csv, delimiter=",", skiprows=1, ndmin=2)[:, -1]
+    assert int(ratio.argmin()) == int(sw.argmin())
+
+    # 스윙은 마이크->v_env 라 필터 이득을 이미 포함한다 -- 둘 다 켜면 이중 계산
+    with pytest.raises(ValueError, match="이중 계산"):
+        make_frontend(filterbank_source="spice", spice_matrix_path=mat,
+                      spice_swing_path=str(csv.relative_to(root)),
+                      spice_gain_restore=True, compression="sqrt",
+                      normalize="fixed", envelope_win_ms=10.0)
+
+
+def test_spice_swing_path_empty_is_an_exact_noop() -> None:
+    mat = "analog/AFE/artifacts/filterbank_matrix_board.csv"
+    if not (Path(__file__).resolve().parents[1] / mat).is_file():
+        pytest.skip("보드 행렬이 없다")
+    a = make_frontend(filterbank_source="spice", spice_matrix_path=mat,
+                      compression="sqrt", envelope_win_ms=10.0)
+    b = make_frontend(filterbank_source="spice", spice_matrix_path=mat,
+                      spice_swing_path="", compression="sqrt",
+                      envelope_win_ms=10.0)
+    assert torch.equal(a.spice_fbank, b.spice_fbank)

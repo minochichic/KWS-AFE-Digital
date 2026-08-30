@@ -257,6 +257,33 @@ class AFEFrontend(nn.Module):
                     raise ValueError(
                         f"{dp} has {gdb.shape[0]} rows, expected {cfg.n_channels}.")
                 m = m * (10.0 ** (gdb / 20.0))[:, None]                 # amplitude
+            swp = getattr(cfg, "spice_swing_path", "") or ""
+            if swp:
+                if getattr(cfg, "spice_gain_restore", False):
+                    raise ValueError(
+                        "spice_swing_path 와 spice_gain_restore 를 같이 쓸 수 "
+                        "없다: 스윙은 마이크에서 v_env 까지 잰 값이라 필터 통과대역 "
+                        "이득이 이미 포함돼 있다. 둘 다 켜면 이중 계산이다.")
+                sp = Path(swp)
+                if not sp.is_absolute():
+                    sp = Path(__file__).resolve().parents[1] / sp
+                if not sp.is_file():
+                    raise FileNotFoundError(f"spice_swing_path={sp} 가 없다.")
+                with sp.open() as f:
+                    head = f.readline().strip().split(",")
+                sd = np.loadtxt(sp, delimiter=",", skiprows=1, ndmin=2)
+                if sd.shape[0] != cfg.n_channels:
+                    raise ValueError(
+                        f"{sp} 에 채널이 {sd.shape[0]}개, 설정은 "
+                        f"{cfg.n_channels}개다.")
+                sw = sd[:, -1]                      # 마지막 스윙 열
+                if not np.all(sw > 0):
+                    raise ValueError(f"{sp} 에 0 이하인 스윙이 있다: {sw}")
+                m = m * (sw / sw.max())[:, None]
+                warnings.warn(
+                    f"spice_swing_path: {head[-1]} 로 채널별 배율 "
+                    f"{sw.min()/sw.max():.3f}~1.000 적용 "
+                    f"(최약 ch{int(np.argmin(sw))}).")
             self.register_buffer("spice_fbank",
                                  torch.tensor(m, dtype=torch.float32))
         else:
