@@ -317,7 +317,7 @@ def _run_analog_csv(args, cfg) -> None:
     set_seed(cfg.train.seed)
     model = BinaryMatchboxNet(cfg.model)
     train_loader, val_loader, test_loader = build_analog_dataloaders(
-        cfg.data, cfg.train.batch_size, target_T=cfg.model.T)
+        cfg.data, cfg.train.batch_size, target_T=cfg.model.T, seed=cfg.train.seed)
 
     print(f"[analog] AFE 없음 -- 입력이 이미 이진이다. "
           f"n_classes={cfg.model.n_classes}")
