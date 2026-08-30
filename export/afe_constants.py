@@ -53,6 +53,13 @@ def afe_constants(afe: torch.nn.Module, cfg: Any) -> Dict[str, Any]:
         # would be built to.
         "threshold": [float(v) for v in afe.threshold.detach().flatten()],
     }
+    # threshold_min 도 forward 에서 clamp 된다. straight-through 라 잠재값은
+    # 자유롭게 흘러가고 실제로 -6.269 까지 간 런이 있다 -- 그걸 그대로 내보내면
+    # 회로가 만들어진 값과 다른 숫자가 저항이 된다.
+    tmin = float(getattr(a, "threshold_min", 0.0) or 0.0)
+    if tmin > 0.0:
+        out["threshold_min"] = tmin
+        out["threshold"] = [max(tmin, v) for v in out["threshold"]]
     if a.normalize in ("xmix", "xlse"):
         out["threshold_is_divider_ratio"] = True
         out["threshold"] = [min(1.0, max(0.0, v)) for v in out["threshold"]]

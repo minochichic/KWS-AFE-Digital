@@ -83,7 +83,19 @@ def main() -> None:
     model = BinaryMatchboxNet(cfg.model).eval()
     model.load_state_dict(ck["model"])
     load_afe_state(afe, ck["afe"])
+    # ⚠️ 잠재값이 아니라 **유효 임계값** 에 섭동을 준다.
+    # threshold_min 은 straight-through clamp 라 잠재값이 자유롭게 흘러간다
+    # (실제로 -6.269 까지 간 채널이 있다). 섭동을 clamp 앞에 더하면 clamp 가
+    # 그걸 흡수해서 그 채널이 "오차에 완전 면역" 인 것처럼 보이는데, **실물 저항에는
+    # clamp 가 없다.** 회로는 유효값으로 만들어지고 오차는 그 위에 얹힌다.
+    tmin = float(getattr(cfg.afe, "threshold_min", 0.0) or 0.0)
     thr0 = afe.threshold.detach().clone()
+    if tmin > 0.0:
+        n_pinned = int((thr0 < tmin).sum())
+        thr0 = thr0.clamp(min=tmin)
+        afe.cfg.threshold_min = 0.0          # 모델이 다시 clamp 하지 않도록
+        print(f"threshold_min={tmin:g}: 유효 임계값으로 환산 "
+              f"(하한에 눌린 채널 {n_pinned}/{C}개). 섭동은 그 위에 얹는다.\n")
 
     print(f"태그 {args.tag}\n")
     print("채널별 환산 — 물리 1 mV 가 정규화로 얼마인가")

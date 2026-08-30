@@ -168,3 +168,46 @@ def test_int8_quantization_is_symmetric_and_close() -> None:
     assert scale.shape == (16,)
     err = (q.float() * scale.view(-1, 1, 1) - w).abs().max()
     assert float(err) < float(w.abs().max()) / 100
+
+
+def test_afe_export_clamps_the_threshold_floor():
+    """threshold_min 은 forward 에서 clamp 되고 잠재값은 흘러간다.
+
+    straight-through 라 학습이 잠재 임계값을 하한 아래로 얼마든지 밀 수 있고,
+    실제로 -6.269 까지 간 채널이 있었다. 회로는 **유효값**으로 만들어지므로
+    export 가 잠재값을 내보내면 저항이 전혀 다른 값이 된다.
+    """
+    import torch
+    from data.afe import AFEFrontend
+    from train.config import AFEConfig
+    from export.afe_constants import afe_constants
+    from types import SimpleNamespace
+
+    cfg = AFEConfig(normalize="fixed", compression="sqrt",
+                    envelope_win_ms=10.0, threshold_min=0.02)
+    afe = AFEFrontend(cfg)
+    with torch.no_grad():
+        afe.threshold.fill_(-6.269)          # 학습이 실제로 간 곳
+        afe.threshold[0] = 0.15              # 하한 위에 있는 채널 하나
+
+    out = afe_constants(afe, SimpleNamespace(afe=cfg))   # afe_constants 는 cfg.afe 를 본다
+    assert out["threshold_min"] == 0.02
+    assert out["threshold"][0] == pytest.approx(0.15)     # 안 건드림
+    assert all(v == pytest.approx(0.02) for v in out["threshold"][1:])
+    assert min(out["threshold"]) >= 0.02
+
+
+def test_afe_export_leaves_threshold_alone_without_a_floor():
+    import torch
+    from data.afe import AFEFrontend
+    from train.config import AFEConfig
+    from export.afe_constants import afe_constants
+    from types import SimpleNamespace
+
+    cfg = AFEConfig(normalize="fixed", compression="sqrt", envelope_win_ms=10.0)
+    afe = AFEFrontend(cfg)
+    with torch.no_grad():
+        afe.threshold.fill_(-0.5)
+    out = afe_constants(afe, SimpleNamespace(afe=cfg))
+    assert "threshold_min" not in out
+    assert all(v == pytest.approx(-0.5) for v in out["threshold"])
