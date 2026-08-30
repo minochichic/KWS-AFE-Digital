@@ -596,6 +596,12 @@ class AFEFrontend(nn.Module):
             # the gradient passes unchanged, so a channel parked on a boundary
             # can still walk back in instead of sticking there.
             thr = thr + (thr.clamp(0.0, 1.0) - thr).detach()
+        # 임계값 하한. 위 divider clamp 와 같은 straight-through 라, 바닥에 눌린
+        # 채널도 gradient 는 그대로 받아 다시 올라올 수 있다 -- 얼리는 게 아니라
+        # 바닥을 까는 것이다.
+        tmin = float(getattr(self.cfg, "threshold_min", 0.0) or 0.0)
+        if tmin > 0.0:
+            thr = thr + (thr.clamp(min=tmin) - thr).detach()
         # Optional comparator input offset Vos (real LPV7215 has ~mV; ideal
         # sign() has none). Random per (clip, channel) -> eval Monte-Carlos over
         # the offset distribution. vos=0 is an exact no-op (baseline unchanged).
@@ -789,6 +795,7 @@ class AFEFrontend(nn.Module):
                 f"'quantile' or 'measured'. This field was declared but never "
                 f"read until now, so a config that set it got the mean "
                 f"silently.")
+        tmin = float(getattr(self.cfg, "threshold_min", 0.0) or 0.0)
         if mode == "measured":
             # A BUILT board's trip points, in normalised units. Not a starting
             # guess -- the hardware already decided these, so pair this with

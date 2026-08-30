@@ -1165,3 +1165,46 @@ def test_measured_thresholds_are_loaded_and_frozen(tmp_path) -> None:
                             threshold_measured_path=str(mv))
         fe3.init_fixed_scale(wave)
         fe3.init_thresholds(wave)
+
+
+def test_threshold_min_is_a_floor_not_a_freeze(tmp_path) -> None:
+    """하한은 forward 만 막고 gradient 는 통과시킨다.
+
+    물리 오차가 뒤집는 비트 수는 스윙이 아니라 **임계값 높이**가 정한다(실측
+    순위상관 +0.98). 낮은 임계값은 엔벨로프 분포의 밀집 구간에 앉아 작은 이동에도
+    많은 프레임이 경계를 넘는다. 하한은 그 자리를 막는다 -- 다만 얼리지는 않아야
+    한다: 바닥에 눌린 채널도 다시 올라올 수 있어야 하고, 그래서 divider clamp 와
+    같은 straight-through 를 쓴다.
+    """
+    wave = noise(4)
+    fe = make_frontend(normalize="fixed", compression="sqrt",
+                       envelope_win_ms=10.0, threshold_min=0.05)
+    fe.init_fixed_scale(wave)
+    fe.init_thresholds(wave)
+    with torch.no_grad():                       # 하한 아래로 직접 밀어넣는다
+        fe.threshold.fill_(0.001)
+
+    env = fe.envelopes(wave)
+    out = fe(wave)
+    # forward 는 0.05 를 쓴다 -- 0.001 이 아니라
+    assert torch.equal(out, torch.where(env >= 0.05, 1.0, -1.0))
+    assert not torch.equal(out, torch.where(env >= 0.001, 1.0, -1.0))
+
+    # gradient 는 여전히 흐른다 (얼린 게 아니다)
+    fe(wave, target_T=128).mean().backward()
+    assert fe.threshold.grad is not None
+    assert torch.any(fe.threshold.grad != 0)
+
+
+def test_threshold_min_zero_is_an_exact_noop() -> None:
+    """기본값 0.0 은 baseline 을 한 비트도 안 바꿔야 한다."""
+    wave = noise(4)
+    outs = []
+    for tmin in (0.0, None):
+        kw = {} if tmin is None else {"threshold_min": tmin}
+        fe = make_frontend(normalize="fixed", compression="sqrt",
+                           envelope_win_ms=10.0, **kw)
+        fe.init_fixed_scale(wave)
+        fe.init_thresholds(wave)
+        outs.append(fe(wave, target_T=128))
+    assert torch.equal(outs[0], outs[1])
