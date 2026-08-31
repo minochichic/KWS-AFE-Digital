@@ -7,8 +7,12 @@ datasets/
 # 예외: 동료 전송본은 낱개 CSV(161 MB / 38k 파일) 대신 tar 하나로 버전 관리한다.
 # 위의 *.tar.gz 가 이걸 조용히 삼켜서 model_package_snapshot 만 커밋되고
 # 정작 데이터는 빠진 적이 있다 (커밋 7252e30).
-!analog/AFE_board/transfer_v3/spectrogram-v1.tar.gz
-!analog/AFE_board/transfer_v3_native/spectrogram-native.tar.gz
+#
+# 파일마다 예외를 한 줄씩 적다가 transfer_v4 에서 **똑같이 또 당했다** -- README 만
+# 커밋되고 8 MB tar 는 빠진 채 push 됐다. `git add <디렉터리>` 는 무시된 파일을
+# 말없이 건너뛰기 때문에 아무 경고도 없다. 그래서 글롭으로 바꾼다: 다음 전송본은
+# 이 줄을 고치지 않아도 들어온다.
+!analog/AFE_board/transfer_*/*.tar.gz
 
 # --- experiment outputs ---
 runs/
@@ -58,3 +62,4 @@ rtl/gen/active.vh
 # analog/AFE_board/transfer_v3_native/ 까지 삼킨다 (실제로 삼켰다).
 /transfer_v3_*/
 /vpp_5mV/
+/vthr_*/
