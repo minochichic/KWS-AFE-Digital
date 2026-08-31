@@ -73,7 +73,13 @@ def row_order(root: Path) -> Optional[List[int]]:
     else:
         with tarfile.open(root, "r:*") as tf:
             for m in tf:
-                if m.name.endswith("export_settings.json") and m.isfile():
+                # 이름이 정확히 일치해야 한다. endswith 로 잡으면 macOS 가 끼워넣는
+                # AppleDouble `._export_settings.json` 이 **먼저** 걸리고, 그건
+                # JSON 이 아니라 바이너리라 UnicodeDecodeError 로 죽는다.
+                # `tar tzf` 로는 안 보인다 -- bsdtar 가 그 항목을 확장속성으로
+                # 되돌려 숨기기 때문이고, Python tarfile 만 원본을 본다.
+                # _iter_source/_scan 은 같은 이유로 이미 `._` 를 거른다.
+                if Path(m.name).name == "export_settings.json" and m.isfile():
                     buf = tf.extractfile(m)
                     if buf is not None:
                         text = buf.read().decode("utf-8")

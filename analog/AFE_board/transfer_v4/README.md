@@ -6,6 +6,12 @@
     python -m experiments.eval_board_frames --tag bd_base \
         --csv-root analog/AFE_board/transfer_v4/vthr_762b7b0c1885.tar.gz
 
+macOS 에서 묶을 때는 **`COPYFILE_DISABLE=1`** 을 붙인다. 안 붙이면 파일마다
+AppleDouble(`._foo`) 이 하나씩 따라 들어와 항목이 두 배(93k)가 되고, `tar tzf`
+로는 bsdtar 가 숨겨서 보이지도 않는다. Python `tarfile` 만 그걸 본다.
+
+    COPYFILE_DISABLE=1 tar czf vthr_762b7b0c1885.tar.gz vthr_762b7b0c1885/
+
 ## v3 대비 달라진 것: 12클래스가 됐다
 
 `transfer_v3` 는 키워드 10개뿐이라 `bd_base` 의 0.825 와 같은 축에 놓을 수 없었다
