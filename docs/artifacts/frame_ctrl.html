@@ -68,17 +68,24 @@ h2{font-size:20px; margin:0 0 6px; font-weight:700; letter-spacing:-.01em; text-
   display:flex; flex-wrap:wrap; gap:8px; align-items:center;
   padding:11px 14px; border-bottom:1px solid var(--rule); background:var(--sunk);
 }
-button.b{
+button.b, select.b{
   font:inherit; font-size:13px; font-weight:600; cursor:pointer;
-  padding:6px 13px; border-radius:3px; border:1px solid var(--rule);
+  padding:6px 11px; border-radius:3px; border:1px solid var(--rule);
   background:var(--card); color:var(--ink); transition:.14s;
 }
-button.b:hover{border-color:var(--dim)}
-button.b:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+button.b:hover,select.b:hover{border-color:var(--dim)}
+button.b:focus-visible,select.b:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
 button.b.pri{background:var(--ink); color:var(--paper); border-color:var(--ink)}
 button.b.on{background:var(--warn); color:#fff; border-color:var(--warn)}
 .grow{margin-left:auto; display:flex; align-items:center; gap:8px; color:var(--dim); font-size:12.5px}
-.grow input[type=range]{width:110px; accent-color:var(--live)}
+.grow input[type=range]{width:100px; accent-color:var(--live)}
+
+.params{
+  padding:8px 14px; border-bottom:1px solid var(--rule); background:var(--card);
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px;
+  color:var(--faint); overflow-x:auto; white-space:nowrap;
+}
+.params b{color:var(--dim); font-weight:600}
 
 /* FSM 막대 */
 .fsm{display:flex; border-bottom:1px solid var(--rule); background:var(--card); overflow-x:auto}
@@ -92,8 +99,8 @@ button.b.on{background:var(--warn); color:#fff; border-color:var(--warn)}
 .fsm div.done{color:var(--dim)} .fsm div.done b{color:var(--ok)}
 .fsm div.act{background:var(--live-glow); color:var(--live)} .fsm div.act b{color:var(--live)}
 
-.stagewrap{overflow-x:auto; background:var(--card); padding:18px 16px 6px}
-.stage{display:grid; grid-template-columns:104px 1fr; gap:6px 14px; align-items:center; min-width:640px}
+.stagewrap{overflow-x:auto; background:var(--card); padding:16px 16px 8px}
+.stage{display:grid; grid-template-columns:110px 1fr; gap:5px 14px; align-items:center; min-width:660px}
 .stage .rl{
   font-family:"IBM Plex Mono",monospace; font-size:11.5px; text-align:right;
   color:var(--dim); white-space:nowrap;
@@ -103,27 +110,27 @@ button.b.on{background:var(--warn); color:#fff; border-color:var(--warn)}
 .bit{
   width:20px; height:20px; border-radius:2px; background:var(--off);
   display:grid; place-items:center; font-family:"IBM Plex Mono",monospace;
-  /* 빠른 재생에서는 클럭 간격이 10 ms 아래로 내려간다. 페이드가 그보다 길면
-     비트가 늘 중간색에 머물러 번져 보인다. */
-  font-size:10px; color:var(--faint); transition:.04s;
+  font-size:10px; color:var(--faint);
+  /* 빠른 재생에서는 클럭 간격이 10 ms 아래다. 페이드가 그보다 길면 늘 중간색이다. */
+  transition:.04s;
 }
 .bit.on{color:#fff}
+.bit.sel{outline:1.5px solid var(--live); outline-offset:1px}
 .r-cmp .bit.on{background:var(--analog)}
+.r-cin .bit.on{background:var(--analog)}
 .r-s1 .bit.on,.r-s2 .bit.on{background:var(--dim)}
-.r-st .bit.on{background:var(--digital)}
-.r-hd .bit.on{background:var(--mem)}
-.r-ot .bit.on{background:var(--live)}
-.arrow{font-family:"IBM Plex Mono",monospace; color:var(--faint); font-size:11px; padding-left:2px}
+.r-stk .bit.on{background:var(--digital)}
+.r-hld .bit.on{background:var(--mem)}
+.r-out .bit.on{background:var(--live)}
 
 .readout{
-  display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr));
   border-top:1px solid var(--rule); background:var(--sunk);
 }
-.rd{padding:9px 13px; border-right:1px solid var(--rule)}
-.rd:last-child{border-right:none}
-.rd .k{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+.rd{padding:8px 12px; border-right:1px solid var(--rule)}
+.rd .k{font-size:9.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--faint); white-space:nowrap}
 .rd .v{
-  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:14.5px;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:14px;
   font-weight:600; font-variant-numeric:tabular-nums; margin-top:1px;
 }
 .rd .v.hi{color:var(--live)} .rd .v.lo{color:var(--faint)} .rd .v.ok{color:var(--ok)}
@@ -133,13 +140,15 @@ button.b.on{background:var(--warn); color:#fff; border-color:var(--warn)}
 
 /* 파형 */
 .wavewrap{overflow-x:auto; border-top:1px solid var(--rule); background:var(--card)}
-#wave{display:block; min-width:720px; width:100%; height:auto}
+#wave{display:block; min-width:820px; width:100%; height:auto}
 #wave .lab{font-family:"IBM Plex Mono",monospace; font-size:9.5px; fill:var(--dim)}
-#wave .tr{fill:none; stroke-width:1.6}
-#wave .tr.cmp{stroke:var(--analog)} #wave .tr.s2{stroke:var(--dim)}
-#wave .tr.stk{stroke:var(--digital)} #wave .tr.ov{stroke:var(--live)}
-#wave .fe{stroke:var(--live); stroke-width:1; stroke-dasharray:3 3; opacity:.6}
+#wave .grp{font-family:"IBM Plex Mono",monospace; font-size:8.5px; fill:var(--faint); letter-spacing:.1em}
+#wave .tr{fill:none; stroke-width:1.5}
 #wave .ax{stroke:var(--rule); stroke-width:1}
+#wave .fe{stroke:var(--live); stroke-width:1; stroke-dasharray:3 3; opacity:.45}
+#wave .now{stroke:var(--ink); stroke-width:1; opacity:.35}
+.c-an{stroke:var(--analog)} .c-dm{stroke:var(--dim)} .c-dg{stroke:var(--digital)}
+.c-lv{stroke:var(--live)} .c-mm{stroke:var(--mem)} .c-ok{stroke:var(--ok)}
 
 /* 출력 평면 */
 .planewrap{overflow-x:auto; border-top:1px solid var(--rule); background:var(--card); padding:14px 16px}
@@ -149,10 +158,24 @@ button.b.on{background:var(--warn); color:#fff; border-color:var(--warn)}
 .pcell.pad{background:transparent; border:1px dashed var(--rule)}
 .pcell.now{outline:2px solid var(--live); outline-offset:1px}
 
+/* 신호 사전 */
+.tbl{width:100%; border-collapse:collapse; font-size:13.5px}
+.tbl caption{
+  text-align:left; padding:12px 14px 8px; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace;
+  font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
+}
+.tbl th,.tbl td{padding:8px 14px; border-top:1px solid var(--rule); text-align:left; vertical-align:top}
+.tbl th{font-weight:600; font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint)}
+.tbl td:first-child{font-family:"IBM Plex Mono",monospace; font-size:12.5px; white-space:nowrap; width:1%}
+.tbl td:nth-child(2){font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--faint); white-space:nowrap; width:1%}
+.tbl td:last-child{color:var(--dim)}
+.tbl td b{color:var(--ink); font-weight:600}
+.tblwrap{background:var(--card); border:1px solid var(--rule); border-radius:4px; overflow-x:auto}
+
 /* 코드 대응 */
 .pairs{display:grid; gap:10px}
 .pair{
-  display:grid; grid-template-columns:minmax(280px,1.1fr) 1fr; gap:0;
+  display:grid; grid-template-columns:minmax(280px,1.1fr) 1fr;
   background:var(--card); border:1px solid var(--rule); border-radius:4px; overflow:hidden;
 }
 .pair pre{
@@ -184,7 +207,7 @@ footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--rule); colo
   <p class="lede">
     설계 전체에서 <b>비동기 신호를 만지는 모듈은 이것 하나뿐</b>이다. 왼쪽에는 클럭이
     없는 비교기 16가닥이 있고, 오른쪽에는 완전히 동기화된 <code class="m">[16,128]</code>
-    텐서가 있다. 그 사이를 플립플롭 50개 남짓이 잇는다. 한 클럭씩 밟아 보자.
+    텐서가 있다. 그 사이를 플립플롭 50개 남짓이 잇는다. <b>모든 신호를 한 클럭씩</b> 본다.
   </p>
 </header>
 
@@ -196,50 +219,129 @@ footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--rule); colo
       <button class="b" id="frm">프레임 1</button>
       <button class="b" id="rst">리셋</button>
       <button class="b" id="slow" title="소비자가 9클럭에 한 번만 받는다 — 창(6클럭)보다 느리다">소비자를 창보다 느리게: 꺼짐</button>
-      <label class="grow">속도 <input type="range" id="spd" min="1" max="12" value="7"></label>
+      <button class="b" id="inv" title="ICD §3: 비교기가 반전 출력이면 이 파라미터가 흡수한다">CMP_INVERT: 0</button>
+      <label class="grow">파형 채널
+        <select class="b" id="chsel"></select>
+        속도 <input type="range" id="spd" min="1" max="12" value="6">
+      </label>
     </div>
 
+    <div class="params" id="params"></div>
     <div class="fsm" id="fsm"></div>
 
-    <div class="stagewrap">
-      <div class="stage" id="stage"></div>
-    </div>
+    <div class="stagewrap"><div class="stage" id="stage"></div></div>
 
-    <div class="readout">
-      <div class="rd"><div class="k">클럭</div><div class="v" id="rCk">0</div></div>
-      <div class="rd"><div class="k">st</div><div class="v" id="rSt">S_IDLE</div></div>
-      <div class="rd"><div class="k">fc</div><div class="v" id="rFc">0</div></div>
-      <div class="rd"><div class="k">cnt</div><div class="v" id="rCn">0</div></div>
-      <div class="rd"><div class="k">pending</div><div class="v lo" id="rPd">0</div></div>
-      <div class="rd"><div class="k">out_ready</div><div class="v" id="rRy">1</div></div>
-      <div class="rd"><div class="k">out_valid</div><div class="v lo" id="rOv">0</div></div>
-      <div class="rd"><div class="k">busy</div><div class="v lo" id="rBs">0</div></div>
-    </div>
+    <div class="readout" id="readout"></div>
 
-    <div class="wavewrap"><svg id="wave" viewBox="0 0 760 150" role="img"
-      aria-label="ch03 의 cmp, sync2, sticky, out_valid 파형"></svg></div>
+    <div class="wavewrap"><svg id="wave" role="img"
+      aria-label="rst_n, start, cmp, sync1, sync2, sticky, frame_edge, held, pending, out_ready, take, out_valid, busy 파형"></svg></div>
 
     <div class="planewrap"><div class="plane" id="plane"></div></div>
-    <div class="note" id="note">리셋 상태다. <b>실행</b>이나 <b>클럭 1</b>을 누르면 <code>start</code> 가 한 클럭 뜬다.</div>
+    <div class="note" id="note">리셋 상태다. <b>클럭 1</b>을 누르면 <code>rst_n</code> 이 두 클럭 낮게 있다가 풀리고, 그 다음 클럭에 <code>start</code> 가 한 번 뜬다.</div>
   </div>
   <div class="flag">
-    <b>그림의 숫자는 줄여 놓았다.</b> 여기서는 <code>FRAME_CYCLES=6</code>,
-    <code>NATIVE_T=10</code>, <code>PAD_LEFT=PAD_RIGHT=3</code>, <code>T=16</code> 이다.
-    실제 값은 <code>1,000,000 / 100 / 14 / 128</code> — 100 MHz 에서 10 ms 프레임이라
-    프레임 하나가 백만 클럭이고 눈으로 볼 수가 없다. <code>rtl/tb/tb_frame_ctrl.v</code>
-    도 같은 이유로 <code>FRAME_CYCLES</code> 를 줄여서 돌린다. <b>구조는 그대로다.</b>
+    <b>그림의 숫자는 줄여 놓았다.</b> 실제 값은 <code>FRAME_CYCLES=1,000,000</code>,
+    <code>NATIVE_T=100</code>, <code>PAD_LEFT=PAD_RIGHT=14</code>, <code>T=128</code> —
+    100 MHz 에서 10 ms 프레임이라 프레임 하나가 백만 클럭이고 눈으로 볼 수가 없다.
+    <code>rtl/tb/tb_frame_ctrl.v</code> 도 같은 이유로 줄여서 돌린다. <b>구조는 그대로다.</b>
+  </div>
+</section>
+
+<section>
+  <h2>신호 사전</h2>
+  <p class="sub">
+    포트 8개와 내부 레지스터·와이어 11개가 전부다. 폭이 <code>[15:0]</code> 인 것은
+    <b>채널마다 한 비트</b>이고, 위 실행기에서 정사각형 16칸으로 나온다.
+  </p>
+  <div class="tblwrap">
+    <table class="tbl">
+      <caption>포트 — 모듈 밖과 주고받는 것</caption>
+      <thead><tr><th>신호</th><th>폭 / 방향</th><th>뜻</th></tr></thead>
+      <tbody>
+        <tr><td>clk</td><td>1 · in</td><td>시스템 클럭 100 MHz. <b>안쪽 모든 것이 이 상승 에지에만</b> 움직인다</td></tr>
+        <tr><td>rst_n</td><td>1 · in</td><td>비동기 리셋(active-low). 0 이면 레지스터가 전부 초기값으로 간다</td></tr>
+        <tr><td>start</td><td>1 · in</td><td><b>한 클럭짜리 펄스.</b> "클립 하나 시작" — <code>S_IDLE → S_PADL</code></td></tr>
+        <tr><td>cmp[15:0]</td><td>16 · in</td><td><b>비교기 16가닥. 비동기.</b> <code>cmp[k]=1</code> = ch k 엔벨로프가 지금 임계값 위 (ICD §3)</td></tr>
+        <tr><td>out_ready</td><td>1 · in</td><td>소비자(conv1)가 "이번 클럭에 받을 수 있다"</td></tr>
+        <tr><td>out_valid</td><td>1 · out</td><td>"이번 클럭의 <code>out_frame</code> 은 진짜다"</td></tr>
+        <tr><td>out_frame[15:0]</td><td>16 · out</td><td>프레임 하나 = 16비트, 채널당 1비트. <b>0 은 아래쪽에서 −1 로</b> 매핑된다</td></tr>
+        <tr><td>busy</td><td>1 · out</td><td>클립 진행 중 (<code>st != S_IDLE</code>)</td></tr>
+      </tbody>
+    </table>
+    <table class="tbl">
+      <caption>내부 — 레지스터와 와이어</caption>
+      <thead><tr><th>신호</th><th>폭 / 종류</th><th>뜻</th></tr></thead>
+      <tbody>
+        <tr><td>cmp_in[15:0]</td><td>16 · wire</td><td><code>CMP_INVERT</code> 가 1 이면 <code>~cmp</code>, 아니면 <code>cmp</code>. <b>극성 반전을 흡수하는 자리</b></td></tr>
+        <tr><td>sync1[15:0]</td><td>16 · reg</td><td>동기화 1단. <b>여기가 메타스테이빌리티에 걸릴 수 있는 유일한 곳</b></td></tr>
+        <tr><td>sync2[15:0]</td><td>16 · reg</td><td>동기화 2단. <b>이제부터 믿고 쓸 수 있는 <code>cmp</code></b></td></tr>
+        <tr><td>fc</td><td>20 · reg</td><td>프레임 안에서 도는 카운터, <code>0 … FRAME_CYCLES−1</code></td></tr>
+        <tr><td>frame_edge</td><td>1 · wire</td><td><code>(st==S_RUN) &amp;&amp; (fc==FC_LAST)</code> — <b>창이 지금 닫힌다</b>는 한 클럭</td></tr>
+        <tr><td>sticky[15:0]</td><td>16 · reg</td><td><b>창 누적 OR.</b> 한 번 선 비트는 창이 끝날 때까지 안 내려간다</td></tr>
+        <tr><td>held[15:0]</td><td>16 · reg</td><td>내보내려고 붙잡아 둔 프레임. <code>frame_edge</code> 에서 <code>sticky</code> 를 퍼낸 것</td></tr>
+        <tr><td>st</td><td>3 · reg</td><td><code>S_IDLE / S_PADL / S_RUN / S_PADR</code></td></tr>
+        <tr><td>cnt</td><td>8 · reg</td><td>현재 단계에서 <b>몇 장 내보냈는지</b></td></tr>
+        <tr><td>pending</td><td>1 · reg</td><td>"건네줄 프레임이 있다"</td></tr>
+        <tr><td>take</td><td>1 · wire</td><td><code>pending &amp;&amp; out_ready</code> — <b>악수가 성립한 클럭</b></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="flag">
+    <b><code>held</code> 가 <code>sticky</code> 와 따로 있는 이유.</b> 창은 정확히
+    <code>FRAME_CYCLES</code> 마다 닫히는데 소비자는 아무 때나 바쁠 수 있다.
+    <code>sticky</code> 를 바로 내보내면 소비자를 기다리는 동안 <b>다음 창의 펄스가
+    섞인다.</b> 퍼내는 순간과 건네는 순간을 분리한 것이다.
+  </div>
+</section>
+
+<section>
+  <h2>sticky OR — 이게 축약 규칙 <i>그 자체</i>다</h2>
+  <p class="sub">
+    레지스터에 입력을 매 클럭 OR 로 누적하고, <b>창 경계에서만</b> 지운다. 한 번 선
+    비트는 창이 끝날 때까지 안 내려간다 — 그래서 "끈끈한(sticky)" OR 이다.
+    쓰는 이유가 세 겹이다.
+  </p>
+  <div class="cards">
+    <div class="cd">
+      <h3>1 · 근사가 아니라 규칙이다</h3>
+      <p>CLAUDE.md 2.8 이 정한 이산화는 "창 안에서 한 번이라도 1 이면 1"
+      (<code>reduce = max</code>)이다. <code>{0,1}</code> 위에서 <b>max 는 정확히
+      OR</b> 이므로 여기엔 구현할 것이 없다. 소프트웨어는
+      <code>max-pool → threshold</code> 순서인데 max 가 단조라 <code>threshold →
+      OR</code> 과 같다 — <b>학습한 함수와 하드웨어가 계산하는 함수가 같다.</b></p>
+    </div>
+    <div class="cd">
+      <h3>2 · 샘플링을 안 해도 된다</h3>
+      <p>비교기 펄스는 <b>수백 µs</b>, 창은 <b>10 ms</b> 다. 창마다 한 번 들여다보는
+      방식이라면 그 순간 안 서 있는 펄스를 통째로 놓친다. sticky OR 은 <b>매 클럭
+      (10 ns) 보고 기억</b>한다. 언제 오든 못 놓치고, 값은 플립플롭 16개다.</p>
+    </div>
+    <div class="cd">
+      <h3>3 · 경계에 프로토콜이 없어도 된다</h3>
+      <p>결과가 <b>"창 안 어디에서" 울렸는지에 의존하지 않는다.</b> 그래서 아날로그는
+      우리 창이 어디 있는지 알 필요가 없고, 클럭을 공유하지 않으며, FPGA → 아날로그
+      신호가 0개다. <b>채터링도 무해하다</b> — 50번을 떨어도 OR 결과는 깨끗한 펄스
+      하나와 같은 <code>1</code> 이라, 히스테리시스가 정확도 요구사항이 아니다(ICD §4).</p>
+    </div>
+    <div class="cd">
+      <h3>대가 · 정보를 일부러 버린다</h3>
+      <p>펄스 <b>개수·시각·지속시간이 전부 지워진다.</b> 1개든 5개든 결과는
+      <code>1</code>. <code>count</code> 나 <code>mean</code> 은 그걸 살리지만
+      <b>입력이 이진이 아니게 되어</b> Conv1 의 하드웨어 이점이 사라지고, threshold 와
+      순서 교환도 성립하지 않는다. <b>구현 한계가 아니라 설계 결정이다.</b></p>
+    </div>
   </div>
 </section>
 
 <section>
   <h2>Verilog 한 줄이 그림에서 어디인가</h2>
-  <p class="sub">
-    네 덩어리뿐이다. 위 실행기에서 각 줄이 무엇을 움직이는지 대조해 보면 된다.
-  </p>
+  <p class="sub">네 덩어리뿐이다. 위 실행기에서 각 줄이 무엇을 움직이는지 대조해 보면 된다.</p>
   <div class="pairs">
 
     <div class="pair">
-      <pre>(* ASYNC_REG = "TRUE" *) reg [15:0] sync1;
+      <pre>wire [15:0] cmp_in = CMP_INVERT ? ~cmp : cmp;
+
+(* ASYNC_REG = "TRUE" *) reg [15:0] sync1;
 (* ASYNC_REG = "TRUE" *) reg [15:0] sync2;
 
 always @(posedge clk or negedge rst_n)
@@ -253,8 +355,9 @@ always @(posedge clk or negedge rst_n)
         <h3>1. 2단 동기화기</h3>
         <p><code>cmp</code> 는 우리 클럭과 아무 관계가 없다. 클럭 에지 바로 그 순간에 값이
         바뀌면 <code>sync1</code> 은 0 도 1 도 아닌 중간 전압에 걸릴 수 있다
-        (<b>메타스테이빌리티</b>). 한 클럭을 더 주면 그 사이 안정되고, <code>sync2</code>
-        는 깨끗한 값을 본다.</p>
+        (<b>메타스테이빌리티</b>). 한 클럭을 더 주면 그 사이 안정되고
+        <code>sync2</code> 는 깨끗한 값을 본다. 파형에서 <code>cmp → sync1 →
+        sync2</code> 가 <b>한 클럭씩 밀려</b> 있는 게 이것이다.</p>
         <p><b>16채널이 한 줄인 이유:</b> 반복문이 아니라 <b>플립플롭 16개가 물리적으로
         나란히</b> 있는 것이다. 서로 기다리지 않는다.</p>
       </div>
@@ -266,12 +369,11 @@ always @(posedge clk or negedge rst_n)
   else if (frame_edge) sticky &lt;= 0;
   else if (st == S_RUN) sticky &lt;= sticky | sync2;</pre>
       <div class="ex">
-        <h3>2. sticky OR — 이게 축약 규칙 <i>그 자체</i>다</h3>
-        <p>CLAUDE.md 2.8 은 "창 안에서 한 번이라도 1 이면 1"(<code>reduce = max</code>)
-        이라고 정한다. <code>{0,1}</code> 위에서 <b>max 는 정확히 OR</b> 이다. 그래서
-        여기엔 근사가 없다 — <b>래치가 곧 규칙이다.</b></p>
+        <h3>2. sticky OR</h3>
         <p>지우는 시점이 <b>프레임 경계뿐</b>이라는 게 핵심이다. 창 중간에 지우면 그 앞의
         펄스가 사라진다.</p>
+        <p>파형에서 <code>sticky</code> 가 <code>sync2</code> 의 첫 1 을 따라 올라간 뒤
+        <b>다음 <code>frame_edge</code> 까지 계속 높게</b> 있는 것을 보면 된다.</p>
       </div>
     </div>
 
@@ -290,9 +392,11 @@ end</pre>
         <h3>3. 프레임 타이머</h3>
         <p><code>fc</code> 가 <code>FRAME_CYCLES</code> 를 세면 창이 닫힌다. 그때
         <code>sticky</code> 를 <code>held</code> 로 퍼내고 <code>pending</code> 을 올린다.</p>
-        <p><b><code>sticky | sync2</code> 인 이유:</b> 경계 그 사이클도 닫히는 창에
-        속한다. <code>sticky</code> 만 쓰면 그 한 사이클을 잃고, 다음 창에 넣으면 두 번
-        세게 된다. 이렇게 하면 <b>모든 사이클이 정확히 한 창에</b> 들어간다.</p>
+        <p><b><code>sticky | sync2</code> 인 이유:</b> 논블로킹이라
+        <code>frame_edge</code> 시점의 <code>sticky</code> 에는 <b>그 사이클의
+        <code>sync2</code> 가 아직 안 들어가 있다.</b> 그냥 퍼내면 한 사이클을 잃고,
+        지울 때 0 대신 <code>sync2</code> 를 넣으면 다음 창이 또 센다. 이렇게 하면
+        <b>모든 사이클이 정확히 한 창에</b> 들어간다.</p>
       </div>
     </div>
 
@@ -310,7 +414,8 @@ end</pre>
         <p><code>pending</code> 은 "내보낼 프레임이 있다", <code>out_ready</code> 는
         "받을 수 있다". <b>둘 다 참인 사이클에만</b> 프레임이 건네진다. 소비자가 바쁘면
         저절로 기다린다 — 흐름 제어를 따로 안 짜도 된다.</p>
-        <p>위 실행기의 <b>소비자 느리게</b> 를 켜 보면 이게 어떻게 깨지는지 볼 수 있다.</p>
+        <p><code>out_valid</code> 가 <code>take</code> 보다 <b>한 클럭 늦은</b> 것은
+        출력이 레지스터이기 때문이다.</p>
       </div>
     </div>
 
@@ -324,7 +429,8 @@ end</pre>
       <h3>패딩에는 시간이 없다</h3>
       <p>실프레임 100개만 <code>FRAME_CYCLES</code> 를 기다린다. 앞뒤 패딩 14개씩은
       <b>악수가 되는 대로 곧바로</b> 나간다 — 시간축에 대응되는 게 없으니 기다릴 이유가
-      없다. 실행기에서 <code>S_PADL</code> 이 순식간에 지나가는 게 그래서다.</p>
+      없다. 실행기에서 <code>S_PADL</code> 이 순식간에 지나가고 그동안
+      <code>fc</code> 가 <code>—</code> 인 게 그래서다.</p>
     </div>
     <div class="cd">
       <h3>패딩은 −1 이지 0 이 아니다</h3>
@@ -343,7 +449,7 @@ end</pre>
   </div>
 </section>
 
-<footer>rtl/kws_frame_ctrl.v · rtl/tb/tb_frame_ctrl.v · docs/ICD.md §5 · CLAUDE.md §2.8 · 2026-09-01</footer>
+<footer>rtl/kws_frame_ctrl.v · rtl/tb/tb_frame_ctrl.v · docs/ICD.md §3 §4 §5 · CLAUDE.md §2.8 · 2026-09-01</footer>
 </div>
 
 <script>
@@ -354,26 +460,28 @@ end</pre>
 // take 가 0 으로, frame_edge 가 1 로, 마지막 take 가 다시 1 로 쓴다.
 (function(){
   const N=16, FC=6, NT=10, PL=3, PR=3, T=PL+NT+PR;   // 그림용 축소값
-  const S=["S_IDLE","S_PADL","S_RUN","S_PADR"];
+  const SN=["S_IDLE","S_PADL","S_RUN","S_PADR"];
   const $=id=>document.getElementById(id);
 
-  let s, hist, plane, slow=false, playing=false, raf=null, acc=0, lastTs=0, viol=false;
-  let pulse=new Array(N).fill(0);                    // 비교기 펄스 잔여 사이클
+  let s, hist, plane, slow=false, inv=false, ch=3;
+  let playing=false, raf=null, acc=0, lastTs=0, viol=false;
+  let rstCnt=2, started=false, pulse=new Array(N).fill(0), seed=12345;
 
-  // 채널별 발화 성향 (transfer_v4 실측 경향: 저역·중역이 활발, 최고역이 조용)
+  // 채널별 발화 성향 (transfer_v4 실측 경향: 저·중역이 활발, 최고역이 조용)
   const RATE=[.10,.13,.16,.18,.16,.17,.18,.18,.17,.17,.14,.13,.16,.12,.09,.03];
-  let seed=12345;
   const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff;};
+  const R0=()=>({ck:0, sync1:0, sync2:0, sticky:0, held:0, st:0, fc:0, cnt:0,
+                 pending:0, out_valid:0, out_frame:0, cmp:0, cmp_in:0,
+                 rst_n:0, start:0, take:0, fe:0, ready:0, busy:0});
 
   function reset(){
-    s={ck:0, sync1:0, sync2:0, sticky:0, held:0, st:0, fc:0, cnt:0,
-       pending:0, out_valid:0, out_frame:0, cmp:0, start:1};
-    hist=[]; plane=new Array(T).fill(null); pulse=new Array(N).fill(0);
-    viol=false; seed=12345; pause(); render(
-      "리셋 상태다. <b>실행</b>이나 <b>클럭 1</b>을 누르면 <code>start</code> 가 한 클럭 뜬다.");
+    s=R0(); hist=[]; plane=new Array(T).fill(null);
+    pulse=new Array(N).fill(0); seed=12345; rstCnt=2; started=false; viol=false;
+    pause(); render("리셋 상태다. <b>클럭 1</b>을 누르면 <code>rst_n</code> 이 두 클럭 "+
+      "낮게 있다가 풀리고, 그 다음 클럭에 <code>start</code> 가 한 번 뜬다.");
   }
 
-  function driveCmp(){                                // 아날로그: 클럭과 무관하게 흔들린다
+  function driveCmp(){                               // 아날로그: 클럭과 무관하게 흔들린다
     let v=0;
     for(let c=0;c<N;c++){
       if(pulse[c]>0) pulse[c]--;
@@ -384,63 +492,91 @@ end</pre>
   }
 
   function step(){
+    const rst_n = rstCnt>0 ? 0 : 1;  if(rstCnt>0) rstCnt--;
+    const start = (rst_n && !started) ? 1 : 0;  if(start) started=true;
     // 9 는 FRAME_CYCLES(6) 보다 커야 한다. 5 로 두면 창이 닫히기 전에 소비자가 매번
     // 받아가서 pending 이 늘 비고, 위반이 재현되지 않는다 -- 느린 소비자 자체가 아니라
     // **창보다 느린** 소비자가 문제라는 뜻이다.
     const ready = slow ? (s.ck%9===0 ? 1 : 0) : 1;
     const cmp = driveCmp();
+    const cmp_in = inv ? (~cmp & 0xFFFF) : cmp;
     const take = (s.pending && ready) ? 1 : 0;
-    const frame_edge = (s.st===2 && s.fc===FC-1) ? 1 : 0;
-    if(frame_edge && s.pending) viol=true;            // KWS_ASSERT 가 죽는 조건
+    const fe = (s.st===2 && s.fc===FC-1) ? 1 : 0;
+    if(fe && s.pending) viol=true;                   // KWS_ASSERT 가 죽는 조건
 
-    const n={...s, cmp, out_valid:0};
-    n.sync1 = cmp;                                    // sync1 <= cmp_in
-    n.sync2 = s.sync1;                                // sync2 <= sync1
+    const n={...s, cmp, cmp_in, rst_n, start, ready, take, fe, out_valid:0};
 
-    n.sticky = s.start ? 0 : frame_edge ? 0
-             : (s.st===2 ? (s.sticky | s.sync2) : s.sticky);
+    if(!rst_n){                                      // 비동기 리셋 분기
+      Object.assign(n, R0(), {ck:s.ck+1, cmp, cmp_in, rst_n, start, ready, take:0, fe:0});
+      hist.push(sample(n)); if(hist.length>48) hist.shift(); s=n; return {take:0, fe:0};
+    }
 
-    if(s.start){
+    n.sync1 = cmp_in;                                // sync1 <= cmp_in
+    n.sync2 = s.sync1;                               // sync2 <= sync1
+    n.sticky = start ? 0 : fe ? 0 : (s.st===2 ? (s.sticky | s.sync2) : s.sticky);
+
+    if(start){
       n.st=1; n.fc=0; n.cnt=0; n.pending=1; n.held=0;
     } else {
       if(take){ n.out_valid=1; n.out_frame=s.held; n.pending=0; n.cnt=s.cnt+1; }
-      if(s.st===1){                                   // S_PADL
+      if(s.st===1){                                  // S_PADL
         if(take){
           if(s.cnt+1===PL){ n.st=2; n.cnt=0; n.fc=0; n.pending=0; }
           else { n.pending=1; n.held=0; }
         }
-      } else if(s.st===2){                            // S_RUN
+      } else if(s.st===2){                           // S_RUN
         n.fc = (s.fc===FC-1) ? 0 : s.fc+1;
-        if(frame_edge){ n.held = s.sticky | s.sync2; n.pending=1; }
+        if(fe){ n.held = s.sticky | s.sync2; n.pending=1; }
         if(take && s.cnt+1===NT){ n.st=3; n.cnt=0; n.pending=1; n.held=0; }
-      } else if(s.st===3){                            // S_PADR
+      } else if(s.st===3){                           // S_PADR
         if(take && s.cnt+1===PR){ n.st=0; n.pending=0; }
         else if(take){ n.pending=1; n.held=0; }
       }
     }
-    n.start=0; n.ck=s.ck+1; n.ready=ready;
+    n.ck=s.ck+1; n.busy = n.st!==0 ? 1 : 0;
 
-    // 내보낸 프레임을 평면에 적재 (out_valid 는 이 사이클 결과다)
-    if(n.out_valid){
-      const idx = plane.findIndex(x=>x===null);
+    if(n.out_valid){                                 // 내보낸 프레임을 평면에 적재
+      const idx=plane.findIndex(x=>x===null);
       if(idx>=0) plane[idx]=n.out_frame;
     }
-    hist.push({ck:n.ck, cmp:(cmp>>3)&1, s2:(n.sync2>>3)&1,
-               stk:(n.sticky>>3)&1, ov:n.out_valid, fe:frame_edge});
-    if(hist.length>60) hist.shift();
+    hist.push(sample(n)); if(hist.length>48) hist.shift();
     s=n;
-    return {take, frame_edge, ready};
+    return {take, fe};
   }
 
-  // ---------- 그리기 ---------- //
-  const ROWS=[["cmp","비동기",'r-cmp',()=>s.cmp],
-              ["sync1","1단",'r-s1',()=>s.sync1],
-              ["sync2","깨끗함",'r-s2',()=>s.sync2],
-              ["sticky","창 누적 OR",'r-st',()=>s.sticky],
-              ["held","경계에서 퍼냄",'r-hd',()=>s.held],
-              ["out_frame","→ conv1",'r-ot',()=>s.out_frame]];
+  const bitOf=(v,k)=>(v>>k)&1;
+  function sample(n){
+    return {ck:n.ck, rst:n.rst_n, st:n.start, cmp:bitOf(n.cmp,ch), cin:bitOf(n.cmp_in,ch),
+            s1:bitOf(n.sync1,ch), s2:bitOf(n.sync2,ch), stk:bitOf(n.sticky,ch),
+            fe:n.fe, hld:bitOf(n.held,ch), pnd:n.pending, rdy:n.ready,
+            tk:n.take, ov:n.out_valid, bsy:n.busy};
+  }
 
-  function buildStage(){
+  // ---------- 정적 구성 ---------- //
+  const ROWS=[["cmp","비동기 입력","r-cmp",()=>s.cmp],
+              ["cmp_in","CMP_INVERT 적용","r-cin",()=>s.cmp_in],
+              ["sync1","동기화 1단","r-s1",()=>s.sync1],
+              ["sync2","깨끗한 cmp","r-s2",()=>s.sync2],
+              ["sticky","창 누적 OR","r-stk",()=>s.sticky],
+              ["held","경계에서 퍼냄","r-hld",()=>s.held],
+              ["out_frame","→ conv1","r-out",()=>s.out_frame]];
+
+  const RD=[["클럭","ck"],["rst_n","rst"],["start","st"],["st","fsm"],["fc","fc"],
+            ["cnt","cnt"],["frame_edge","fe"],["sticky","stk"],["pending","pnd"],
+            ["out_ready","rdy"],["take","tk"],["out_valid","ov"],["busy","bsy"]];
+
+  const SIG=[["clk","clk","c-dm"],["rst_n","rst","c-ok"],["start","st","c-ok"],
+             ["cmp["+0+"]","cmp","c-an"],["cmp_in[]","cin","c-an"],
+             ["sync1[]","s1","c-dm"],["sync2[]","s2","c-dm"],
+             ["sticky[]","stk","c-dg"],["frame_edge","fe","c-dg"],
+             ["held[]","hld","c-mm"],["pending","pnd","c-lv"],
+             ["out_ready","rdy","c-lv"],["take","tk","c-lv"],
+             ["out_valid","ov","c-lv"],["busy","bsy","c-dm"]];
+
+  function build(){
+    $("params").innerHTML =
+      "<b>parameter</b> N_CH=16 · FRAME_CYCLES="+FC+" · NATIVE_T="+NT+
+      " · PAD_LEFT="+PL+" · PAD_RIGHT="+PR+" · T="+T+" · CMP_INVERT=<span id='pinv'>0</span>";
     const g=$("stage"); g.innerHTML="";
     for(const [name,sub,cls] of ROWS){
       const l=document.createElement("div"); l.className="rl";
@@ -452,109 +588,139 @@ end</pre>
       }
       g.appendChild(b);
     }
-  }
-  function buildFsm(){
-    const g=$("fsm"); g.innerHTML="";
+    const f=$("fsm"); f.innerHTML="";
     [["S_IDLE","대기"],["S_PADL","패딩 "+PL],["S_RUN","실프레임 "+NT],
      ["S_PADR","패딩 "+PR]].forEach((p,i)=>{
       const d=document.createElement("div"); d.id="fs"+i;
-      d.innerHTML="<b>"+p[0]+"</b>"+p[1]; g.appendChild(d);
+      d.innerHTML="<b>"+p[0]+"</b>"+p[1]; f.appendChild(d);
     });
-  }
-  function buildPlane(){
-    const g=$("plane"); g.innerHTML="";
-    g.style.gridTemplateColumns="repeat("+T+",1fr)";
-    for(let r=0;r<N;r++) for(let c=0;c<T;c++){
-      const d=document.createElement("div"); d.className="pcell"; d.id="pc"+r+"_"+c;
-      g.appendChild(d);
+    const r=$("readout"); r.innerHTML="";
+    for(const [lab,id] of RD){
+      const d=document.createElement("div"); d.className="rd";
+      d.innerHTML="<div class='k'>"+lab+"</div><div class='v' id='v-"+id+"'>0</div>";
+      r.appendChild(d);
+    }
+    const p=$("plane"); p.innerHTML="";
+    p.style.gridTemplateColumns="repeat("+T+",1fr)";
+    for(let y=0;y<N;y++) for(let x=0;x<T;x++){
+      const d=document.createElement("div"); d.className="pcell"; d.id="pc"+y+"_"+x;
+      p.appendChild(d);
+    }
+    const sel=$("chsel"); sel.innerHTML="";
+    for(let c=0;c<N;c++){
+      const o=document.createElement("option"); o.value=c;
+      o.textContent="ch"+String(c).padStart(2,"0"); if(c===ch) o.selected=true;
+      sel.appendChild(o);
     }
   }
 
+  // ---------- 그리기 ---------- //
   function render(msg,bad){
     for(const [name,,,get] of ROWS){
       const v=get(), row=$("row-"+name);
       for(let i=0;i<N;i++){                          // i=0 이 ch15 (왼쪽이 상위비트)
         const c=N-1-i, on=(v>>c)&1;
         const e=row.children[i];
-        e.className="bit"+(on?" on":""); e.textContent=on?"1":"";
+        e.className="bit"+(on?" on":"")+(c===ch?" sel":"");
+        e.textContent=on?"1":"";
       }
     }
     for(let i=0;i<4;i++){
       const e=$("fs"+i);
-      e.className = (i===s.st) ? "act" : (s.st>i || (s.st===0&&s.ck>0&&i<4&&plane[T-1]!==null)) ? "done" : "";
+      e.className=(i===s.st)?"act":(s.st>i||(s.st===0&&plane[T-1]!==null))?"done":"";
     }
-    $("rCk").textContent=s.ck;
-    $("rSt").textContent=S[s.st];
-    $("rFc").textContent=(s.st===2? s.fc+" / "+(FC-1) : "—");
-    $("rCn").textContent=s.cnt;
-    const bit=(id,v,cls)=>{const e=$(id); e.textContent=v?"1":"0"; e.className="v "+(v?(cls||"hi"):"lo");};
-    bit("rPd",s.pending); bit("rOv",s.out_valid);
-    bit("rBs",s.st!==0);
-    const r=$("rRy"); r.textContent=(s.ready===undefined?1:s.ready); r.className="v "+((s.ready===undefined||s.ready)?"ok":"lo");
+    const put=(id,v,cls)=>{const e=$("v-"+id); if(e){e.textContent=v; e.className="v "+(cls||"");}};
+    const bit=(id,v)=>put(id, v?"1":"0", v?"hi":"lo");
+    put("ck", s.ck);
+    put("rst", s.rst_n?"1":"0", s.rst_n?"ok":"hi");
+    bit("st", s.start); put("fsm", SN[s.st]);
+    put("fc", s.st===2 ? s.fc+" / "+(FC-1) : "—", s.st===2?"":"lo");
+    put("cnt", s.cnt);
+    bit("fe", s.fe);
+    put("stk", "0x"+s.sticky.toString(16).toUpperCase().padStart(4,"0"), s.sticky?"":"lo");
+    bit("pnd", s.pending);
+    put("rdy", s.ready?"1":"0", s.ready?"ok":"lo");
+    bit("tk", s.take); bit("ov", s.out_valid); bit("bsy", s.busy);
 
-    for(let c=0;c<T;c++){
-      const v=plane[c], isPad=(c<PL||c>=PL+NT);
-      for(let r2=0;r2<N;r2++){
-        const e=$("pc"+r2+"_"+c);
+    for(let x=0;x<T;x++){
+      const v=plane[x], isPad=(x<PL||x>=PL+NT), nxt=plane.findIndex(z=>z===null)===x;
+      for(let y=0;y<N;y++){
         let cl="pcell";
-        if(v===null) cl+=isPad?" pad":"";
-        else if((v>>(N-1-r2))&1) cl+=" one";
-        if(v===null && plane.findIndex(x=>x===null)===c) cl+=" now";
-        e.className=cl;
+        if(v===null){ if(isPad) cl+=" pad"; if(nxt) cl+=" now"; }
+        else if((v>>(N-1-y))&1) cl+=" one";
+        $("pc"+y+"_"+x).className=cl;
       }
     }
     drawWave();
-    const n=$("note");
-    n.className="note"+(bad?" bad":"");
+    const n=$("note"); n.className="note"+(bad?" bad":"");
     if(msg) n.innerHTML=msg;
   }
 
   function drawWave(){
     const NS="http://www.w3.org/2000/svg", w=$("wave");
+    const X0=92, X1=930, RH=20, Y0=22, NCY=48;
+    const H=Y0+SIG.length*RH+18;
+    w.setAttribute("viewBox","0 0 960 "+H);
     while(w.firstChild) w.removeChild(w.firstChild);
     const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
-    const X0=68, X1=744, H=26, Y0=18, NCY=60;
-    const sig=[["cmp[3]","cmp"],["sync2[3]","s2"],["sticky[3]","stk"],["out_valid","ov"]];
     const dx=(X1-X0)/NCY;
+
     hist.forEach((h,i)=>{ if(h.fe) w.appendChild(el("line",
-      {class:"fe",x1:X0+i*dx,y1:Y0-6,x2:X0+i*dx,y2:Y0+sig.length*H})); });
-    sig.forEach(([lab,key],r)=>{
-      const yb=Y0+r*H+18, yt=yb-13;
-      const t=el("text",{class:"lab",x:X0-8,y:yb-2,"text-anchor":"end"}); t.textContent=lab;
-      w.appendChild(t);
+      {class:"fe",x1:X0+i*dx,y1:Y0-6,x2:X0+i*dx,y2:Y0+SIG.length*RH})); });
+    if(hist.length) w.appendChild(el("line",
+      {class:"now",x1:X0+(hist.length-1)*dx,y1:Y0-6,x2:X0+(hist.length-1)*dx,y2:Y0+SIG.length*RH}));
+
+    SIG.forEach(([lab,key,cls],r)=>{
+      const yb=Y0+r*RH+15, yt=yb-11;
+      const nm=lab.replace("[]","["+ch+"]").replace("[0]","["+ch+"]");
+      const t=el("text",{class:"lab",x:X0-8,y:yb-1,"text-anchor":"end"});
+      t.textContent=nm; w.appendChild(t);
       w.appendChild(el("line",{class:"ax",x1:X0,y1:yb,x2:X1,y2:yb}));
-      if(hist.length<2) return;
-      let d="", py=null;
-      hist.forEach((h,i)=>{
-        const x=X0+i*dx, y=h[key]?yt:yb;
-        d += (i===0) ? `M${x} ${y}` : (py!==y ? ` L${x} ${py} L${x} ${y}` : ` L${x} ${y}`);
-        py=y;
-      });
-      w.appendChild(el("path",{class:"tr "+key,d}));
+      if(!hist.length) return;
+      let d="";
+      if(key==="clk"){                               // 한 칸 = 한 클럭: 반씩 나눠 그린다
+        hist.forEach((h,i)=>{
+          const x=X0+i*dx, xm=x+dx/2;
+          d += (i===0?`M${x} ${yb}`:``)+` L${x} ${yb} L${x} ${yt} L${xm} ${yt} L${xm} ${yb}`;
+        });
+      } else {
+        let py=null;
+        hist.forEach((h,i)=>{
+          const x=X0+i*dx, y=h[key]?yt:yb;
+          d += (i===0)?`M${x} ${y}`:(py!==y?` L${x} ${py} L${x} ${y}`:` L${x} ${y}`);
+          py=y;
+        });
+      }
+      w.appendChild(el("path",{class:"tr "+cls,d}));
     });
-    const cap=el("text",{class:"lab",x:X0,y:Y0+sig.length*H+14});
-    cap.textContent="ch03 한 가닥 · 점선 = frame_edge · 최근 "+NCY+"클럭";
+    const cap=el("text",{class:"grp",x:X0,y:Y0+SIG.length*RH+12});
+    cap.textContent="벡터 신호는 ch"+String(ch).padStart(2,"0")+" 한 가닥만 · 붉은 점선 = frame_edge · 실선 = 현재 클럭 · 최근 "+NCY+"클럭";
     w.appendChild(cap);
   }
 
   function narrate(r){
     if(viol) return ["<b>실시간 위반.</b> 창이 닫혔는데(<code>frame_edge</code>) 앞 프레임이 "+
-      "아직 안 나갔다(<code>pending=1</code>). 실제 RTL 은 여기서 "+
-      "<code>KWS_ASSERT</code> 로 죽는다 — 안 죽이면 프레임이 조용히 덮인다.", true];
+      "아직 안 나갔다(<code>pending=1</code>). 실제 RTL 은 여기서 <code>KWS_ASSERT</code> 로 "+
+      "죽는다 — 안 죽이면 프레임이 조용히 덮인다.", true];
+    if(!s.rst_n) return ["<code>rst_n=0</code>: 모든 레지스터가 초기값이다. "+
+      "<b>비동기 리셋</b>이라 클럭과 무관하게 걸린다.",0];
+    if(s.start) return ["<code>start</code> 가 떴다. <code>sticky</code> 를 지우고 "+
+      "<code>S_PADL</code> 로 간다. <b>한 클럭짜리 펄스</b>다.",0];
     if(s.st===0 && plane[T-1]!==null)
       return ["평면 "+T+"장이 다 찼다. <code>busy</code> 가 내려가고 <code>S_IDLE</code> 로 "+
               "돌아왔다. <b>이 모듈은 원샷이다</b> — 연속 동작은 이 위에 링 버퍼가 필요하다.",0];
-    if(s.st===1) return ["<b>S_PADL</b>: 왼쪽 패딩을 내보내는 중. 전 채널 0(= −1)이고, "+
-      "<b>시간이 걸리지 않는다</b> — 악수가 되는 대로 곧바로 나간다.",0];
-    if(s.st===3) return ["<b>S_PADR</b>: 오른쪽 패딩. 여기서도 <code>fc</code> 는 안 돈다.",0];
-    if(r.frame_edge) return ["<b>창이 닫혔다.</b> <code>held ← sticky | sync2</code> 로 퍼내고 "+
+    if(s.st===1) return ["<b>S_PADL</b>: 왼쪽 패딩. 전 채널 0(= −1)이고 <code>fc</code> 는 "+
+      "돌지 않는다 — <b>패딩에는 시간이 없다.</b>",0];
+    if(s.st===3) return ["<b>S_PADR</b>: 오른쪽 패딩. 여기서도 <code>fc</code> 는 멈춰 있다.",0];
+    if(r.fe) return ["<b>창이 닫혔다.</b> <code>held ← sticky | sync2</code> 로 퍼내고 "+
       "<code>sticky</code> 를 0 으로 지운다. 경계 사이클도 닫히는 창 몫이라 "+
       "<code>sync2</code> 를 한 번 더 OR 한다.",0];
     if(r.take) return ["<b>악수 성립</b> (<code>pending &amp;&amp; out_ready</code>). 프레임이 "+
-      "<code>out_frame</code> 으로 나가고 <code>cnt</code> 가 하나 오른다.",0];
+      "나가고 <code>cnt</code> 가 오른다. <code>out_valid</code> 는 출력 레지스터라 "+
+      "<b>한 클럭 뒤</b>에 뜬다.",0];
     if(s.st===2) return ["<b>S_RUN</b>: <code>fc</code> 가 도는 동안 <code>sticky</code> 가 "+
       "<code>sync2</code> 를 계속 OR 한다. <b>한 번 선 비트는 창이 끝날 때까지 안 내려간다.</b>",0];
-    return ["", 0];
+    return ["",0];
   }
 
   function one(){ const r=step(); const [m,bad]=narrate(r); render(m,bad); if(viol) pause(); }
@@ -568,7 +734,7 @@ end</pre>
   function tick(ts){
     if(!playing) return;
     if(!lastTs) lastTs=ts;
-    acc += (ts-lastTs)*(+$("spd").value)/90; lastTs=ts;
+    acc += (ts-lastTs)*(+$("spd").value)/140; lastTs=ts;
     while(acc>=1){ acc--; one(); if(!playing) return; }
     if(s.st===0 && plane[T-1]!==null){ pause(); return; }
     raf=requestAnimationFrame(tick);
@@ -577,11 +743,15 @@ end</pre>
   $("run").onclick=()=>playing?pause():play();
   $("cyc").onclick=()=>{pause(); one();};
   $("frm").onclick=()=>{pause(); const c0=s.cnt, st0=s.st;
-    for(let i=0;i<FC*3+4;i++){ one(); if(viol) break; if(s.cnt!==c0||s.st!==st0) break; }};
+    for(let i=0;i<FC*3+6;i++){ one(); if(viol) break; if(s.cnt!==c0||s.st!==st0) break; }};
   $("rst").onclick=reset;
   $("slow").onclick=e=>{slow=!slow; e.target.className="b"+(slow?" on":"");
     e.target.textContent="소비자를 창보다 느리게: "+(slow?"켜짐":"꺼짐");};
+  $("inv").onclick=e=>{inv=!inv; e.target.className="b"+(inv?" on":"");
+    e.target.textContent="CMP_INVERT: "+(inv?1:0);
+    const p=$("pinv"); if(p) p.textContent=inv?1:0; render();};
+  $("chsel").onchange=e=>{ch=+e.target.value; hist=[]; render();};
 
-  buildStage(); buildFsm(); buildPlane(); reset();
+  build(); reset();
 })();
 </script>
