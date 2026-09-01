@@ -113,6 +113,34 @@ svg{display:block; min-width:940px; width:100%; height:auto}
 .note{padding:11px 14px; border-top:1px solid var(--rule); font-size:13.5px; color:var(--dim); min-height:44px}
 .note b{color:var(--ink); font-weight:600}
 
+/* ---- 경계 규약 두 칸 ---- */
+.x-two{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px}
+.x-side{background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:16px 18px}
+.x-side h3{
+  margin:0 0 12px; font-size:12px; letter-spacing:.13em; text-transform:uppercase;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-weight:600;
+}
+.x-an{border-top:2px solid var(--analog)} .x-an h3{color:var(--analog)}
+.x-di{border-top:2px solid var(--digital)} .x-di h3{color:var(--digital)}
+.x-side ul{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:11px}
+.x-side li{display:flex; flex-direction:column; gap:2px; font-size:14px}
+.x-side li b{font-weight:600}
+.x-side li span{color:var(--dim); font-size:13px; line-height:1.5}
+.x-open{color:var(--warn); font-weight:600}
+.x-lab{font-size:12.5px; color:var(--dim)}
+#ph-sl{width:180px; accent-color:var(--live)}
+
+/* ---- 파형 ---- */
+#wires .grid{stroke:var(--digital); stroke-width:1; opacity:.55}
+#wires .gfill{fill:var(--digital-bg); opacity:.45}
+#wires .base{stroke:var(--rule); stroke-width:1}
+#wires .pulse{fill:var(--analog); opacity:.9}
+#wires .pulse.cut{fill:var(--live)}
+#wires .cl{font-family:"IBM Plex Mono",monospace; font-size:9px; fill:var(--faint)}
+#wires .bit{font-family:"IBM Plex Mono",monospace; font-size:9.5px; font-weight:600}
+#wires .bit.one{fill:var(--digital)} #wires .bit.zero{fill:var(--faint)}
+#wires .hdr{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--dim)}
+
 /* svg bits */
 .blk rect{fill:var(--card); stroke:var(--rule); stroke-width:1.5; rx:3}
 .blk.on rect{stroke:var(--live); stroke-width:2.5; fill:var(--live-glow)}
@@ -258,6 +286,61 @@ report_timing_summary
 </section>
 
 <section>
+  <h2>아날로그와 디지털은 대화하지 않는다</h2>
+  <p class="sub">
+    "통신을 어떻게 하는가"가 감이 안 잡히는 이유는, <b>통신이 없기 때문</b>이다.
+    버스도 핸드셰이크도 패킷도 없고, FPGA 가 아날로그로 보내는 신호는 한 가닥도 없다.
+    16가닥이 각각 높거나 낮은 전압을 계속 유지할 뿐이고, FPGA 는 그냥 쳐다본다.
+  </p>
+
+  <div class="x-two">
+    <div class="x-side x-an">
+      <h3>경계를 넘는 것</h3>
+      <ul>
+        <li><b>전압 규약</b><span>0–1.8 V 스윙 → <code>LVCMOS18</code>. VADJ 를 1.8 V 로 내려 맞춘다</span></li>
+        <li><b>극성 규약</b><span><code>cmp[k]=1</code> ⟺ ch k 에 에너지 있음 (ICD §3)</span></li>
+        <li><b>가닥 ↔ ch 매핑</b><span>동료의 배선. <b class="x-open">아직 안 왔다</b></span></li>
+      </ul>
+    </div>
+    <div class="x-side x-di">
+      <h3>넘지 않는 것</h3>
+      <ul>
+        <li><b>클럭</b><span>공유하지 않는다. 아날로그는 프레임이 뭔지 모른다</span></li>
+        <li><b>FPGA → 아날로그 신호</b><span>없음. 아날로그는 자유 구동 (ICD §2)</span></li>
+        <li><b>아날로그 파라미터</b><span>f_c · Q · τ · 임계값 · 이득 — 전부 비교기 왼쪽에서 소진</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="sub" style="margin-top:22px">
+    시간축이 공유되지 않는다는 게 핵심이다. <b>프레임 경계는 FPGA 가 자기 클럭으로
+    혼자 정한다.</b> 그래도 되는 이유는 축약 규칙이 "언제 울렸나"가 아니라
+    <b>"한 번이라도 울렸나"</b>라서다 — 아래에서 격자 위상을 밀어 보면 결과가
+    거의 그대로인 것이 보인다. 만약 샘플 타이밍이 필요했다면 클럭을 공유해야 했고,
+    그러면 아날로그 기판 위로 디지털 클럭이 올라갔을 것이다.
+  </p>
+
+  <div class="console">
+    <div class="bar">
+      <span class="x-lab">프레임 격자 위상</span>
+      <input id="ph-sl" type="range" min="0" max="99" value="0" step="1" aria-label="프레임 격자 위상">
+      <button class="b" id="ph-re">다시 뽑기</button>
+    </div>
+    <div class="svgwrap"><svg id="wires" viewBox="0 0 940 320" role="img"
+      aria-label="16채널 비교기 펄스 위에 10 ms 프레임 격자가 겹쳐진 그림"></svg></div>
+    <div class="readout">
+      <div class="rd"><div class="k">위상</div><div class="v" id="ph-v">0.0 ms</div></div>
+      <div class="rd"><div class="k">1 인 비트</div><div class="v" id="ph-o">—</div></div>
+      <div class="rd"><div class="k">두 창에 걸친 펄스</div><div class="v" id="ph-d">0</div></div>
+      <div class="rd"><div class="k">창</div><div class="v" id="ph-n">16</div></div>
+    </div>
+    <div class="note" id="ph-note">
+      펄스 위치는 고정이고 <b>격자만</b> 움직인다. 뒤집히는 비트는 경계에 걸친 펄스뿐이다.
+    </div>
+  </div>
+</section>
+
+<section>
   <h2>연구실 실습시간 최소화</h2>
   <p class="sub">
     연구실에서만 할 수 있는 일은 <b>파트 라이선스가 필요한 합성</b>과 <b>보드에 굽기</b> 둘뿐이다.
@@ -273,18 +356,22 @@ report_timing_summary
         <li><b>임계값 확정 → 동료 SPICE → 재학습</b><span class="t">가중치가 정해져야 <code>.hex</code> 가 정해진다</span></li>
         <li><b><code>export</code> 재실행</b><span class="t">최종 태그로 <code>.hex</code> · <code>paths.vh</code> · 골든 벡터 생성</span></li>
         <li><b>Icarus 12개 테스트벤치 재통과</b><span class="t">새 가중치로도 골든 벡터가 맞는지</span></li>
+        <li><b>VADJ 뱅크 용도 확인</b><span class="t">1.8 V 로 내리면 뱅크 12/13/16/17/18 이 같이 내려간다. 우리가 쓰는 게 없는지 (bank 12 = SDIO). 문서만 보면 된다</span></li>
+        <li><b>동료에게 핀 ↔ ch 매핑 요청</b><span class="t">UG810 은 FMC 핀 ↔ FPGA 핀만 답한다. ch 번호는 배선이라 문서로 받아야 한다</span></li>
       </ol>
-      <div class="est">→ 연구실 도착 시점에 남는 것: 파트 하나</div>
+      <div class="est">→ 연구실 도착 시점에 남는 것: 파트 하나 + 전원 설정</div>
     </div>
     <div class="col there">
       <h3>연구실에서 할 것</h3>
-      <div class="when">Vivado Enterprise · 보드</div>
+      <div class="when">Vivado Enterprise · 보드 · TI Fusion</div>
       <ol>
+        <li><b>J65 점퍼 제거 → UCD9248 을 1.8 V 로</b><span class="t">TI Fusion Digital Power Designer GUI. FPGA 를 PMBus 마스터로 만드는 쪽은 피한다</span></li>
+        <li><b>VADJ 실측</b><span class="t">FMC 커넥터에서 1.8 V 가 나오는지. 여기가 아니면 뒤가 전부 헛수고다</span></li>
         <li><b><code>build.tcl</code> 한 줄</b><span class="t">파트만 XC7K325T 로. 첫 실행은 문법 조정이 있을 수 있다</span></li>
         <li><b>로그 세 줄 확인</b><span class="t">BRAM 셀 개수 · Critical Warning · WNS</span></li>
-        <li><b>핀 배치 작성</b><span class="t">비교기 전압 레벨이 정해진 뒤. <code>.xdc</code> 2 절만</span></li>
-        <li><b><code>-impl</code> 로 배치배선 · 비트스트림</b></li>
-        <li><b>보드에 굽고 <code>tb_top</code> 벡터로 대조</b><span class="t">같은 입력 <code>.hex</code> 가 같은 클래스를 내는지</span></li>
+        <li><b>핀 배치 작성 → <code>-impl</code></b><span class="t">매핑이 온 뒤. <code>.xdc</code> 2 절만</span></li>
+        <li><b>아날로그 없이 먼저 굽기</b><span class="t"><code>tb_top</code> 벡터를 내부에서 먹여 같은 클래스가 나오는지. 여기까지 아날로그는 안 꽂는다</span></li>
+        <li><b>그 다음에 16가닥 연결</b><span class="t">브레이크아웃 카드 → 케이블. 채널 하나씩 두드려 매핑 검증</span></li>
       </ol>
       <div class="est">→ 1~2 가 깨끗하면 나머지는 절차다</div>
     </div>
@@ -294,10 +381,15 @@ report_timing_summary
     <code>.hex</code> 가 바뀔 때 전부 다시 해야 한다. 반대로 RTL 구조 문제는 가중치와
     무관하므로 <b>지금 yosys 로 털어낼 수 있다</b> — 그 둘을 분리하면 연구실에서
     <code>build.tcl</code> 한 번으로 끝난다.
+    <br><br>
+    브링업도 같은 이유로 순서가 있다. <b>모르는 쪽을 한 번에 하나씩만 늘린다</b> —
+    아날로그를 꽂기 전에 FPGA 가 골든 벡터를 통과하는 것을 먼저 보고, 그 다음에
+    16가닥을 붙인다. 둘을 같이 켜면 틀렸을 때 어느 쪽인지 알 방법이 없고,
+    <b>핀 매핑이 섞인 경우는 증상이 "정확도가 좀 낮다"뿐이라 특히 그렇다</b>.
   </div>
 </section>
 
-<footer>rtl/kws_top.v 시퀀서 · rtl/build.tcl · rtl/constraints/kws_top.xdc · 2026-08-29</footer>
+<footer>rtl/kws_top.v 시퀀서 · rtl/kws_frame_ctrl.v · rtl/build.tcl · rtl/constraints/kws_top.xdc · docs/ICD.md 7.1 · UG810 Table 1-3 · 2026-09-01</footer>
 </div>
 
 <script>
@@ -480,4 +572,106 @@ document.getElementById("step").onclick=()=>{
   idx++; prog=1; render();
 };
 reset();
+</script>
+
+<script>
+// 경계 데모: 펄스는 고정, 격자만 움직인다.
+//
+// 발화율은 transfer_v4 실측(analog/AFE_board/transfer_v4)의 채널별 값이고, 그 확률이
+// 나오도록 포아송 세기를 역산한다: P(창에 1개 이상) = 1 - exp(-λ·W). 프레임마다 독립
+// 동전을 던지면 격자를 밀어도 아무 일이 없어서 데모가 거짓말이 된다 -- 절대 시각에
+// 펄스를 놓아야 경계에 걸리는 일이 실제로 생긴다.
+//
+// 보여주려는 불변량은 "같은 인덱스의 비트가 안 바뀐다"가 아니다. 그건 틀렸다:
+// 격자를 밀면 어느 펄스가 어느 창에 묶이는지가 실제로 바뀐다. 불변인 것은 **발화율**
+// 이고, 놓치는 펄스가 없다는 것이다. 그게 클럭을 공유하지 않아도 되는 이유다.
+(function(){
+  const FIRE=[.125,.155,.196,.221,.191,.207,.220,.217,.201,.200,.168,.160,.196,.147,.103,.034];
+  const NCH=16, W=10, NF=16, SPAN=NF*W;          // ms
+  const X0=54, X1=830, RH=15, Y0=44;
+  const svg=document.getElementById("wires");
+  if(!svg) return;
+  const NS="http://www.w3.org/2000/svg";
+  const sl=document.getElementById("ph-sl");
+  const el=(tag,a)=>{const e=document.createElementNS(NS,tag);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const sx=ms=>X0+(ms/SPAN)*(X1-X0);
+  const put=id=>document.getElementById(id);
+
+  let seed=7, pulses=[];
+  const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff;};
+
+  function draw(){
+    pulses=[];
+    for(let c=0;c<NCH;c++){
+      const lam=-Math.log(1-FIRE[c])/W;           // 펄스/ms
+      const row=[]; let t=-Math.log(1-rnd())/lam;
+      while(t<SPAN){
+        row.push([t, Math.min(0.25+rnd()*1.1, SPAN-t)]);   // 폭 0.25~1.35 ms
+        t += -Math.log(1-rnd())/lam;
+      }
+      pulses.push(row);
+    }
+    render();
+  }
+
+  function render(){
+    const p=(+sl.value)/10;                       // 0.0 ~ 9.9 ms
+    const nf=Math.floor((SPAN-p)/W);              // 그림 안에 온전히 들어가는 창
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+
+    for(let f=0;f<nf;f++){                        // 격자 = FPGA 가 자기 클럭으로 정한 창
+      const a=sx(p+f*W), b=sx(p+(f+1)*W);
+      if(f%2===0) svg.appendChild(el("rect",{class:"gfill",x:a,y:Y0-8,width:b-a,height:NCH*RH+10}));
+      svg.appendChild(el("line",{class:"grid",x1:a,y1:Y0-8,x2:a,y2:Y0+NCH*RH+2}));
+    }
+    svg.appendChild(el("line",{class:"grid",x1:sx(p+nf*W),y1:Y0-8,x2:sx(p+nf*W),y2:Y0+NCH*RH+2}));
+
+    let h=el("text",{class:"hdr",x:X0,y:Y0-16});
+    h.textContent="비교기 출력 — 아날로그, 자유 구동"; svg.appendChild(h);
+    h=el("text",{class:"hdr",x:X1+16,y:Y0-16});
+    h.textContent="프레임 비트"; svg.appendChild(h);
+
+    let cut=0, ones=0;
+    for(let c=0;c<NCH;c++){
+      const y=Y0+c*RH;
+      const lb=el("text",{class:"cl",x:X0-8,y:y+9,"text-anchor":"end"});
+      lb.textContent="ch"+String(c).padStart(2,"0"); svg.appendChild(lb);
+      svg.appendChild(el("line",{class:"base",x1:X0,y1:y+11,x2:X1,y2:y+11}));
+
+      for(const [s,w] of pulses[c]){
+        const f0=Math.floor((s-p)/W), f1=Math.floor((s+w-p)/W);
+        const straddles = f0!==f1;                // 두 창에 1 을 세운다 -- 유일한 대가
+        if(straddles && f1>=0 && f0<nf) cut++;
+        svg.appendChild(el("rect",{class:"pulse"+(straddles?" cut":""),
+          x:sx(s), y:y+2, width:Math.max(1.2,sx(s+w)-sx(s)), height:9, rx:1}));
+      }
+      for(let f=0;f<nf;f++){
+        const a=p+f*W, b=a+W;
+        const v = pulses[c].some(([s,w])=>s<b && s+w>a) ? 1 : 0;
+        ones+=v;
+        const tx=el("text",{class:"bit "+(v?"one":"zero"),
+          x:X1+20+f*6.6, y:y+10, "text-anchor":"middle"});
+        tx.textContent=v?"1":"0"; svg.appendChild(tx);
+      }
+    }
+
+    const pct=(100*ones/(NCH*nf)).toFixed(1);
+    put("ph-v").textContent=p.toFixed(1)+" ms";
+    put("ph-o").textContent=pct+"%";
+    put("ph-n").textContent=nf;
+    const d=put("ph-d"); d.textContent=cut; d.className="v"+(cut?" hi":" lo");
+    put("ph-note").innerHTML = p===0
+      ? "펄스 위치는 고정이고 <b>격자만</b> 움직인다. 슬라이더를 밀어 보라."
+      : "격자를 <b>"+p.toFixed(1)+" ms</b> 밀어도 발화율은 <b>"+pct+"%</b>로 붙어 있다. "+
+        "어느 펄스가 어느 창에 묶이는지는 바뀌지만, sticky OR 은 <b>언제 울렸는지를 묻지 "+
+        "않으므로</b> 그래도 된다. 대가는 두 창에 걸쳐 1 을 두 번 세우는 펄스 <b>"+cut+
+        "개</b>(주황)뿐이고 <b>통째로 놓치는 펄스는 없다</b> — 실제 격자는 끊기지 않으므로 "+
+        "모든 펄스가 어느 창엔가 들어간다. 샘플링이었다면 창 사이에 떨어진 펄스를 잃고, "+
+        "그래서 클럭을 공유해야 했을 것이다.";
+  }
+
+  sl.addEventListener("input",render);
+  put("ph-re").onclick=()=>{seed=(seed*7919+13)&0x7fffffff; sl.value=0; draw();};
+  draw();
+})();
 </script>

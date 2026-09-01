@@ -1,0 +1,587 @@
+<title>kws_frame_ctrl 사이클 실행기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;450;600&display=swap">
+
+<style>
+:root{
+  --paper:#EEF1F4; --card:#FFFFFF; --sunk:#E4E9ED;
+  --ink:#141A21; --dim:#5C6A77; --faint:#8A97A3;
+  --rule:#CFD7DE;
+  --analog:#A85B2A; --analog-bg:#F7EDE5;
+  --digital:#116B66; --digital-bg:#E1EFED;
+  --live:#C2410C; --live-glow:rgba(194,65,12,.16);
+  --mem:#5B4B8A; --mem-bg:#EDEAF5;
+  --ok:#3F7A45; --warn:#9E3A31; --warn-bg:#FBECEA;
+  --off:#D8E0E6;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1216; --card:#161D23; --sunk:#11171C;
+    --ink:#E6ECF1; --dim:#93A1AD; --faint:#67757F;
+    --rule:#28323A;
+    --analog:#E09155; --analog-bg:#291C13;
+    --digital:#48B7AE; --digital-bg:#0E2523;
+    --live:#F97D3C; --live-glow:rgba(249,125,60,.2);
+    --mem:#A99AD6; --mem-bg:#1F1A2E;
+    --ok:#6FB076; --warn:#E0796D; --warn-bg:#2A1614;
+    --off:#222B32;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1216; --card:#161D23; --sunk:#11171C;
+  --ink:#E6ECF1; --dim:#93A1AD; --faint:#67757F;
+  --rule:#28323A;
+  --analog:#E09155; --analog-bg:#291C13;
+  --digital:#48B7AE; --digital-bg:#0E2523;
+  --live:#F97D3C; --live-glow:rgba(249,125,60,.2);
+  --mem:#A99AD6; --mem-bg:#1F1A2E;
+  --ok:#6FB076; --warn:#E0796D; --warn-bg:#2A1614;
+  --off:#222B32;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  font-size:15px; line-height:1.6;
+}
+.wrap{max-width:1120px; margin:0 auto; padding:40px 20px 72px}
+code,.m{font-family:"IBM Plex Mono","IBM Plex Sans KR",ui-monospace,monospace}
+
+header{border-bottom:1px solid var(--rule); padding-bottom:22px; margin-bottom:30px}
+.eyebrow{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin:0 0 10px;
+}
+h1{font-size:clamp(26px,4.4vw,38px); line-height:1.12; margin:0 0 12px; font-weight:700; letter-spacing:-.02em; text-wrap:balance}
+.lede{max-width:66ch; color:var(--dim); margin:0}
+.lede b{color:var(--ink); font-weight:600}
+
+section{margin-top:44px}
+h2{font-size:20px; margin:0 0 6px; font-weight:700; letter-spacing:-.01em; text-wrap:balance}
+.sub{color:var(--dim); margin:0 0 18px; max-width:66ch; font-size:14.5px}
+
+/* ---- console ---- */
+.console{background:var(--card); border:1px solid var(--rule); border-radius:4px; overflow:hidden}
+.bar{
+  display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+  padding:11px 14px; border-bottom:1px solid var(--rule); background:var(--sunk);
+}
+button.b{
+  font:inherit; font-size:13px; font-weight:600; cursor:pointer;
+  padding:6px 13px; border-radius:3px; border:1px solid var(--rule);
+  background:var(--card); color:var(--ink); transition:.14s;
+}
+button.b:hover{border-color:var(--dim)}
+button.b:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+button.b.pri{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+button.b.on{background:var(--warn); color:#fff; border-color:var(--warn)}
+.grow{margin-left:auto; display:flex; align-items:center; gap:8px; color:var(--dim); font-size:12.5px}
+.grow input[type=range]{width:110px; accent-color:var(--live)}
+
+/* FSM 막대 */
+.fsm{display:flex; border-bottom:1px solid var(--rule); background:var(--card); overflow-x:auto}
+.fsm div{
+  flex:1 0 auto; min-width:112px; padding:9px 12px; text-align:center;
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11.5px;
+  color:var(--faint); border-right:1px solid var(--rule); white-space:nowrap; transition:.15s;
+}
+.fsm div:last-child{border-right:none}
+.fsm div b{display:block; font-size:13px; font-weight:600}
+.fsm div.done{color:var(--dim)} .fsm div.done b{color:var(--ok)}
+.fsm div.act{background:var(--live-glow); color:var(--live)} .fsm div.act b{color:var(--live)}
+
+.stagewrap{overflow-x:auto; background:var(--card); padding:18px 16px 6px}
+.stage{display:grid; grid-template-columns:104px 1fr; gap:6px 14px; align-items:center; min-width:640px}
+.stage .rl{
+  font-family:"IBM Plex Mono",monospace; font-size:11.5px; text-align:right;
+  color:var(--dim); white-space:nowrap;
+}
+.stage .rl s{display:block; font-size:9.5px; color:var(--faint); text-decoration:none}
+.bits{display:flex; gap:3px}
+.bit{
+  width:20px; height:20px; border-radius:2px; background:var(--off);
+  display:grid; place-items:center; font-family:"IBM Plex Mono",monospace;
+  /* 빠른 재생에서는 클럭 간격이 10 ms 아래로 내려간다. 페이드가 그보다 길면
+     비트가 늘 중간색에 머물러 번져 보인다. */
+  font-size:10px; color:var(--faint); transition:.04s;
+}
+.bit.on{color:#fff}
+.r-cmp .bit.on{background:var(--analog)}
+.r-s1 .bit.on,.r-s2 .bit.on{background:var(--dim)}
+.r-st .bit.on{background:var(--digital)}
+.r-hd .bit.on{background:var(--mem)}
+.r-ot .bit.on{background:var(--live)}
+.arrow{font-family:"IBM Plex Mono",monospace; color:var(--faint); font-size:11px; padding-left:2px}
+
+.readout{
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr));
+  border-top:1px solid var(--rule); background:var(--sunk);
+}
+.rd{padding:9px 13px; border-right:1px solid var(--rule)}
+.rd:last-child{border-right:none}
+.rd .k{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint)}
+.rd .v{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:14.5px;
+  font-weight:600; font-variant-numeric:tabular-nums; margin-top:1px;
+}
+.rd .v.hi{color:var(--live)} .rd .v.lo{color:var(--faint)} .rd .v.ok{color:var(--ok)}
+.note{padding:11px 14px; border-top:1px solid var(--rule); font-size:13.5px; color:var(--dim); min-height:46px}
+.note b{color:var(--ink); font-weight:600}
+.note.bad{background:var(--warn-bg)} .note.bad b{color:var(--warn)}
+
+/* 파형 */
+.wavewrap{overflow-x:auto; border-top:1px solid var(--rule); background:var(--card)}
+#wave{display:block; min-width:720px; width:100%; height:auto}
+#wave .lab{font-family:"IBM Plex Mono",monospace; font-size:9.5px; fill:var(--dim)}
+#wave .tr{fill:none; stroke-width:1.6}
+#wave .tr.cmp{stroke:var(--analog)} #wave .tr.s2{stroke:var(--dim)}
+#wave .tr.stk{stroke:var(--digital)} #wave .tr.ov{stroke:var(--live)}
+#wave .fe{stroke:var(--live); stroke-width:1; stroke-dasharray:3 3; opacity:.6}
+#wave .ax{stroke:var(--rule); stroke-width:1}
+
+/* 출력 평면 */
+.planewrap{overflow-x:auto; border-top:1px solid var(--rule); background:var(--card); padding:14px 16px}
+.plane{display:grid; gap:2px; min-width:520px}
+.pcell{width:100%; aspect-ratio:1; border-radius:1px; background:var(--off)}
+.pcell.one{background:var(--digital)}
+.pcell.pad{background:transparent; border:1px dashed var(--rule)}
+.pcell.now{outline:2px solid var(--live); outline-offset:1px}
+
+/* 코드 대응 */
+.pairs{display:grid; gap:10px}
+.pair{
+  display:grid; grid-template-columns:minmax(280px,1.1fr) 1fr; gap:0;
+  background:var(--card); border:1px solid var(--rule); border-radius:4px; overflow:hidden;
+}
+.pair pre{
+  margin:0; padding:13px 15px; background:var(--sunk); overflow-x:auto;
+  font-family:"IBM Plex Mono",monospace; font-size:12px; line-height:1.65; color:var(--ink);
+}
+.pair .ex{padding:13px 16px; font-size:13.5px; color:var(--dim)}
+.pair .ex b{color:var(--ink); font-weight:600}
+.pair .ex h3{margin:0 0 4px; font-size:13.5px; font-weight:600; color:var(--ink)}
+@media(max-width:720px){.pair{grid-template-columns:1fr}}
+
+.cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(268px,1fr)); gap:12px}
+.cd{background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:15px 17px; font-size:13.5px; color:var(--dim)}
+.cd h3{margin:0 0 6px; font-size:14px; font-weight:600; color:var(--ink)}
+.cd b{color:var(--ink); font-weight:600}
+.cd.warn{border-top:2px solid var(--warn)} .cd.warn h3{color:var(--warn)}
+
+.flag{margin-top:14px; padding:13px 16px; border-radius:4px; background:var(--analog-bg); font-size:13.5px; color:var(--dim)}
+.flag b{color:var(--analog)}
+footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--rule); color:var(--faint); font-size:12px; font-family:"IBM Plex Mono",monospace}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">KWS-AFE-Digital · rtl/kws_frame_ctrl.v · 아날로그 경계</p>
+  <h1>kws_frame_ctrl 사이클 실행기</h1>
+  <p class="lede">
+    설계 전체에서 <b>비동기 신호를 만지는 모듈은 이것 하나뿐</b>이다. 왼쪽에는 클럭이
+    없는 비교기 16가닥이 있고, 오른쪽에는 완전히 동기화된 <code class="m">[16,128]</code>
+    텐서가 있다. 그 사이를 플립플롭 50개 남짓이 잇는다. 한 클럭씩 밟아 보자.
+  </p>
+</header>
+
+<section style="margin-top:32px">
+  <div class="console">
+    <div class="bar">
+      <button class="b pri" id="run">▶ 실행</button>
+      <button class="b" id="cyc">클럭 1</button>
+      <button class="b" id="frm">프레임 1</button>
+      <button class="b" id="rst">리셋</button>
+      <button class="b" id="slow" title="소비자가 9클럭에 한 번만 받는다 — 창(6클럭)보다 느리다">소비자를 창보다 느리게: 꺼짐</button>
+      <label class="grow">속도 <input type="range" id="spd" min="1" max="12" value="7"></label>
+    </div>
+
+    <div class="fsm" id="fsm"></div>
+
+    <div class="stagewrap">
+      <div class="stage" id="stage"></div>
+    </div>
+
+    <div class="readout">
+      <div class="rd"><div class="k">클럭</div><div class="v" id="rCk">0</div></div>
+      <div class="rd"><div class="k">st</div><div class="v" id="rSt">S_IDLE</div></div>
+      <div class="rd"><div class="k">fc</div><div class="v" id="rFc">0</div></div>
+      <div class="rd"><div class="k">cnt</div><div class="v" id="rCn">0</div></div>
+      <div class="rd"><div class="k">pending</div><div class="v lo" id="rPd">0</div></div>
+      <div class="rd"><div class="k">out_ready</div><div class="v" id="rRy">1</div></div>
+      <div class="rd"><div class="k">out_valid</div><div class="v lo" id="rOv">0</div></div>
+      <div class="rd"><div class="k">busy</div><div class="v lo" id="rBs">0</div></div>
+    </div>
+
+    <div class="wavewrap"><svg id="wave" viewBox="0 0 760 150" role="img"
+      aria-label="ch03 의 cmp, sync2, sticky, out_valid 파형"></svg></div>
+
+    <div class="planewrap"><div class="plane" id="plane"></div></div>
+    <div class="note" id="note">리셋 상태다. <b>실행</b>이나 <b>클럭 1</b>을 누르면 <code>start</code> 가 한 클럭 뜬다.</div>
+  </div>
+  <div class="flag">
+    <b>그림의 숫자는 줄여 놓았다.</b> 여기서는 <code>FRAME_CYCLES=6</code>,
+    <code>NATIVE_T=10</code>, <code>PAD_LEFT=PAD_RIGHT=3</code>, <code>T=16</code> 이다.
+    실제 값은 <code>1,000,000 / 100 / 14 / 128</code> — 100 MHz 에서 10 ms 프레임이라
+    프레임 하나가 백만 클럭이고 눈으로 볼 수가 없다. <code>rtl/tb/tb_frame_ctrl.v</code>
+    도 같은 이유로 <code>FRAME_CYCLES</code> 를 줄여서 돌린다. <b>구조는 그대로다.</b>
+  </div>
+</section>
+
+<section>
+  <h2>Verilog 한 줄이 그림에서 어디인가</h2>
+  <p class="sub">
+    네 덩어리뿐이다. 위 실행기에서 각 줄이 무엇을 움직이는지 대조해 보면 된다.
+  </p>
+  <div class="pairs">
+
+    <div class="pair">
+      <pre>(* ASYNC_REG = "TRUE" *) reg [15:0] sync1;
+(* ASYNC_REG = "TRUE" *) reg [15:0] sync2;
+
+always @(posedge clk or negedge rst_n)
+  if (!rst_n) begin
+    sync1 &lt;= 0;  sync2 &lt;= 0;
+  end else begin
+    sync1 &lt;= cmp_in;
+    sync2 &lt;= sync1;
+  end</pre>
+      <div class="ex">
+        <h3>1. 2단 동기화기</h3>
+        <p><code>cmp</code> 는 우리 클럭과 아무 관계가 없다. 클럭 에지 바로 그 순간에 값이
+        바뀌면 <code>sync1</code> 은 0 도 1 도 아닌 중간 전압에 걸릴 수 있다
+        (<b>메타스테이빌리티</b>). 한 클럭을 더 주면 그 사이 안정되고, <code>sync2</code>
+        는 깨끗한 값을 본다.</p>
+        <p><b>16채널이 한 줄인 이유:</b> 반복문이 아니라 <b>플립플롭 16개가 물리적으로
+        나란히</b> 있는 것이다. 서로 기다리지 않는다.</p>
+      </div>
+    </div>
+
+    <div class="pair">
+      <pre>always @(posedge clk or negedge rst_n)
+  if (!rst_n || start) sticky &lt;= 0;
+  else if (frame_edge) sticky &lt;= 0;
+  else if (st == S_RUN) sticky &lt;= sticky | sync2;</pre>
+      <div class="ex">
+        <h3>2. sticky OR — 이게 축약 규칙 <i>그 자체</i>다</h3>
+        <p>CLAUDE.md 2.8 은 "창 안에서 한 번이라도 1 이면 1"(<code>reduce = max</code>)
+        이라고 정한다. <code>{0,1}</code> 위에서 <b>max 는 정확히 OR</b> 이다. 그래서
+        여기엔 근사가 없다 — <b>래치가 곧 규칙이다.</b></p>
+        <p>지우는 시점이 <b>프레임 경계뿐</b>이라는 게 핵심이다. 창 중간에 지우면 그 앞의
+        펄스가 사라진다.</p>
+      </div>
+    </div>
+
+    <div class="pair">
+      <pre>wire frame_edge = (st == S_RUN) &amp;&amp; (fc == FC_LAST);
+
+S_RUN: begin
+  fc &lt;= (fc == FC_LAST) ? 0 : fc + 1;
+  if (frame_edge) begin
+    held    &lt;= sticky | sync2;
+    pending &lt;= 1'b1;
+  end
+  ...
+end</pre>
+      <div class="ex">
+        <h3>3. 프레임 타이머</h3>
+        <p><code>fc</code> 가 <code>FRAME_CYCLES</code> 를 세면 창이 닫힌다. 그때
+        <code>sticky</code> 를 <code>held</code> 로 퍼내고 <code>pending</code> 을 올린다.</p>
+        <p><b><code>sticky | sync2</code> 인 이유:</b> 경계 그 사이클도 닫히는 창에
+        속한다. <code>sticky</code> 만 쓰면 그 한 사이클을 잃고, 다음 창에 넣으면 두 번
+        세게 된다. 이렇게 하면 <b>모든 사이클이 정확히 한 창에</b> 들어간다.</p>
+      </div>
+    </div>
+
+    <div class="pair">
+      <pre>wire take = pending &amp;&amp; out_ready;
+
+if (take) begin
+  out_valid &lt;= 1'b1;
+  out_frame &lt;= held;
+  pending   &lt;= 1'b0;
+  cnt       &lt;= cnt + 1;
+end</pre>
+      <div class="ex">
+        <h3>4. 악수 (handshake)</h3>
+        <p><code>pending</code> 은 "내보낼 프레임이 있다", <code>out_ready</code> 는
+        "받을 수 있다". <b>둘 다 참인 사이클에만</b> 프레임이 건네진다. 소비자가 바쁘면
+        저절로 기다린다 — 흐름 제어를 따로 안 짜도 된다.</p>
+        <p>위 실행기의 <b>소비자 느리게</b> 를 켜 보면 이게 어떻게 깨지는지 볼 수 있다.</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>세 가지가 헷갈리기 쉽다</h2>
+  <div class="cards">
+    <div class="cd">
+      <h3>패딩에는 시간이 없다</h3>
+      <p>실프레임 100개만 <code>FRAME_CYCLES</code> 를 기다린다. 앞뒤 패딩 14개씩은
+      <b>악수가 되는 대로 곧바로</b> 나간다 — 시간축에 대응되는 게 없으니 기다릴 이유가
+      없다. 실행기에서 <code>S_PADL</code> 이 순식간에 지나가는 게 그래서다.</p>
+    </div>
+    <div class="cd">
+      <h3>패딩은 −1 이지 0 이 아니다</h3>
+      <p>모듈은 <code>{0,1}</code> 로 내보내고 아래쪽에서 <code>0 → −1</code> 로 매핑한다.
+      그래서 <b>0 인 워드가 곧 전 채널 −1</b> 이다. −1 은 빈칸이 아니라 <b>"이 대역에
+      에너지가 없다"는 유효한 관측</b> 이고, conv1 이 그 전제로 학습돼 있다. 중립값을
+      넣으면 학습한 적 없는 입력이 된다.</p>
+    </div>
+    <div class="cd warn">
+      <h3>창이 닫혔는데 앞 프레임이 안 나갔다면</h3>
+      <p><code>frame_edge &amp;&amp; pending</code> 이면 <b>네트워크가
+      <code>FRAME_CYCLES</code> 안에 못 끝냈다</b>는 뜻이다. 이 모듈의 잘못이 아니라
+      <b>시스템의 실시간 위반</b>이고, 안 잡으면 프레임이 조용히 덮인다. 그래서
+      <code>KWS_ASSERT</code> 가 여기서 죽는다.</p>
+    </div>
+  </div>
+</section>
+
+<footer>rtl/kws_frame_ctrl.v · rtl/tb/tb_frame_ctrl.v · docs/ICD.md §5 · CLAUDE.md §2.8 · 2026-09-01</footer>
+</div>
+
+<script>
+// kws_frame_ctrl.v 를 사이클 단위로 그대로 옮긴 모델.
+//
+// 논블로킹 대입 의미를 지키려고 현재 상태에서 next 를 전부 계산한 뒤 한 번에 커밋한다.
+// always 블록 안의 순서(뒤 대입이 앞을 덮는다)도 그대로 따랐다 -- S_RUN 에서 pending 은
+// take 가 0 으로, frame_edge 가 1 로, 마지막 take 가 다시 1 로 쓴다.
+(function(){
+  const N=16, FC=6, NT=10, PL=3, PR=3, T=PL+NT+PR;   // 그림용 축소값
+  const S=["S_IDLE","S_PADL","S_RUN","S_PADR"];
+  const $=id=>document.getElementById(id);
+
+  let s, hist, plane, slow=false, playing=false, raf=null, acc=0, lastTs=0, viol=false;
+  let pulse=new Array(N).fill(0);                    // 비교기 펄스 잔여 사이클
+
+  // 채널별 발화 성향 (transfer_v4 실측 경향: 저역·중역이 활발, 최고역이 조용)
+  const RATE=[.10,.13,.16,.18,.16,.17,.18,.18,.17,.17,.14,.13,.16,.12,.09,.03];
+  let seed=12345;
+  const rnd=()=>{seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff;};
+
+  function reset(){
+    s={ck:0, sync1:0, sync2:0, sticky:0, held:0, st:0, fc:0, cnt:0,
+       pending:0, out_valid:0, out_frame:0, cmp:0, start:1};
+    hist=[]; plane=new Array(T).fill(null); pulse=new Array(N).fill(0);
+    viol=false; seed=12345; pause(); render(
+      "리셋 상태다. <b>실행</b>이나 <b>클럭 1</b>을 누르면 <code>start</code> 가 한 클럭 뜬다.");
+  }
+
+  function driveCmp(){                                // 아날로그: 클럭과 무관하게 흔들린다
+    let v=0;
+    for(let c=0;c<N;c++){
+      if(pulse[c]>0) pulse[c]--;
+      else if(rnd() < RATE[c]/FC*1.6) pulse[c]=1+Math.floor(rnd()*2);
+      if(pulse[c]>0) v|=(1<<c);
+    }
+    return v;
+  }
+
+  function step(){
+    // 9 는 FRAME_CYCLES(6) 보다 커야 한다. 5 로 두면 창이 닫히기 전에 소비자가 매번
+    // 받아가서 pending 이 늘 비고, 위반이 재현되지 않는다 -- 느린 소비자 자체가 아니라
+    // **창보다 느린** 소비자가 문제라는 뜻이다.
+    const ready = slow ? (s.ck%9===0 ? 1 : 0) : 1;
+    const cmp = driveCmp();
+    const take = (s.pending && ready) ? 1 : 0;
+    const frame_edge = (s.st===2 && s.fc===FC-1) ? 1 : 0;
+    if(frame_edge && s.pending) viol=true;            // KWS_ASSERT 가 죽는 조건
+
+    const n={...s, cmp, out_valid:0};
+    n.sync1 = cmp;                                    // sync1 <= cmp_in
+    n.sync2 = s.sync1;                                // sync2 <= sync1
+
+    n.sticky = s.start ? 0 : frame_edge ? 0
+             : (s.st===2 ? (s.sticky | s.sync2) : s.sticky);
+
+    if(s.start){
+      n.st=1; n.fc=0; n.cnt=0; n.pending=1; n.held=0;
+    } else {
+      if(take){ n.out_valid=1; n.out_frame=s.held; n.pending=0; n.cnt=s.cnt+1; }
+      if(s.st===1){                                   // S_PADL
+        if(take){
+          if(s.cnt+1===PL){ n.st=2; n.cnt=0; n.fc=0; n.pending=0; }
+          else { n.pending=1; n.held=0; }
+        }
+      } else if(s.st===2){                            // S_RUN
+        n.fc = (s.fc===FC-1) ? 0 : s.fc+1;
+        if(frame_edge){ n.held = s.sticky | s.sync2; n.pending=1; }
+        if(take && s.cnt+1===NT){ n.st=3; n.cnt=0; n.pending=1; n.held=0; }
+      } else if(s.st===3){                            // S_PADR
+        if(take && s.cnt+1===PR){ n.st=0; n.pending=0; }
+        else if(take){ n.pending=1; n.held=0; }
+      }
+    }
+    n.start=0; n.ck=s.ck+1; n.ready=ready;
+
+    // 내보낸 프레임을 평면에 적재 (out_valid 는 이 사이클 결과다)
+    if(n.out_valid){
+      const idx = plane.findIndex(x=>x===null);
+      if(idx>=0) plane[idx]=n.out_frame;
+    }
+    hist.push({ck:n.ck, cmp:(cmp>>3)&1, s2:(n.sync2>>3)&1,
+               stk:(n.sticky>>3)&1, ov:n.out_valid, fe:frame_edge});
+    if(hist.length>60) hist.shift();
+    s=n;
+    return {take, frame_edge, ready};
+  }
+
+  // ---------- 그리기 ---------- //
+  const ROWS=[["cmp","비동기",'r-cmp',()=>s.cmp],
+              ["sync1","1단",'r-s1',()=>s.sync1],
+              ["sync2","깨끗함",'r-s2',()=>s.sync2],
+              ["sticky","창 누적 OR",'r-st',()=>s.sticky],
+              ["held","경계에서 퍼냄",'r-hd',()=>s.held],
+              ["out_frame","→ conv1",'r-ot',()=>s.out_frame]];
+
+  function buildStage(){
+    const g=$("stage"); g.innerHTML="";
+    for(const [name,sub,cls] of ROWS){
+      const l=document.createElement("div"); l.className="rl";
+      l.innerHTML=name+"<s>"+sub+"</s>"; g.appendChild(l);
+      const b=document.createElement("div"); b.className="bits "+cls; b.id="row-"+name;
+      for(let c=N-1;c>=0;c--){
+        const d=document.createElement("div"); d.className="bit"; d.title="ch"+c;
+        b.appendChild(d);
+      }
+      g.appendChild(b);
+    }
+  }
+  function buildFsm(){
+    const g=$("fsm"); g.innerHTML="";
+    [["S_IDLE","대기"],["S_PADL","패딩 "+PL],["S_RUN","실프레임 "+NT],
+     ["S_PADR","패딩 "+PR]].forEach((p,i)=>{
+      const d=document.createElement("div"); d.id="fs"+i;
+      d.innerHTML="<b>"+p[0]+"</b>"+p[1]; g.appendChild(d);
+    });
+  }
+  function buildPlane(){
+    const g=$("plane"); g.innerHTML="";
+    g.style.gridTemplateColumns="repeat("+T+",1fr)";
+    for(let r=0;r<N;r++) for(let c=0;c<T;c++){
+      const d=document.createElement("div"); d.className="pcell"; d.id="pc"+r+"_"+c;
+      g.appendChild(d);
+    }
+  }
+
+  function render(msg,bad){
+    for(const [name,,,get] of ROWS){
+      const v=get(), row=$("row-"+name);
+      for(let i=0;i<N;i++){                          // i=0 이 ch15 (왼쪽이 상위비트)
+        const c=N-1-i, on=(v>>c)&1;
+        const e=row.children[i];
+        e.className="bit"+(on?" on":""); e.textContent=on?"1":"";
+      }
+    }
+    for(let i=0;i<4;i++){
+      const e=$("fs"+i);
+      e.className = (i===s.st) ? "act" : (s.st>i || (s.st===0&&s.ck>0&&i<4&&plane[T-1]!==null)) ? "done" : "";
+    }
+    $("rCk").textContent=s.ck;
+    $("rSt").textContent=S[s.st];
+    $("rFc").textContent=(s.st===2? s.fc+" / "+(FC-1) : "—");
+    $("rCn").textContent=s.cnt;
+    const bit=(id,v,cls)=>{const e=$(id); e.textContent=v?"1":"0"; e.className="v "+(v?(cls||"hi"):"lo");};
+    bit("rPd",s.pending); bit("rOv",s.out_valid);
+    bit("rBs",s.st!==0);
+    const r=$("rRy"); r.textContent=(s.ready===undefined?1:s.ready); r.className="v "+((s.ready===undefined||s.ready)?"ok":"lo");
+
+    for(let c=0;c<T;c++){
+      const v=plane[c], isPad=(c<PL||c>=PL+NT);
+      for(let r2=0;r2<N;r2++){
+        const e=$("pc"+r2+"_"+c);
+        let cl="pcell";
+        if(v===null) cl+=isPad?" pad":"";
+        else if((v>>(N-1-r2))&1) cl+=" one";
+        if(v===null && plane.findIndex(x=>x===null)===c) cl+=" now";
+        e.className=cl;
+      }
+    }
+    drawWave();
+    const n=$("note");
+    n.className="note"+(bad?" bad":"");
+    if(msg) n.innerHTML=msg;
+  }
+
+  function drawWave(){
+    const NS="http://www.w3.org/2000/svg", w=$("wave");
+    while(w.firstChild) w.removeChild(w.firstChild);
+    const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);return e;};
+    const X0=68, X1=744, H=26, Y0=18, NCY=60;
+    const sig=[["cmp[3]","cmp"],["sync2[3]","s2"],["sticky[3]","stk"],["out_valid","ov"]];
+    const dx=(X1-X0)/NCY;
+    hist.forEach((h,i)=>{ if(h.fe) w.appendChild(el("line",
+      {class:"fe",x1:X0+i*dx,y1:Y0-6,x2:X0+i*dx,y2:Y0+sig.length*H})); });
+    sig.forEach(([lab,key],r)=>{
+      const yb=Y0+r*H+18, yt=yb-13;
+      const t=el("text",{class:"lab",x:X0-8,y:yb-2,"text-anchor":"end"}); t.textContent=lab;
+      w.appendChild(t);
+      w.appendChild(el("line",{class:"ax",x1:X0,y1:yb,x2:X1,y2:yb}));
+      if(hist.length<2) return;
+      let d="", py=null;
+      hist.forEach((h,i)=>{
+        const x=X0+i*dx, y=h[key]?yt:yb;
+        d += (i===0) ? `M${x} ${y}` : (py!==y ? ` L${x} ${py} L${x} ${y}` : ` L${x} ${y}`);
+        py=y;
+      });
+      w.appendChild(el("path",{class:"tr "+key,d}));
+    });
+    const cap=el("text",{class:"lab",x:X0,y:Y0+sig.length*H+14});
+    cap.textContent="ch03 한 가닥 · 점선 = frame_edge · 최근 "+NCY+"클럭";
+    w.appendChild(cap);
+  }
+
+  function narrate(r){
+    if(viol) return ["<b>실시간 위반.</b> 창이 닫혔는데(<code>frame_edge</code>) 앞 프레임이 "+
+      "아직 안 나갔다(<code>pending=1</code>). 실제 RTL 은 여기서 "+
+      "<code>KWS_ASSERT</code> 로 죽는다 — 안 죽이면 프레임이 조용히 덮인다.", true];
+    if(s.st===0 && plane[T-1]!==null)
+      return ["평면 "+T+"장이 다 찼다. <code>busy</code> 가 내려가고 <code>S_IDLE</code> 로 "+
+              "돌아왔다. <b>이 모듈은 원샷이다</b> — 연속 동작은 이 위에 링 버퍼가 필요하다.",0];
+    if(s.st===1) return ["<b>S_PADL</b>: 왼쪽 패딩을 내보내는 중. 전 채널 0(= −1)이고, "+
+      "<b>시간이 걸리지 않는다</b> — 악수가 되는 대로 곧바로 나간다.",0];
+    if(s.st===3) return ["<b>S_PADR</b>: 오른쪽 패딩. 여기서도 <code>fc</code> 는 안 돈다.",0];
+    if(r.frame_edge) return ["<b>창이 닫혔다.</b> <code>held ← sticky | sync2</code> 로 퍼내고 "+
+      "<code>sticky</code> 를 0 으로 지운다. 경계 사이클도 닫히는 창 몫이라 "+
+      "<code>sync2</code> 를 한 번 더 OR 한다.",0];
+    if(r.take) return ["<b>악수 성립</b> (<code>pending &amp;&amp; out_ready</code>). 프레임이 "+
+      "<code>out_frame</code> 으로 나가고 <code>cnt</code> 가 하나 오른다.",0];
+    if(s.st===2) return ["<b>S_RUN</b>: <code>fc</code> 가 도는 동안 <code>sticky</code> 가 "+
+      "<code>sync2</code> 를 계속 OR 한다. <b>한 번 선 비트는 창이 끝날 때까지 안 내려간다.</b>",0];
+    return ["", 0];
+  }
+
+  function one(){ const r=step(); const [m,bad]=narrate(r); render(m,bad); if(viol) pause(); }
+  function play(){
+    if(s.st===0 && plane[T-1]!==null) reset();
+    playing=true; lastTs=0; $("run").textContent="⏸ 일시정지";
+    raf=requestAnimationFrame(tick);
+  }
+  function pause(){ playing=false; if(raf) cancelAnimationFrame(raf); raf=null;
+    $("run").textContent="▶ 실행"; }
+  function tick(ts){
+    if(!playing) return;
+    if(!lastTs) lastTs=ts;
+    acc += (ts-lastTs)*(+$("spd").value)/90; lastTs=ts;
+    while(acc>=1){ acc--; one(); if(!playing) return; }
+    if(s.st===0 && plane[T-1]!==null){ pause(); return; }
+    raf=requestAnimationFrame(tick);
+  }
+
+  $("run").onclick=()=>playing?pause():play();
+  $("cyc").onclick=()=>{pause(); one();};
+  $("frm").onclick=()=>{pause(); const c0=s.cnt, st0=s.st;
+    for(let i=0;i<FC*3+4;i++){ one(); if(viol) break; if(s.cnt!==c0||s.st!==st0) break; }};
+  $("rst").onclick=reset;
+  $("slow").onclick=e=>{slow=!slow; e.target.className="b"+(slow?" on":"");
+    e.target.textContent="소비자를 창보다 느리게: "+(slow?"켜짐":"꺼짐");};
+
+  buildStage(); buildFsm(); buildPlane(); reset();
+})();
+</script>
