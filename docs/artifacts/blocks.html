@@ -127,6 +127,45 @@ button.node.d1::before,button.node.d2::before{
 .warnbox{background:var(--warn-bg); border-radius:3px; padding:11px 13px; font-size:13px; color:var(--dim)}
 .warnbox b{color:var(--warn)}
 
+/* ---- 상세 패널 안의 데모 ---- */
+.demo{background:var(--sunk); border-radius:3px; padding:13px; overflow-x:auto}
+.drow{display:grid; grid-template-columns:74px 1fr; gap:5px 10px; align-items:center; margin-bottom:5px; min-width:430px}
+.dlab{font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--dim); text-align:right; white-space:nowrap}
+.dbits{display:flex; gap:3px}
+.db{
+  width:21px; height:21px; border-radius:2px; display:grid; place-items:center;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:600;
+  background:var(--card); border:1px solid var(--rule); color:var(--faint);
+}
+.db.one{background:var(--digital); border-color:var(--digital); color:#fff}
+.db.pos{background:var(--live); border-color:var(--live); color:#fff}
+.db.pad{background:transparent; border-style:dashed; color:var(--faint)}
+.db.mask{opacity:.28}
+button.db{cursor:pointer; font:inherit; font-size:10.5px; font-weight:600; padding:0}
+button.db:hover{border-color:var(--dim)}
+button.db:focus-visible{outline:2px solid var(--ink); outline-offset:1px}
+.dctl{display:flex; flex-wrap:wrap; gap:7px; align-items:center; margin-bottom:11px}
+.dctl label{font-size:12px; color:var(--dim); display:flex; align-items:center; gap:6px}
+.dctl input[type=range]{width:90px; accent-color:var(--live)}
+button.mini{
+  font:inherit; font-size:12px; font-weight:600; cursor:pointer; padding:4px 10px;
+  border-radius:3px; border:1px solid var(--rule); background:var(--card); color:var(--ink);
+}
+button.mini:hover{border-color:var(--dim)}
+button.mini:focus-visible{outline:2px solid var(--ink); outline-offset:1px}
+button.mini.on{background:var(--warn); color:#fff; border-color:var(--warn)}
+.dout{
+  margin-top:11px; padding-top:11px; border-top:1px solid var(--rule);
+  font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink); line-height:1.85;
+}
+.dout .k{color:var(--faint); font-size:11px}
+.dout .bad{color:var(--warn); font-weight:600}
+.dout .good{color:var(--ok); font-weight:600}
+.dnote{margin-top:10px; font-size:12.5px; color:var(--dim); line-height:1.6}
+.dnote b{color:var(--ink)}
+.bars{font-family:"IBM Plex Mono",monospace; font-size:11.5px; line-height:1.9; color:var(--dim); white-space:pre; overflow-x:auto}
+.bars b{color:var(--live)}
+
 /* ---- 관용구 카드 ---- */
 .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:12px}
 .cd{background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:16px 18px; font-size:13.5px; color:var(--dim)}
@@ -254,7 +293,7 @@ const M = {
          ["<b>여기서 프레임이 절반이 된다.</b> 128 → 64. 출력 t 는 입력 프레임 2t+PAD 뒤에 나오므로 마지막 출력은 push 131 이 필요하다 — 실프레임보다 넷 많고, 그 넷은 호출자가 플러시로 준다."]],
     p:[["start / in_push / in_real / in_frame","in","층 공통 계약 (관용구 ①)"],
        ["busy / out_valid / out_frame","out","같은 계약의 출력 쪽"]],
-    par:["C_IN=16","C_OUT=128","K=11","PAD=5","STRIDE=2","T_IN=128","W_BITS=8"],
+    par:["C_IN=16","C_OUT=128","K=11","PAD=5","STRIDE=2","T_IN=128","W_BITS=8"], demo:"conv1",
     note:""
   },
   block:{
@@ -293,7 +332,7 @@ const M = {
          ["두 사실이 레지스터 하나에서 나온다: <code>valid</code>, 데이터와 나란히 흐르는 K 비트 시프트 레지스터. <b>시프트량 = 후행 0 개수, n_valid = popcount.</b> 프레임 카운터도, 좌우 가장자리 산술도 없다."]],
     p:[["start / in_push / in_real / in_frame","in","층 공통 계약"],
        ["busy / out_valid / out_frame","out",""]],
-    par:["C=128","K=13","PAD=6","DIL=1","ACC_BITS=8","WORD_BITS=32","W_FILE"],
+    par:["C=128","K=13","PAD=6","DIL=1","ACC_BITS=8","WORD_BITS=32","W_FILE"], demo:"dw",
     note:""
   },
   pw:{
@@ -321,7 +360,7 @@ const M = {
     p:[["start / n_valid","in","벡터 시작과 실제 항 수"],
        ["in_valid / act / wgt","in","활성 워드, 가중치 워드"],
        ["out_valid / acc","out","누산 결과"]],
-    par:["WORD_BITS=32","ACC_BITS=16","CNT_BITS=16"],
+    par:["WORD_BITS=32","ACC_BITS=16","CNT_BITS=16"], demo:"binmac",
     note:"<code>ACC_BITS</code> 는 <code>export/emit.py</code> 가 ±n_terms 해석적 한계에서 만든다. <b>손으로 넓히지 말 것</b> — 다시 생성한다."
   },
   plane:{
@@ -434,10 +473,174 @@ function show(key){
   for(const w of m.why) h+="<p>"+w[0]+"</p>";
   h+="</div>";
 
+  if(m.demo) h+="<div class='dsec'><h4>직접 해보기</h4><div id='demo'></div></div>";
   if(m.note) h+="<div class='dsec'><div class='warnbox'>"+m.note+"</div></div>";
   h+="</div>";
   detail.innerHTML=h;
+  if(m.demo) DEMO[m.demo]();
 }
+
+
+// ---------------------------------------------------------------------------
+// 상세 패널 안의 데모 셋. 전부 해당 모듈 주석이 "여기가 어렵다"고 말한 자리다.
+const DEMO={};
+const el=(t,c,h)=>{const e=document.createElement(t); if(c)e.className=c; if(h!==undefined)e.innerHTML=h; return e;};
+const pc=n=>{let c=0; while(n){c+=n&1; n>>=1;} return c;};
+
+// --- kws_bin_mac: 2*popcount(XNOR) - N, 그리고 마스크를 빼먹으면 어떻게 되나 ---
+DEMO.binmac=()=>{
+  const N=12;                                   // 실제 WORD_BITS 는 32
+  let act=[1,1,0,1,0,0,1,1,0,1,1,0], wgt=[1,0,0,1,1,0,1,0,0,1,0,1];
+  let nv=9, masked=true;
+  const root=document.getElementById("demo"); root.innerHTML="";
+  const d=el("div","demo"); root.appendChild(d);
+
+  const ctl=el("div","dctl");
+  ctl.innerHTML="<label>n_valid <input type='range' id='bm-nv' min='1' max='"+N+"' value='"+nv+"'>"
+               +"<b id='bm-nvv' style='font-family:monospace'>"+nv+"</b></label>";
+  const bmask=el("button","mini","마스크 끄기");
+  const brnd=el("button","mini","무작위");
+  ctl.append(bmask,brnd); d.appendChild(ctl);
+
+  const rows=el("div"); d.appendChild(rows);
+  const out=el("div","dout"); d.appendChild(out);
+  d.appendChild(el("div","dnote",
+    "비트를 눌러 바꿔 보라. <b>0 = −1, 1 = +1</b> 이고 LSB 가 왼쪽이다(팩킹 규약). "+
+    "<code>n_valid</code> 를 줄이면 벡터 끝이 0 으로 채워지는데, <b>0 비트는 진짜 −1 이라 "+
+    "합에 기여한다</b> — 그래서 마스크가 필요하다. 꺼 보면 무슨 일이 나는지 보인다."));
+
+  function draw(){
+    rows.innerHTML="";
+    // 벡터 끝은 **0 으로 채워진다** -- 그게 이 데모의 요점이다. 채움 자리는 편집 불가.
+    const eff=a=>a.map((v,i)=>i<nv?v:0);
+    const A=eff(act), W=eff(wgt);
+    const mk=(lab,arr,src)=>{
+      const r=el("div","drow"); r.appendChild(el("div","dlab",lab));
+      const b=el("div","dbits");
+      arr.forEach((v,i)=>{
+        const padded=i>=nv;
+        if(padded){ b.appendChild(el("div","db pad","0")); return; }
+        const e=el("button","db"+(v?" one":""),v?"1":"0");
+        e.type="button"; e.onclick=()=>{src[i]^=1; draw();};
+        b.appendChild(e);
+      });
+      r.appendChild(b); rows.appendChild(r);
+    };
+    mk("act",A,act); mk("wgt",W,wgt);
+    const xn=A.map((a,i)=>a===W[i]?1:0);
+    const r=el("div","drow"); r.appendChild(el("div","dlab","XNOR"));
+    const b=el("div","dbits");
+    xn.forEach((v,i)=>{
+      const off=(masked&&i>=nv);
+      b.appendChild(el("div","db"+(v?" pos":"")+(off?" mask":""),v?"1":"0"));
+    });
+    r.appendChild(b); rows.appendChild(r);
+
+    const lim=masked?nv:N;
+    const P=xn.slice(0,lim).reduce((s,v)=>s+v,0);
+    const acc=2*P-lim;
+    let ref=0; for(let i=0;i<nv;i++) ref+=(act[i]?1:-1)*(wgt[i]?1:-1);
+    const ok=(acc===ref);
+    out.innerHTML=
+      "<span class='k'>P = popcount(XNOR) =</span> "+P+"　"+
+      "<span class='k'>N =</span> "+lim+"<br>"+
+      "<span class='k'>acc = 2P − N =</span> <b>"+acc+"</b><br>"+
+      "<span class='k'>±1 로 그냥 곱해 더하면 (유효 "+nv+"항) =</span> <b>"+ref+"</b><br>"+
+      (ok?"<span class='good'>✓ 일치 — 곱셈기 없이 같은 답</span>"
+         :"<span class='bad'>✗ "+(acc-ref>0?"+":"")+(acc-ref)+" 만큼 틀렸다 — 채움 "+(N-nv)+
+          "자리가 0·0 = (−1)·(−1) = +1 로 세어지고 있다</span>");
+  }
+  document.getElementById("bm-nv").oninput=e=>{
+    nv=+e.target.value; document.getElementById("bm-nvv").textContent=nv; draw();
+  };
+  bmask.onclick=()=>{masked=!masked; bmask.className="mini"+(masked?"":" on");
+    bmask.textContent=masked?"마스크 끄기":"마스크 켜기"; draw();};
+  brnd.onclick=()=>{act=act.map(()=>Math.random()<.5?1:0); wgt=wgt.map(()=>Math.random()<.5?1:0); draw();};
+  draw();
+};
+
+// --- kws_dw_conv: 가장자리에서 valid 시프트 레지스터가 무엇을 하는가 ---
+DEMO.dw=()=>{
+  const K=7, PAD=3, T=10;                       // 실제는 K=13, PAD=6, T=64
+  let t=0, shiftBoth=true;
+  const root=document.getElementById("demo"); root.innerHTML="";
+  const d=el("div","demo"); root.appendChild(d);
+
+  const ctl=el("div","dctl");
+  ctl.innerHTML="<label>출력 t <input type='range' id='dw-t' min='0' max='"+(T-1)+"' value='0'>"
+               +"<b id='dw-tv' style='font-family:monospace'>0</b></label>";
+  const bsh=el("button","mini","가중치도 같이 시프트: 켬");
+  ctl.appendChild(bsh); d.appendChild(ctl);
+
+  const rows=el("div"); d.appendChild(rows);
+  const out=el("div","dout"); d.appendChild(out);
+  d.appendChild(el("div","dnote",
+    "탭 k 는 입력 <code>t − PAD + k</code> 를 본다. 가장자리에서는 일부가 <b>범위 밖</b>이라 "+
+    "점선으로 표시된다. <code>valid</code> 하나에서 두 값이 나온다 — <b>시프트량 = 후행 0 개수, "+
+    "n_valid = popcount</b>. 프레임 카운터도 좌우 분기도 없다. "+
+    "<b>가중치를 같이 안 옮기면</b> 어떻게 되는지 눌러서 보라."));
+
+  function draw(){
+    rows.innerHTML="";
+    const idx=[], valid=[];
+    for(let k=0;k<K;k++){ const i=t-PAD+k; idx.push(i); valid.push(i>=0&&i<T?1:0); }
+    let shift=0; while(shift<K && valid[shift]===0) shift++;
+    const nv=valid.reduce((s,v)=>s+v,0);
+
+    const mk=(lab,cells)=>{
+      const r=el("div","drow"); r.appendChild(el("div","dlab",lab));
+      const b=el("div","dbits"); cells.forEach(c=>b.appendChild(c)); r.appendChild(b); rows.appendChild(r);
+    };
+    mk("입력 색인", idx.map((i,k)=>el("div","db"+(valid[k]?"":" pad"), valid[k]?String(i):"·")));
+    mk("valid", valid.map(v=>el("div","db"+(v?" one":" pad"), String(v))));
+    // 시프트 뒤 유효 구간이 비트 0 으로 내려온다
+    const after=[];
+    for(let j=0;j<K;j++){
+      const k=j+shift;
+      after.push(el("div","db"+(k<K&&valid[k]?" one":" pad"), k<K&&valid[k]?"1":"·"));
+    }
+    mk("시프트 후", after);
+    // 짝지어지는 가중치 번호
+    const pair=[];
+    for(let j=0;j<nv;j++) pair.push(el("div","db"+(shiftBoth?" pos":" pad"), String(shiftBoth?j+shift:j)));
+    mk("↔ 가중치", pair);
+
+    const wrong=!shiftBoth && shift>0;
+    out.innerHTML=
+      "<span class='k'>shift = 후행 0 =</span> <b>"+shift+"</b>　"+
+      "<span class='k'>n_valid = popcount =</span> <b>"+nv+"</b><br>"+
+      (wrong
+        ? "<span class='bad'>✗ 탭 "+shift+" 이 가중치 0 과 짝이 됐다. 여전히 ±1 의 합이라 "+
+          "<b>그럴듯한 숫자가 나오고, 가장자리에서만 틀린다.</b></span>"
+        : (shift>0 ? "<span class='good'>✓ 활성과 가중치를 같이 "+shift+"칸 옮겨 짝이 유지된다</span>"
+                   : "<span class='good'>✓ 가운데 구간 — 시프트할 것이 없다</span>"));
+  }
+  document.getElementById("dw-t").oninput=e=>{
+    t=+e.target.value; document.getElementById("dw-tv").textContent=t; draw();
+  };
+  bsh.onclick=()=>{shiftBoth=!shiftBoth; bsh.className="mini"+(shiftBoth?"":" on");
+    bsh.textContent="가중치도 같이 시프트: "+(shiftBoth?"켬":"끔"); draw();};
+  draw();
+};
+
+// --- kws_conv1: "첫 층은 작다"는 직관이 틀린 정도 ---
+DEMO.conv1=()=>{
+  const root=document.getElementById("demo"); root.innerHTML="";
+  const d=el("div","demo"); root.appendChild(d);
+  const bar=(v,max,w)=>"█".repeat(Math.max(1,Math.round(v/max*w)));
+  const rows=[["conv1",7592],["그다음 큰 층",128]];
+  let s="층당 n_terms (매니페스트)\n\n";
+  for(const [n,v] of rows)
+    s+=n.padEnd(14)+String(v).padStart(5)+"  "+(n==="conv1"?"<b>":"")+bar(v,7592,40)+(n==="conv1"?"</b>":"")+"\n";
+  s+="\n\n추론당 사이클\n\n";
+  for(const [n,v] of [["conv1",1.44],["꼬리 전체",1.20]])
+    s+=n.padEnd(14)+(v+"M").padStart(5)+"  "+(n==="conv1"?"<b>":"")+bar(v,1.44,40)+(n==="conv1"?"</b>":"")+"\n";
+  d.appendChild(el("div","bars",s));
+  d.appendChild(el("div","dnote",
+    "16채널을 128 로 펼치는 데 k=11 이면 출력 채널당 <b>176 항</b>, 128 채널이면 프레임당 "+
+    "<b>22,528 사이클</b>이다. <b>첫 층이 가장 싸다는 직관이 정확히 반대</b>이고, "+
+    "매니페스트의 <code>n_terms</code> 가 줄곧 그렇게 말하고 있었다."));
+};
 
 show("frame_ctrl");
 </script>
