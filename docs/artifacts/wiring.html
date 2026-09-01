@@ -1,0 +1,374 @@
+<title>AFE 기판에서 KC705까지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;450;600&display=swap">
+
+<style>
+:root{
+  --paper:#EEF1F4; --card:#FFFFFF; --sunk:#E4E9ED;
+  --ink:#141A21; --dim:#5C6A77; --faint:#8A97A3;
+  --rule:#CFD7DE;
+  --analog:#A85B2A; --analog-bg:#F7EDE5;
+  --digital:#116B66; --digital-bg:#E1EFED;
+  --live:#C2410C; --live-glow:rgba(194,65,12,.16);
+  --mem:#5B4B8A; --mem-bg:#EDEAF5;
+  --ok:#3F7A45; --ok-bg:#E9F2EA; --warn:#9E3A31; --warn-bg:#FBECEA;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#0D1216; --card:#161D23; --sunk:#11171C;
+    --ink:#E6ECF1; --dim:#93A1AD; --faint:#67757F;
+    --rule:#28323A;
+    --analog:#E09155; --analog-bg:#291C13;
+    --digital:#48B7AE; --digital-bg:#0E2523;
+    --live:#F97D3C; --live-glow:rgba(249,125,60,.2);
+    --mem:#A99AD6; --mem-bg:#1F1A2E;
+    --ok:#6FB076; --ok-bg:#142516; --warn:#E0796D; --warn-bg:#2A1614;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0D1216; --card:#161D23; --sunk:#11171C;
+  --ink:#E6ECF1; --dim:#93A1AD; --faint:#67757F;
+  --rule:#28323A;
+  --analog:#E09155; --analog-bg:#291C13;
+  --digital:#48B7AE; --digital-bg:#0E2523;
+  --live:#F97D3C; --live-glow:rgba(249,125,60,.2);
+  --mem:#A99AD6; --mem-bg:#1F1A2E;
+  --ok:#6FB076; --ok-bg:#142516; --warn:#E0796D; --warn-bg:#2A1614;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans","IBM Plex Sans KR",system-ui,sans-serif;
+  font-size:15px; line-height:1.62;
+}
+.wrap{max-width:940px; margin:0 auto; padding:40px 20px 72px}
+code,.m{font-family:"IBM Plex Mono","IBM Plex Sans KR",ui-monospace,monospace}
+a{color:var(--digital)}
+
+header{border-bottom:1px solid var(--rule); padding-bottom:22px; margin-bottom:30px}
+.eyebrow{
+  font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace; font-size:11px;
+  letter-spacing:.16em; text-transform:uppercase; color:var(--dim); margin:0 0 10px;
+}
+h1{font-size:clamp(27px,4.6vw,40px); line-height:1.1; margin:0 0 12px; font-weight:700; letter-spacing:-.02em; text-wrap:balance}
+.lede{max-width:66ch; color:var(--dim); margin:0}
+.lede b{color:var(--ink); font-weight:600}
+
+section{margin-top:46px}
+h2{font-size:21px; margin:0 0 6px; font-weight:700; letter-spacing:-.01em; text-wrap:balance}
+h2 .num{
+  font-family:"IBM Plex Mono",monospace; font-size:13px; color:var(--faint);
+  font-weight:600; margin-right:9px;
+}
+.sub{color:var(--dim); margin:0 0 18px; max-width:66ch; font-size:14.5px}
+h3{font-size:15px; font-weight:600; margin:22px 0 7px}
+p{margin:0 0 12px; color:var(--dim)}
+p b, li b{color:var(--ink); font-weight:600}
+ul{margin:0 0 12px; padding-left:20px; color:var(--dim)}
+li{margin-bottom:5px}
+
+.chain{
+  background:var(--card); border:1px solid var(--rule); border-radius:4px;
+  padding:16px 18px; overflow-x:auto; margin-bottom:18px;
+}
+.chain pre{
+  margin:0; font-family:"IBM Plex Mono",monospace; font-size:12.5px;
+  line-height:1.75; color:var(--ink); white-space:pre;
+}
+
+.tblwrap{background:var(--card); border:1px solid var(--rule); border-radius:4px; overflow-x:auto; margin-bottom:14px}
+table{width:100%; border-collapse:collapse; font-size:13.5px}
+caption{
+  text-align:left; padding:13px 15px 9px; font-family:"IBM Plex Mono","IBM Plex Sans KR",monospace;
+  font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--faint);
+}
+th,td{padding:7px 15px; border-top:1px solid var(--rule); text-align:left}
+th{font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--faint); font-weight:600; white-space:nowrap}
+td{color:var(--dim)}
+td.m{font-family:"IBM Plex Mono",monospace; font-size:12.5px; color:var(--ink); white-space:nowrap}
+td.ch{font-family:"IBM Plex Mono",monospace; font-size:12.5px; font-weight:700; color:var(--analog); white-space:nowrap}
+tbody tr:nth-child(even){background:var(--sunk)}
+
+/* 헤더 그림 */
+.hdr{
+  background:var(--card); border:1px solid var(--rule); border-radius:4px;
+  padding:18px; overflow-x:auto; margin-bottom:14px;
+}
+.hgrid{display:grid; grid-template-columns:repeat(8,1fr); gap:5px; min-width:520px}
+.hp{
+  border:1px solid var(--rule); border-radius:3px; padding:6px 4px; text-align:center;
+  font-family:"IBM Plex Mono",monospace; font-size:10.5px; background:var(--sunk);
+}
+.hp b{display:block; font-size:12px; font-weight:700; color:var(--analog)}
+.hp s{display:block; font-size:9px; color:var(--faint); text-decoration:none}
+.hcap{font-family:"IBM Plex Mono",monospace; font-size:10.5px; color:var(--faint); margin-top:10px}
+
+.box{border-radius:4px; padding:14px 17px; font-size:13.5px; color:var(--dim); margin:14px 0}
+.box b{font-weight:600}
+.box.ask{background:var(--analog-bg)} .box.ask b{color:var(--analog)}
+.box.warn{background:var(--warn-bg)} .box.warn b{color:var(--warn)}
+.box.ok{background:var(--ok-bg)} .box.ok b{color:var(--ok)}
+.box h4{margin:0 0 7px; font-size:13.5px; color:var(--ink); font-weight:600}
+
+.opts{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:12px}
+.opt{background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:15px 17px; font-size:13.5px; color:var(--dim)}
+.opt.pick{border-top:2px solid var(--ok)}
+.opt h4{margin:0 0 4px; font-size:14px; color:var(--ink); font-weight:600}
+.opt .tag{
+  font-family:"IBM Plex Mono",monospace; font-size:10px; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--faint); display:block; margin-bottom:8px;
+}
+.opt.pick .tag{color:var(--ok)}
+
+ol.steps{counter-reset:s; list-style:none; padding:0; margin:0; display:grid; gap:10px}
+ol.steps li{
+  counter-increment:s; display:grid; grid-template-columns:26px 1fr; gap:13px;
+  background:var(--card); border:1px solid var(--rule); border-radius:4px; padding:13px 16px;
+  color:var(--dim); font-size:13.5px; margin:0;
+}
+ol.steps li::before{
+  content:counter(s); width:26px; height:26px; border-radius:50%; display:grid; place-items:center;
+  border:1.5px solid var(--digital); color:var(--digital);
+  font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:600;
+}
+ol.steps li strong{display:block; color:var(--ink); font-weight:600; margin-bottom:2px}
+
+footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); color:var(--faint); font-size:12px; font-family:"IBM Plex Mono",monospace}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">KWS-AFE-Digital · docs/ICD.md §7.1 · 2026-09-01</p>
+  <h1>AFE 기판에서 KC705까지</h1>
+  <p class="lede">
+    경계는 아주 좁다 — <b>비교기 16가닥과 접지</b>가 전부이고, FPGA 가 아날로그로 보내는
+    신호는 한 가닥도 없다. 이 문서는 그 16가닥이 <b>어느 핀에서 나와 어느 핀으로
+    들어가는지</b>와, 그러기 위해 AFE 기판에 무엇이 있어야 하는지를 정한다.
+  </p>
+</header>
+
+<section style="margin-top:34px">
+  <h2><span class="num">01</span>전체 사슬</h2>
+  <div class="chain"><pre>[AFE 기판]                    [XM105 디버그 카드]        [KC705]
+
+비교기 ×16 ─┬─ J_SIG (2×8) ──16가닥 리본──→ J1 핀 9–24 ─┐
+            │                                            ├─ FMC LPC ══ J2
+            └─ J_PWR (2×3) ──4가닥──────→ J16 핀 1–4  ─┘
+                  ↑ 3.3 V 입력, GND                        ↑ 스탠드오프로 고정
+             로컬 LDO → 1.8 V
+
+  ※ 두 케이블을 나란히 묶어서 간다 (리턴 경로 면적을 줄이려고)
+  ※ AFE 기판은 KC705 위에 얹지 않는다 — 옆에 따로 둔다</pre></div>
+  <div class="box warn">
+    <h4>이 문서가 앞선 제안을 하나 고친다</h4>
+    처음에는 AFE 헤더를 <b>신호/GND 교대 2×20</b> 으로 하자고 했는데, <b>XM105 J1 은
+    40핀 전부가 신호</b>라 접지가 한 핀도 없다(UG537 표 1-10). 교대 헤더에서 나온 리본은
+    J1 에 1:1 로 안 꽂힌다. 그래서 <b>신호 전용 리본과 전원·접지 케이블을 분리</b>한다.
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">02</span>핀 매핑</h2>
+  <p class="sub">
+    <b>AFE 헤더 핀 번호 − 1 = 채널 번호.</b> J_SIG 와 J1 핀 9–24 가 1:1 straight 이므로,
+    16가닥 리본에 2×8 IDC 소켓을 양끝에 압착하면 <b>중간에 꼬을 자리가 없다.</b>
+  </p>
+  <div class="tblwrap">
+    <table>
+      <caption>ch → AFE J_SIG → XM105 J1 → FMC LPC → FPGA</caption>
+      <thead><tr><th>ch</th><th>AFE J_SIG 핀</th><th>XM105 J1 핀</th><th>FMC LPC 신호</th><th>FPGA U1 핀</th></tr></thead>
+      <tbody id="pinrows"></tbody>
+    </table>
+  </div>
+  <p>
+    출처: <b>XM105 J1 ↔ FMC</b> 는 UG537 표 1-10, <b>FMC ↔ FPGA</b> 는 UG810 표 1-29.
+    <code>LA00_CC</code>/<code>LA01_CC</code>(J1 핀 1–8)는 클럭 가능 핀이라 비워 두었다.
+    LA 쌍의 P/N 을 갈라 쓰는 것은 문제가 아니다 — <b>우리 신호는 단일단이고 차동으로
+    쓰지 않는다.</b>
+  </p>
+</section>
+
+<section>
+  <h2><span class="num">03</span>AFE 기판에 필요한 것</h2>
+
+  <h3>J_SIG — 2×8 박스 헤더, 2.54 mm</h3>
+  <div class="hdr">
+    <div class="hgrid" id="hdrgrid"></div>
+    <div class="hcap">위: 홀수 핀(1,3,5…), 아래: 짝수 핀(2,4,6…) — IDC 리본 관례</div>
+  </div>
+  <div class="box warn">
+    <b>반드시 슈라우드(박스)와 키가 있는 헤더로.</b> 민짜 핀헤더는 <b>뒤집어서도, 한 칸
+    밀려서도</b> 꽂힌다. 뒤집히면 ch00 이 ch15 자리로 가는데, 회로는 멀쩡히 동작하고
+    증상은 <b>"정확도가 좀 낮다"뿐</b>이라 사실상 못 찾는다. 플라스틱 껍데기 하나로
+    물리적으로 막을 수 있는 것을 막지 않을 이유가 없다.
+  </div>
+
+  <h3>J_PWR — 2×3 헤더</h3>
+  <ul>
+    <li>핀 1, 2 — <b>3.3 V 입력</b> (XM105 J16 핀 1–2 <code>HDR_POWER</code> 에서)</li>
+    <li>핀 3, 4 — <b>GND</b> (XM105 J16 핀 3–4 에서)</li>
+    <li>핀 5, 6 — 여분 (테스트 포인트나 추가 GND)</li>
+  </ul>
+
+  <h3>그 밖에</h3>
+  <ul>
+    <li><b>실크스크린에 <code>ch00</code>…<code>ch15</code> 와 1번 핀 표시</b></li>
+    <li><b>채널마다 테스트 포인트</b> — 케이블 없이 오실로스코프로 채널을 하나씩 짚을 수 있게. 매핑 검증할 때 이게 있고 없고가 크다</li>
+    <li><b>전원 선택 점퍼</b> — <code>헤더 3.3 V + 로컬 LDO</code> 와 <code>외부 전원</code> 중 고를 수 있게. 잡음이 문제인지 아닌지는 <b>계산으로 못 이기고 측정으로만 갈린다</b></li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">04</span>전원 — 3.3 V 를 받아 기판에서 1.8 V 로</h2>
+  <p>
+    XM105 J16 의 <code>HDR_POWER</code> 는 J6 헤더의 셧트 위치로 <b>3.3 V 또는 VADJ</b>
+    를 고른다(UG537 p18). <b>3.3 V 로 두고 AFE 기판에서 자체 LDO 로 1.8 V 를 만드는 쪽</b>
+    을 권한다:
+  </p>
+  <ul>
+    <li>AFE 의 1.8 V 가 <b>VADJ 와 무관</b>해진다 — 전압 레벨 결정과 전원이 분리된다</li>
+    <li>로컬 LDO 의 PSRR 이 <b>한 겹 더</b> 붙는다</li>
+    <li>디커플링이 <b>부하 바로 옆</b>에 온다. 30 cm 케이블 끝이 아니라</li>
+  </ul>
+  <div class="tblwrap">
+    <table>
+      <caption>전류 — 레일이 제약이 아니다</caption>
+      <thead><tr><th>항목</th><th>수량</th><th>전류</th></tr></thead>
+      <tbody>
+        <tr><td>OPA379 (GIC ×2, 검출기 ×1) × 16채널 + 공유 프리앰프</td><td class="m">49</td><td class="m">142 µA typ / 270 µA max</td></tr>
+        <tr><td>LPV7215 비교기</td><td class="m">16</td><td class="m">~9 µA</td></tr>
+        <tr><td><b>능동 소자 합</b></td><td class="m">—</td><td class="m"><b>약 150–280 µA</b></td></tr>
+        <tr><td>R7/R8 임계값 분압, 0.9 V 중간전위 분압</td><td class="m">?</td><td class="m">값 미확인 — 이쪽이 더 클 수 있음</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>
+    OPA379 는 데이터시트 제목이 아예 <i>"1.8V, 2.9 µA, 90kHz"</i> 이다(SBOS347D).
+    비교기 값은 ICD §7 에 적힌 0.58 µA 기준이며 <b>데이터시트는 아직 안 읽었다</b>.
+    셧트(점퍼 캡)는 <b>XM105 킷에 들어 있지 않으니</b> 2.54 mm 캡을 따로 구해야 한다.
+  </p>
+</section>
+
+<section>
+  <h2><span class="num">05</span>접지 — 교대가 아니라 여러 가닥</h2>
+  <p>
+    처음에 "가닥마다 GND 인접"을 강하게 말했는데 <b>이 신호에는 그렇게까지 필요 없다.</b>
+    비교기 출력은 푸시풀 저임피던스이고 에지가 <b>µs 급</b>이며 펄스가 수백 µs 다.
+    크로스토크는 <code>dV/dt</code> 에 비례하므로 이 정도 속도에서는 미미하다.
+  </p>
+  <p>
+    진짜 문제는 <b>리턴 경로</b>다. 16가닥이 동시에 스위칭할 때 접지가 한 가닥뿐이면 그
+    인덕턴스에서 전위차가 생기고, AFE 의 <b>0.9 V 중간전위는 16채널 공통 기준</b>이라
+    그 잡음이 전 채널 공통 모드로 들어간다. 그래서 <b>접지 4가닥</b>과
+    <b>두 케이블을 나란히 묶는 것</b>이 교대 배치보다 중요하다.
+  </p>
+</section>
+
+<section>
+  <h2><span class="num">06</span>전압 레벨 — 세 선택지</h2>
+  <p class="sub">
+    비교기가 <b>0–1.8 V</b> 로 흔든다(넷리스트의 <code>XU4 … 1.8V GND …</code>). KC705 에는
+    <b>기본 설정에 1.8 V I/O 뱅크가 없다</b> — 뱅크 0/14/15 는 2.5 V, 32/33/34 는 DDR3 용
+    1.5 V, 나머지는 VADJ 이고 기본값이 2.5 V 다(UG810 표 1-3). 맞추는 방법이 셋이다.
+  </p>
+  <div class="opts">
+    <div class="opt pick">
+      <span class="tag">권장 — 동글이 있다면</span>
+      <h4>A. VADJ 를 1.8 V 로</h4>
+      <p>J65 점퍼(물리 점퍼)를 뽑고 TI Fusion GUI 로 UCD9248 을 재설정.
+      <code>LVCMOS18</code> 직결, 변환기 없음.</p>
+      <p style="margin-top:8px"><b>비용:</b> TI <code>EVM USB-TO-GPIO</code> 동글 구매.
+      <b>주의:</b> VADJ 는 뱅크 12/13/16/17/18 을 함께 먹인다(뱅크 12 = SDIO).</p>
+    </div>
+    <div class="opt">
+      <span class="tag">동글이 없다면</span>
+      <h4>B. 레벨 변환기</h4>
+      <p>XM105 헤더와 리본 사이에 1.8 → 2.5 V 변환 기판을 끼운다. <b>KC705 전원을 아예
+      안 건드린다.</b> A 면 기준전압으로 AFE 의 1.8 V 레일을 한 가닥 같이 끌어오면
+      문턱이 실제 레일을 따라간다.</p>
+    </div>
+    <div class="opt">
+      <span class="tag">최후 수단</span>
+      <h4>C. AFE 를 2.5 V 로</h4>
+      <p>하드웨어 비용은 0 이지만 <b>제일 비싸다.</b> 스윙 16–108 mV, 정지점 0.938 V,
+      임계값 0.97–0.99 V, <code>transfer_v4</code> 프레임 46,546개와 거기서 나온
+      0.7123 — <b>전부 1.8 V 기준이라 무효가 된다.</b></p>
+    </div>
+  </div>
+  <div class="box ask">
+    <b>먼저 확인할 것:</b> 연구실에 TI <code>EVM USB-TO-GPIO</code> 동글이 있는가.
+    이 답 하나가 A 와 B 를 가른다.
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">07</span>브링업 순서</h2>
+  <p class="sub">
+    <b>모르는 쪽을 한 번에 하나씩만 늘린다.</b> 둘을 같이 켜면 틀렸을 때 어느 쪽인지
+    알 방법이 없다.
+  </p>
+  <ol class="steps">
+    <li><strong>VADJ 결정 → 전압 실측</strong>FMC 커넥터에서 기대한 전압이 나오는지. 여기가 아니면 뒤가 전부 헛수고다</li>
+    <li><strong>아날로그 없이 FPGA 단독 검증</strong><code>tb_top</code> 골든 벡터를 내부에서 먹여 같은 클래스가 나오는지. <b>여기까지 16가닥은 안 꽂는다</b></li>
+    <li><strong>16가닥 연결 → 주파수 스윕 대각선 테스트</strong>아래 참조. <b>이 단계를 건너뛰면 4번이 왜 안 되는지 영영 모른다</b></li>
+    <li><strong>실제 키워드</strong></li>
+  </ol>
+  <div class="box ok">
+    <h4>주파수 스윕 대각선 테스트</h4>
+    125 Hz → 5 kHz 사인 스윕을 10초에 걸쳐 마이크에 들려주고 프레임을 캡처한다.
+    매핑이 맞으면 활성 채널이 <b>ch00 에서 ch15 로 단조 이동</b>해 시간-주파수 이미지에
+    깨끗한 대각선이 그려진다. 섞여 있으면 대각선이 부서지고 <b>어떻게 섞였는지까지
+    보인다.</b>
+    <p style="margin:9px 0 0">필터가 이미 주파수를 물리적으로 분해해 놓았으므로 성립한다.
+    추가 하드웨어가 필요 없고, 스피커와 톤 생성기면 된다. 프레임은
+    <code>experiments/trace_to_frames.py</code> 로 뽑는다.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">08</span>아날로그 쪽에 물어볼 것</h2>
+  <ul>
+    <li><b>이 핀 매핑대로 배선 가능한가.</b> 이 표는 <b>제안</b>이다 — 커넥터와 핀은 우리가 고를 수 있으니, 불편하면 바꾸고 그때 <code>.xdc</code> 를 고치면 된다. <b>다만 어느 쪽이든 문서로 고정되어야 한다</b></li>
+    <li><b>비교기 출력 극성.</b> 반전이면 RTL 파라미터 <code>CMP_INVERT</code> 한 줄로 흡수한다(ICD §3). 재설계가 아니라 <b>알려주기만 하면 되는 것</b></li>
+    <li><b>R7/R8 값.</b> 임계값 분압의 전류를 계산하려면 필요하다. 현재 패키지에서 제외돼 있다(<code>excluded_components: R7, R8, U4</code>)</li>
+    <li><b><code>detector_valid: false</code> 가 무슨 뜻인가.</b> <code>transfer_v4</code> 의 <code>export_settings.json</code> 이 스스로 draft 로 표시했다 — 16채널 전부 "Detector 파형/DC/피크 미통과"</li>
+    <li><b>ch12–15 의 Vthr 변형본.</b> 비교기가 소프트웨어로 적용되고 아날로그가 캐시돼 있어(<code>analog_cache: hit</code>) <b>SPICE 재실행 없이</b> 2~3단계를 뽑을 수 있다. 지금 ch15 가 목표 대비 발화율이 크게 낮고, 그게 정보량 부족의 가장 큰 몫이다</li>
+  </ul>
+</section>
+
+<footer>docs/ICD.md §7.1 · rtl/constraints/kws_pins_proposed.xdc · UG537 표1-10 · UG810 표1-3 표1-29 · analog/AFE_board/</footer>
+</div>
+
+<script>
+// 매핑 한 곳에서만 정의한다 -- 표와 헤더 그림이 어긋나면 그게 곧 배선 사고다.
+const MAP=[
+  [0, 9,"LA02_P","AF20"],[1,10,"LA12_P","AA20"],[2,11,"LA02_N","AF21"],[3,12,"LA12_N","AB20"],
+  [4,13,"LA03_P","AG20"],[5,14,"LA13_P","AB24"],[6,15,"LA03_N","AH20"],[7,16,"LA13_N","AC25"],
+  [8,17,"LA04_P","AH21"],[9,18,"LA14_P","AD21"],[10,19,"LA04_N","AJ21"],[11,20,"LA14_N","AE21"],
+  [12,21,"LA05_P","AG22"],[13,22,"LA15_P","AC24"],[14,23,"LA05_N","AH22"],[15,24,"LA15_N","AD24"],
+];
+const ch=c=>"ch"+String(c).padStart(2,"0");
+
+const tb=document.getElementById("pinrows");
+for(const [c,j1,sig,fpga] of MAP){
+  const tr=document.createElement("tr");
+  tr.innerHTML="<td class='ch'>"+ch(c)+"</td><td class='m'>"+(c+1)+"</td>"
+             + "<td class='m'>"+j1+"</td><td class='m'>"+sig+"</td><td class='m'>"+fpga+"</td>";
+  tb.appendChild(tr);
+}
+
+// 2x8 헤더: 홀수 핀이 윗줄, 짝수 핀이 아랫줄. 열 = 물리적 위치.
+const g=document.getElementById("hdrgrid");
+const byPin=Object.fromEntries(MAP.map(([c])=>[c+1,c]));
+for(const row of [0,1]){                    // 0 = 홀수(윗줄), 1 = 짝수(아랫줄)
+  for(let col=0;col<8;col++){
+    const pin=col*2+1+row, c=byPin[pin];
+    const d=document.createElement("div"); d.className="hp";
+    d.innerHTML="<s>핀 "+pin+"</s><b>"+ch(c)+"</b>";
+    g.appendChild(d);
+  }
+}
+</script>
