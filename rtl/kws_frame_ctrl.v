@@ -181,9 +181,14 @@ module kws_frame_ctrl #(
     assign busy = (st != S_IDLE);
 
 `ifdef KWS_ASSERT
-    initial if (PAD_LEFT + NATIVE_T + PAD_RIGHT != T) begin
-        $display("ASSERT %m: %0d + %0d + %0d does not make T=%0d",
-                 PAD_LEFT, NATIVE_T, PAD_RIGHT, T);
+    // PAD_RIGHT is DERIVED as T - PAD_LEFT - NATIVE_T, so asking whether the
+    // three sum to T restates the derivation and can never fail. The setting
+    // that does break is PAD_LEFT + NATIVE_T > T: PAD_RIGHT goes negative, and
+    // PR_C truncates it to TB_BITS, turning it into a large positive count that
+    // makes S_PADR emit hundreds of pad frames instead of stopping.
+    initial if (PAD_RIGHT < 0) begin
+        $display("ASSERT %m: PAD_LEFT %0d + NATIVE_T %0d exceeds T=%0d",
+                 PAD_LEFT, NATIVE_T, T);
         $finish;
     end
     // A window closing while the previous frame is still waiting means the

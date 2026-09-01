@@ -211,6 +211,83 @@ footer{margin-top:52px; padding-top:18px; border-top:1px solid var(--rule); colo
   </p>
 </header>
 
+<section style="margin-top:34px">
+  <h2>읽기 전에 — 네 가지</h2>
+  <p class="sub">
+    화면에 신호가 스무 개 넘게 나오지만, 실제로 붙잡아야 할 개념은 넷뿐이다.
+    이것만 알면 나머지는 따라온다.
+  </p>
+
+  <div class="tblwrap" style="margin-bottom:12px">
+    <table class="tbl">
+      <caption>① 상태 넷 — <code>fc</code> 와 <code>sticky</code> 가 어디서 도는지가 전부다</caption>
+      <thead><tr><th>상태</th><th>fc</th><th>sticky</th><th>하는 일</th></tr></thead>
+      <tbody>
+        <tr><td>S_IDLE</td><td>멈춤</td><td>멈춤</td><td>대기. <code>start</code> 만이 여기서 꺼낸다.
+          <b>이 상태에서도 비교기는 울리지만 아무것도 기록되지 않는다</b> — 클립과 클립 사이의
+          소리는 그냥 버려진다. 연속 동작에 링 버퍼가 필요한 이유다.
+          (<code>sync1/sync2</code> 는 FSM 밖이라 <b>항상</b> 돈다.)</td></tr>
+        <tr><td>S_PADL</td><td>멈춤</td><td>멈춤</td><td>왼쪽 패딩 <code>PAD_LEFT</code> 장.
+          <code>held=0</code> 을 <b>악수가 되는 대로 연달아</b> 내보낸다.
+          마지막 장에서만 <code>pending&lt;=0</code> 으로 내리는데,
+          <b>다음 프레임은 악수가 아니라 타이머가 만들기 때문</b>이다.</td></tr>
+        <tr><td>S_RUN</td><td><b>돈다</b></td><td><b>누적</b></td><td><b>시간이 흐르는 유일한 상태.</b>
+          <code>frame_edge</code> 마다 <code>held ← sticky | sync2</code> 로 퍼낸다.
+          실프레임 <code>NATIVE_T</code> 장.</td></tr>
+        <tr><td>S_PADR</td><td>멈춤</td><td>멈춤</td><td>오른쪽 패딩. <code>S_PADL</code> 과 같다.
+          다만 들어올 때 <code>pending&lt;=1</code> 로 <b>바로</b> 내보낸다.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="flag" style="margin-top:0; margin-bottom:22px">
+    <b>대칭이 깨지는 곳을 보라.</b> <code>S_RUN</code> 에 <b>들어갈 때</b>는
+    <code>pending&lt;=0</code>(타이머를 기다려라), <code>S_PADR</code> 에 <b>들어갈 때</b>는
+    <code>pending&lt;=1</code>(바로 내보내라). <b>"패딩에는 시간이 없다"는 규칙이 상태
+    전이에 그대로 새겨져 있다.</b>
+  </div>
+
+  <div class="cards">
+    <div class="cd">
+      <h3>② 프레임 완료 = 그냥 카운터다</h3>
+      <p>타이머 페리페럴도 인터럽트도 없다. <code>fc</code> 가 <code>FC_LAST</code> 에
+      닿은 한 클럭이 <code>frame_edge</code> 다.</p>
+      <p style="margin-top:8px"><code>FRAME_CYCLES = clk_hz × frame_ms / 1000</code> —
+      100 MHz 에 10 ms 면 <b>1,000,000</b> 이고 <code>fc</code> 는 20비트다.
+      여기서는 <b>6</b> 이라 <code>fc==5</code> 가 그 순간이다.</p>
+      <p style="margin-top:8px">경계를 정하는 근거가 이 카운터 하나뿐이라, <b>10 ms 의
+      정확도는 곧 수정 발진기의 정확도</b>다(±100 ppm 이면 ±1 µs, 창의 0.01%).</p>
+    </div>
+    <div class="cd">
+      <h3>③ 패딩이 3+3 인 이유</h3>
+      <p>실제 비율을 그대로 줄인 것이다. <code>1000/10 = 100</code> 프레임인데 네트워크는
+      <code>T=128</code> 을 요구하니 <code>28</code> 을 <b>좌 14 / 우 14</b> 로 나눈다.
+      여기서는 <code>16 − 10 = 6</code> → <b>3 / 3</b>.</p>
+      <p style="margin-top:8px"><b>왜 128인가:</b> conv2 가 <code>k=29, dilation=2</code> 라
+      유효 span 이 <b>57프레임</b> 이고 conv1 이 stride 2 라 반으로 준다. T=128 → 64 ✅,
+      T=96 → 48 ❌ (실측에서 붕괴).</p>
+      <p style="margin-top:8px"><b>왜 좌우로 나누나:</b> 학습 쪽
+      <code>pad_or_crop</code> 이 가운데 정렬이라서다. <b>한 비트도 어긋나면 안 된다.</b>
+      RTL 에서 <code>PAD_RIGHT</code> 는 파라미터가 아니라
+      <code>T − PAD_LEFT − NATIVE_T</code> 유도값이다.</p>
+    </div>
+    <div class="cd">
+      <h3>④ cmp_in — 왜 맨 앞이어야 하나</h3>
+      <p>비교기의 실제 극성은 회로가 정한다. 엔벨로프가 +단자로 가는지, 뒤에 반전단이
+      있는지에 따라 뒤집힌다. <code>CMP_INVERT</code> 가 그걸 흡수한다 —
+      <b>파라미터 1줄, 재설계 아님</b>(ICD §6).</p>
+      <p style="margin-top:8px"><b>위치가 핵심이다. OR 과 반전은 교환되지 않는다:</b></p>
+      <p class="m" style="margin-top:4px; font-size:12px; color:var(--ink)">
+        ~a | ~b = ~(a &amp; b) ≠ ~(a | b)</p>
+      <p style="margin-top:8px">입력에서 뒤집으면 <b>"한 번이라도 울렸나"</b>가 되고, 출력에서
+      뒤집으면 <b>"한 번도 안 울렸나"</b>가 된다 — 완전히 다른 함수다. 경계에서 한 번만
+      뒤집으면 <code>sticky</code> 아래로는 아무도 이 문제를 몰라도 된다.</p>
+      <p style="margin-top:8px">비용은 <b>0</b> 이다. 상수 파라미터라 elaboration 에서
+      풀려 0 이면 게이트가 안 생긴다. 위 버튼으로 눌러 보면 <code>cmp_in</code> 만
+      정확한 보수가 되고 나머지는 그대로다.</p>
+    </div>
+  </div>
+</section>
+
 <section style="margin-top:32px">
   <div class="console">
     <div class="bar">
