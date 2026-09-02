@@ -399,7 +399,7 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
       <caption>부품 — 인터페이스 블록</caption>
       <thead><tr><th>지정자</th><th>부품</th><th>사양</th><th>비고</th></tr></thead>
       <tbody>
-        <tr><td class="m">J1</td><td class="m">2×8 박스 헤더</td><td>2.54 mm, 슈라우드 + 키, TH</td><td><b>키가 필수</b> — 뒤집어 꽂히면 채널이 뒤집힌다</td></tr>
+        <tr><td class="m">J1</td><td class="m">GIN LING 일반박스헤더 Dual 2×8 Straight</td><td>2.54 mm, 슈라우드 + 키, TH (DS1013)</td><td><b>키가 필수</b> — 뒤집어 꽂히면 채널이 뒤집힌다</td></tr>
         <tr><td class="m">J2</td><td class="m">2×3 헤더</td><td>2.54 mm, 슈라우드 권장</td><td>3.3 V ×2, GND ×2, 여분 ×2</td></tr>
         <tr><td class="m">U1</td><td class="m">LP5907-1.8</td><td>250 mA, 저잡음 6.5 µV<sub>rms</sub>, 고 PSRR</td><td>대안: ADI <b>ADP151</b>. <b>주문 코드·재고는 확인 필요</b></td></tr>
         <tr><td class="m">C1</td><td class="m">10 µF</td><td>X5R/X7R, 6.3 V 이상, 0805</td><td>입력 벌크</td></tr>
@@ -428,6 +428,69 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
     </ul>
   </div>
 
+  <h3>케이블과 커넥터 — 실제 구매 품목</h3>
+  <p>
+    디바이스마트 기준이고 셋을 합쳐 <b>3천 원 남짓</b>이다. 압착은 실패할 수 있고
+    부품이 몇 백 원이니 <b>여분을 같이 산다.</b>
+  </p>
+  <div class="tblwrap">
+    <table>
+      <caption>신호 경로 — 사야 하는 것 셋</caption>
+      <thead><tr><th></th><th>부품</th><th>수량</th><th>단가</th><th>하는 일</th></tr></thead>
+      <tbody>
+        <tr><td class="ch">①</td><td class="m">[EunSung] Flat Cable 16P<br>(1.27 mm) 1 M</td><td class="m">1</td><td class="m">2,090원</td>
+            <td>16가닥을 나른다. <b>붙어 있어서 순서가 바뀔 수 없다</b> — 낱개 전선이면 두 가닥을 바꿔 꽂을 수 있다. 빨간 줄이 1번 도체</td></tr>
+        <tr><td class="ch">②</td><td class="m">[GIN LING] IDC1016-16<br>(2.54 mm)</td><td class="m">2<br>(+여분 2)</td><td class="m">231원</td>
+            <td><b>케이블 양끝</b>에 붙이는 암 커넥터. 커버를 누르면 칼날이 피복을 뚫고 구리를 문다 — 피복 벗김도 납땜도 없다</td></tr>
+        <tr><td class="ch">③</td><td class="m">[GIN LING] 일반박스헤더<br>Dual 2×8 Straight</td><td class="m">1<br>(+여분 1)</td><td class="m">165원</td>
+            <td><b>AFE 기판에만.</b> XM105 의 J1 은 이미 달려 있다. 슈라우드와 키가 <b>방향을 강제</b>한다</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p>
+    <b>치수 검산.</b> IDC1016-16 은 16 포지션에서 B = 17.78 mm 이고 7 × 2.54 = 17.78,
+    박스헤더(DS1013)는 C = 17.78 mm 로 같은 핀 스팬이다 — <b>맞물린다.</b>
+  </p>
+
+  <div class="chain"><pre>[AFE 기판]                                        [XM105]
+ 비교기 ×16
+     │
+     ▼
+  ③박스헤더 ◄══②IDC소켓══①리본══②IDC소켓══► J1 핀 9–24
+    (구매)      (구매)    (구매)   (구매)      (이미 있음)
+     ▲                                          ▲
+  키가 방향 고정                          민짜 핀헤더 — 방향을 사람이 확인</pre></div>
+
+  <div class="box ok">
+    <h4>1.27 mm 리본이 2.54 mm 2열이 되는 곳이 ②다</h4>
+<pre style="margin:8px 0 0; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.7; color:var(--ink); overflow-x:auto">리본 (1.27 mm)   1  2  3  4  5  6  7  8 …
+                 │  │  │  │  │  │  │  │
+       윗줄  (2.54 mm)  1     3     5     7
+       아랫줄 (2.54 mm)     2     4     6     8</pre>
+    <p style="margin:9px 0 0">홀수 도체가 한 줄, 짝수 도체가 다른 줄로 간다. <b>그래서 §02 의
+    매핑에서 ch00(핀 9)과 ch01(핀 10)이 세로로 이웃한 핀</b>이다.</p>
+  </div>
+
+  <div class="box warn">
+    <h4>압착한 뒤 반드시 전수 확인</h4>
+    전용 프레스가 없으면 <b>바이스로 천천히, 평평하게</b> 누른다. 한쪽이 먼저 들어가면
+    그쪽 채널만 물린다. 누른 뒤 멀티미터로:
+    <ul style="margin:8px 0 0">
+      <li>1↔1, 2↔2 … 16↔16 <b>도통</b></li>
+      <li><b>인접 핀 사이 단락 없음</b> (과압착 시 생긴다)</li>
+    </ul>
+    <p style="margin:9px 0 0">한 채널이 덜 물리면 증상은 <b>"정확도가 좀 낮다" 뿐</b>이다.</p>
+  </div>
+
+  <div class="box warn">
+    <h4>XM105 쪽은 키가 없다</h4>
+    AFE 기판 쪽은 ③이 방향을 잡아주지만, <b>XM105 의 J1 은 민짜 핀헤더</b>라 소켓의 키
+    돌기가 걸릴 데가 없다 — <b>뒤집어서도, 한 칸 밀려서도 꽂힌다.</b>
+    1번 핀 위치를 유성펜으로 표시하고, 꽂을 때마다 확인하고, <b>주파수 스윕 대각선
+    테스트</b>(§07)로 최종 검증한다. <b>리본의 빨간 줄이 ch00 으로 가야 한다.</b>
+  </div>
+
   <h3>J1 핀 배치 — 이 그림대로 실크스크린을 찍는다</h3>
   <div class="hdr">
     <div class="hgrid" id="hdrgrid"></div>
@@ -445,11 +508,13 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
     <li>보드 이름과 리비전 — 나중에 어느 판인지 못 찾으면 곤란해진다</li>
   </ul>
 
-  <h3>케이블</h3>
+  <h3>케이블 배선</h3>
   <ul>
-    <li><b>16가닥 플랫 리본</b> + 2×8 IDC 소켓 양끝 (1.27 mm 리본 피치). 30 cm 이내</li>
-    <li>전원용 <b>4가닥</b> 별도. <b>신호 리본과 테이프로 나란히 묶어서</b> 간다</li>
-    <li>브링업 초반에는 듀폰 점퍼선으로 시작해도 된다 — 되는 것을 본 뒤 리본으로 정돈</li>
+    <li>신호 리본은 <b>30 cm 이내</b>로 자른다 (1 M 를 사므로 세 번은 다시 만들 수 있다)</li>
+    <li>전원·접지는 <b>듀폰 점퍼선 4가닥</b>이면 된다 — XM105 J16 핀 1·2(3.3 V), 3·4(GND)</li>
+    <li><b>두 케이블을 테이프로 나란히 묶어서</b> 간다. 신호의 리턴 경로가 전원 케이블에 있다</li>
+    <li>브링업 초반에는 신호도 듀폰 점퍼선으로 시작해도 된다 — 되는 것을 본 뒤 리본으로 정돈하면
+        <b>압착 실패와 매핑 오류를 분리해서</b> 볼 수 있다</li>
   </ul>
 </section>
 
