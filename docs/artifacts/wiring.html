@@ -225,7 +225,7 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
           fill="none" marker-end="url(#arp)"/>
     <line x1="424" y1="266" x2="424" y2="312" stroke="var(--analog)" stroke-width="1.2" opacity=".7"/>
     <text x="300" y="306" font-family="IBM Plex Mono, monospace" font-size="10"
-          fill="var(--analog)" text-anchor="middle">VCC3V3 3.3 V + GND — J16 경유, 케이블 2</text>
+          fill="var(--analog)" text-anchor="middle">VCC3V3 3.3 V + GND — U103 → J16, 케이블 2</text>
 
     <g stroke="var(--live)" stroke-width="1.3" stroke-dasharray="5 4" opacity=".8">
       <line x1="332" y1="60" x2="332" y2="288"/>
@@ -313,19 +313,56 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
 </section>
 
 <section>
-  <h2><span class="num">04</span>전원 — 3.3 V 를 받아 기판에서 1.8 V 로</h2>
-  <p>
-    전원은 <b>FMC 커넥터에서 직접</b> 받는다 — <code>VCC3V3</code> 가 핀
-    <b>C39 · D36 · D38 · D40</b> 네 곳에 나와 있다. 이걸 케이블로 넘겨
-    <b>AFE 기판의 LDO 로 1.8 V 를 만든다</b>:
+  <h2><span class="num">04</span>전원 — U103 의 3.3 V 를 받아 기판에서 1.8 V 로</h2>
+  <p class="sub">
+    KC705 의 <b>스위칭 레귤레이터 U103 (3.3 V @ 10 A)</b> 이 만드는 <code>VCC3V3</code> 를
+    FMC 를 통해 받아, <b>AFE 기판의 LDO 로 1.8 V 를 만든다</b>. 10 A 중 우리가 쓰는 것은
+    1 mA 남짓이다.
   </p>
-  <ul>
-    <li>AFE 의 1.8 V 가 <b>VADJ 와 무관</b>해진다 — 전압 레벨 결정과 전원이 분리된다</li>
-    <li>로컬 LDO 의 PSRR 이 <b>한 겹 더</b> 붙는다</li>
-    <li>디커플링이 <b>부하 바로 옆</b>에 온다. 30 cm 케이블 끝이 아니라</li>
-    <li>고를 때 볼 것은 <b>전류 용량이 아니라 잡음·PSRR</b> 이다 — ch15 의 여유가 16 mV 뿐이라
-        출력 잡음이 µVrms 단위인 저잡음 LDO 가 유일하게 의미 있는 선택이다</li>
-  </ul>
+  <div class="chain"><pre>U103  스위칭 3.3 V @ 10 A            (UG810 그림 1-34, Power Controller 1 / U55)
+  │
+VCC3V3 플레인
+  │
+FMC LPC 핀  C39 · D36 · D38 · D40
+  │
+XM105 ─ J6 셧트 2개 ─→ HDR_POWER = 3.3 V
+  │                     J6-1 ↔ J6-3  그리고  J6-2 ↔ J6-4
+J16 핀 1·2 (3.3 V) · 핀 3·4 (GND)
+  │  케이블 2 — 신호 리본과 나란히 묶어서
+AFE 기판 LDO  3.3 → 1.8 V
+  │
+16채널 · 0.9 V 중간전위 · 비교기</pre></div>
+  <div class="box ok">
+    <h4>로컬 LDO 가 값어치를 하는 이유가 여기 있다</h4>
+    <b>U103 은 스위칭 레귤레이터다.</b> 출력에 스위칭 주파수의 리플이 실려 있고, 그게
+    30 cm 케이블을 타고 온다. 뒤에 LDO 를 한 겹 두면 PSRR 로 그걸 깎고, <b>디커플링이
+    부하 바로 옆</b>에 온다. ch15 의 여유가 16 mV 뿐이라 이 한 겹이 싸다.
+    <p style="margin:9px 0 0">LDO 를 고를 때 볼 것은 <b>전류 용량이 아니라 출력 잡음과
+    PSRR</b> 이다. 1 mA 를 못 대는 LDO 는 없다.</p>
+  </div>
+
+  <h3>셧트 두 개 — 유일하게 따로 사야 하는 것</h3>
+  <p>
+    2.54 mm 점퍼 캡 2개. <b>XM105 킷에 들어 있지 않다</b>(UG537 p18). J6 는 3×2 헤더이고
+    <b>3.3 V 위치는 <code>J6-1↔J6-3</code>, <code>J6-2↔J6-4</code></b> 다.
+    (VADJ 위치는 <code>J6-3↔J6-5</code>, <code>J6-4↔J6-6</code> — <b>이쪽이 아니다.</b>)
+  </p>
+
+  <div class="box warn">
+    <h4>AFE 를 물리기 전에 J16 핀 1–핀 3 사이를 재라</h4>
+    <b>3.3 V 가 나와야 한다.</b>
+    <ul style="margin:8px 0 0">
+      <li><b>0 V</b> — 셧트가 안 꽂혔거나 위치가 틀렸다. 안전한 실패다(안 켜질 뿐)</li>
+      <li><b>2.5 V</b> — 셧트가 VADJ 위치다. <b>당장은 멀쩡히 돈다</b> — 1.8 V LDO 에
+          2.5 V 를 넣으면 헤드룸 0.7 V 라 정상 동작한다. 그래서 <b>조용히 지나간다</b></li>
+    </ul>
+    <p style="margin:9px 0 0">조용히 지나가는 것이 나중에 문제가 된다. 신호 레벨 때문에
+    <b>VADJ 를 1.8 V 로 내리는 날</b>, 셧트가 VADJ 위치면
+    <code>HDR_POWER = 1.8 V</code> 가 되어 <b>1.8 V LDO 의 헤드룸이 0 이 된다.</b>
+    아날로그 전체가 규정보다 낮은 전압에서 돌고, 증상은 또 "정확도가 좀 낮다"뿐이다.
+    <b>J6 는 3.3 V 위치로 두고 그 상태를 문서에 박아둔다</b> — VADJ 를 나중에 어떻게 하든.</p>
+  </div>
+
   <div class="tblwrap">
     <table>
       <caption>전류 — 레일이 제약이 아니다</caption>
@@ -339,10 +376,8 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
     </table>
   </div>
   <p>
-    OPA379 는 데이터시트 제목이 아예 <i>"1.8V, 2.9 µA, 90kHz"</i> 이다(SBOS347D).
+    OPA379 는 데이터시트 제목이 아예 <i>"1.8V, 2.9 µA, 90kHz"</i> 다(SBOS347D).
     비교기 값은 ICD §7 에 적힌 0.58 µA 기준이며 <b>데이터시트는 아직 안 읽었다</b>.
-    XM105 를 경유하는 경우에는 J16 의 <code>HDR_POWER</code> 를 쓰는데, J6 셧트로 3.3 V 를
-    골라야 하고 <b>셧트는 킷에 들어 있지 않다</b>(UG537 p18). 자작 카드면 그 단계가 없다.
   </p>
 </section>
 
