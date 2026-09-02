@@ -153,9 +153,9 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
 <section style="margin-top:34px">
   <h2><span class="num">01</span>전체 사슬</h2>
   <figure style="margin:0 0 18px">
-  <svg viewBox="0 0 980 372" role="img" style="width:100%;height:auto;display:block;
+  <svg viewBox="0 0 980 348" role="img" style="width:100%;height:auto;display:block;
        background:var(--card);border:1px solid var(--rule);border-radius:4px"
-       aria-label="AFE 기판의 비교기 16가닥이 브레이크아웃 카드의 레벨 변환기를 거쳐 KC705 의 FMC LPC 로 들어가고, 전원은 같은 케이블을 반대 방향으로 흘러 FMC 의 VCC3V3 가 AFE 기판의 LDO 로 들어간다">
+       aria-label="AFE 기판의 비교기 16가닥이 XM105 의 J1 헤더를 거쳐 KC705 의 FMC LPC 로 직결되고, 전원 3.3 V 는 XM105 의 J16 을 거쳐 반대 방향으로 AFE 기판의 LDO 로 들어간다">
     <defs>
       <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
         <path d="M0 0 L10 5 L0 10 z" fill="currentColor"/>
@@ -165,99 +165,99 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
       </marker>
     </defs>
     <g fill="none" stroke="currentColor" stroke-width="1" opacity=".35" stroke-dasharray="4 4">
-      <rect x="16" y="44" width="300" height="272" rx="5"/>
-      <rect x="348" y="44" width="256" height="272" rx="5"/>
-      <rect x="636" y="44" width="328" height="272" rx="5"/>
+      <rect x="16" y="44" width="300" height="252" rx="5"/>
+      <rect x="348" y="44" width="256" height="252" rx="5"/>
+      <rect x="636" y="44" width="328" height="252" rx="5"/>
     </g>
     <g font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" opacity=".62">
       <text x="28" y="34">AFE 기판 — 동료</text>
-      <text x="360" y="34">브레이크아웃 카드</text>
+      <text x="360" y="34">XM105 — 수동 팬아웃</text>
       <text x="648" y="34">KC705 — 우리</text>
     </g>
 
     <g fill="none" stroke="currentColor" stroke-width="1.5">
-      <rect x="36"  y="100" width="124" height="54" rx="3"/>
-      <rect x="180" y="100" width="116" height="54" rx="3"/>
-      <rect x="368" y="100" width="116" height="54" rx="3"/>
-      <rect x="516" y="100" width="72"  height="54" rx="3"/>
-      <rect x="656" y="100" width="108" height="54" rx="3"/>
-      <rect x="800" y="88"  width="146" height="78" rx="3"/>
-      <rect x="36"  y="232" width="124" height="46" rx="3"/>
+      <rect x="36"  y="96"  width="124" height="54" rx="3"/>
+      <rect x="180" y="96"  width="116" height="54" rx="3"/>
+      <rect x="372" y="96"  width="104" height="54" rx="3"/>
+      <rect x="508" y="96"  width="72"  height="170" rx="3"/>
+      <rect x="660" y="96"  width="112" height="54" rx="3"/>
+      <rect x="808" y="84"  width="142" height="78" rx="3"/>
+      <rect x="36"  y="220" width="124" height="46" rx="3"/>
+      <rect x="372" y="220" width="104" height="46" rx="3"/>
     </g>
     <g font-family="IBM Plex Sans KR, IBM Plex Sans, sans-serif" font-size="12" fill="currentColor" text-anchor="middle">
-      <text x="98"  y="124">아날로그 체인 ×16</text>
-      <text x="238" y="124">비교기 ×16</text>
-      <text x="426" y="124">레벨 변환기</text>
-      <text x="552" y="120">FMC</text><text x="552" y="141">커넥터</text>
-      <text x="710" y="122">LPC J2</text>
-      <text x="873" y="114">kws_frame_ctrl</text>
-      <text x="873" y="142">kws_top</text>
-      <text x="98"  y="252">LDO</text>
+      <text x="98"  y="120">아날로그 체인 ×16</text>
+      <text x="238" y="120">비교기 ×16</text>
+      <text x="424" y="120">J1 헤더</text>
+      <text x="544" y="172">FMC</text><text x="544" y="193">커넥터</text>
+      <text x="716" y="118">LPC J2</text>
+      <text x="879" y="110">kws_frame_ctrl</text>
+      <text x="879" y="138">kws_top</text>
+      <text x="98"  y="240">LDO</text>
+      <text x="424" y="240">J16 헤더</text>
     </g>
     <g font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" opacity=".6" text-anchor="middle">
-      <text x="98"  y="141">GIC · 검출기 · 1.8 V</text>
-      <text x="238" y="141">LPV7215 · 1.8 V</text>
-      <text x="426" y="141">1.8 V → 2.5 V</text>
-      <text x="710" y="139">VCCO = VADJ 2.5 V</text>
-      <text x="873" y="158">16비트/프레임 → 클래스</text>
-      <text x="98"  y="268">3.3 V → 1.8 V</text>
+      <text x="98"  y="137">GIC · 검출기 · 1.8 V</text>
+      <text x="238" y="137">LPV7215 · 1.8 V</text>
+      <text x="424" y="137">핀 9–24 · 접지 없음</text>
+      <text x="716" y="135">VCCO = VADJ 2.5 V</text>
+      <text x="879" y="154">16비트/프레임 → 클래스</text>
+      <text x="98"  y="256">3.3 V → 1.8 V</text>
+      <text x="424" y="256">3.3 V · GND</text>
     </g>
 
     <g stroke="currentColor" stroke-width="1.6" fill="none" marker-end="url(#ar)">
-      <line x1="160" y1="127" x2="174" y2="127"/>
-      <line x1="296" y1="127" x2="362" y2="127"/>
-      <line x1="484" y1="127" x2="510" y2="127"/>
-      <line x1="588" y1="127" x2="650" y2="127"/>
-      <line x1="764" y1="127" x2="794" y2="127"/>
+      <line x1="160" y1="123" x2="174" y2="123"/>
+      <line x1="296" y1="123" x2="366" y2="123"/>
+      <line x1="476" y1="123" x2="502" y2="123"/>
+      <line x1="580" y1="123" x2="654" y2="123"/>
+      <line x1="772" y1="123" x2="802" y2="123"/>
     </g>
     <g font-family="IBM Plex Mono, monospace" font-size="10" fill="currentColor" text-anchor="middle">
-      <text x="329" y="118">16가닥 · 0–1.8 V</text>
-      <text x="497" y="118">0–2.5 V</text>
-      <text x="619" y="118">메자닌</text>
+      <text x="331" y="114">16가닥 · 0–1.8 V</text>
+      <text x="617" y="114">메자닌 · 직결</text>
     </g>
+    <text x="424" y="86" font-family="IBM Plex Mono, monospace" font-size="10"
+          fill="currentColor" opacity=".55" text-anchor="middle">신호를 건드리지 않는다</text>
 
-    <path d="M98 232 L98 158" stroke="currentColor" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
-    <path d="M126 210 L426 210 L426 158" stroke="currentColor" stroke-width="1.2" fill="none"
-          opacity=".55" marker-end="url(#ar)"/>
-    <text x="276" y="204" font-family="IBM Plex Mono, monospace" font-size="10"
-          fill="currentColor" opacity=".62" text-anchor="middle">1.8 V — 변환기 A면 기준</text>
-
-    <path d="M710 154 L710 258 L168 258" stroke="var(--analog)" stroke-width="1.6" fill="none"
-          marker-end="url(#arp)"/>
-    <text x="400" y="250" font-family="IBM Plex Mono, monospace" font-size="10"
-          fill="var(--analog)" text-anchor="middle">VCC3V3 — FMC 핀 C39 · D36 · D38 · D40</text>
+    <path d="M98 220 L98 154" stroke="currentColor" stroke-width="1.6" fill="none" marker-end="url(#ar)"/>
+    <path d="M716 150 L716 312 L98 312 L98 270" stroke="var(--analog)" stroke-width="1.6"
+          fill="none" marker-end="url(#arp)"/>
+    <line x1="424" y1="266" x2="424" y2="312" stroke="var(--analog)" stroke-width="1.2" opacity=".7"/>
+    <text x="300" y="306" font-family="IBM Plex Mono, monospace" font-size="10"
+          fill="var(--analog)" text-anchor="middle">VCC3V3 3.3 V + GND — J16 경유, 케이블 2</text>
 
     <g stroke="var(--live)" stroke-width="1.3" stroke-dasharray="5 4" opacity=".8">
-      <line x1="332" y1="60" x2="332" y2="300"/>
-      <line x1="500" y1="60" x2="500" y2="300"/>
+      <line x1="332" y1="60" x2="332" y2="288"/>
     </g>
     <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--live)" text-anchor="middle">
       <text x="332" y="54">ICD 경계</text>
-      <text x="500" y="54">전압 도메인</text>
-      <text x="332" y="292">16가닥 + GND</text>
-      <text x="332" y="306">+ 3.3 V 만 넘는다</text>
-      <text x="500" y="292">1.8 V │ 2.5 V</text>
+      <text x="332" y="282">16가닥 + GND + 3.3 V</text>
     </g>
-    <text x="98" y="306" font-family="IBM Plex Mono, monospace" font-size="10"
-          fill="currentColor" opacity=".55">0.9 V 중간전위 = 16채널 공통 기준</text>
-    <text x="648" y="340" font-family="IBM Plex Sans KR, sans-serif" font-size="11"
-          fill="currentColor" opacity=".62">FPGA → 아날로그 신호는 없다 (ICD §2)</text>
+
+    <path d="M700 208 L700 158" stroke="var(--live)" stroke-width="1.2" fill="none" opacity=".8"/>
+    <g font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--live)" text-anchor="middle">
+      <text x="716" y="224">유일한 미확인</text>
+      <text x="716" y="238">1.8 V 가 V_IH(≈1.7 V) 를</text>
+      <text x="716" y="252">넘는가 — 채널 하나로 확인</text>
+    </g>
   </svg>
   <figcaption style="font-size:12.5px;color:var(--dim);margin-top:9px;line-height:1.6">
-    신호는 왼쪽에서 오른쪽으로, <b style="color:var(--analog)">전원은 같은 케이블을 거꾸로</b>
-    흐른다. 전압 도메인이 바뀌는 곳은 AFE 기판이 아니라 <b>브레이크아웃 카드 위</b>이고,
-    그래서 아날로그 기판은 1.8 V 하나로 끝난다.
+    XM105 는 <b>수동 팬아웃</b>이다 — J1 의 40핀이 FMC 핀으로 직결돼 있어(UG537 표 1-10)
+    비교기 출력이 <b>손대지 않은 채로</b> FPGA 핀에 닿는다. 만들 기판도 변환기도 없고,
+    남는 것은 <b style="color:var(--live)">1.8 V 가 2.5 V 뱅크의 입력 문턱을 넘는지</b>
+    하나뿐이다. J1 에 접지가 없어서 전원·접지는 J16 을 거치는 <b>두 번째 케이블</b>이 된다.
   </figcaption>
   </figure>
-  <div class="box warn">
-    <h4>커넥터 선택이 접지 배치를 정한다</h4>
-    처음에는 AFE 헤더를 <b>신호/GND 교대</b> 로 하자고 했는데, <b>XM105 의 J1 은 40핀
-    전부가 신호</b> 라 접지가 한 핀도 없다(UG537 표 1-10). XM105 를 쓰면 리본이 1:1 로
-    안 꽂히므로 <b>신호 리본과 전원·접지 케이블이 둘로 갈라진다.</b>
-    <p style="margin:9px 0 0"><b>최소 FMC 카드를 직접 만들면 이 제약이 사라진다</b> —
-    FMC 커넥터 자체에는 접지가 <b>61핀</b> 있어서 원하는 대로 교대 배치할 수 있고,
-    3.3 V 도 커넥터에서 바로 나와 <b>케이블이 하나로 끝난다.</b> 연구실에 XM105 가 있으면
-    그것부터 쓰고(0원, 오늘 됨), 기판을 어차피 뜨면 자작이 깔끔하다.</p>
+  <div class="box ok">
+    <h4>만들 기판은 없다</h4>
+    XM105 가 <b>곧 브레이크아웃 카드</b>다 — 따로 만들 것이 아니라 이미 그 물건이다.
+    J1 의 40핀이 FMC 핀으로 직결돼 있어(UG537 표 1-10) 비교기 출력이 손대지 않은 채로
+    FPGA 핀에 닿는다. <b>전선을 0.635 mm 커넥터까지 닿게 해주는 기구물</b>일 뿐이다.
+    <p style="margin:9px 0 0">직접 만드는 것은 <b>XM105 가 없고 구할 수도 없을 때만</b>
+    의미가 있다. FMC 커넥터의 접지 61핀을 쓸 수 있어 케이블이 하나로 줄기는 하지만,
+    그 이점보다 <b>0.635 mm 160핀 손납땜 + 기판 제작 + 틀릴 위험</b>이 크다.
+    느린 신호 16가닥에는 J16·J15 의 접지 서너 핀이면 충분하다.</p>
   </div>
 </section>
 
@@ -362,52 +362,40 @@ footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--rule); colo
 </section>
 
 <section>
-  <h2><span class="num">06</span>전압 레벨 — 어디서 맞출 것인가</h2>
+  <h2><span class="num">06</span>전압 레벨 — 설계하지 말고 재라</h2>
   <p class="sub">
-    비교기가 <b>0–1.8 V</b> 로 흔든다(넷리스트의 <code>XU4 … 1.8V GND …</code>). KC705 에는
-    <b>기본 설정에 1.8 V I/O 뱅크가 없다</b> — 뱅크 0/14/15 는 2.5 V, 32/33/34 는 DDR3 용
-    1.5 V, 나머지는 VADJ 이고 기본값이 2.5 V 다(UG810 표 1-3). 둘 중 하나에서 맞춘다.
+    비교기가 <b>0–1.8 V</b> 로 흔들고 LPC 뱅크의 VCCO 는 VADJ, 기본값 2.5 V 다
+    (UG810 표 1-3). <code>LVCMOS25</code> 의 <code>V_IH</code> 가 약 1.7 V 이므로
+    <b>여유가 ~95 mV</b> 다 — LDO 공차 −2% 를 넣으면 60 mV.
   </p>
-  <div class="opts">
-    <div class="opt pick">
-      <span class="tag">기본안 — 추가 하드웨어 없음</span>
-      <h4>B. 브레이크아웃 카드에서 변환</h4>
-      <p>1.8 → 2.5 V 변환기를 <b>카드 위에</b> 올린다. VADJ 는 기본 2.5 V 그대로 두고
-      <code>LVCMOS25</code> 로 받는다. <b>KC705 를 아예 안 건드린다</b> — 공용 보드라면
-      이게 결정적이다.</p>
-      <p style="margin-top:8px">변환기의 <b>A면(1.8 V 쪽)</b> 기준은 AFE 기판 LDO 의 출력을
-      케이블에 한 가닥 태워 오면 된다. 전류는 µA 단위라 전원이라기보다 기준선이다.
-      카드에서 3.3 V 로 따로 만들어도 무방하다 — 문턱이 <code>0.65 × VCCA ≈ 1.17 V</code>
-      라 <b>여유가 600 mV</b> 로 넉넉하다.</p>
-    </div>
-    <div class="opt">
-      <span class="tag">동글이 있고 보드가 전용이라면</span>
-      <h4>A. VADJ 를 1.8 V 로</h4>
-      <p>J65 <b>물리 점퍼</b>를 뽑고 TI Fusion GUI 로 UCD9248 을 재설정.
-      <code>LVCMOS18</code> 직결, 신호 경로에 부품이 0 개.</p>
-      <p style="margin-top:8px"><b>비용:</b> TI <code>EVM USB-TO-GPIO</code> 동글.
-      <b>주의 둘:</b> VADJ 는 뱅크 12/13/16/17/18 을 함께 먹인다(뱅크 12 = SDIO).
-      그리고 이 설정은 <b>전원 컨트롤러에 저장</b>되므로 보드를 다른 사람과 나눠 쓰면
-      그쪽 설정을 깨뜨린다.</p>
-    </div>
-    <div class="opt">
-      <span class="tag">검토했으나 채택 안 함</span>
-      <h4>C. 아날로그 쪽 전압을 올린다</h4>
-      <p>비교기만 2.5 V 로 돌리면 출력 스윙이 VADJ 기본값과 맞아 동글도 변환기도 필요
-      없다 — 비교기는 마지막 단이라 그 전원은 <b>출력 스윙만</b> 정하고 입력 쪽은 1.8 V
-      도메인에 남기 때문이다.</p>
-      <p style="margin-top:8px"><b>2026-09-01 결정: 비교기도 1.8 V 로 간다.</b>
-      AFE 전체를 2.5 V 로 올리는 쪽은 더 나쁘다 — 스윙 16–108 mV, 정지점 0.938 V,
-      임계값 0.97–0.99 V, <code>transfer_v4</code> 프레임 46,546개와 거기서 나온 0.7123 이
-      <b>전부 1.8 V 기준이라 무효가 된다.</b></p>
-    </div>
+  <p>
+    빠듯해 보이지만 <b>1.7 V 는 공정·온도·전압 최악 조건의 스펙 값</b>이고 실제 CMOS
+    입력은 <code>VCCO/2 ≈ 1.25 V</code> 근처에서 스위칭한다. <b>거의 확실히 돈다.</b>
+    그러니 변환기를 미리 설계에 넣을 것이 아니라, <b>채널 하나 물려서 재고 정하면 된다</b>
+    — 브링업 3단계에서 5분이면 끝난다.
+  </p>
+  <div class="box ok">
+    <h4>먼저 물어볼 한 줄이 이 절을 통째로 없앨 수도 있다</h4>
+    <code>docs/ICD.md §7</code> 의 2번이 아직 열려 있다 — <b>비교기 출력이 푸시풀인가
+    오픈드레인인가.</b> 오픈드레인이면 어차피 외부 풀업이 필요하고,
+    <b>그 풀업을 VADJ(2.5 V)에 걸면 출력이 0–2.5 V 로 흔들린다.</b>
+    저항 16개로 끝나고 변환기도 동글도 필요 없어진다.
   </div>
-  <div class="box ask">
-    <b>직결(변환기 없이)이 안 되는 이유:</b> 1.8 V 출력이 <code>LVCMOS25</code> 의
-    <code>V_IH</code>(≈1.7 V) 위에 있기는 하다. 그러나 여유가 <b>100 mV</b> 이고 LDO 공차
-    ±2% 를 넣으면 <b>60 mV</b> 로 준다. 정확한 값은 UG810 이 아니라 Kintex-7 데이터시트
-    <b>DS182</b> 에서 확인해야 하며, 벤치에서 재볼 값어치는 있어도 <b>걸고 갈 값은 아니다.</b>
-  </div>
+  <p>안 될 경우의 대비책은 둘이고, 둘 다 그때 붙여도 늦지 않다:</p>
+  <ul>
+    <li><b>레벨 변환기</b> — XM105 헤더와 케이블 사이에 1.8 → 2.5 V 변환 기판.
+        A면(1.8 V 쪽) 기준은 AFE 기판 LDO 출력을 한 가닥 태워 오면 되고, 문턱이
+        <code>0.65 × VCCA ≈ 1.17 V</code> 라 <b>여유가 600 mV</b> 로 넉넉해진다</li>
+    <li><b>VADJ 를 1.8 V 로</b> — J65 물리 점퍼를 뽑고 TI <code>EVM USB-TO-GPIO</code> 동글로
+        UCD9248 재설정. 신호 경로에 부품이 0 개가 되지만, <b>설정이 전원 컨트롤러에
+        저장</b>되므로 보드를 나눠 쓰면 다른 사람 설정을 깨뜨린다</li>
+  </ul>
+  <p>
+    참고로 <b>비교기만 2.5 V 로 돌리는 방법</b>도 있었다 — 비교기는 마지막 단이라 그 전원이
+    출력 스윙만 정하기 때문이다. <b>2026-09-01 결정으로 비교기도 1.8 V 로 간다.</b>
+    (AFE 전체를 2.5 V 로 올리는 쪽은 스윙·정지점·임계값과 <code>transfer_v4</code> 결과가
+    전부 무효가 되므로 애초에 논외다.)
+  </p>
 </section>
 
 <section>
