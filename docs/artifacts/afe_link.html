@@ -131,7 +131,23 @@ code{font-family:'IBM Plex Mono',monospace; font-size:.9em;
   border-radius:3px; color:var(--surface); font-weight:500}
 .tag.v5{background:var(--v5)} .tag.sig{background:var(--sig)}
 .tag.gnd{background:var(--gnd)}
+.tag.nc{background:none; color:var(--ink3); border:1px solid var(--nc)}
 .scroll{overflow-x:auto}
+
+/* ch <-> 핀 칩 */
+.chips{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule);
+  border-radius:7px; overflow:hidden; margin-top:20px}
+.chip{background:var(--surface); padding:9px 12px; display:flex;
+  justify-content:space-between; align-items:baseline; gap:8px;
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px}
+.chip .cc{color:var(--sig); font-weight:500}
+.chip .cp{color:var(--ink3)}
+
+/* 조건부 표시 */
+.ghost{fill:none; stroke:var(--ink3); stroke-width:1.2; stroke-dasharray:5 4}
+.gl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.flow.gndf{stroke:var(--gnd)} .fl.gndf{fill:var(--gnd)}
 
 /* 부품 */
 .bom{display:grid; gap:1px; background:var(--rule); border:1px solid var(--rule);
@@ -190,56 +206,52 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 </header>
 
 <p class="lede">아날로그 기판에서 나오는 비교기 16가닥을 FPGA 킷의 확장 포트까지
-가져오는 물리 설계다. 핵심은 <strong>중간에 어댑터를 하나 두는 것</strong> — 킷의
-커넥터는 50핀이고 그 중 18개만 쓰는데, 그 8.3&nbsp;cm짜리 부품을 아날로그 기판에
-올릴 이유가 없다.</p>
+가져오는 물리 설계다. <strong>기판 두 개, 케이블 한 개, 커넥터 두 개</strong>가
+전부다 — AFE 기판에 킷과 똑같은 2×25 박스헤더를 하나 올리고 리본으로 잇는다.</p>
 
 <section>
-  <div class="eyebrow"><span class="num">체인</span><h2>세 덩어리와 두 케이블</h2></div>
-  <p class="dek">신호는 왼쪽으로, 전원은 오른쪽으로 흐른다. FPGA 에서 아날로그로
-  가는 제어선은 <strong>하나도 없다</strong> — sticky OR 은 펄스가 언제 왔는지를
-  묻지 않기 때문에 프로토콜이 필요 없다.</p>
+  <div class="eyebrow"><span class="num">체인</span><h2>직결한다</h2></div>
+  <p class="dek">신호는 왼쪽으로만 흐른다. FPGA 에서 아날로그로 가는 선은
+  <strong>하나도 없다</strong> — sticky OR 은 펄스가 언제 왔는지를 묻지 않아서
+  프로토콜이 필요 없다. 그래서 이 경계에는 협상도, 클럭 공유도, 방향 제어도 없다.</p>
   <div class="plate">
     
-<svg viewBox="0 0 900 250" role="img" aria-label="AFE에서 FPGA 킷까지의 연결 체인">
-  <rect class="blk afe" x="14" y="52" width="196" height="128" rx="7"/>
-  <text class="bt" x="30" y="80">AFE 기판</text>
-  <text class="bs" x="30" y="100">동료 담당</text>
-  <text class="bi" x="30" y="128">비교기 ×16</text>
-  <text class="bi" x="30" y="148">LDO 5V→3.3/1.8</text>
-  <text class="bi" x="30" y="168">2×10 박스헤더</text>
+<svg viewBox="0 0 900 300" role="img" aria-label="AFE 기판과 FPGA 킷의 직결 연결">
+  <rect class="blk afe" x="20" y="34" width="250" height="132" rx="7"/>
+  <text class="bt" x="40" y="62">AFE 기판</text>
+  <text class="bs" x="40" y="82">동료 담당</text>
+  <text class="bi" x="40" y="110">비교기 ×16</text>
+  <text class="bi" x="40" y="130">2×25 박스헤더 (키홈)</text>
+  <text class="bi" x="40" y="150">전원은 자체 조달</text>
 
-  <rect class="blk adp" x="352" y="52" width="196" height="128" rx="7"/>
-  <text class="bt" x="368" y="80">어댑터</text>
-  <text class="bs" x="368" y="100">만능기판 · 우리 담당</text>
-  <text class="bi" x="368" y="128">2×25 박스헤더</text>
-  <text class="bi" x="368" y="148">2×10 박스헤더</text>
-  <text class="bi" x="368" y="168">점퍼 20가닥</text>
+  <rect class="blk kit" x="630" y="34" width="250" height="132" rx="7"/>
+  <text class="bt" x="650" y="62">FPGA 킷</text>
+  <text class="bs" x="650" y="82">XC7S75 · 연구실</text>
+  <text class="bi" x="650" y="110">J6 Exp. Port</text>
+  <text class="bi" x="650" y="130">2×25, 키홈, 5V·GND 포함</text>
+  <text class="bi" x="650" y="150">직렬 33Ω 내장</text>
 
-  <rect class="blk kit" x="690" y="52" width="196" height="128" rx="7"/>
-  <text class="bt" x="706" y="80">FPGA 킷</text>
-  <text class="bs" x="706" y="100">XC7S75 · 연구실</text>
-  <text class="bi" x="706" y="128">J6 Exp. Port</text>
-  <text class="bi" x="706" y="148">2×25, 키홈</text>
-  <text class="bi" x="706" y="168">직렬 33Ω 내장</text>
+  <path class="lnk" d="M270 100 H630"/>
+  <text class="ll" x="450" y="88" text-anchor="middle">50핀 리본 20cm · 1:1 스트레이트</text>
+  <text class="lv" x="450" y="124" text-anchor="middle">사용 18 / 50 · 나머지 30핀은 NC</text>
 
-  <path class="lnk" d="M210 116 H352"/>
-  <text class="ll" x="281" y="106" text-anchor="middle">20핀 리본</text>
-  <text class="lv" x="281" y="140" text-anchor="middle">16 + 5V + GND</text>
+  <path class="flow sig" d="M630 196 H270"/>
+  <text class="fl sig" x="450" y="188" text-anchor="middle">비교기 16가닥 ─ 아날로그에서 FPGA 로 (필수)</text>
+  <path class="flow gndf" d="M270 222 H630"/>
+  <text class="fl gndf" x="450" y="214" text-anchor="middle">GND ─ 기준 공유 (필수)</text>
+  <path class="flow v5" d="M270 248 H630" stroke-dasharray="2 5"/>
+  <text class="fl v5" x="450" y="240" text-anchor="middle">5V ─ 선택. 별도 전원을 쓰면 안 잇는다</text>
 
-  <path class="lnk" d="M548 116 H690"/>
-  <text class="ll" x="619" y="106" text-anchor="middle">50핀 리본 20cm</text>
-  <text class="lv" x="619" y="140" text-anchor="middle">18/50 사용</text>
-
-  <path class="flow sig" d="M690 210 H210"/>
-  <text class="fl sig" x="450" y="202" text-anchor="middle">비교기 16가닥 ─ 아날로그에서 FPGA 로</text>
-  <path class="flow v5" d="M210 236 H690"/>
-  <text class="fl v5" x="450" y="228" text-anchor="middle">5V ─ 킷에서 AFE 로</text>
+  <rect class="ghost" x="352" y="266" width="196" height="26" rx="5"/>
+  <text class="gl" x="450" y="284" text-anchor="middle">어댑터는 여기 들어간다 — 조건부</text>
 </svg>
 
-    <div class="cap">어댑터만 우리가 만든다. AFE 기판은 2×10 헤더 하나만 알면 되고,
-    킷은 이미 있는 것을 쓴다.</div>
+    <div class="cap">필수는 신호 16 + GND 뿐이다 · 5V 는 킷에서 받아도 되고
+    별도 전원을 써도 된다 · 어댑터는 아래 조건에서만 끼운다</div>
   </div>
+  <p style="margin-top:20px">50핀 중 18개만 쓰는 것이 낭비처럼 보이지만, 남는 30핀은
+  <strong>패드 30개 값</strong>일 뿐이다. 그걸 줄이겠다고 중간에 변환 기판을 넣으면
+  손납땜 40군데와 커넥터 접점 두 벌이 새로 생긴다 — 그쪽이 훨씬 비싸다.</p>
 </section>
 
 <section>
@@ -381,10 +393,148 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 </section>
 
 <section>
-  <div class="eyebrow"><span class="num">어댑터</span><h2>만능기판 위에 헤더 두 개</h2></div>
-  <p class="dek">두 헤더의 1번 핀을 <strong>같은 열</strong>에 맞춰 꽂는 것이 설계의
-  전부다. 그러면 핀 1–18 이 같은 열에 서고, 배선 20가닥 중 18가닥이 그냥
-  <strong>수직 직선</strong>이 된다. 남는 2가닥은 반대쪽 끝의 GND 다.</p>
+  <div class="eyebrow"><span class="num">AFE 쪽</span><h2>16가닥을 어떻게 뽑아내는가</h2></div>
+  <p class="dek">아날로그 기판이 할 일은 <strong>비교기 출력 하나를 헤더 핀 하나에
+  잇는 것</strong>뿐이다. 회로가 없다 — 배선 16개와 접지 공유가 전부이고,
+  나머지 30핀은 아무 데도 안 잇는다.</p>
+  <div class="plate">
+    <svg viewBox="0 0 880 380" role="img" aria-label="AFE 기판에서 비교기 16개를 2x10 헤더로 모으는 방법">
+<rect class="cmp" x="18" y="39" width="188" height="30" rx="4" stroke-dasharray="4 3"/>
+<text class="ct" x="32" y="58">LDO 입력 — 안 써도 된다</text>
+<rect class="cmp" x="18" y="79" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="98">비교기 ch00</text>
+<rect class="cmp" x="18" y="119" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="138">비교기 ch01</text>
+<rect class="cmp" x="18" y="159" width="188" height="30" rx="4" stroke-dasharray="4 3"/>
+<text class="ct" x="32" y="178">비교기 ch02 ~ ch13   (12개)</text>
+<rect class="cmp" x="18" y="199" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="218">비교기 ch14</text>
+<rect class="cmp" x="18" y="239" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="258">비교기 ch15</text>
+<text class="ell" x="112" y="298" text-anchor="middle">— 아무것도 잇지 않는다 —</text>
+<rect class="cmp" x="18" y="319" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="338">기판 접지</text>
+<rect class="hdr2" x="470" y="28" width="248" height="332" rx="6"/>
+<text class="hl2" x="594" y="18" text-anchor="middle">2×25 박스헤더 → 리본 → 킷 J6</text>
+<path class="w v5" d="M206 54 H500" stroke-dasharray="3 4"/>
+<circle class="hp v5" cx="500" cy="54" r="6"/>
+<text class="hr" x="518" y="58">핀 1·2</text>
+<text class="hv v5" x="704" y="58" text-anchor="end">5V — 선택</text>
+<path class="w sig" d="M206 94 H500"/>
+<circle class="hp sig" cx="500" cy="94" r="6"/>
+<text class="hr" x="518" y="98">핀 3</text>
+<text class="hv sig" x="704" y="98" text-anchor="end">ch00</text>
+<path class="w sig" d="M206 134 H500"/>
+<circle class="hp sig" cx="500" cy="134" r="6"/>
+<text class="hr" x="518" y="138">핀 4</text>
+<text class="hv sig" x="704" y="138" text-anchor="end">ch01</text>
+<path class="w sig" d="M206 174 H500"/>
+<circle class="hp sig" cx="500" cy="174" r="6"/>
+<text class="hr" x="518" y="178">핀 5–16</text>
+<text class="hv sig" x="704" y="178" text-anchor="end">ch02–ch13</text>
+<path class="w sig" d="M206 214 H500"/>
+<circle class="hp sig" cx="500" cy="214" r="6"/>
+<text class="hr" x="518" y="218">핀 17</text>
+<text class="hv sig" x="704" y="218" text-anchor="end">ch14</text>
+<path class="w sig" d="M206 254 H500"/>
+<circle class="hp sig" cx="500" cy="254" r="6"/>
+<text class="hr" x="518" y="258">핀 18</text>
+<text class="hv sig" x="704" y="258" text-anchor="end">ch15</text>
+<circle class="hp nc" cx="500" cy="294" r="6"/>
+<text class="hr" x="518" y="298">핀 19–48</text>
+<text class="hv nc" x="704" y="298" text-anchor="end">연결 안 함 · 30핀</text>
+<path class="w gnd" d="M206 334 H500"/>
+<circle class="hp gnd" cx="500" cy="334" r="6"/>
+<text class="hr" x="518" y="338">핀 49·50</text>
+<text class="hv gnd" x="704" y="338" text-anchor="end">GND — 필수</text>
+</svg>
+    <div class="cap">2×25 박스헤더 · 핀 필드 60.96&nbsp;mm, 래치 포함 82.80&nbsp;mm ·
+    점선은 선택 항목 · 키홈 필수</div>
+  </div>
+  <div class="chips"><div class="chip"><span class="cc">ch00</span><span class="cp">핀 3</span></div>
+<div class="chip"><span class="cc">ch01</span><span class="cp">핀 4</span></div>
+<div class="chip"><span class="cc">ch02</span><span class="cp">핀 5</span></div>
+<div class="chip"><span class="cc">ch03</span><span class="cp">핀 6</span></div>
+<div class="chip"><span class="cc">ch04</span><span class="cp">핀 7</span></div>
+<div class="chip"><span class="cc">ch05</span><span class="cp">핀 8</span></div>
+<div class="chip"><span class="cc">ch06</span><span class="cp">핀 9</span></div>
+<div class="chip"><span class="cc">ch07</span><span class="cp">핀 10</span></div>
+<div class="chip"><span class="cc">ch08</span><span class="cp">핀 11</span></div>
+<div class="chip"><span class="cc">ch09</span><span class="cp">핀 12</span></div>
+<div class="chip"><span class="cc">ch10</span><span class="cp">핀 13</span></div>
+<div class="chip"><span class="cc">ch11</span><span class="cp">핀 14</span></div>
+<div class="chip"><span class="cc">ch12</span><span class="cp">핀 15</span></div>
+<div class="chip"><span class="cc">ch13</span><span class="cp">핀 16</span></div>
+<div class="chip"><span class="cc">ch14</span><span class="cp">핀 17</span></div>
+<div class="chip"><span class="cc">ch15</span><span class="cp">핀 18</span></div></div>
+  <div class="warn">
+    <h3>일반 핀헤더로 대체하지 말 것</h3>
+    <p>키홈이 없으면 소켓이 180° 뒤집혀 꽂힌다. 그러면 핀 1 이 핀 50 자리로 가서
+    <strong>5V 와 GND 가 만난다</strong>. 몇백 원 차이다.</p>
+  </div>
+  <div class="warn">
+    <h3>남는 30핀을 GND 에 잇지 말 것</h3>
+    <p>접지를 촘촘히 넣으면 좋아 보이지만, 그 핀들은 FPGA I/O 에 물려 있다.
+    도구가 미사용 핀을 어떻게 처리하느냐에 따라 <strong>출력이 접지를 때리는</strong>
+    구성이 될 수 있다. 얻는 것도 없다 — 에지가 65~80&nbsp;ns 라 크로스토크가
+    이 신호의 위험이 아니다. <strong>NC 로 둔다.</strong></p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">배선표</span><h2>네 묶음이면 끝난다</h2></div>
+  <p class="dek">50행짜리 표가 필요 없다. 규칙이 <code>핀 = ch + 3</code> 하나이기
+  때문이다.</p>
+  <div class="scroll">
+    <table class="tbl">
+      <thead><tr><th>J6 핀</th><th>네트</th><th>필요</th><th>비고</th></tr></thead>
+      <tbody><tr><td class="m">1, 2</td><td><span class="tag v5">5V</span></td><td class="m">선택</td><td class="q">LDO 입력. 별도 전원을 쓰면 패드만 두고 비운다</td></tr>
+<tr><td class="m">3 – 18</td><td><span class="tag sig">ch00 – ch15</span></td><td class="m">필수</td><td class="q">비교기 출력 16개. 핀 = ch + 3</td></tr>
+<tr><td class="m">19 – 48</td><td><span class="tag nc">—</span></td><td class="m">—</td><td class="q">연결하지 않는다 (30핀). GND 에도 잇지 말 것</td></tr>
+<tr><td class="m">49, 50</td><td><span class="tag gnd">GND</span></td><td class="m">필수</td><td class="q">두 기판의 기준 전위. 이게 없으면 1.8 V 가 뜻이 없다</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">전원</span><h2>5V 는 선택, GND 는 필수</h2></div>
+  <p class="dek">이 둘을 같은 것으로 묶어 생각하기 쉬운데 성격이 다르다.</p>
+  <p><strong>GND 는 협상 대상이 아니다.</strong> 두 기판이 기준 전위를 공유하지 않으면
+  비교기가 내는 "1.8&nbsp;V" 가 FPGA 입장에서 몇 볼트인지 정의되지 않는다.
+  케이블에 GND 두 가닥은 무조건 들어간다.</p>
+  <p><strong>5V 는 편의다.</strong> AFE 의 능동 소자 합이 150~280&nbsp;µA 뿐이라
+  전원이라고 부르기도 민망한 양이고, 그래서 별도 공급이 어렵지 않다. 오히려
+  <code>docs/ICD.md</code> 는 <strong>FPGA 보드에서 아날로그 전원을 뽑지 않기를
+  권한다</strong> — 가장 약한 ch15 의 스윙이 16&nbsp;mV 라 비교기 오프셋 대비
+  5.3배뿐이고, 디지털 스위칭 잡음이 공유 레일로 들어오면 그 여유를 직접 깎는다.</p>
+  <p>그래서 권하는 형태는 <strong>패드는 두고 잇지는 않는 것</strong>이다. 핀 1·2 를
+  기판까지 끌어오되 0&nbsp;Ω 이나 점퍼 자리를 두면, 잡음이 문제가 되는지 재보고
+  나중에 정할 수 있다. 지금 정하면 둘 중 하나는 틀린 채로 만들게 된다.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">조건부</span><h2>어댑터가 값을 하는 한 경우</h2></div>
+  <p class="dek">중간 기판이 필요해지는 상황은 사실상 하나다 —
+  <strong>Exp. Port 의 VCCO 가 3.3&nbsp;V 이고, 비교기를 그대로 1.8&nbsp;V 로 두고
+  레벨 변환기를 넣기로 할 때</strong>. 변환기가 어딘가엔 살아야 하는데, 아날로그
+  기판에 올리면 "아날로그를 안 건드린다" 는 그 선택의 이유 자체가 사라진다.</p>
+  <table class="tbl" style="margin-bottom:24px">
+    <thead><tr><th>VCCO</th><th>선택</th><th>어댑터</th></tr></thead>
+    <tbody>
+      <tr><td class="m">1.8 V</td><td>그대로 직결. 여유 +460 mV</td>
+        <td class="q">필요 없음</td></tr>
+      <tr><td class="m">3.3 V</td><td>비교기를 3.3 V 로 올린다 (부품 0개)</td>
+        <td class="q">필요 없음</td></tr>
+      <tr><td class="m">3.3 V</td><td>SN74AVCH16T245 레벨 변환기</td>
+        <td class="q"><b>여기</b></td></tr>
+    </tbody>
+  </table>
+  <p>중요한 것은 <strong>지금 안 정해도 된다</strong>는 점이다. 어댑터가 양쪽에 같은
+  2×25 를 쓰면 나중에 케이블 사이에 끼워 넣기만 하면 되고,
+  <strong>AFE 기판은 바뀌지 않는다.</strong></p>
+  <p style="margin-top:20px">만들게 되면 배치는 이렇다. 두 헤더의 1번 핀을 같은 열에
+  맞추면 배선이 전부 수직 직선이 된다 (아래 그림은 출력 쪽을 20핀으로 줄인
+  변형이다 — 변환기를 넣는다면 그 자리에 IC 가 들어간다).</p>
   <div class="plate">
     <svg viewBox="0 0 494 247" role="img" aria-label="어댑터 만능기판 배치도">
 <rect class="board" x="6" y="6" width="482" height="235" rx="6"/>
@@ -488,148 +638,46 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 <path class="w gnd" d="M403.0 65.0 V119.6 H208.0 V182.0"/>
 <text class="note" x="91.0" y="225.0">열 6부터 두 헤더의 1번 핀을 맞추면 18가닥이 수직 직결이 된다</text>
 </svg>
-    <div class="cap">만능기판 90×70&nbsp;mm (35×27홀) 기준 · 50핀 헤더의 이젝터 래치는
-    기판 밖으로 나가도 무방하다 (기판에 닿지 않는다)</div>
-  </div>
-  <p style="margin-top:20px">두 헤더 사이는 <strong>7홀(17.8&nbsp;mm)</strong> 이상
-  띄운다. 하우징 깊이가 12&nbsp;mm 남짓이라 더 붙이면 몸통끼리 닿는다.
-  배선은 기판 뒷면에서 하고, 앞면은 부품만 둔다.</p>
-</section>
-
-<section>
-  <div class="eyebrow"><span class="num">배선표</span><h2>20가닥</h2></div>
-  <p class="dek">두 커넥터가 같은 규칙(<code>핀 = ch + 3</code>)을 쓰기 때문에
-  채널 배선이 전부 같은 번호끼리 만난다. 외울 것이 하나뿐이다.</p>
-  <div class="scroll">
-    <table class="tbl">
-      <thead><tr><th>50핀 (킷)</th><th>20핀 (AFE)</th><th>신호</th><th>배선</th></tr></thead>
-      <tbody><tr><td class="m">1</td><td class="m">1</td><td><span class="tag v5">5V</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">2</td><td class="m">2</td><td><span class="tag v5">5V</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">3</td><td class="m">3</td><td><span class="tag sig">ch00</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">4</td><td class="m">4</td><td><span class="tag sig">ch01</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">5</td><td class="m">5</td><td><span class="tag sig">ch02</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">6</td><td class="m">6</td><td><span class="tag sig">ch03</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">7</td><td class="m">7</td><td><span class="tag sig">ch04</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">8</td><td class="m">8</td><td><span class="tag sig">ch05</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">9</td><td class="m">9</td><td><span class="tag sig">ch06</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">10</td><td class="m">10</td><td><span class="tag sig">ch07</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">11</td><td class="m">11</td><td><span class="tag sig">ch08</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">12</td><td class="m">12</td><td><span class="tag sig">ch09</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">13</td><td class="m">13</td><td><span class="tag sig">ch10</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">14</td><td class="m">14</td><td><span class="tag sig">ch11</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">15</td><td class="m">15</td><td><span class="tag sig">ch12</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">16</td><td class="m">16</td><td><span class="tag sig">ch13</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">17</td><td class="m">17</td><td><span class="tag sig">ch14</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">18</td><td class="m">18</td><td><span class="tag sig">ch15</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
-<tr><td class="m">49</td><td class="m">19</td><td><span class="tag gnd">GND</span></td><td class="q">끝에서 끌어옴</td></tr>
-<tr><td class="m">50</td><td class="m">20</td><td><span class="tag gnd">GND</span></td><td class="q">끝에서 끌어옴</td></tr></tbody>
-    </table>
-  </div>
-</section>
-
-<section>
-  <div class="eyebrow"><span class="num">AFE 쪽</span><h2>16가닥을 어떻게 뽑아내는가</h2></div>
-  <p class="dek">아날로그 기판이 할 일은 <strong>비교기 출력 하나를 헤더 핀 하나에
-  잇는 것</strong>뿐이다. 특별한 회로가 없다 — 16개의 배선과, 5V 를 받아 LDO 로
-  넣는 것과, 접지를 공유하는 것이 전부다.</p>
-  <div class="plate">
-    <svg viewBox="0 0 880 388" role="img" aria-label="AFE 기판에서 비교기 16개를 2x10 헤더로 모으는 방법">
-<rect class="cmp" x="18" y="39" width="188" height="66" rx="4"/>
-<text class="ct" x="32" y="76">LDO 입력 (5V)</text>
-<rect class="cmp" x="18" y="111" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="130">비교기 ch00</text>
-<rect class="cmp" x="18" y="147" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="166">비교기 ch01</text>
-<rect class="cmp" x="18" y="183" width="188" height="30" rx="4" stroke-dasharray="4 3"/>
-<text class="ct" x="32" y="202">비교기 ch02 ~ ch13   (12개)</text>
-<rect class="cmp" x="18" y="219" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="238">비교기 ch14</text>
-<rect class="cmp" x="18" y="255" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="274">비교기 ch15</text>
-<rect class="cmp" x="18" y="291" width="188" height="66" rx="4"/>
-<text class="ct" x="32" y="328">기판 접지</text>
-<rect class="hdr2" x="470" y="30" width="230" height="336" rx="6"/>
-<text class="hl2" x="585" y="20" text-anchor="middle">2×10 박스헤더 → 어댑터</text>
-<path class="w v5" d="M206 54 H500"/>
-<circle class="hp v5" cx="500" cy="54" r="6"/>
-<text class="hr" x="518" y="58">핀 1</text>
-<text class="hv v5" x="686" y="58" text-anchor="end">5V</text>
-<path class="w v5" d="M206 90 H500"/>
-<circle class="hp v5" cx="500" cy="90" r="6"/>
-<text class="hr" x="518" y="94">핀 2</text>
-<text class="hv v5" x="686" y="94" text-anchor="end">5V</text>
-<path class="w sig" d="M206 126 H500"/>
-<circle class="hp sig" cx="500" cy="126" r="6"/>
-<text class="hr" x="518" y="130">핀 3</text>
-<text class="hv sig" x="686" y="130" text-anchor="end">ch00</text>
-<path class="w sig" d="M206 162 H500"/>
-<circle class="hp sig" cx="500" cy="162" r="6"/>
-<text class="hr" x="518" y="166">핀 4</text>
-<text class="hv sig" x="686" y="166" text-anchor="end">ch01</text>
-<path class="w sig" d="M206 198 H500"/>
-<circle class="hp sig" cx="500" cy="198" r="6"/>
-<text class="hr" x="518" y="202">핀 5–16</text>
-<text class="hv sig" x="686" y="202" text-anchor="end">ch02–ch13</text>
-<path class="w sig" d="M206 234 H500"/>
-<circle class="hp sig" cx="500" cy="234" r="6"/>
-<text class="hr" x="518" y="238">핀 17</text>
-<text class="hv sig" x="686" y="238" text-anchor="end">ch14</text>
-<path class="w sig" d="M206 270 H500"/>
-<circle class="hp sig" cx="500" cy="270" r="6"/>
-<text class="hr" x="518" y="274">핀 18</text>
-<text class="hv sig" x="686" y="274" text-anchor="end">ch15</text>
-<path class="w gnd" d="M206 306 H500"/>
-<circle class="hp gnd" cx="500" cy="306" r="6"/>
-<text class="hr" x="518" y="310">핀 19</text>
-<text class="hv gnd" x="686" y="310" text-anchor="end">GND</text>
-<path class="w gnd" d="M206 342 H500"/>
-<circle class="hp gnd" cx="500" cy="342" r="6"/>
-<text class="hr" x="518" y="346">핀 20</text>
-<text class="hv gnd" x="686" y="346" text-anchor="end">GND</text>
-</svg>
-    <div class="cap">2×10 박스헤더 · 핀 필드 22.86&nbsp;mm 라 아날로그 기판에
-    부담이 없다 · 키홈 필수</div>
-  </div>
-  <div class="warn">
-    <h3>일반 핀헤더로 대체하지 말 것</h3>
-    <p>키홈이 없으면 소켓이 180° 뒤집혀 꽂힌다. 그러면 핀 1(5V)이 핀 20(GND)
-    자리로 가서 <strong>5V 가 그대로 단락</strong>된다. 몇백 원 차이다.</p>
+    <div class="cap">만능기판 90×70&nbsp;mm · 위 13홀만 쓴다 ·
+    50핀 헤더의 이젝터 래치는 기판 밖으로 나가도 된다 (기판에 닿지 않는다) ·
+    두 헤더 사이는 7홀 이상 (하우징 깊이 12&nbsp;mm)</div>
   </div>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">부품</span><h2>사야 할 것</h2></div>
+  <p class="dek">직결이면 두 줄로 끝난다.</p>
   <div class="bom">
     <div>
       <span class="pt">A</span><span class="pnm">NT-IDC 50핀 케이블 200 mm</span>
       <span class="pq">×1</span>
-      <span class="pd">양끝 IDC 소켓 완제품, 1:1 스트레이트. 압착 공정이 없어진다.</span>
+      <span class="pd">양끝 IDC 소켓 완제품, 1:1 스트레이트. 압착 공정이 없어진다.
+      빨간 줄이 양끝 같은 쪽인지만 확인한다.</span>
     </div>
     <div>
       <span class="pt">B</span><span class="pnm">박스헤더 2×25 (50P) 스트레이트</span>
       <span class="pq">×1 +여분</span>
-      <span class="pd">DS1011-50-S-L-S1-B 계열. 핀 필드 60.96 mm, 래치 포함 82.80 mm.
-      어댑터에 실장.</span>
+      <span class="pd">DS1011-50-S-L-S1-B 계열. 핀 필드 60.96 mm, 래치 포함 82.80 mm,
+      키홈 4.3 mm, 핀 0.635 각 → 드릴 1.0 mm. <b>AFE 기판에 실장.</b></span>
     </div>
+  </div>
+  <p style="margin-top:24px; color:var(--ink3); font-size:14.5px">
+    아래는 <b>레벨 변환기 경로로 확정됐을 때만</b> 산다. 그 전에 사면 버릴 수 있다.</p>
+  <div class="bom" style="opacity:.82">
     <div>
-      <span class="pt">C</span><span class="pnm">박스헤더 2×10 (20P) 스트레이트</span>
-      <span class="pq">×2 +여분</span>
-      <span class="pd">어댑터에 1개, AFE 기판에 1개. 핀 필드 22.86 mm.</span>
-    </div>
-    <div>
-      <span class="pt">D</span><span class="pnm">IDC 20핀 케이블 (또는 리본+소켓)</span>
-      <span class="pq">×1</span>
-      <span class="pd">어댑터 ↔ AFE 기판. 짧을수록 좋다.</span>
-    </div>
-    <div>
-      <span class="pt">E</span><span class="pnm">만능기판 90×70 mm</span>
+      <span class="pt">C</span><span class="pnm">만능기판 90×70 mm</span>
       <span class="pq">×1</span>
       <span class="pd">35×27홀. 50핀 헤더가 25홀을 먹으므로 이보다 작으면 안 된다.</span>
     </div>
     <div>
-      <span class="pt">F</span><span class="pnm">주석도금선 또는 UEW 0.3 mm</span>
-      <span class="pq">—</span>
-      <span class="pd">뒷면 배선 20가닥.</span>
+      <span class="pt">D</span><span class="pnm">박스헤더 2×25 추가</span>
+      <span class="pq">×2</span>
+      <span class="pd">어댑터의 입력·출력.</span>
+    </div>
+    <div>
+      <span class="pt">E</span><span class="pnm">SN74AVCH16T245 (TSSOP-48)</span>
+      <span class="pq">×1</span>
+      <span class="pd">16채널 1.8 ↔ 3.3 V. DIR = H, OE = L, 뱅크 2개라 각 2개씩.</span>
     </div>
   </div>
 </section>
@@ -637,19 +685,21 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 <section>
   <div class="eyebrow"><span class="num">순서</span><h2>만들고 확인하기</h2></div>
   <ol class="steps">
-    <li><b>어댑터를 먼저 만든다.</b> AFE 기판이 없어도 된다. 헤더 두 개를 꽂고
-      모서리 핀만 먼저 납땜해 수평을 확인한 뒤 나머지를 채운다.</li>
-    <li><b>도통으로 20가닥을 전부 확인한다.</b> 50핀 3번 ↔ 20핀 3번, … 18↔18,
-      49↔19, 50↔20. 그리고 <b>인접 핀끼리 안 붙었는지</b>도 본다 — 납땜 브릿지가
-      가장 흔한 고장이고 눈으로는 안 보인다.</li>
-    <li><b>VCCO 를 잰다. 이때 AFE 는 물리지 않는다.</b> EXT0–15 을 High 로 구동하는
-      비트스트림을 올리고 어댑터의 20핀 헤더에서 전압을 잰다. 그 값이 VCCO 이고,
-      16핀이 전부 같은 값이면 핀 맵도 맞은 것이다.</li>
-    <li><b>3.3 V 로 나오면 결정을 먼저 한다.</b> 비교기를 3.3 V 로 올릴지
-      레벨 변환기를 넣을지 — 아날로그 쪽 판단이다. 그 전에 AFE 를 연결하지 않는다.</li>
-    <li><b>AFE 를 물리고 주파수 스윕을 건다.</b> 125 Hz → 5 kHz 를 마이크에 들려주고
-      활성 채널이 ch00 에서 ch15 로 <b>단조 이동</b>하는지 본다. 깨끗한 대각선이
-      나오면 매핑이 맞은 것이고, 섞였으면 어떻게 섞였는지까지 보인다.</li>
+    <li><b>VCCO 부터 잰다. AFE 는 아직 만들지도, 물리지도 않는다.</b>
+      EXT0–15 를 High 로 구동하는 비트스트림을 올리고 리본 끝에서 전압을 잰다.
+      그 값이 VCCO 다. 16가닥이 전부 같은 값이면 핀 맵도 같이 확인된 것이다.</li>
+    <li><b>그 값으로 회로를 정한다.</b> 1.8 V 면 그대로. 3.3 V 면 비교기를 올릴지
+      변환기를 넣을지 — 아날로그 쪽 판단이고, R7/R8 분압이 비교기 레일 기준인지에
+      달렸다. 이 답이 나오기 전에는 부품을 더 사지 않는다.</li>
+    <li><b>AFE 기판에 헤더를 실장한다.</b> 모서리 핀 두 개만 먼저 납땜해 수평과
+      키홈 방향을 확인한 뒤 나머지 48개를 채운다. 50개를 다 하고 나면 못 고친다.</li>
+    <li><b>도통으로 18가닥을 확인한다.</b> 핀 3 ↔ ch00 … 핀 18 ↔ ch15, 그리고
+      49·50 ↔ 접지. <b>인접 핀끼리 안 붙었는지</b>도 같이 본다 — 납땜 브릿지가 가장
+      흔한 고장이고 눈으로는 안 보인다.</li>
+    <li><b>물리고 주파수 스윕을 건다.</b> 125 Hz → 5 kHz 를 마이크에 들려주고 활성
+      채널이 ch00 에서 ch15 로 <b>단조 이동</b>하는지 본다. 깨끗한 대각선이 나오면
+      매핑이 맞은 것이고, 섞였으면 어떻게 섞였는지까지 보인다. 건너뛰면 안 되는
+      이유: 채널이 섞였을 때 증상이 "정확도가 좀 낮다" 뿐이다.</li>
   </ol>
   <div class="warn">
     <h3>3번을 AFE 물린 채로 하면 비교기가 죽는다</h3>

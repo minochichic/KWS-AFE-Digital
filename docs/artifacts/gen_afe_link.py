@@ -17,8 +17,12 @@ from pathlib import Path
 OUT = Path(__file__).resolve().parent / "afe_link.html"
 
 # --- 핀 배정 (docs/hanback_kit.md 6) -------------------------------------- #
-# 두 커넥터가 같은 규칙을 쓴다: 핀 1,2 = 5V / 핀 3..18 = ch00..ch15 / 끝 두 핀 = GND.
-# 그래서 `핀 = ch + 3` 이 양쪽에서 그대로 성립하고, 어댑터 배선이 대부분 직결이 된다.
+# 킷 J6 의 배치를 AFE 기판이 그대로 받는다: 핀 1,2 = 5V / 핀 3..18 = ch00..ch15 /
+# 핀 49,50 = GND. 규칙은 `핀 = ch + 3` 하나다.
+#
+# 2026-09-07 정정: 한때 여기 20핀 어댑터를 기본으로 두었다. 그럴 이유가 없었다 --
+# 16채널 AFE 는 op-amp 만 ~48개짜리 큰 기판이라 82.8 mm 커넥터가 부담이 아니고,
+# 어댑터는 손납땜 40군데를 새로 만든다. **직결이 기본**이고 어댑터는 조건부다.
 N_CH = 16
 KIT_PINS, AFE_PINS = 50, 20
 
@@ -155,42 +159,36 @@ def perfboard(cols=35, rows=16, s=13.0, pad=26.0) -> str:
 
 
 def chain() -> str:
-    """전체 체인 블록도."""
+    """전체 체인. 직결이 기본이고 어댑터는 조건부라는 것이 이 그림의 요지다."""
     return """
-<svg viewBox="0 0 900 250" role="img" aria-label="AFE에서 FPGA 킷까지의 연결 체인">
-  <rect class="blk afe" x="14" y="52" width="196" height="128" rx="7"/>
-  <text class="bt" x="30" y="80">AFE 기판</text>
-  <text class="bs" x="30" y="100">동료 담당</text>
-  <text class="bi" x="30" y="128">비교기 ×16</text>
-  <text class="bi" x="30" y="148">LDO 5V→3.3/1.8</text>
-  <text class="bi" x="30" y="168">2×10 박스헤더</text>
+<svg viewBox="0 0 900 300" role="img" aria-label="AFE 기판과 FPGA 킷의 직결 연결">
+  <rect class="blk afe" x="20" y="34" width="250" height="132" rx="7"/>
+  <text class="bt" x="40" y="62">AFE 기판</text>
+  <text class="bs" x="40" y="82">동료 담당</text>
+  <text class="bi" x="40" y="110">비교기 ×16</text>
+  <text class="bi" x="40" y="130">2×25 박스헤더 (키홈)</text>
+  <text class="bi" x="40" y="150">전원은 자체 조달</text>
 
-  <rect class="blk adp" x="352" y="52" width="196" height="128" rx="7"/>
-  <text class="bt" x="368" y="80">어댑터</text>
-  <text class="bs" x="368" y="100">만능기판 · 우리 담당</text>
-  <text class="bi" x="368" y="128">2×25 박스헤더</text>
-  <text class="bi" x="368" y="148">2×10 박스헤더</text>
-  <text class="bi" x="368" y="168">점퍼 20가닥</text>
+  <rect class="blk kit" x="630" y="34" width="250" height="132" rx="7"/>
+  <text class="bt" x="650" y="62">FPGA 킷</text>
+  <text class="bs" x="650" y="82">XC7S75 · 연구실</text>
+  <text class="bi" x="650" y="110">J6 Exp. Port</text>
+  <text class="bi" x="650" y="130">2×25, 키홈, 5V·GND 포함</text>
+  <text class="bi" x="650" y="150">직렬 33Ω 내장</text>
 
-  <rect class="blk kit" x="690" y="52" width="196" height="128" rx="7"/>
-  <text class="bt" x="706" y="80">FPGA 킷</text>
-  <text class="bs" x="706" y="100">XC7S75 · 연구실</text>
-  <text class="bi" x="706" y="128">J6 Exp. Port</text>
-  <text class="bi" x="706" y="148">2×25, 키홈</text>
-  <text class="bi" x="706" y="168">직렬 33Ω 내장</text>
+  <path class="lnk" d="M270 100 H630"/>
+  <text class="ll" x="450" y="88" text-anchor="middle">50핀 리본 20cm · 1:1 스트레이트</text>
+  <text class="lv" x="450" y="124" text-anchor="middle">사용 18 / 50 · 나머지 30핀은 NC</text>
 
-  <path class="lnk" d="M210 116 H352"/>
-  <text class="ll" x="281" y="106" text-anchor="middle">20핀 리본</text>
-  <text class="lv" x="281" y="140" text-anchor="middle">16 + 5V + GND</text>
+  <path class="flow sig" d="M630 196 H270"/>
+  <text class="fl sig" x="450" y="188" text-anchor="middle">비교기 16가닥 ─ 아날로그에서 FPGA 로 (필수)</text>
+  <path class="flow gndf" d="M270 222 H630"/>
+  <text class="fl gndf" x="450" y="214" text-anchor="middle">GND ─ 기준 공유 (필수)</text>
+  <path class="flow v5" d="M270 248 H630" stroke-dasharray="2 5"/>
+  <text class="fl v5" x="450" y="240" text-anchor="middle">5V ─ 선택. 별도 전원을 쓰면 안 잇는다</text>
 
-  <path class="lnk" d="M548 116 H690"/>
-  <text class="ll" x="619" y="106" text-anchor="middle">50핀 리본 20cm</text>
-  <text class="lv" x="619" y="140" text-anchor="middle">18/50 사용</text>
-
-  <path class="flow sig" d="M690 210 H210"/>
-  <text class="fl sig" x="450" y="202" text-anchor="middle">비교기 16가닥 ─ 아날로그에서 FPGA 로</text>
-  <path class="flow v5" d="M210 236 H690"/>
-  <text class="fl v5" x="450" y="228" text-anchor="middle">5V ─ 킷에서 AFE 로</text>
+  <rect class="ghost" x="352" y="266" width="196" height="26" rx="5"/>
+  <text class="gl" x="450" y="284" text-anchor="middle">어댑터는 여기 들어간다 — 조건부</text>
 </svg>
 """
 
@@ -201,10 +199,11 @@ def afe_side() -> str:
     좌변의 블록과 우변의 헤더 핀을 **같은 y 에** 두어 배선이 수평 직선이 되게 한다.
     선이 꺾이면 보는 사람이 "왜 꺾였지" 를 먼저 묻는데, 여기엔 이유가 없다.
     """
-    rows = [("1", "5V", "v5"), ("2", "5V", "v5"), ("3", "ch00", "sig"),
+    rows = [("1·2", "5V — 선택", "v5"), ("3", "ch00", "sig"),
             ("4", "ch01", "sig"), ("5–16", "ch02–ch13", "sig"), ("17", "ch14", "sig"),
-            ("18", "ch15", "sig"), ("19", "GND", "gnd"), ("20", "GND", "gnd")]
-    step, y0 = 36, 54
+            ("18", "ch15", "sig"), ("19–48", "연결 안 함 · 30핀", "nc"),
+            ("49·50", "GND — 필수", "gnd")]
+    step, y0 = 40, 54
     ys = [y0 + i * step for i in range(len(rows))]
     h = ys[-1] + 46
 
@@ -217,33 +216,30 @@ def afe_side() -> str:
                  f'rx="4"{dash}/>')
         o.append(f'<text class="ct" x="32" y="{y + 4}">{label}</text>')
 
-    # 전원부는 핀 1,2 / 19,20 네 개에 걸친다
-    o.append(f'<rect class="cmp" x="18" y="{ys[0] - 15}" width="188" '
-             f'height="{ys[1] - ys[0] + 30}" rx="4"/>')
-    o.append(f'<text class="ct" x="32" y="{(ys[0] + ys[1]) / 2 + 4:.0f}">'
-             f'LDO 입력 (5V)</text>')
-    block(ys[2], "비교기 ch00")
-    block(ys[3], "비교기 ch01")
-    block(ys[4], "비교기 ch02 ~ ch13   (12개)", dashed=True)
-    block(ys[5], "비교기 ch14")
-    block(ys[6], "비교기 ch15")
-    o.append(f'<rect class="cmp" x="18" y="{ys[7] - 15}" width="188" '
-             f'height="{ys[8] - ys[7] + 30}" rx="4"/>')
-    o.append(f'<text class="ct" x="32" y="{(ys[7] + ys[8]) / 2 + 4:.0f}">'
-             f'기판 접지</text>')
+    block(ys[0], "LDO 입력 — 안 써도 된다", dashed=True)
+    block(ys[1], "비교기 ch00")
+    block(ys[2], "비교기 ch01")
+    block(ys[3], "비교기 ch02 ~ ch13   (12개)", dashed=True)
+    block(ys[4], "비교기 ch14")
+    block(ys[5], "비교기 ch15")
+    o.append(f'<text class="ell" x="112" y="{ys[6] + 4}" text-anchor="middle">'
+             f'— 아무것도 잇지 않는다 —</text>')
+    block(ys[7], "기판 접지")
 
     # 헤더
-    top, bot = ys[0] - 24, ys[-1] + 24
-    o.append(f'<rect class="hdr2" x="470" y="{top}" width="230" '
+    top, bot = ys[0] - 26, ys[-1] + 26
+    o.append(f'<rect class="hdr2" x="470" y="{top}" width="248" '
              f'height="{bot - top}" rx="6"/>')
-    o.append(f'<text class="hl2" x="585" y="{top - 10}" text-anchor="middle">'
-             f'2×10 박스헤더 → 어댑터</text>')
+    o.append(f'<text class="hl2" x="594" y="{top - 10}" text-anchor="middle">'
+             f'2×25 박스헤더 → 리본 → 킷 J6</text>')
 
     for (p, lab, rl), y in zip(rows, ys):
-        o.append(f'<path class="w {rl}" d="M206 {y} H500"/>')
+        dash = ' stroke-dasharray="3 4"' if rl in ("v5", "nc") else ""
+        if rl != "nc":
+            o.append(f'<path class="w {rl}" d="M206 {y} H500"{dash}/>')
         o.append(f'<circle class="hp {rl}" cx="500" cy="{y}" r="6"/>')
         o.append(f'<text class="hr" x="518" y="{y + 4}">핀 {p}</text>')
-        o.append(f'<text class="hv {rl}" x="686" y="{y + 4}" '
+        o.append(f'<text class="hv {rl}" x="704" y="{y + 4}" '
                  f'text-anchor="end">{lab}</text>')
     o.append("</svg>")
     return "\n".join(o)
@@ -251,15 +247,29 @@ def afe_side() -> str:
 
 # --- 페이지 ---------------------------------------------------------------- #
 
-def wire_table() -> str:
-    rows = []
-    for src, dst, rl in wires():
-        ch = ch_of(src)
-        what = {"v5": "5V", "gnd": "GND"}.get(rl, f"ch{ch:02d}" if ch is not None else "")
-        rows.append(f'<tr><td class="m">{src}</td><td class="m">{dst}</td>'
-                    f'<td><span class="tag {rl}">{what}</span></td>'
-                    f'<td class="q">{"직결 (같은 열, 수직)" if src <= 18 else "끝에서 끌어옴"}</td></tr>')
-    return "\n".join(rows)
+def net_table() -> str:
+    """AFE 기판이 50핀 헤더에 무엇을 잇는가. 50행이 아니라 4묶음이면 된다."""
+    rows = [
+        ("1, 2", "5V", "v5", "선택",
+         "LDO 입력. 별도 전원을 쓰면 패드만 두고 비운다"),
+        (f"3 – {2 + N_CH}", f"ch00 – ch{N_CH - 1:02d}", "sig", "필수",
+         f"비교기 출력 {N_CH}개. 핀 = ch + 3"),
+        (f"{3 + N_CH} – {KIT_PINS - 2}", "—", "nc", "—",
+         f"연결하지 않는다 ({KIT_PINS - 2 - (2 + N_CH)}핀). GND 에도 잇지 말 것"),
+        (f"{KIT_PINS - 1}, {KIT_PINS}", "GND", "gnd", "필수",
+         "두 기판의 기준 전위. 이게 없으면 1.8 V 가 뜻이 없다"),
+    ]
+    return "\n".join(
+        f'<tr><td class="m">{p}</td>'
+        f'<td><span class="tag {rl}">{net}</span></td>'
+        f'<td class="m">{need}</td><td class="q">{note}</td></tr>'
+        for p, net, rl, need, note in rows)
+
+
+def ch_chips() -> str:
+    return "\n".join(
+        f'<div class="chip"><span class="cc">ch{c:02d}</span>'
+        f'<span class="cp">핀 {c + 3}</span></div>' for c in range(N_CH))
 
 
 HTML = """<title>AFE 링크 조립도</title>
@@ -395,7 +405,23 @@ code{font-family:'IBM Plex Mono',monospace; font-size:.9em;
   border-radius:3px; color:var(--surface); font-weight:500}
 .tag.v5{background:var(--v5)} .tag.sig{background:var(--sig)}
 .tag.gnd{background:var(--gnd)}
+.tag.nc{background:none; color:var(--ink3); border:1px solid var(--nc)}
 .scroll{overflow-x:auto}
+
+/* ch <-> 핀 칩 */
+.chips{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr));
+  gap:1px; background:var(--rule); border:1px solid var(--rule);
+  border-radius:7px; overflow:hidden; margin-top:20px}
+.chip{background:var(--surface); padding:9px 12px; display:flex;
+  justify-content:space-between; align-items:baseline; gap:8px;
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px}
+.chip .cc{color:var(--sig); font-weight:500}
+.chip .cp{color:var(--ink3)}
+
+/* 조건부 표시 */
+.ghost{fill:none; stroke:var(--ink3); stroke-width:1.2; stroke-dasharray:5 4}
+.gl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.flow.gndf{stroke:var(--gnd)} .fl.gndf{fill:var(--gnd)}
 
 /* 부품 */
 .bom{display:grid; gap:1px; background:var(--rule); border:1px solid var(--rule);
@@ -454,20 +480,22 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 </header>
 
 <p class="lede">아날로그 기판에서 나오는 비교기 16가닥을 FPGA 킷의 확장 포트까지
-가져오는 물리 설계다. 핵심은 <strong>중간에 어댑터를 하나 두는 것</strong> — 킷의
-커넥터는 50핀이고 그 중 18개만 쓰는데, 그 8.3&nbsp;cm짜리 부품을 아날로그 기판에
-올릴 이유가 없다.</p>
+가져오는 물리 설계다. <strong>기판 두 개, 케이블 한 개, 커넥터 두 개</strong>가
+전부다 — AFE 기판에 킷과 똑같은 2×25 박스헤더를 하나 올리고 리본으로 잇는다.</p>
 
 <section>
-  <div class="eyebrow"><span class="num">체인</span><h2>세 덩어리와 두 케이블</h2></div>
-  <p class="dek">신호는 왼쪽으로, 전원은 오른쪽으로 흐른다. FPGA 에서 아날로그로
-  가는 제어선은 <strong>하나도 없다</strong> — sticky OR 은 펄스가 언제 왔는지를
-  묻지 않기 때문에 프로토콜이 필요 없다.</p>
+  <div class="eyebrow"><span class="num">체인</span><h2>직결한다</h2></div>
+  <p class="dek">신호는 왼쪽으로만 흐른다. FPGA 에서 아날로그로 가는 선은
+  <strong>하나도 없다</strong> — sticky OR 은 펄스가 언제 왔는지를 묻지 않아서
+  프로토콜이 필요 없다. 그래서 이 경계에는 협상도, 클럭 공유도, 방향 제어도 없다.</p>
   <div class="plate">
     __CHAIN__
-    <div class="cap">어댑터만 우리가 만든다. AFE 기판은 2×10 헤더 하나만 알면 되고,
-    킷은 이미 있는 것을 쓴다.</div>
+    <div class="cap">필수는 신호 16 + GND 뿐이다 · 5V 는 킷에서 받아도 되고
+    별도 전원을 써도 된다 · 어댑터는 아래 조건에서만 끼운다</div>
   </div>
+  <p style="margin-top:20px">50핀 중 18개만 쓰는 것이 낭비처럼 보이지만, 남는 30핀은
+  <strong>패드 30개 값</strong>일 뿐이다. 그걸 줄이겠다고 중간에 변환 기판을 넣으면
+  손납땜 40군데와 커넥터 접점 두 벌이 새로 생긴다 — 그쪽이 훨씬 비싸다.</p>
 </section>
 
 <section>
@@ -488,82 +516,123 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 </section>
 
 <section>
-  <div class="eyebrow"><span class="num">어댑터</span><h2>만능기판 위에 헤더 두 개</h2></div>
-  <p class="dek">두 헤더의 1번 핀을 <strong>같은 열</strong>에 맞춰 꽂는 것이 설계의
-  전부다. 그러면 핀 1–18 이 같은 열에 서고, 배선 20가닥 중 18가닥이 그냥
-  <strong>수직 직선</strong>이 된다. 남는 2가닥은 반대쪽 끝의 GND 다.</p>
+  <div class="eyebrow"><span class="num">AFE 쪽</span><h2>16가닥을 어떻게 뽑아내는가</h2></div>
+  <p class="dek">아날로그 기판이 할 일은 <strong>비교기 출력 하나를 헤더 핀 하나에
+  잇는 것</strong>뿐이다. 회로가 없다 — 배선 16개와 접지 공유가 전부이고,
+  나머지 30핀은 아무 데도 안 잇는다.</p>
   <div class="plate">
-    __PERF__
-    <div class="cap">만능기판 90×70&nbsp;mm (35×27홀) 기준 · 50핀 헤더의 이젝터 래치는
-    기판 밖으로 나가도 무방하다 (기판에 닿지 않는다)</div>
+    __AFESIDE__
+    <div class="cap">2×25 박스헤더 · 핀 필드 60.96&nbsp;mm, 래치 포함 82.80&nbsp;mm ·
+    점선은 선택 항목 · 키홈 필수</div>
   </div>
-  <p style="margin-top:20px">두 헤더 사이는 <strong>7홀(17.8&nbsp;mm)</strong> 이상
-  띄운다. 하우징 깊이가 12&nbsp;mm 남짓이라 더 붙이면 몸통끼리 닿는다.
-  배선은 기판 뒷면에서 하고, 앞면은 부품만 둔다.</p>
+  <div class="chips">__CHIPS__</div>
+  <div class="warn">
+    <h3>일반 핀헤더로 대체하지 말 것</h3>
+    <p>키홈이 없으면 소켓이 180° 뒤집혀 꽂힌다. 그러면 핀 1 이 핀 50 자리로 가서
+    <strong>5V 와 GND 가 만난다</strong>. 몇백 원 차이다.</p>
+  </div>
+  <div class="warn">
+    <h3>남는 30핀을 GND 에 잇지 말 것</h3>
+    <p>접지를 촘촘히 넣으면 좋아 보이지만, 그 핀들은 FPGA I/O 에 물려 있다.
+    도구가 미사용 핀을 어떻게 처리하느냐에 따라 <strong>출력이 접지를 때리는</strong>
+    구성이 될 수 있다. 얻는 것도 없다 — 에지가 65~80&nbsp;ns 라 크로스토크가
+    이 신호의 위험이 아니다. <strong>NC 로 둔다.</strong></p>
+  </div>
 </section>
 
 <section>
-  <div class="eyebrow"><span class="num">배선표</span><h2>20가닥</h2></div>
-  <p class="dek">두 커넥터가 같은 규칙(<code>핀 = ch + 3</code>)을 쓰기 때문에
-  채널 배선이 전부 같은 번호끼리 만난다. 외울 것이 하나뿐이다.</p>
+  <div class="eyebrow"><span class="num">배선표</span><h2>네 묶음이면 끝난다</h2></div>
+  <p class="dek">50행짜리 표가 필요 없다. 규칙이 <code>핀 = ch + 3</code> 하나이기
+  때문이다.</p>
   <div class="scroll">
     <table class="tbl">
-      <thead><tr><th>50핀 (킷)</th><th>20핀 (AFE)</th><th>신호</th><th>배선</th></tr></thead>
-      <tbody>__WIRES__</tbody>
+      <thead><tr><th>J6 핀</th><th>네트</th><th>필요</th><th>비고</th></tr></thead>
+      <tbody>__NETS__</tbody>
     </table>
   </div>
 </section>
 
 <section>
-  <div class="eyebrow"><span class="num">AFE 쪽</span><h2>16가닥을 어떻게 뽑아내는가</h2></div>
-  <p class="dek">아날로그 기판이 할 일은 <strong>비교기 출력 하나를 헤더 핀 하나에
-  잇는 것</strong>뿐이다. 특별한 회로가 없다 — 16개의 배선과, 5V 를 받아 LDO 로
-  넣는 것과, 접지를 공유하는 것이 전부다.</p>
+  <div class="eyebrow"><span class="num">전원</span><h2>5V 는 선택, GND 는 필수</h2></div>
+  <p class="dek">이 둘을 같은 것으로 묶어 생각하기 쉬운데 성격이 다르다.</p>
+  <p><strong>GND 는 협상 대상이 아니다.</strong> 두 기판이 기준 전위를 공유하지 않으면
+  비교기가 내는 "1.8&nbsp;V" 가 FPGA 입장에서 몇 볼트인지 정의되지 않는다.
+  케이블에 GND 두 가닥은 무조건 들어간다.</p>
+  <p><strong>5V 는 편의다.</strong> AFE 의 능동 소자 합이 150~280&nbsp;µA 뿐이라
+  전원이라고 부르기도 민망한 양이고, 그래서 별도 공급이 어렵지 않다. 오히려
+  <code>docs/ICD.md</code> 는 <strong>FPGA 보드에서 아날로그 전원을 뽑지 않기를
+  권한다</strong> — 가장 약한 ch15 의 스윙이 16&nbsp;mV 라 비교기 오프셋 대비
+  5.3배뿐이고, 디지털 스위칭 잡음이 공유 레일로 들어오면 그 여유를 직접 깎는다.</p>
+  <p>그래서 권하는 형태는 <strong>패드는 두고 잇지는 않는 것</strong>이다. 핀 1·2 를
+  기판까지 끌어오되 0&nbsp;Ω 이나 점퍼 자리를 두면, 잡음이 문제가 되는지 재보고
+  나중에 정할 수 있다. 지금 정하면 둘 중 하나는 틀린 채로 만들게 된다.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">조건부</span><h2>어댑터가 값을 하는 한 경우</h2></div>
+  <p class="dek">중간 기판이 필요해지는 상황은 사실상 하나다 —
+  <strong>Exp. Port 의 VCCO 가 3.3&nbsp;V 이고, 비교기를 그대로 1.8&nbsp;V 로 두고
+  레벨 변환기를 넣기로 할 때</strong>. 변환기가 어딘가엔 살아야 하는데, 아날로그
+  기판에 올리면 "아날로그를 안 건드린다" 는 그 선택의 이유 자체가 사라진다.</p>
+  <table class="tbl" style="margin-bottom:24px">
+    <thead><tr><th>VCCO</th><th>선택</th><th>어댑터</th></tr></thead>
+    <tbody>
+      <tr><td class="m">1.8 V</td><td>그대로 직결. 여유 +460 mV</td>
+        <td class="q">필요 없음</td></tr>
+      <tr><td class="m">3.3 V</td><td>비교기를 3.3 V 로 올린다 (부품 0개)</td>
+        <td class="q">필요 없음</td></tr>
+      <tr><td class="m">3.3 V</td><td>SN74AVCH16T245 레벨 변환기</td>
+        <td class="q"><b>여기</b></td></tr>
+    </tbody>
+  </table>
+  <p>중요한 것은 <strong>지금 안 정해도 된다</strong>는 점이다. 어댑터가 양쪽에 같은
+  2×25 를 쓰면 나중에 케이블 사이에 끼워 넣기만 하면 되고,
+  <strong>AFE 기판은 바뀌지 않는다.</strong></p>
+  <p style="margin-top:20px">만들게 되면 배치는 이렇다. 두 헤더의 1번 핀을 같은 열에
+  맞추면 배선이 전부 수직 직선이 된다 (아래 그림은 출력 쪽을 20핀으로 줄인
+  변형이다 — 변환기를 넣는다면 그 자리에 IC 가 들어간다).</p>
   <div class="plate">
-    __AFESIDE__
-    <div class="cap">2×10 박스헤더 · 핀 필드 22.86&nbsp;mm 라 아날로그 기판에
-    부담이 없다 · 키홈 필수</div>
-  </div>
-  <div class="warn">
-    <h3>일반 핀헤더로 대체하지 말 것</h3>
-    <p>키홈이 없으면 소켓이 180° 뒤집혀 꽂힌다. 그러면 핀 1(5V)이 핀 20(GND)
-    자리로 가서 <strong>5V 가 그대로 단락</strong>된다. 몇백 원 차이다.</p>
+    __PERF__
+    <div class="cap">만능기판 90×70&nbsp;mm · 위 13홀만 쓴다 ·
+    50핀 헤더의 이젝터 래치는 기판 밖으로 나가도 된다 (기판에 닿지 않는다) ·
+    두 헤더 사이는 7홀 이상 (하우징 깊이 12&nbsp;mm)</div>
   </div>
 </section>
 
 <section>
   <div class="eyebrow"><span class="num">부품</span><h2>사야 할 것</h2></div>
+  <p class="dek">직결이면 두 줄로 끝난다.</p>
   <div class="bom">
     <div>
       <span class="pt">A</span><span class="pnm">NT-IDC 50핀 케이블 200 mm</span>
       <span class="pq">×1</span>
-      <span class="pd">양끝 IDC 소켓 완제품, 1:1 스트레이트. 압착 공정이 없어진다.</span>
+      <span class="pd">양끝 IDC 소켓 완제품, 1:1 스트레이트. 압착 공정이 없어진다.
+      빨간 줄이 양끝 같은 쪽인지만 확인한다.</span>
     </div>
     <div>
       <span class="pt">B</span><span class="pnm">박스헤더 2×25 (50P) 스트레이트</span>
       <span class="pq">×1 +여분</span>
-      <span class="pd">DS1011-50-S-L-S1-B 계열. 핀 필드 60.96 mm, 래치 포함 82.80 mm.
-      어댑터에 실장.</span>
+      <span class="pd">DS1011-50-S-L-S1-B 계열. 핀 필드 60.96 mm, 래치 포함 82.80 mm,
+      키홈 4.3 mm, 핀 0.635 각 → 드릴 1.0 mm. <b>AFE 기판에 실장.</b></span>
     </div>
+  </div>
+  <p style="margin-top:24px; color:var(--ink3); font-size:14.5px">
+    아래는 <b>레벨 변환기 경로로 확정됐을 때만</b> 산다. 그 전에 사면 버릴 수 있다.</p>
+  <div class="bom" style="opacity:.82">
     <div>
-      <span class="pt">C</span><span class="pnm">박스헤더 2×10 (20P) 스트레이트</span>
-      <span class="pq">×2 +여분</span>
-      <span class="pd">어댑터에 1개, AFE 기판에 1개. 핀 필드 22.86 mm.</span>
-    </div>
-    <div>
-      <span class="pt">D</span><span class="pnm">IDC 20핀 케이블 (또는 리본+소켓)</span>
-      <span class="pq">×1</span>
-      <span class="pd">어댑터 ↔ AFE 기판. 짧을수록 좋다.</span>
-    </div>
-    <div>
-      <span class="pt">E</span><span class="pnm">만능기판 90×70 mm</span>
+      <span class="pt">C</span><span class="pnm">만능기판 90×70 mm</span>
       <span class="pq">×1</span>
       <span class="pd">35×27홀. 50핀 헤더가 25홀을 먹으므로 이보다 작으면 안 된다.</span>
     </div>
     <div>
-      <span class="pt">F</span><span class="pnm">주석도금선 또는 UEW 0.3 mm</span>
-      <span class="pq">—</span>
-      <span class="pd">뒷면 배선 20가닥.</span>
+      <span class="pt">D</span><span class="pnm">박스헤더 2×25 추가</span>
+      <span class="pq">×2</span>
+      <span class="pd">어댑터의 입력·출력.</span>
+    </div>
+    <div>
+      <span class="pt">E</span><span class="pnm">SN74AVCH16T245 (TSSOP-48)</span>
+      <span class="pq">×1</span>
+      <span class="pd">16채널 1.8 ↔ 3.3 V. DIR = H, OE = L, 뱅크 2개라 각 2개씩.</span>
     </div>
   </div>
 </section>
@@ -571,19 +640,21 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 <section>
   <div class="eyebrow"><span class="num">순서</span><h2>만들고 확인하기</h2></div>
   <ol class="steps">
-    <li><b>어댑터를 먼저 만든다.</b> AFE 기판이 없어도 된다. 헤더 두 개를 꽂고
-      모서리 핀만 먼저 납땜해 수평을 확인한 뒤 나머지를 채운다.</li>
-    <li><b>도통으로 20가닥을 전부 확인한다.</b> 50핀 3번 ↔ 20핀 3번, … 18↔18,
-      49↔19, 50↔20. 그리고 <b>인접 핀끼리 안 붙었는지</b>도 본다 — 납땜 브릿지가
-      가장 흔한 고장이고 눈으로는 안 보인다.</li>
-    <li><b>VCCO 를 잰다. 이때 AFE 는 물리지 않는다.</b> EXT0–15 을 High 로 구동하는
-      비트스트림을 올리고 어댑터의 20핀 헤더에서 전압을 잰다. 그 값이 VCCO 이고,
-      16핀이 전부 같은 값이면 핀 맵도 맞은 것이다.</li>
-    <li><b>3.3 V 로 나오면 결정을 먼저 한다.</b> 비교기를 3.3 V 로 올릴지
-      레벨 변환기를 넣을지 — 아날로그 쪽 판단이다. 그 전에 AFE 를 연결하지 않는다.</li>
-    <li><b>AFE 를 물리고 주파수 스윕을 건다.</b> 125 Hz → 5 kHz 를 마이크에 들려주고
-      활성 채널이 ch00 에서 ch15 로 <b>단조 이동</b>하는지 본다. 깨끗한 대각선이
-      나오면 매핑이 맞은 것이고, 섞였으면 어떻게 섞였는지까지 보인다.</li>
+    <li><b>VCCO 부터 잰다. AFE 는 아직 만들지도, 물리지도 않는다.</b>
+      EXT0–15 를 High 로 구동하는 비트스트림을 올리고 리본 끝에서 전압을 잰다.
+      그 값이 VCCO 다. 16가닥이 전부 같은 값이면 핀 맵도 같이 확인된 것이다.</li>
+    <li><b>그 값으로 회로를 정한다.</b> 1.8 V 면 그대로. 3.3 V 면 비교기를 올릴지
+      변환기를 넣을지 — 아날로그 쪽 판단이고, R7/R8 분압이 비교기 레일 기준인지에
+      달렸다. 이 답이 나오기 전에는 부품을 더 사지 않는다.</li>
+    <li><b>AFE 기판에 헤더를 실장한다.</b> 모서리 핀 두 개만 먼저 납땜해 수평과
+      키홈 방향을 확인한 뒤 나머지 48개를 채운다. 50개를 다 하고 나면 못 고친다.</li>
+    <li><b>도통으로 18가닥을 확인한다.</b> 핀 3 ↔ ch00 … 핀 18 ↔ ch15, 그리고
+      49·50 ↔ 접지. <b>인접 핀끼리 안 붙었는지</b>도 같이 본다 — 납땜 브릿지가 가장
+      흔한 고장이고 눈으로는 안 보인다.</li>
+    <li><b>물리고 주파수 스윕을 건다.</b> 125 Hz → 5 kHz 를 마이크에 들려주고 활성
+      채널이 ch00 에서 ch15 로 <b>단조 이동</b>하는지 본다. 깨끗한 대각선이 나오면
+      매핑이 맞은 것이고, 섞였으면 어떻게 섞였는지까지 보인다. 건너뛰면 안 되는
+      이유: 채널이 섞였을 때 증상이 "정확도가 좀 낮다" 뿐이다.</li>
   </ol>
   <div class="warn">
     <h3>3번을 AFE 물린 채로 하면 비교기가 죽는다</h3>
@@ -609,15 +680,21 @@ def main() -> None:
             .replace("__GRID50__", pin_grid(KIT_PINS))
             .replace("__PERF__", perfboard())
             .replace("__AFESIDE__", afe_side())
-            .replace("__WIRES__", wire_table()))
+            .replace("__NETS__", net_table())
+            .replace("__CHIPS__", ch_chips()))
+    assert "__" not in html.split("<style>")[0] + html.split("</style>")[-1], \
+        "치환 안 된 자리표시자가 남았다"
     OUT.write_text(html, encoding="utf-8")
     print(f"wrote {OUT}  ({len(html):,} bytes)")
-    # 배선이 20가닥이고 채널이 16개인지 -- 그림이 아니라 숫자로 확인한다
-    w = wires()
-    assert len(w) == 20, len(w)
-    assert sum(1 for _, _, r in w if r == "sig") == N_CH
-    assert all(s == d for s, d, _ in w if s <= 18)
-    print("배선 20가닥 / 신호 16 / 핀1-18 직결 -- 확인")
+
+    # 그림이 아니라 숫자로 확인한다.
+    roles = [role(p, KIT_PINS) for p in range(1, KIT_PINS + 1)]
+    assert roles.count("sig") == N_CH, roles.count("sig")
+    assert roles.count("v5") == 2 and roles.count("gnd") == 2
+    assert roles.count("nc") == KIT_PINS - N_CH - 4
+    assert [ch_of(c + 3) for c in range(N_CH)] == list(range(N_CH))
+    print(f"신호 {N_CH} / 5V 2 / GND 2 / NC {roles.count('nc')} "
+          f"= {KIT_PINS} · 핀 = ch + 3 -- 확인")
 
 
 if __name__ == "__main__":
