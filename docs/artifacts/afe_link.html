@@ -6,7 +6,7 @@
   --paper:#F1F2EE; --surface:#FBFBF9; --sunk:#E6E8E2;
   --ink:#1B1D1A; --ink2:#4C514A; --ink3:#7E847B;
   --rule:#D2D6CC; --rule2:#BFC4B8;
-  --v5:#BB3A2B; --gnd:#31353A; --sig:#1B6E70; --nc:#B2B7AE;
+  --v5:#BB3A2B; --v33:#8A5A1E; --gnd:#31353A; --sig:#1B6E70; --nc:#B2B7AE;
   --board:#20482F; --hole:#8FA398;
 }
 @media (prefers-color-scheme: dark){
@@ -14,7 +14,7 @@
     --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
     --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
     --rule:#2C312B; --rule2:#3C423A;
-    --v5:#E4705B; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
+    --v5:#E4705B; --v33:#D2A054; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
     --board:#17301F; --hole:#5C7466;
   }
 }
@@ -22,7 +22,7 @@
   --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
   --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
   --rule:#2C312B; --rule2:#3C423A;
-  --v5:#E4705B; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
+  --v5:#E4705B; --v33:#D2A054; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
   --board:#17301F; --hole:#5C7466;
 }
 
@@ -149,6 +149,23 @@ code{font-family:'IBM Plex Mono',monospace; font-size:.9em;
 .tree{font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.75;
   background:var(--surface); border:1px solid var(--rule); border-radius:7px;
   padding:16px 18px; overflow-x:auto; color:var(--ink2); margin:0}
+
+/* '245 */
+.ic{fill:var(--sunk); stroke:var(--sig); stroke-width:1.6}
+.icn{font-family:Archivo,sans-serif; font-size:14px; font-weight:700; fill:var(--ink)}
+.icp{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink3)}
+.icc{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.icp.v33{fill:var(--v33)}
+.w.sig33{stroke:var(--v33)} .hp.sig33{fill:var(--v33)} .hv.sig{fill:var(--sig)}
+.byp{fill:none; stroke:var(--ink3); stroke-width:1.4; stroke-dasharray:5 5}
+.bypl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+/* 전원 트리 */
+.src{fill:var(--surface); stroke:var(--v5); stroke-width:1.5}
+.ldo{fill:var(--sunk); stroke:var(--ink2); stroke-width:1.3}
+.rail33{fill:var(--surface); stroke:var(--v33); stroke-width:1.5}
+.rail18{fill:var(--surface); stroke:var(--sig); stroke-width:1.5}
+.railg{fill:var(--surface); stroke:var(--gnd); stroke-width:1.5}
+.w.v33{stroke:var(--v33)} .hp.v5{fill:var(--v5)}
 
 /* 조건부 표시 */
 .ghost{fill:none; stroke:var(--ink3); stroke-width:1.2; stroke-dasharray:5 4}
@@ -400,62 +417,99 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 
 <section>
   <div class="eyebrow"><span class="num">AFE 쪽</span><h2>16가닥을 어떻게 뽑아내는가</h2></div>
-  <p class="dek">아날로그 기판이 할 일은 <strong>비교기 출력 하나를 헤더 핀 하나에
-  잇는 것</strong>뿐이다. 회로가 없다 — 배선 16개와 접지 공유가 전부이고,
-  나머지 30핀은 아무 데도 안 잇는다.</p>
+  <p class="dek">VCCO 가 3.3&nbsp;V 라고 보고 그린 것이다. 비교기는
+  <strong>1.8&nbsp;V 그대로</strong> 두고 <code>SN74AVCH16T245</code> 한 개가 16가닥을
+  통째로 3.3&nbsp;V 로 올려 헤더로 내보낸다. 아날로그 회로는 손대지 않는다.</p>
   <div class="plate">
-    <svg viewBox="0 0 880 380" role="img" aria-label="AFE 기판에서 비교기 16개를 2x10 헤더로 모으는 방법">
-<rect class="cmp" x="18" y="39" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="58">LDO → 1.8 V (+3.3 V)</text>
-<rect class="cmp" x="18" y="79" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="98">비교기 ch00</text>
-<rect class="cmp" x="18" y="119" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="138">비교기 ch01</text>
-<rect class="cmp" x="18" y="159" width="188" height="30" rx="4" stroke-dasharray="4 3"/>
-<text class="ct" x="32" y="178">비교기 ch02 ~ ch13   (12개)</text>
-<rect class="cmp" x="18" y="199" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="218">비교기 ch14</text>
-<rect class="cmp" x="18" y="239" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="258">비교기 ch15</text>
-<text class="ell" x="112" y="298" text-anchor="middle">— 아무것도 잇지 않는다 —</text>
-<rect class="cmp" x="18" y="319" width="188" height="30" rx="4"/>
-<text class="ct" x="32" y="338">기판 접지</text>
-<rect class="hdr2" x="470" y="28" width="248" height="332" rx="6"/>
-<text class="hl2" x="594" y="18" text-anchor="middle">2×25 박스헤더 → 리본 → 킷 J6</text>
-<path class="w v5" d="M206 54 H500"/>
-<circle class="hp v5" cx="500" cy="54" r="6"/>
-<text class="hr" x="518" y="58">핀 1·2</text>
-<text class="hv v5" x="704" y="58" text-anchor="end">5V → LDO</text>
-<path class="w sig" d="M206 94 H500"/>
-<circle class="hp sig" cx="500" cy="94" r="6"/>
-<text class="hr" x="518" y="98">핀 3</text>
-<text class="hv sig" x="704" y="98" text-anchor="end">ch00</text>
-<path class="w sig" d="M206 134 H500"/>
-<circle class="hp sig" cx="500" cy="134" r="6"/>
-<text class="hr" x="518" y="138">핀 4</text>
-<text class="hv sig" x="704" y="138" text-anchor="end">ch01</text>
-<path class="w sig" d="M206 174 H500"/>
-<circle class="hp sig" cx="500" cy="174" r="6"/>
-<text class="hr" x="518" y="178">핀 5–16</text>
-<text class="hv sig" x="704" y="178" text-anchor="end">ch02–ch13</text>
-<path class="w sig" d="M206 214 H500"/>
-<circle class="hp sig" cx="500" cy="214" r="6"/>
-<text class="hr" x="518" y="218">핀 17</text>
-<text class="hv sig" x="704" y="218" text-anchor="end">ch14</text>
-<path class="w sig" d="M206 254 H500"/>
-<circle class="hp sig" cx="500" cy="254" r="6"/>
-<text class="hr" x="518" y="258">핀 18</text>
-<text class="hv sig" x="704" y="258" text-anchor="end">ch15</text>
-<circle class="hp nc" cx="500" cy="294" r="6"/>
-<text class="hr" x="518" y="298">핀 19–48</text>
-<text class="hv nc" x="704" y="298" text-anchor="end">연결 안 함 · 30핀</text>
-<path class="w gnd" d="M206 334 H500"/>
-<circle class="hp gnd" cx="500" cy="334" r="6"/>
-<text class="hr" x="518" y="338">핀 49·50</text>
-<text class="hv gnd" x="704" y="338" text-anchor="end">GND</text>
+    <svg viewBox="0 0 900 364" role="img" aria-label="AFE 기판 신호 경로: 비교기에서 레벨 변환기를 거쳐 2x25 헤더까지">
+<rect class="ic" x="258" y="38" width="194" height="232" rx="5"/>
+<text class="icn" x="355" y="60" text-anchor="middle">SN74AVCH16T245</text>
+<text class="icp" x="270" y="80">A측</text>
+<text class="icp" x="440" y="80" text-anchor="end">B측</text>
+<text class="icc" x="355" y="290" text-anchor="middle">VCCA 1.8 V · VCCB 3.3 V · DIR → 1.8 V (A→B) · OE → GND · 뱅크 2개라 각 2개</text>
+<text class="icp" x="214" y="66" text-anchor="middle">1.8 V</text>
+<text class="icp v33" x="524" y="66" text-anchor="middle">3.3 V</text>
+<rect class="hdr2" x="566" y="30" width="230" height="248" rx="6"/>
+<text class="hl2" x="681" y="20" text-anchor="middle">2×25 박스헤더 → 리본 → 킷 J6</text>
+<rect class="cmp" x="18" y="63" width="152" height="30" rx="4"/>
+<text class="ct" x="32" y="82">비교기 ch00</text>
+<path class="w sig" d="M170 78 H258"/>
+<path class="w sig33" d="M452 78 H596"/>
+<circle class="hp sig" cx="258" cy="78" r="4.5"/>
+<circle class="hp sig33" cx="452" cy="78" r="4.5"/>
+<circle class="hp sig33" cx="596" cy="78" r="6"/>
+<text class="hr" x="612" y="82">핀 3</text>
+<text class="hv sig" x="782" y="82" text-anchor="end">ch00</text>
+<rect class="cmp" x="18" y="101" width="152" height="30" rx="4"/>
+<text class="ct" x="32" y="120">비교기 ch01</text>
+<path class="w sig" d="M170 116 H258"/>
+<path class="w sig33" d="M452 116 H596"/>
+<circle class="hp sig" cx="258" cy="116" r="4.5"/>
+<circle class="hp sig33" cx="452" cy="116" r="4.5"/>
+<circle class="hp sig33" cx="596" cy="116" r="6"/>
+<text class="hr" x="612" y="120">핀 4</text>
+<text class="hv sig" x="782" y="120" text-anchor="end">ch01</text>
+<text class="ell" x="94" y="159" text-anchor="middle">ch02 ~ ch13 · 12개 동일</text>
+<text class="ell" x="656" y="159" text-anchor="middle">핀 5 ~ 16</text>
+<rect class="cmp" x="18" y="177" width="152" height="30" rx="4"/>
+<text class="ct" x="32" y="196">비교기 ch14</text>
+<path class="w sig" d="M170 192 H258"/>
+<path class="w sig33" d="M452 192 H596"/>
+<circle class="hp sig" cx="258" cy="192" r="4.5"/>
+<circle class="hp sig33" cx="452" cy="192" r="4.5"/>
+<circle class="hp sig33" cx="596" cy="192" r="6"/>
+<text class="hr" x="612" y="196">핀 17</text>
+<text class="hv sig" x="782" y="196" text-anchor="end">ch14</text>
+<rect class="cmp" x="18" y="215" width="152" height="30" rx="4"/>
+<text class="ct" x="32" y="234">비교기 ch15</text>
+<path class="w sig" d="M170 230 H258"/>
+<path class="w sig33" d="M452 230 H596"/>
+<circle class="hp sig" cx="258" cy="230" r="4.5"/>
+<circle class="hp sig33" cx="452" cy="230" r="4.5"/>
+<circle class="hp sig33" cx="596" cy="230" r="6"/>
+<text class="hr" x="612" y="234">핀 18</text>
+<text class="hv sig" x="782" y="234" text-anchor="end">ch15</text>
+<path class="byp" d="M170 318 H596"/>
+<text class="bypl" x="383" y="344" text-anchor="middle">VCCO 가 1.8 V 로 밝혀지면 '245 를 빼고 여기로 직결한다 — 칩도 3.3 V 레일도 사라진다</text>
 </svg>
-    <div class="cap">2×25 박스헤더 · 핀 필드 60.96&nbsp;mm, 래치 포함 82.80&nbsp;mm ·
-    점선은 선택 항목 · 키홈 필수</div>
+    <div class="cap">배선이 전부 수평 직선이다 — 비교기 하나가 A측 핀 하나로,
+    B측 핀 하나가 헤더 핀 하나로 · 2×25 헤더, 핀 필드 60.96&nbsp;mm, 키홈 필수</div>
+  </div>
+  <p style="margin-top:20px"><strong>변환기를 AFE 기판에 올리면 어댑터가 필요 없다.</strong>
+  중간 기판은 칩을 놓을 자리가 없을 때의 구제책일 뿐이고, 기판이 아직 설계 중이라면
+  자리가 있다. 커넥터 한 벌과 손납땜 40군데가 통째로 사라진다.</p>
+
+  <h3 class="sub-h">전원 — 킷의 5V 하나에서 두 레일을 만든다</h3>
+  <div class="plate">
+    <svg viewBox="0 0 900 250" role="img" aria-label="AFE 기판 전원 트리: 킷의 5V 에서 3.3V 와 1.8V 를 만든다">
+<rect class="src" x="18" y="24" width="186" height="54" rx="5"/>
+<text class="ct" x="32" y="48">J6 핀 1·2</text>
+<text class="icc" x="32" y="67">VCC5V — 킷에서</text>
+<rect class="ldo" x="320" y="14" width="150" height="40" rx="5"/>
+<text class="ct" x="334" y="38">LDO → 3.3 V</text>
+<rect class="ldo" x="320" y="88" width="150" height="40" rx="5"/>
+<text class="ct" x="334" y="112">LDO → 1.8 V</text>
+<rect class="rail33" x="560" y="8" width="322" height="52" rx="5"/>
+<text class="ct" x="574" y="32">VCCB — '245 B측 전용</text>
+<text class="icc" x="574" y="51">디지털. 아날로그에 안 닿는다</text>
+<rect class="rail18" x="560" y="82" width="322" height="52" rx="5"/>
+<text class="ct" x="574" y="106">VCCA + 아날로그 전체</text>
+<text class="icc" x="574" y="125">검출기 · 비교기 · 마이크 바이어스</text>
+<rect class="src" x="18" y="168" width="186" height="54" rx="5"/>
+<text class="ct" x="32" y="192">J6 핀 49·50</text>
+<text class="icc" x="32" y="211">GND</text>
+<rect class="railg" x="560" y="168" width="322" height="40" rx="5"/>
+<text class="ct" x="574" y="192">기판 접지 — 전 블록 공통</text>
+<path class="w v5" d="M204 51 H262 V34 H320"/>
+<path class="w v5" d="M262 51 V108 H320"/>
+<circle class="hp v5" cx="262" cy="51" r="4"/>
+<path class="w v33" d="M470 34 H560"/>
+<path class="w gnd" d="M470 108 H560"/>
+<path class="w gnd" d="M204 195 H560"/>
+<text class="icc" x="490" y="152">1.8 V 는 '245 의 제어핀 기준이기도 하다 — DIR 을 이 레일에 묶는다</text>
+</svg>
+    <div class="cap">3.3&nbsp;V 는 '245 의 B측에만 간다 · 아날로그는 1.8&nbsp;V 그대로 ·
+    LDO 는 전류가 아니라 <b>출력 잡음과 PSRR</b> 로 고른다 (총 소모 150~280&nbsp;µA)</div>
   </div>
   <div class="chips"><div class="chip"><span class="cc">ch00</span><span class="cp">핀 3</span></div>
 <div class="chip"><span class="cc">ch01</span><span class="cp">핀 4</span></div>
@@ -507,10 +561,9 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
   <p class="dek">2026-09-01 에 정해진 것이다 — 아날로그 전원은 FPGA 보드에서 받는다.
   보드가 KC705 에서 킷으로 바뀌면서 소스가 <strong>U103 의 3.3&nbsp;V 에서 J6 핀 1·2 의
   5&nbsp;V</strong> 로 바뀌었을 뿐이고, 헤드룸은 오히려 늘었다.</p>
-  <pre class="tree">J6 핀 1·2  (VCC5V) ──리본──→ AFE 기판 ┬─ LDO → 1.8 V   아날로그 · 비교기 · 변환기 A측
-                                       └─ LDO → 3.3 V   변환기 B측
-J6 핀 49·50 (GND) ──리본──→ 기준 접지</pre>
-  <p style="margin-top:16px">로컬 LDO 를 두는 이유는 킷의 5&nbsp;V 가 스위칭
+  <p>레일 구성은 위 전원 트리에 그렸다. 여기서는 <strong>왜 로컬 LDO 인가</strong>만
+  남긴다.</p>
+  <p>킷의 5&nbsp;V 가 스위칭
   레귤레이터에서 오기 때문이다. 리플이 리본을 타고 오는데 LDO 한 겹이 PSRR 로 그걸
   깎고 디커플링을 부하 옆으로 가져온다. 고를 때 볼 것은 전류 용량이 아니라
   <strong>출력 잡음과 PSRR</strong> 이다 — 능동 소자 합이 150~280&nbsp;µA 뿐이고,

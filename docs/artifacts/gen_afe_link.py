@@ -194,53 +194,101 @@ def chain() -> str:
 
 
 def afe_side() -> str:
-    """AFE 기판 쪽: 비교기 16개가 어떻게 헤더 한 개로 모이는가.
+    """AFE 기판의 신호 경로: 비교기 -> \'245 A측 -> B측 -> 2x25 헤더.
 
-    좌변의 블록과 우변의 헤더 핀을 **같은 y 에** 두어 배선이 수평 직선이 되게 한다.
-    선이 꺾이면 보는 사람이 "왜 꺾였지" 를 먼저 묻는데, 여기엔 이유가 없다.
+    좌우 좌표를 같은 y 로 두어 배선이 전부 수평 직선이 되게 한다. 선이 꺾이면
+    보는 사람이 "왜 꺾였지" 를 먼저 묻는데 여기엔 이유가 없다.
     """
-    rows = [("1·2", "5V → LDO", "v5"), ("3", "ch00", "sig"),
-            ("4", "ch01", "sig"), ("5–16", "ch02–ch13", "sig"), ("17", "ch14", "sig"),
-            ("18", "ch15", "sig"), ("19–48", "연결 안 함 · 30핀", "nc"),
-            ("49·50", "GND", "gnd")]
-    step, y0 = 40, 54
-    ys = [y0 + i * step for i in range(len(rows))]
-    h = ys[-1] + 46
+    shown = [(0, "ch00", 3), (1, "ch01", 4), (None, None, None),
+             (14, "ch14", 17), (15, "ch15", 18)]
+    y0, step = 78, 38
+    ys = [y0 + i * step for i in range(len(shown))]
+    byp = ys[-1] + 88
+    h = byp + 46
 
-    o = [f'<svg viewBox="0 0 880 {h}" role="img" '
-         f'aria-label="AFE 기판에서 비교기 16개를 2x10 헤더로 모으는 방법">']
+    o = [f'<svg viewBox="0 0 900 {h}" role="img" aria-label="AFE 기판 신호 경로: '
+         f'비교기에서 레벨 변환기를 거쳐 2x25 헤더까지">']
 
-    def block(y, label, cls="cmp", dashed=False):
-        dash = ' stroke-dasharray="4 3"' if dashed else ""
-        o.append(f'<rect class="{cls}" x="18" y="{y - 15}" width="188" height="30" '
-                 f'rx="4"{dash}/>')
-        o.append(f'<text class="ct" x="32" y="{y + 4}">{label}</text>')
+    # --- \'245 몸통 ---------------------------------------------------------- #
+    bx0, bx1 = 258, 452
+    by0, by1 = ys[0] - 40, ys[-1] + 40
+    o.append(f'<rect class="ic" x="{bx0}" y="{by0}" width="{bx1 - bx0}" '
+             f'height="{by1 - by0}" rx="5"/>')
+    o.append(f'<text class="icn" x="{(bx0 + bx1) / 2:.0f}" y="{by0 + 22}" '
+             f'text-anchor="middle">SN74AVCH16T245</text>')
+    # 상자 안에는 짧은 것만. 긴 설명은 상자 밖 아래로 -- 194 px 폭에 두 라벨을
+    # 양끝 정렬로 넣으면 가운데서 겹친다(실제로 겹쳤다).
+    o.append(f'<text class="icp" x="{bx0 + 12}" y="{by0 + 42}">A측</text>')
+    o.append(f'<text class="icp" x="{bx1 - 12}" y="{by0 + 42}" text-anchor="end">B측</text>')
+    o.append(f'<text class="icc" x="{(bx0 + bx1) / 2:.0f}" y="{by1 + 20}" '
+             f'text-anchor="middle">VCCA 1.8 V · VCCB 3.3 V · DIR → 1.8 V (A→B) · '
+             f'OE → GND · 뱅크 2개라 각 2개</text>')
+    # 어느 구간이 몇 볼트인지는 색으로도 구분되지만, 첫 줄에만 글자로도 적는다
+    o.append(f'<text class="icp" x="{(170 + bx0) / 2:.0f}" y="{ys[0] - 12}" '
+             f'text-anchor="middle">1.8 V</text>')
+    o.append(f'<text class="icp v33" x="{(bx1 + 596) / 2:.0f}" y="{ys[0] - 12}" '
+             f'text-anchor="middle">3.3 V</text>')
 
-    block(ys[0], "LDO → 1.8 V (+3.3 V)")
-    block(ys[1], "비교기 ch00")
-    block(ys[2], "비교기 ch01")
-    block(ys[3], "비교기 ch02 ~ ch13   (12개)", dashed=True)
-    block(ys[4], "비교기 ch14")
-    block(ys[5], "비교기 ch15")
-    o.append(f'<text class="ell" x="112" y="{ys[6] + 4}" text-anchor="middle">'
-             f'— 아무것도 잇지 않는다 —</text>')
-    block(ys[7], "기판 접지")
-
-    # 헤더
-    top, bot = ys[0] - 26, ys[-1] + 26
-    o.append(f'<rect class="hdr2" x="470" y="{top}" width="248" '
-             f'height="{bot - top}" rx="6"/>')
-    o.append(f'<text class="hl2" x="594" y="{top - 10}" text-anchor="middle">'
+    # --- 헤더 --------------------------------------------------------------- #
+    hx = 596
+    o.append(f'<rect class="hdr2" x="566" y="{by0 - 8}" width="230" '
+             f'height="{by1 - by0 + 16}" rx="6"/>')
+    o.append(f'<text class="hl2" x="681" y="{by0 - 18}" text-anchor="middle">'
              f'2×25 박스헤더 → 리본 → 킷 J6</text>')
 
-    for (p, lab, rl), y in zip(rows, ys):
-        dash = ' stroke-dasharray="3 4"' if rl == "nc" else ""
-        if rl != "nc":
-            o.append(f'<path class="w {rl}" d="M206 {y} H500"{dash}/>')
-        o.append(f'<circle class="hp {rl}" cx="500" cy="{y}" r="6"/>')
-        o.append(f'<text class="hr" x="518" y="{y + 4}">핀 {p}</text>')
-        o.append(f'<text class="hv {rl}" x="704" y="{y + 4}" '
-                 f'text-anchor="end">{lab}</text>')
+    for (ch, lab, pin), y in zip(shown, ys):
+        if ch is None:
+            o.append(f'<text class="ell" x="94" y="{y + 5}" text-anchor="middle">'
+                     f'ch02 ~ ch13 · 12개 동일</text>')
+            o.append(f'<text class="ell" x="{hx + 60}" y="{y + 5}" '
+                     f'text-anchor="middle">핀 5 ~ 16</text>')
+            continue
+        o.append(f'<rect class="cmp" x="18" y="{y - 15}" width="152" height="30" rx="4"/>')
+        o.append(f'<text class="ct" x="32" y="{y + 4}">비교기 {lab}</text>')
+        o.append(f'<path class="w sig" d="M170 {y} H{bx0}"/>')      # 비교기 → A측
+        o.append(f'<path class="w sig33" d="M{bx1} {y} H{hx}"/>')   # B측 → 헤더
+        o.append(f'<circle class="hp sig" cx="{bx0}" cy="{y}" r="4.5"/>')
+        o.append(f'<circle class="hp sig33" cx="{bx1}" cy="{y}" r="4.5"/>')
+        o.append(f'<circle class="hp sig33" cx="{hx}" cy="{y}" r="6"/>')
+        o.append(f'<text class="hr" x="{hx + 16}" y="{y + 4}">핀 {pin}</text>')
+        o.append(f'<text class="hv sig" x="782" y="{y + 4}" text-anchor="end">{lab}</text>')
+
+    # --- 우회 경로 ----------------------------------------------------------- #
+    o.append(f'<path class="byp" d="M170 {byp} H{hx}"/>')
+    o.append(f'<text class="bypl" x="{(170 + hx) / 2:.0f}" y="{byp + 26}" '
+             f'text-anchor="middle">VCCO 가 1.8 V 로 밝혀지면 \'245 를 빼고 여기로 직결한다 — '
+             f'칩도 3.3 V 레일도 사라진다</text>')
+    o.append("</svg>")
+    return "\n".join(o)
+
+
+def power_tree() -> str:
+    """전원은 신호와 방향이 반대라 같은 그림에 넣으면 배선이 엉킨다. 따로 그린다."""
+    def box(x, y, w, hh, cls, title, sub=None):
+        s = [f'<rect class="{cls}" x="{x}" y="{y}" width="{w}" height="{hh}" rx="5"/>',
+             f'<text class="ct" x="{x + 14}" y="{y + (24 if sub else hh / 2 + 4):.0f}">{title}</text>']
+        if sub:
+            s.append(f'<text class="icc" x="{x + 14}" y="{y + 43}">{sub}</text>')
+        return s
+
+    o = ['<svg viewBox="0 0 900 250" role="img" '
+         'aria-label="AFE 기판 전원 트리: 킷의 5V 에서 3.3V 와 1.8V 를 만든다">']
+    o += box(18, 24, 186, 54, "src", "J6 핀 1·2", "VCC5V — 킷에서")
+    o += box(320, 14, 150, 40, "ldo", "LDO → 3.3 V")
+    o += box(320, 88, 150, 40, "ldo", "LDO → 1.8 V")
+    o += box(560, 8, 322, 52, "rail33", "VCCB — \'245 B측 전용", "디지털. 아날로그에 안 닿는다")
+    o += box(560, 82, 322, 52, "rail18", "VCCA + 아날로그 전체", "검출기 · 비교기 · 마이크 바이어스")
+    o += box(18, 168, 186, 54, "src", "J6 핀 49·50", "GND")
+    o += box(560, 168, 322, 40, "railg", "기판 접지 — 전 블록 공통")
+
+    o.append('<path class="w v5" d="M204 51 H262 V34 H320"/>')
+    o.append('<path class="w v5" d="M262 51 V108 H320"/>')
+    o.append('<circle class="hp v5" cx="262" cy="51" r="4"/>')
+    o.append('<path class="w v33" d="M470 34 H560"/>')
+    o.append('<path class="w gnd" d="M470 108 H560"/>')
+    o.append('<path class="w gnd" d="M204 195 H560"/>')
+    o.append('<text class="icc" x="490" y="152">1.8 V 는 \'245 의 제어핀 기준이기도 하다 '
+             '— DIR 을 이 레일에 묶는다</text>')
     o.append("</svg>")
     return "\n".join(o)
 
@@ -280,7 +328,7 @@ HTML = """<title>AFE 링크 조립도</title>
   --paper:#F1F2EE; --surface:#FBFBF9; --sunk:#E6E8E2;
   --ink:#1B1D1A; --ink2:#4C514A; --ink3:#7E847B;
   --rule:#D2D6CC; --rule2:#BFC4B8;
-  --v5:#BB3A2B; --gnd:#31353A; --sig:#1B6E70; --nc:#B2B7AE;
+  --v5:#BB3A2B; --v33:#8A5A1E; --gnd:#31353A; --sig:#1B6E70; --nc:#B2B7AE;
   --board:#20482F; --hole:#8FA398;
 }
 @media (prefers-color-scheme: dark){
@@ -288,7 +336,7 @@ HTML = """<title>AFE 링크 조립도</title>
     --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
     --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
     --rule:#2C312B; --rule2:#3C423A;
-    --v5:#E4705B; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
+    --v5:#E4705B; --v33:#D2A054; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
     --board:#17301F; --hole:#5C7466;
   }
 }
@@ -296,7 +344,7 @@ HTML = """<title>AFE 링크 조립도</title>
   --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
   --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
   --rule:#2C312B; --rule2:#3C423A;
-  --v5:#E4705B; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
+  --v5:#E4705B; --v33:#D2A054; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
   --board:#17301F; --hole:#5C7466;
 }
 
@@ -424,6 +472,23 @@ code{font-family:'IBM Plex Mono',monospace; font-size:.9em;
   background:var(--surface); border:1px solid var(--rule); border-radius:7px;
   padding:16px 18px; overflow-x:auto; color:var(--ink2); margin:0}
 
+/* '245 */
+.ic{fill:var(--sunk); stroke:var(--sig); stroke-width:1.6}
+.icn{font-family:Archivo,sans-serif; font-size:14px; font-weight:700; fill:var(--ink)}
+.icp{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink3)}
+.icc{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.icp.v33{fill:var(--v33)}
+.w.sig33{stroke:var(--v33)} .hp.sig33{fill:var(--v33)} .hv.sig{fill:var(--sig)}
+.byp{fill:none; stroke:var(--ink3); stroke-width:1.4; stroke-dasharray:5 5}
+.bypl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+/* 전원 트리 */
+.src{fill:var(--surface); stroke:var(--v5); stroke-width:1.5}
+.ldo{fill:var(--sunk); stroke:var(--ink2); stroke-width:1.3}
+.rail33{fill:var(--surface); stroke:var(--v33); stroke-width:1.5}
+.rail18{fill:var(--surface); stroke:var(--sig); stroke-width:1.5}
+.railg{fill:var(--surface); stroke:var(--gnd); stroke-width:1.5}
+.w.v33{stroke:var(--v33)} .hp.v5{fill:var(--v5)}
+
 /* 조건부 표시 */
 .ghost{fill:none; stroke:var(--ink3); stroke-width:1.2; stroke-dasharray:5 4}
 .gl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
@@ -523,13 +588,23 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 
 <section>
   <div class="eyebrow"><span class="num">AFE 쪽</span><h2>16가닥을 어떻게 뽑아내는가</h2></div>
-  <p class="dek">아날로그 기판이 할 일은 <strong>비교기 출력 하나를 헤더 핀 하나에
-  잇는 것</strong>뿐이다. 회로가 없다 — 배선 16개와 접지 공유가 전부이고,
-  나머지 30핀은 아무 데도 안 잇는다.</p>
+  <p class="dek">VCCO 가 3.3&nbsp;V 라고 보고 그린 것이다. 비교기는
+  <strong>1.8&nbsp;V 그대로</strong> 두고 <code>SN74AVCH16T245</code> 한 개가 16가닥을
+  통째로 3.3&nbsp;V 로 올려 헤더로 내보낸다. 아날로그 회로는 손대지 않는다.</p>
   <div class="plate">
     __AFESIDE__
-    <div class="cap">2×25 박스헤더 · 핀 필드 60.96&nbsp;mm, 래치 포함 82.80&nbsp;mm ·
-    점선은 선택 항목 · 키홈 필수</div>
+    <div class="cap">배선이 전부 수평 직선이다 — 비교기 하나가 A측 핀 하나로,
+    B측 핀 하나가 헤더 핀 하나로 · 2×25 헤더, 핀 필드 60.96&nbsp;mm, 키홈 필수</div>
+  </div>
+  <p style="margin-top:20px"><strong>변환기를 AFE 기판에 올리면 어댑터가 필요 없다.</strong>
+  중간 기판은 칩을 놓을 자리가 없을 때의 구제책일 뿐이고, 기판이 아직 설계 중이라면
+  자리가 있다. 커넥터 한 벌과 손납땜 40군데가 통째로 사라진다.</p>
+
+  <h3 class="sub-h">전원 — 킷의 5V 하나에서 두 레일을 만든다</h3>
+  <div class="plate">
+    __POWER__
+    <div class="cap">3.3&nbsp;V 는 \'245 의 B측에만 간다 · 아날로그는 1.8&nbsp;V 그대로 ·
+    LDO 는 전류가 아니라 <b>출력 잡음과 PSRR</b> 로 고른다 (총 소모 150~280&nbsp;µA)</div>
   </div>
   <div class="chips">__CHIPS__</div>
   <div class="warn">
@@ -563,10 +638,9 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
   <p class="dek">2026-09-01 에 정해진 것이다 — 아날로그 전원은 FPGA 보드에서 받는다.
   보드가 KC705 에서 킷으로 바뀌면서 소스가 <strong>U103 의 3.3&nbsp;V 에서 J6 핀 1·2 의
   5&nbsp;V</strong> 로 바뀌었을 뿐이고, 헤드룸은 오히려 늘었다.</p>
-  <pre class="tree">J6 핀 1·2  (VCC5V) ──리본──→ AFE 기판 ┬─ LDO → 1.8 V   아날로그 · 비교기 · 변환기 A측
-                                       └─ LDO → 3.3 V   변환기 B측
-J6 핀 49·50 (GND) ──리본──→ 기준 접지</pre>
-  <p style="margin-top:16px">로컬 LDO 를 두는 이유는 킷의 5&nbsp;V 가 스위칭
+  <p>레일 구성은 위 전원 트리에 그렸다. 여기서는 <strong>왜 로컬 LDO 인가</strong>만
+  남긴다.</p>
+  <p>킷의 5&nbsp;V 가 스위칭
   레귤레이터에서 오기 때문이다. 리플이 리본을 타고 오는데 LDO 한 겹이 PSRR 로 그걸
   깎고 디커플링을 부하 옆으로 가져온다. 고를 때 볼 것은 전류 용량이 아니라
   <strong>출력 잡음과 PSRR</strong> 이다 — 능동 소자 합이 150~280&nbsp;µA 뿐이고,
@@ -732,6 +806,7 @@ def main() -> None:
             .replace("__GRID50__", pin_grid(KIT_PINS))
             .replace("__PERF__", perfboard())
             .replace("__AFESIDE__", afe_side())
+            .replace("__POWER__", power_tree())
             .replace("__NETS__", net_table())
             .replace("__CHIPS__", ch_chips()))
     assert "__" not in html.split("<style>")[0] + html.split("</style>")[-1], \
