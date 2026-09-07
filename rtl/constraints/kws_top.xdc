@@ -18,9 +18,13 @@
 # folded 데이터패스의 요구 처리량이 0.6 MAC/cycle 이라(CLAUDE.md 0) 클럭은 남아돈다.
 # 합성이 이 주기를 못 맞추면 클럭을 낮추면 되지 설계를 고칠 일이 아니다.
 #
-# ⚠️ KC705 의 기본 클럭은 200 MHz 차동(SYSCLK_P/N)이다. 그걸 쓰려면 IBUFDS +
-#    MMCM 으로 분주해야 하고, 그 래퍼는 아직 없다(아래 [3] 참조). 지금은 단일
-#    클럭이 직접 들어온다고 본다.
+# ⚠️ 보드가 KC705 에서 **Spartan-7 XC7S75 교육용 킷**으로 바뀌었다(2026-09-02).
+#    킷의 클럭 소스와 주파수가 아직 미확인이다 -- FPGA 모듈에 자체 발진기(Y1)가
+#    있고 캐리어에는 CLOCK SELECT SWITCH 가 있다. 확정되면 여기 주기를 고치고,
+#    차동이면 IBUFDS 래퍼가 필요하다(아래 [3]).
+#
+#    FRAME_CYCLES = clk_hz x 10 / 1000 이므로 이 값이 kws_frame_ctrl 파라미터를
+#    정한다 -- 100 MHz 면 1,000,000.
 create_clock -name sys_clk -period 10.000 [get_ports clk]
 
 # 입력 지연을 모르는 상태에서 도구가 임의 가정을 하지 않도록 명시한다. 실제 값은
@@ -50,26 +54,29 @@ set_property ASYNC_REG TRUE [get_cells -quiet -hier -filter {NAME =~ *sync_ff*}]
 #
 # 두 가지가 정해져야 쓸 수 있고, 둘 다 우리 손 밖이다:
 #
-#   (a) 파트.  XC7K325T 는 무료 Vivado ML Standard 대상이 아니다(Enterprise 필요).
-#       그리고 우리 설계는 KC705 의 1.3% 뿐이라(CLAUDE.md 0) 파트 재검토가 열려 있다.
-#       파트가 바뀌면 이 절은 통째로 다시 쓴다 -- 위 [1] 은 그대로다.
+#   (a) Exp. Port 핀 <-> FPGA 핀.  킷 매뉴얼이나 예제 .xdc 에만 있다. 교육용
+#       킷은 나머지 핀이 온보드 주변장치(LCD/7세그/LED/SRAM/SDRAM)에 이미 물려
+#       있어 **확장 포트가 유일한 통로**일 가능성이 높다. 50핀(2x25) 박스 헤더.
 #
-#   (b) 핀 ↔ ch 매핑.  docs/ICD.md 7 의 4번이고 동료의 배선이라 우리가 못 정한다.
-#       섞이면 정확도가 조용히 무너지고 증상으로 못 찾는다.
+#   (b) 핀 <-> ch 매핑.  docs/ICD.md 7 의 4번. 섞이면 정확도가 조용히 무너지고
+#       증상으로 못 찾는다 -- 주파수 스윕 대각선 테스트로 검증한다.
 #
-# 전압 레벨은 더 이상 미결이 아니다 (docs/ICD.md 7.1, 2026-09-01):
-#   비교기가 1.8 V 라 VADJ 를 1.8 V 로 내리고 LVCMOS18 로 직결한다. 종전 주석은
-#   "KC705 HP 뱅크(VCCO 1.8 V)" 라고 적었는데 **그런 뱅크는 없다** -- UG810
-#   Table 1-3 기준 HP 뱅크 32/33/34 는 DDR3 용 1.5 V 이고 커넥터로 나오지도 않는다.
-#   1.8 V 는 VADJ (뱅크 12/13/16/17/18, FMC LPC/HPC 의 VCCO) 로만 얻고, 기본값
-#   2.5 V 에서 내리려면 J65 점퍼 제거 + UCD9248 재프로그래밍이 필요하다.
+# 전압은 킷 배선에 달렸다 (2026-09-02):
+#   Spartan-7 은 **HR 뱅크만** 있고 1.2~3.3 V 를 지원하므로(DS180) 칩 쪽 제약은
+#   없다. KC705 의 VADJ/UCD9248/PMBus 동글 논의는 전부 **그 보드의 기능**이었고
+#   여기엔 해당하지 않는다 -- 교육용 킷은 VCCO 를 고정 배선했을 것이다.
+#
+#   비교기 VOH 대 V_IH (DS189 / LPV7215 데이터시트):
+#     VCCO 1.8 V -> LVCMOS18, V_IH 1.17 V, 최악 VOH 1.63 V 대비 여유 +460 mV
+#     VCCO 3.3 V -> LVCMOS33, V_IH 2.00 V, **미달**. 레벨 변환기 필요
+#   온보드 주변장치가 3.3 V 계열이라 3.3 V 일 가능성이 높다. 예제 .xdc 의
+#   IOSTANDARD 한 줄이면 확정된다.
 #
 # 정해지면 이런 모양이 된다 (예시일 뿐 실제 핀 아님):
 #
-#   set_property PACKAGE_PIN AD12     [get_ports clk]
-#   set_property IOSTANDARD  LVCMOS18 [get_ports clk]
-#   set_property PACKAGE_PIN AB7      [get_ports {cmp[0]}]
-#   set_property IOSTANDARD  LVCMOS18 [get_ports {cmp[*]}]
+#   set_property PACKAGE_PIN <볼>     [get_ports clk]
+#   set_property PACKAGE_PIN <볼>     [get_ports {cmp[0]}]
+#   set_property IOSTANDARD  LVCMOS33 [get_ports {cmp[*]}]   ;# 또는 LVCMOS18
 #
 # 핀 없이도 합성은 돈다 -- 배치배선(implementation)부터 필요하다. 그래서 지금은
 # 합성까지만 돌려 utilization/타이밍을 보는 것이 맞고, build.tcl 이 그렇게 한다.

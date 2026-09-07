@@ -1,22 +1,26 @@
 # 배치 합성 — GUI 없이 한 줄로. 결과가 재현 가능해진다.
 #
 #   vivado -mode batch -source rtl/build.tcl
-#   vivado -mode batch -source rtl/build.tcl -tclargs -part xc7k160tffg676-2
+#   vivado -mode batch -source rtl/build.tcl -tclargs -part xc7s75fgga484-2
 #   vivado -mode batch -source rtl/build.tcl -tclargs -tag fx_ste0003 -impl
 #
 # 리포 루트에서 돌린다. 산출물은 out/synth/<part>/ 에 쌓인다.
 #
-# ⚠️ 파트 기본값 xc7k325t 는 KC705 지만 **무료 Vivado ML Standard 대상이 아니다**
-#    (Enterprise 필요). 무료 툴로 RTL 을 먼저 털어내려면 -part 로 작은 파트를 준다:
-#    합성이 잡는 문제(추론 안 되는 래치, 폭 truncation, $readmemh 실패, 타이밍)는
-#    대부분 파트와 무관하므로, 작은 파트에서 깨끗하면 연구실에서 파트만 바꿔
-#    다시 돌리면 된다. 프로젝트 파일은 에디션과 무관하다.
+# 파트 기본값은 XC7S75 (Spartan-7, FGGA484) 다. KC705 를 쓸 수 없게 되어
+# 2026-09-02 에 바뀌었다. 그 전에는 여기 "xc7k325t 는 무료 Vivado ML Standard
+# 대상이 아니다(Enterprise 필요)" 라고 적혀 있었는데, **Spartan-7 은 무료 대상**
+# 이므로 그 제약이 사라졌다 -- 합성부터 비트스트림까지 라이선스가 필요 없고,
+# 연구실이 아니라 어디서든 돌릴 수 있다.
+#
+# ⚠️ 속도 등급 -1 은 **확인 전 값**이다. 칩 각인(FGGA484ABX2305)에 등급이 없었다.
+#    실제 값은 `get_parts xc7s75*` 로 확인할 것. 모르면 느린 쪽이 안전하다 --
+#    느린 등급에서 타이밍이 통과하면 빠른 등급에서도 통과한다.
 
 set ROOT [file normalize [file join [file dirname [info script]] ..]]
 cd $ROOT
 
 # ---- 인자 ---------------------------------------------------------------- #
-set part  xc7k325tffg900-2
+set part  xc7s75fgga484-1
 set tag   xl_g12
 set top   kws_top_synth
 set do_impl 0
@@ -112,6 +116,12 @@ if {$do_impl} {
     report_timing_summary -file $out/timing_impl.rpt
     report_utilization    -file $out/utilization_impl.rpt
     write_checkpoint -force $out/post_route.dcp
+
+    # 핀이 하나라도 제약 없이 남아 있으면 여기서 DRC 가 막는다. 그게 맞다 --
+    # 미제약 핀은 도구가 임의로 배정하므로, 보드에 올리면 신호가 우리가 배선한
+    # 곳이 아닌 데로 나가고 증상은 "동작 안 함" 뿐이다.
+    write_bitstream -force $out/kws_top.bit
+    puts "== 비트스트림: $out/kws_top.bit =="
 }
 
 puts "== 완료. 산출물: $out =="
