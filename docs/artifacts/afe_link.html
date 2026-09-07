@@ -1,0 +1,668 @@
+<title>AFE 링크 조립도</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{
+  --paper:#F1F2EE; --surface:#FBFBF9; --sunk:#E6E8E2;
+  --ink:#1B1D1A; --ink2:#4C514A; --ink3:#7E847B;
+  --rule:#D2D6CC; --rule2:#BFC4B8;
+  --v5:#BB3A2B; --gnd:#31353A; --sig:#1B6E70; --nc:#B2B7AE;
+  --board:#20482F; --hole:#8FA398;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
+    --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
+    --rule:#2C312B; --rule2:#3C423A;
+    --v5:#E4705B; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
+    --board:#17301F; --hole:#5C7466;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
+  --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
+  --rule:#2C312B; --rule2:#3C423A;
+  --v5:#E4705B; --gnd:#9BA3AC; --sig:#4EB6B2; --nc:#575E54;
+  --board:#17301F; --hole:#5C7466;
+}
+
+*{box-sizing:border-box}
+body{background:var(--paper); color:var(--ink);
+  font-family:'Source Sans 3',system-ui,-apple-system,sans-serif;
+  font-size:16px; line-height:1.62; margin:0;
+  -webkit-font-smoothing:antialiased}
+.wrap{max-width:960px; margin:0 auto; padding:48px 24px 96px}
+
+header.mast{border-bottom:2px solid var(--ink); padding-bottom:20px;
+  display:flex; flex-wrap:wrap; align-items:flex-end; gap:18px 32px}
+h1{font-family:Archivo,system-ui,sans-serif; font-weight:700; font-size:38px;
+  line-height:1.08; letter-spacing:-.015em; margin:0; text-wrap:balance; flex:1 1 340px}
+.sub{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink3);
+  letter-spacing:.06em; text-transform:uppercase; line-height:1.9}
+.sub b{color:var(--ink2); font-weight:500}
+
+.lede{margin:26px 0 0; font-size:18px; color:var(--ink2); max-width:64ch}
+.lede strong{color:var(--ink); font-weight:600}
+
+section{margin-top:56px; scroll-margin-top:24px}
+.eyebrow{display:flex; align-items:baseline; gap:14px; margin-bottom:6px}
+.num{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500;
+  color:var(--sig); letter-spacing:.1em; border:1px solid var(--rule2);
+  padding:2px 7px; border-radius:3px}
+h2{font-family:Archivo,system-ui,sans-serif; font-weight:600; font-size:25px;
+  letter-spacing:-.012em; margin:0; text-wrap:balance}
+.dek{color:var(--ink2); margin:8px 0 22px; max-width:66ch}
+p{margin:0 0 14px; max-width:68ch}
+p:last-child{margin-bottom:0}
+strong{font-weight:600}
+code{font-family:'IBM Plex Mono',monospace; font-size:.9em;
+  background:var(--sunk); padding:1px 5px; border-radius:3px}
+
+.plate{background:var(--surface); border:1px solid var(--rule); border-radius:8px;
+  padding:22px; overflow-x:auto}
+.plate svg{display:block; width:100%; height:auto; min-width:560px}
+.cap{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink3);
+  letter-spacing:.03em; margin-top:14px; padding-top:12px;
+  border-top:1px solid var(--rule)}
+
+/* 핀 그리드 */
+.pin{stroke:var(--surface); stroke-width:1.5}
+.pin.v5{fill:var(--v5)} .pin.sig{fill:var(--sig)}
+.pin.gnd{fill:var(--gnd)} .pin.nc{fill:none; stroke:var(--nc); stroke-width:1.4}
+.pn{font-family:'IBM Plex Mono',monospace; font-size:9.5px; fill:var(--surface)}
+.pn.nc{fill:var(--nc)}
+.chl{font-family:'IBM Plex Mono',monospace; font-size:9.5px; fill:var(--sig);
+  letter-spacing:.02em}
+.rl{font-family:'IBM Plex Mono',monospace; font-size:10px; fill:var(--ink3)}
+.key{fill:var(--sunk); stroke:var(--rule2); stroke-width:1.2}
+.kl{font-family:'IBM Plex Mono',monospace; font-size:10px; fill:var(--ink3)}
+
+/* 만능기판 */
+.board{fill:var(--board); opacity:.14; stroke:var(--rule2); stroke-width:1}
+.hole{fill:var(--hole); opacity:.5}
+.hdr{fill:var(--sunk); stroke:var(--ink2); stroke-width:1.3; opacity:.92}
+.hl{font-family:Archivo,sans-serif; font-size:12.5px; font-weight:600; fill:var(--ink)}
+.hs{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink3)}
+.hp{stroke:none}
+.hp.v5{fill:var(--v5)} .hp.sig{fill:var(--sig)}
+.hp.gnd{fill:var(--gnd)} .hp.nc{fill:var(--nc); opacity:.55}
+.w{fill:none; stroke-width:2.1; stroke-linecap:round; stroke-linejoin:round}
+.w.v5{stroke:var(--v5)} .w.sig{stroke:var(--sig)} .w.gnd{stroke:var(--gnd)}
+.note{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+
+/* 체인 */
+.blk{fill:var(--surface); stroke-width:1.4}
+.blk.afe{stroke:var(--rule2); stroke-dasharray:5 4}
+.blk.adp{stroke:var(--sig)}
+.blk.kit{stroke:var(--rule2)}
+.bt{font-family:Archivo,sans-serif; font-size:17px; font-weight:700; fill:var(--ink)}
+.bs{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink3);
+  letter-spacing:.04em}
+.bi{font-family:'Source Sans 3',sans-serif; font-size:13.5px; fill:var(--ink2)}
+.lnk{stroke:var(--ink2); stroke-width:1.6; fill:none}
+.ll{font-family:Archivo,sans-serif; font-size:13px; font-weight:600; fill:var(--ink)}
+.lv{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink3)}
+.flow{fill:none; stroke-width:1.6; stroke-dasharray:6 5}
+.flow.sig{stroke:var(--sig)} .flow.v5{stroke:var(--v5)}
+.fl{font-family:'IBM Plex Mono',monospace; font-size:11px}
+.fl.sig{fill:var(--sig)} .fl.v5{fill:var(--v5)}
+
+/* AFE 쪽 */
+.cmp{fill:var(--sunk); stroke:var(--rule2); stroke-width:1.2}
+.ct{font-family:'IBM Plex Mono',monospace; font-size:12px; fill:var(--ink)}
+.pl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.ell{font-family:'IBM Plex Mono',monospace; font-size:13px; fill:var(--ink3)}
+.hdr2{fill:none; stroke:var(--ink2); stroke-width:1.4; stroke-dasharray:4 3}
+.hl2{font-family:Archivo,sans-serif; font-size:13px; font-weight:600; fill:var(--ink)}
+.hr{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.hv{font-family:'IBM Plex Mono',monospace; font-size:11.5px}
+.hv.v5{fill:var(--v5)} .hv.sig{fill:var(--sig)} .hv.gnd{fill:var(--gnd)}
+
+/* 표 */
+.tbl{width:100%; border-collapse:collapse; font-size:14.5px;
+  font-variant-numeric:tabular-nums}
+.tbl th{font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:500;
+  text-transform:uppercase; letter-spacing:.08em; color:var(--ink3);
+  text-align:left; padding:0 12px 8px; border-bottom:1px solid var(--rule2)}
+.tbl td{padding:7px 12px; border-bottom:1px solid var(--rule); color:var(--ink2)}
+.tbl td.m{font-family:'IBM Plex Mono',monospace; color:var(--ink)}
+.tbl td.q{color:var(--ink3); font-size:13.5px}
+.tag{font-family:'IBM Plex Mono',monospace; font-size:11px; padding:2px 8px;
+  border-radius:3px; color:var(--surface); font-weight:500}
+.tag.v5{background:var(--v5)} .tag.sig{background:var(--sig)}
+.tag.gnd{background:var(--gnd)}
+.scroll{overflow-x:auto}
+
+/* 부품 */
+.bom{display:grid; gap:1px; background:var(--rule); border:1px solid var(--rule);
+  border-radius:8px; overflow:hidden}
+.bom > div{background:var(--surface); padding:16px 18px; display:grid;
+  grid-template-columns:auto 1fr auto; gap:4px 16px; align-items:baseline}
+.bom .pt{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--sig);
+  letter-spacing:.08em}
+.bom .pnm{font-family:Archivo,sans-serif; font-weight:600; font-size:15.5px;
+  color:var(--ink)}
+.bom .pq{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink3);
+  text-align:right; white-space:nowrap}
+.bom .pd{grid-column:2/4; color:var(--ink2); font-size:14px}
+
+/* 경고 */
+.warn{border-left:3px solid var(--v5); background:var(--surface);
+  border-top:1px solid var(--rule); border-right:1px solid var(--rule);
+  border-bottom:1px solid var(--rule); border-radius:0 7px 7px 0;
+  padding:16px 20px; margin:20px 0 0}
+.warn h3{font-family:Archivo,sans-serif; font-size:15px; font-weight:600;
+  margin:0 0 6px; color:var(--v5)}
+.warn p{font-size:14.5px; color:var(--ink2)}
+
+/* 순서 */
+.steps{list-style:none; padding:0; margin:0; display:grid; gap:2px}
+.steps li{background:var(--surface); border:1px solid var(--rule);
+  padding:14px 18px 14px 52px; position:relative; font-size:15px; color:var(--ink2)}
+.steps li:first-child{border-radius:8px 8px 0 0}
+.steps li:last-child{border-radius:0 0 8px 8px}
+.steps li b{color:var(--ink); font-weight:600}
+.steps li::before{content:counter(s); counter-increment:s;
+  font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--sig);
+  position:absolute; left:18px; top:15px; border:1px solid var(--rule2);
+  border-radius:3px; padding:1px 6px}
+.steps{counter-reset:s}
+
+footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink3);
+  display:flex; flex-wrap:wrap; gap:8px 24px}
+
+@media (max-width:640px){
+  h1{font-size:29px} h2{font-size:21px} .wrap{padding:32px 16px 64px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <h1>AFE 링크 조립도</h1>
+  <div class="sub">
+    비교기 <b>16</b>가닥 · 5V · GND<br>
+    한백 XC7S75 킷 <b>J6</b> Exp. Port<br>
+    2026-09-07
+  </div>
+</header>
+
+<p class="lede">아날로그 기판에서 나오는 비교기 16가닥을 FPGA 킷의 확장 포트까지
+가져오는 물리 설계다. 핵심은 <strong>중간에 어댑터를 하나 두는 것</strong> — 킷의
+커넥터는 50핀이고 그 중 18개만 쓰는데, 그 8.3&nbsp;cm짜리 부품을 아날로그 기판에
+올릴 이유가 없다.</p>
+
+<section>
+  <div class="eyebrow"><span class="num">체인</span><h2>세 덩어리와 두 케이블</h2></div>
+  <p class="dek">신호는 왼쪽으로, 전원은 오른쪽으로 흐른다. FPGA 에서 아날로그로
+  가는 제어선은 <strong>하나도 없다</strong> — sticky OR 은 펄스가 언제 왔는지를
+  묻지 않기 때문에 프로토콜이 필요 없다.</p>
+  <div class="plate">
+    
+<svg viewBox="0 0 900 250" role="img" aria-label="AFE에서 FPGA 킷까지의 연결 체인">
+  <rect class="blk afe" x="14" y="52" width="196" height="128" rx="7"/>
+  <text class="bt" x="30" y="80">AFE 기판</text>
+  <text class="bs" x="30" y="100">동료 담당</text>
+  <text class="bi" x="30" y="128">비교기 ×16</text>
+  <text class="bi" x="30" y="148">LDO 5V→3.3/1.8</text>
+  <text class="bi" x="30" y="168">2×10 박스헤더</text>
+
+  <rect class="blk adp" x="352" y="52" width="196" height="128" rx="7"/>
+  <text class="bt" x="368" y="80">어댑터</text>
+  <text class="bs" x="368" y="100">만능기판 · 우리 담당</text>
+  <text class="bi" x="368" y="128">2×25 박스헤더</text>
+  <text class="bi" x="368" y="148">2×10 박스헤더</text>
+  <text class="bi" x="368" y="168">점퍼 20가닥</text>
+
+  <rect class="blk kit" x="690" y="52" width="196" height="128" rx="7"/>
+  <text class="bt" x="706" y="80">FPGA 킷</text>
+  <text class="bs" x="706" y="100">XC7S75 · 연구실</text>
+  <text class="bi" x="706" y="128">J6 Exp. Port</text>
+  <text class="bi" x="706" y="148">2×25, 키홈</text>
+  <text class="bi" x="706" y="168">직렬 33Ω 내장</text>
+
+  <path class="lnk" d="M210 116 H352"/>
+  <text class="ll" x="281" y="106" text-anchor="middle">20핀 리본</text>
+  <text class="lv" x="281" y="140" text-anchor="middle">16 + 5V + GND</text>
+
+  <path class="lnk" d="M548 116 H690"/>
+  <text class="ll" x="619" y="106" text-anchor="middle">50핀 리본 20cm</text>
+  <text class="lv" x="619" y="140" text-anchor="middle">18/50 사용</text>
+
+  <path class="flow sig" d="M690 210 H210"/>
+  <text class="fl sig" x="450" y="202" text-anchor="middle">비교기 16가닥 ─ 아날로그에서 FPGA 로</text>
+  <path class="flow v5" d="M210 236 H690"/>
+  <text class="fl v5" x="450" y="228" text-anchor="middle">5V ─ 킷에서 AFE 로</text>
+</svg>
+
+    <div class="cap">어댑터만 우리가 만든다. AFE 기판은 2×10 헤더 하나만 알면 되고,
+    킷은 이미 있는 것을 쓴다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">킷 쪽</span><h2>J6 의 50핀 중 18개만 쓴다</h2></div>
+  <p class="dek">매뉴얼 99쪽 회로도에서 읽은 배치다. 핀 1·2 가 5V, 핀 49·50 이 GND,
+  그 사이 46개가 EXT0–EXT45 다. 우리는 앞에서부터 16개만 쓴다.</p>
+  <div class="plate">
+    <svg viewBox="0 0 828 156" role="img" aria-label="50핀 커넥터 핀 배치">
+<text class="rl" x="34.0" y="58.0" text-anchor="end">홀수</text>
+<text class="rl" x="34.0" y="98.0" text-anchor="end">짝수</text>
+<circle class="pin v5" cx="54.0" cy="54.0" r="10.5"/>
+<text class="pn v5" x="54.0" y="57.4" text-anchor="middle">1</text>
+<circle class="pin v5" cx="54.0" cy="94.0" r="10.5"/>
+<text class="pn v5" x="54.0" y="97.4" text-anchor="middle">2</text>
+<circle class="pin sig" cx="84.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="84.0" y="57.4" text-anchor="middle">3</text>
+<text class="chl" x="84.0" y="34.0" text-anchor="middle">ch00</text>
+<circle class="pin sig" cx="84.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="84.0" y="97.4" text-anchor="middle">4</text>
+<text class="chl" x="84.0" y="120.0" text-anchor="middle">ch01</text>
+<circle class="pin sig" cx="114.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="114.0" y="57.4" text-anchor="middle">5</text>
+<text class="chl" x="114.0" y="34.0" text-anchor="middle">ch02</text>
+<circle class="pin sig" cx="114.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="114.0" y="97.4" text-anchor="middle">6</text>
+<text class="chl" x="114.0" y="120.0" text-anchor="middle">ch03</text>
+<circle class="pin sig" cx="144.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="144.0" y="57.4" text-anchor="middle">7</text>
+<text class="chl" x="144.0" y="34.0" text-anchor="middle">ch04</text>
+<circle class="pin sig" cx="144.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="144.0" y="97.4" text-anchor="middle">8</text>
+<text class="chl" x="144.0" y="120.0" text-anchor="middle">ch05</text>
+<circle class="pin sig" cx="174.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="174.0" y="57.4" text-anchor="middle">9</text>
+<text class="chl" x="174.0" y="34.0" text-anchor="middle">ch06</text>
+<circle class="pin sig" cx="174.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="174.0" y="97.4" text-anchor="middle">10</text>
+<text class="chl" x="174.0" y="120.0" text-anchor="middle">ch07</text>
+<circle class="pin sig" cx="204.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="204.0" y="57.4" text-anchor="middle">11</text>
+<text class="chl" x="204.0" y="34.0" text-anchor="middle">ch08</text>
+<circle class="pin sig" cx="204.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="204.0" y="97.4" text-anchor="middle">12</text>
+<text class="chl" x="204.0" y="120.0" text-anchor="middle">ch09</text>
+<circle class="pin sig" cx="234.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="234.0" y="57.4" text-anchor="middle">13</text>
+<text class="chl" x="234.0" y="34.0" text-anchor="middle">ch10</text>
+<circle class="pin sig" cx="234.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="234.0" y="97.4" text-anchor="middle">14</text>
+<text class="chl" x="234.0" y="120.0" text-anchor="middle">ch11</text>
+<circle class="pin sig" cx="264.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="264.0" y="57.4" text-anchor="middle">15</text>
+<text class="chl" x="264.0" y="34.0" text-anchor="middle">ch12</text>
+<circle class="pin sig" cx="264.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="264.0" y="97.4" text-anchor="middle">16</text>
+<text class="chl" x="264.0" y="120.0" text-anchor="middle">ch13</text>
+<circle class="pin sig" cx="294.0" cy="54.0" r="10.5"/>
+<text class="pn sig" x="294.0" y="57.4" text-anchor="middle">17</text>
+<text class="chl" x="294.0" y="34.0" text-anchor="middle">ch14</text>
+<circle class="pin sig" cx="294.0" cy="94.0" r="10.5"/>
+<text class="pn sig" x="294.0" y="97.4" text-anchor="middle">18</text>
+<text class="chl" x="294.0" y="120.0" text-anchor="middle">ch15</text>
+<circle class="pin nc" cx="324.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="324.0" y="57.4" text-anchor="middle">19</text>
+<circle class="pin nc" cx="324.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="324.0" y="97.4" text-anchor="middle">20</text>
+<circle class="pin nc" cx="354.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="354.0" y="57.4" text-anchor="middle">21</text>
+<circle class="pin nc" cx="354.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="354.0" y="97.4" text-anchor="middle">22</text>
+<circle class="pin nc" cx="384.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="384.0" y="57.4" text-anchor="middle">23</text>
+<circle class="pin nc" cx="384.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="384.0" y="97.4" text-anchor="middle">24</text>
+<circle class="pin nc" cx="414.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="414.0" y="57.4" text-anchor="middle">25</text>
+<circle class="pin nc" cx="414.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="414.0" y="97.4" text-anchor="middle">26</text>
+<circle class="pin nc" cx="444.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="444.0" y="57.4" text-anchor="middle">27</text>
+<circle class="pin nc" cx="444.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="444.0" y="97.4" text-anchor="middle">28</text>
+<circle class="pin nc" cx="474.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="474.0" y="57.4" text-anchor="middle">29</text>
+<circle class="pin nc" cx="474.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="474.0" y="97.4" text-anchor="middle">30</text>
+<circle class="pin nc" cx="504.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="504.0" y="57.4" text-anchor="middle">31</text>
+<circle class="pin nc" cx="504.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="504.0" y="97.4" text-anchor="middle">32</text>
+<circle class="pin nc" cx="534.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="534.0" y="57.4" text-anchor="middle">33</text>
+<circle class="pin nc" cx="534.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="534.0" y="97.4" text-anchor="middle">34</text>
+<circle class="pin nc" cx="564.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="564.0" y="57.4" text-anchor="middle">35</text>
+<circle class="pin nc" cx="564.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="564.0" y="97.4" text-anchor="middle">36</text>
+<circle class="pin nc" cx="594.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="594.0" y="57.4" text-anchor="middle">37</text>
+<circle class="pin nc" cx="594.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="594.0" y="97.4" text-anchor="middle">38</text>
+<circle class="pin nc" cx="624.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="624.0" y="57.4" text-anchor="middle">39</text>
+<circle class="pin nc" cx="624.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="624.0" y="97.4" text-anchor="middle">40</text>
+<circle class="pin nc" cx="654.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="654.0" y="57.4" text-anchor="middle">41</text>
+<circle class="pin nc" cx="654.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="654.0" y="97.4" text-anchor="middle">42</text>
+<circle class="pin nc" cx="684.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="684.0" y="57.4" text-anchor="middle">43</text>
+<circle class="pin nc" cx="684.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="684.0" y="97.4" text-anchor="middle">44</text>
+<circle class="pin nc" cx="714.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="714.0" y="57.4" text-anchor="middle">45</text>
+<circle class="pin nc" cx="714.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="714.0" y="97.4" text-anchor="middle">46</text>
+<circle class="pin nc" cx="744.0" cy="54.0" r="10.5"/>
+<text class="pn nc" x="744.0" y="57.4" text-anchor="middle">47</text>
+<circle class="pin nc" cx="744.0" cy="94.0" r="10.5"/>
+<text class="pn nc" x="744.0" y="97.4" text-anchor="middle">48</text>
+<circle class="pin gnd" cx="774.0" cy="54.0" r="10.5"/>
+<text class="pn gnd" x="774.0" y="57.4" text-anchor="middle">49</text>
+<circle class="pin gnd" cx="774.0" cy="94.0" r="10.5"/>
+<text class="pn gnd" x="774.0" y="97.4" text-anchor="middle">50</text>
+<path class="key" d="M398.0 130.0 h32 v-13 h-32 z"/>
+<text class="kl" x="414.0" y="148.0" text-anchor="middle">키홈</text>
+</svg>
+    <div class="cap">핀 = ch + 3 · 회색 테두리(핀 19–48)는 연결하지 않는다 ·
+    홀수 핀에 짝수 채널, 짝수 핀에 홀수 채널이 온다</div>
+  </div>
+  <div class="warn">
+    <h3>빨간 줄이 ch00 이 아니다</h3>
+    <p>리본의 빨간 줄은 <strong>1번 도선 = 핀 1 = 5V</strong> 다.
+    ch00 은 <strong>셋째 도선</strong>이다. 16핀 커넥터를 쓰던 때와 다르므로
+    옛 습관대로 세면 전 채널이 한 칸씩 밀린다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">어댑터</span><h2>만능기판 위에 헤더 두 개</h2></div>
+  <p class="dek">두 헤더의 1번 핀을 <strong>같은 열</strong>에 맞춰 꽂는 것이 설계의
+  전부다. 그러면 핀 1–18 이 같은 열에 서고, 배선 20가닥 중 18가닥이 그냥
+  <strong>수직 직선</strong>이 된다. 남는 2가닥은 반대쪽 끝의 GND 다.</p>
+  <div class="plate">
+    <svg viewBox="0 0 494 247" role="img" aria-label="어댑터 만능기판 배치도">
+<rect class="board" x="6" y="6" width="482" height="235" rx="6"/>
+<defs><pattern id="holes" width="13.0" height="13.0" patternUnits="userSpaceOnUse" patternTransform="translate(26.0 26.0)"><circle class="hole" cx="0" cy="0" r="1.7"/></pattern></defs>
+<rect x="22.0" y="22.0" width="450.0" height="203.0" fill="url(#holes)"/>
+<rect class="hdr" x="81.0" y="41.0" width="332.0" height="35.0" rx="3"/>
+<text class="hl" x="89.0" y="32.0">50핀 박스헤더</text>
+<text class="hs" x="405.0" y="32.0" text-anchor="end">→ 킷 J6</text>
+<circle class="hp v5" cx="91.0" cy="52.0" r="3.6"/>
+<circle class="hp v5" cx="91.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="104.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="104.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="117.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="117.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="130.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="130.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="143.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="143.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="156.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="156.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="169.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="169.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="182.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="182.0" cy="65.0" r="3.6"/>
+<circle class="hp sig" cx="195.0" cy="52.0" r="3.6"/>
+<circle class="hp sig" cx="195.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="208.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="208.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="221.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="221.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="234.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="234.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="247.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="247.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="260.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="260.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="273.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="273.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="286.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="286.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="299.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="299.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="312.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="312.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="325.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="325.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="338.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="338.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="351.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="351.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="364.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="364.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="377.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="377.0" cy="65.0" r="3.6"/>
+<circle class="hp nc" cx="390.0" cy="52.0" r="3.6"/>
+<circle class="hp nc" cx="390.0" cy="65.0" r="3.6"/>
+<circle class="hp gnd" cx="403.0" cy="52.0" r="3.6"/>
+<circle class="hp gnd" cx="403.0" cy="65.0" r="3.6"/>
+<rect class="hdr" x="81.0" y="158.0" width="137.0" height="35.0" rx="3"/>
+<text class="hl" x="89.0" y="149.0">20핀 박스헤더</text>
+<text class="hs" x="210.0" y="149.0" text-anchor="end">→ AFE 기판</text>
+<circle class="hp v5" cx="91.0" cy="169.0" r="3.6"/>
+<circle class="hp v5" cx="91.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="104.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="104.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="117.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="117.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="130.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="130.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="143.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="143.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="156.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="156.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="169.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="169.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="182.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="182.0" cy="182.0" r="3.6"/>
+<circle class="hp sig" cx="195.0" cy="169.0" r="3.6"/>
+<circle class="hp sig" cx="195.0" cy="182.0" r="3.6"/>
+<circle class="hp gnd" cx="208.0" cy="169.0" r="3.6"/>
+<circle class="hp gnd" cx="208.0" cy="182.0" r="3.6"/>
+<path class="w v5" d="M91.0 52.0 V169.0"/>
+<path class="w v5" d="M91.0 65.0 V182.0"/>
+<path class="w sig" d="M104.0 52.0 V169.0"/>
+<path class="w sig" d="M104.0 65.0 V182.0"/>
+<path class="w sig" d="M117.0 52.0 V169.0"/>
+<path class="w sig" d="M117.0 65.0 V182.0"/>
+<path class="w sig" d="M130.0 52.0 V169.0"/>
+<path class="w sig" d="M130.0 65.0 V182.0"/>
+<path class="w sig" d="M143.0 52.0 V169.0"/>
+<path class="w sig" d="M143.0 65.0 V182.0"/>
+<path class="w sig" d="M156.0 52.0 V169.0"/>
+<path class="w sig" d="M156.0 65.0 V182.0"/>
+<path class="w sig" d="M169.0 52.0 V169.0"/>
+<path class="w sig" d="M169.0 65.0 V182.0"/>
+<path class="w sig" d="M182.0 52.0 V169.0"/>
+<path class="w sig" d="M182.0 65.0 V182.0"/>
+<path class="w sig" d="M195.0 52.0 V169.0"/>
+<path class="w sig" d="M195.0 65.0 V182.0"/>
+<path class="w gnd" d="M403.0 52.0 V100.1 H208.0 V169.0"/>
+<path class="w gnd" d="M403.0 65.0 V119.6 H208.0 V182.0"/>
+<text class="note" x="91.0" y="225.0">열 6부터 두 헤더의 1번 핀을 맞추면 18가닥이 수직 직결이 된다</text>
+</svg>
+    <div class="cap">만능기판 90×70&nbsp;mm (35×27홀) 기준 · 50핀 헤더의 이젝터 래치는
+    기판 밖으로 나가도 무방하다 (기판에 닿지 않는다)</div>
+  </div>
+  <p style="margin-top:20px">두 헤더 사이는 <strong>7홀(17.8&nbsp;mm)</strong> 이상
+  띄운다. 하우징 깊이가 12&nbsp;mm 남짓이라 더 붙이면 몸통끼리 닿는다.
+  배선은 기판 뒷면에서 하고, 앞면은 부품만 둔다.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">배선표</span><h2>20가닥</h2></div>
+  <p class="dek">두 커넥터가 같은 규칙(<code>핀 = ch + 3</code>)을 쓰기 때문에
+  채널 배선이 전부 같은 번호끼리 만난다. 외울 것이 하나뿐이다.</p>
+  <div class="scroll">
+    <table class="tbl">
+      <thead><tr><th>50핀 (킷)</th><th>20핀 (AFE)</th><th>신호</th><th>배선</th></tr></thead>
+      <tbody><tr><td class="m">1</td><td class="m">1</td><td><span class="tag v5">5V</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">2</td><td class="m">2</td><td><span class="tag v5">5V</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">3</td><td class="m">3</td><td><span class="tag sig">ch00</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">4</td><td class="m">4</td><td><span class="tag sig">ch01</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">5</td><td class="m">5</td><td><span class="tag sig">ch02</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">6</td><td class="m">6</td><td><span class="tag sig">ch03</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">7</td><td class="m">7</td><td><span class="tag sig">ch04</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">8</td><td class="m">8</td><td><span class="tag sig">ch05</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">9</td><td class="m">9</td><td><span class="tag sig">ch06</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">10</td><td class="m">10</td><td><span class="tag sig">ch07</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">11</td><td class="m">11</td><td><span class="tag sig">ch08</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">12</td><td class="m">12</td><td><span class="tag sig">ch09</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">13</td><td class="m">13</td><td><span class="tag sig">ch10</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">14</td><td class="m">14</td><td><span class="tag sig">ch11</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">15</td><td class="m">15</td><td><span class="tag sig">ch12</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">16</td><td class="m">16</td><td><span class="tag sig">ch13</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">17</td><td class="m">17</td><td><span class="tag sig">ch14</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">18</td><td class="m">18</td><td><span class="tag sig">ch15</span></td><td class="q">직결 (같은 열, 수직)</td></tr>
+<tr><td class="m">49</td><td class="m">19</td><td><span class="tag gnd">GND</span></td><td class="q">끝에서 끌어옴</td></tr>
+<tr><td class="m">50</td><td class="m">20</td><td><span class="tag gnd">GND</span></td><td class="q">끝에서 끌어옴</td></tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">AFE 쪽</span><h2>16가닥을 어떻게 뽑아내는가</h2></div>
+  <p class="dek">아날로그 기판이 할 일은 <strong>비교기 출력 하나를 헤더 핀 하나에
+  잇는 것</strong>뿐이다. 특별한 회로가 없다 — 16개의 배선과, 5V 를 받아 LDO 로
+  넣는 것과, 접지를 공유하는 것이 전부다.</p>
+  <div class="plate">
+    <svg viewBox="0 0 880 388" role="img" aria-label="AFE 기판에서 비교기 16개를 2x10 헤더로 모으는 방법">
+<rect class="cmp" x="18" y="39" width="188" height="66" rx="4"/>
+<text class="ct" x="32" y="76">LDO 입력 (5V)</text>
+<rect class="cmp" x="18" y="111" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="130">비교기 ch00</text>
+<rect class="cmp" x="18" y="147" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="166">비교기 ch01</text>
+<rect class="cmp" x="18" y="183" width="188" height="30" rx="4" stroke-dasharray="4 3"/>
+<text class="ct" x="32" y="202">비교기 ch02 ~ ch13   (12개)</text>
+<rect class="cmp" x="18" y="219" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="238">비교기 ch14</text>
+<rect class="cmp" x="18" y="255" width="188" height="30" rx="4"/>
+<text class="ct" x="32" y="274">비교기 ch15</text>
+<rect class="cmp" x="18" y="291" width="188" height="66" rx="4"/>
+<text class="ct" x="32" y="328">기판 접지</text>
+<rect class="hdr2" x="470" y="30" width="230" height="336" rx="6"/>
+<text class="hl2" x="585" y="20" text-anchor="middle">2×10 박스헤더 → 어댑터</text>
+<path class="w v5" d="M206 54 H500"/>
+<circle class="hp v5" cx="500" cy="54" r="6"/>
+<text class="hr" x="518" y="58">핀 1</text>
+<text class="hv v5" x="686" y="58" text-anchor="end">5V</text>
+<path class="w v5" d="M206 90 H500"/>
+<circle class="hp v5" cx="500" cy="90" r="6"/>
+<text class="hr" x="518" y="94">핀 2</text>
+<text class="hv v5" x="686" y="94" text-anchor="end">5V</text>
+<path class="w sig" d="M206 126 H500"/>
+<circle class="hp sig" cx="500" cy="126" r="6"/>
+<text class="hr" x="518" y="130">핀 3</text>
+<text class="hv sig" x="686" y="130" text-anchor="end">ch00</text>
+<path class="w sig" d="M206 162 H500"/>
+<circle class="hp sig" cx="500" cy="162" r="6"/>
+<text class="hr" x="518" y="166">핀 4</text>
+<text class="hv sig" x="686" y="166" text-anchor="end">ch01</text>
+<path class="w sig" d="M206 198 H500"/>
+<circle class="hp sig" cx="500" cy="198" r="6"/>
+<text class="hr" x="518" y="202">핀 5–16</text>
+<text class="hv sig" x="686" y="202" text-anchor="end">ch02–ch13</text>
+<path class="w sig" d="M206 234 H500"/>
+<circle class="hp sig" cx="500" cy="234" r="6"/>
+<text class="hr" x="518" y="238">핀 17</text>
+<text class="hv sig" x="686" y="238" text-anchor="end">ch14</text>
+<path class="w sig" d="M206 270 H500"/>
+<circle class="hp sig" cx="500" cy="270" r="6"/>
+<text class="hr" x="518" y="274">핀 18</text>
+<text class="hv sig" x="686" y="274" text-anchor="end">ch15</text>
+<path class="w gnd" d="M206 306 H500"/>
+<circle class="hp gnd" cx="500" cy="306" r="6"/>
+<text class="hr" x="518" y="310">핀 19</text>
+<text class="hv gnd" x="686" y="310" text-anchor="end">GND</text>
+<path class="w gnd" d="M206 342 H500"/>
+<circle class="hp gnd" cx="500" cy="342" r="6"/>
+<text class="hr" x="518" y="346">핀 20</text>
+<text class="hv gnd" x="686" y="346" text-anchor="end">GND</text>
+</svg>
+    <div class="cap">2×10 박스헤더 · 핀 필드 22.86&nbsp;mm 라 아날로그 기판에
+    부담이 없다 · 키홈 필수</div>
+  </div>
+  <div class="warn">
+    <h3>일반 핀헤더로 대체하지 말 것</h3>
+    <p>키홈이 없으면 소켓이 180° 뒤집혀 꽂힌다. 그러면 핀 1(5V)이 핀 20(GND)
+    자리로 가서 <strong>5V 가 그대로 단락</strong>된다. 몇백 원 차이다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">부품</span><h2>사야 할 것</h2></div>
+  <div class="bom">
+    <div>
+      <span class="pt">A</span><span class="pnm">NT-IDC 50핀 케이블 200 mm</span>
+      <span class="pq">×1</span>
+      <span class="pd">양끝 IDC 소켓 완제품, 1:1 스트레이트. 압착 공정이 없어진다.</span>
+    </div>
+    <div>
+      <span class="pt">B</span><span class="pnm">박스헤더 2×25 (50P) 스트레이트</span>
+      <span class="pq">×1 +여분</span>
+      <span class="pd">DS1011-50-S-L-S1-B 계열. 핀 필드 60.96 mm, 래치 포함 82.80 mm.
+      어댑터에 실장.</span>
+    </div>
+    <div>
+      <span class="pt">C</span><span class="pnm">박스헤더 2×10 (20P) 스트레이트</span>
+      <span class="pq">×2 +여분</span>
+      <span class="pd">어댑터에 1개, AFE 기판에 1개. 핀 필드 22.86 mm.</span>
+    </div>
+    <div>
+      <span class="pt">D</span><span class="pnm">IDC 20핀 케이블 (또는 리본+소켓)</span>
+      <span class="pq">×1</span>
+      <span class="pd">어댑터 ↔ AFE 기판. 짧을수록 좋다.</span>
+    </div>
+    <div>
+      <span class="pt">E</span><span class="pnm">만능기판 90×70 mm</span>
+      <span class="pq">×1</span>
+      <span class="pd">35×27홀. 50핀 헤더가 25홀을 먹으므로 이보다 작으면 안 된다.</span>
+    </div>
+    <div>
+      <span class="pt">F</span><span class="pnm">주석도금선 또는 UEW 0.3 mm</span>
+      <span class="pq">—</span>
+      <span class="pd">뒷면 배선 20가닥.</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">순서</span><h2>만들고 확인하기</h2></div>
+  <ol class="steps">
+    <li><b>어댑터를 먼저 만든다.</b> AFE 기판이 없어도 된다. 헤더 두 개를 꽂고
+      모서리 핀만 먼저 납땜해 수평을 확인한 뒤 나머지를 채운다.</li>
+    <li><b>도통으로 20가닥을 전부 확인한다.</b> 50핀 3번 ↔ 20핀 3번, … 18↔18,
+      49↔19, 50↔20. 그리고 <b>인접 핀끼리 안 붙었는지</b>도 본다 — 납땜 브릿지가
+      가장 흔한 고장이고 눈으로는 안 보인다.</li>
+    <li><b>VCCO 를 잰다. 이때 AFE 는 물리지 않는다.</b> EXT0–15 을 High 로 구동하는
+      비트스트림을 올리고 어댑터의 20핀 헤더에서 전압을 잰다. 그 값이 VCCO 이고,
+      16핀이 전부 같은 값이면 핀 맵도 맞은 것이다.</li>
+    <li><b>3.3 V 로 나오면 결정을 먼저 한다.</b> 비교기를 3.3 V 로 올릴지
+      레벨 변환기를 넣을지 — 아날로그 쪽 판단이다. 그 전에 AFE 를 연결하지 않는다.</li>
+    <li><b>AFE 를 물리고 주파수 스윕을 건다.</b> 125 Hz → 5 kHz 를 마이크에 들려주고
+      활성 채널이 ch00 에서 ch15 로 <b>단조 이동</b>하는지 본다. 깨끗한 대각선이
+      나오면 매핑이 맞은 것이고, 섞였으면 어떻게 섞였는지까지 보인다.</li>
+  </ol>
+  <div class="warn">
+    <h3>3번을 AFE 물린 채로 하면 비교기가 죽는다</h3>
+    <p>EXT 핀을 FPGA 출력으로 구동하는 순간 비교기 출력과 맞물린다. 둘 다 푸시풀이라
+    출력끼리 싸우고, 킷의 직렬 33 Ω 만으로는 100 mA 가까이 흐른다.
+    LPV7215 는 580 nA 마이크로파워 부품이라 그걸 못 견딘다.</p>
+  </div>
+</section>
+
+<footer>
+  <span>근거: docs/hanback_kit.md · docs/ICD.md</span>
+  <span>킷 매뉴얼 CH2 94–99쪽</span>
+  <span>생성: docs/artifacts/gen_afe_link.py</span>
+</footer>
+
+</div>
