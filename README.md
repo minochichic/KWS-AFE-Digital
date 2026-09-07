@@ -7,6 +7,35 @@ Cerutti et al.의 아날로그 프론트엔드(AFE)가 만드는 **이진 시간
 
 설계 결정과 제약은 [`CLAUDE.md`](CLAUDE.md)에 있다 — 그쪽이 프로젝트 헌장이다.
 
+---
+
+## 지금 하는 일 — 하드웨어 브링업 (2026-09-08)
+
+RTL 은 12개 모듈이 골든 벡터로 검증돼 있고, 지금 막고 있는 것은 **보드 쪽 미결
+하나**다. 아래 두 문서가 현행이다. 이 절 아래의 소프트웨어 내용은 그대로 유효하지만
+현재 작업은 아니다.
+
+| 문서 | 무엇 |
+|---|---|
+| [`docs/hanback_kit.md`](docs/hanback_kit.md) | 한백 XC7S75 킷의 확정 사실 — 핀맵·클럭·전압·부품 |
+| [`rtl/bringup/README.md`](rtl/bringup/README.md) | **보드에 처음 올리는 절차** |
+
+**유일한 미결: Exp. Port 뱅크의 VCCO.** 1.8 / 2.5 / 3.3 중 하나이고, 이 값이
+아날로그 회로(레벨 변환기가 필요한지)를 정한다. 재는 법이 `rtl/bringup/` 에 있다.
+
+```bash
+vivado -mode batch -source rtl/probe_part.tcl -nolog -nojournal   # 보드 없이도 됨
+vivado -mode batch -source rtl/bringup/build_bringup.tcl          # VCCO 측정용
+```
+
+> ⚠️ 두 번째를 올리기 전에 **AFE 케이블을 뽑는다.** 그 16핀을 출력으로 구동하므로
+> 비교기와 출력끼리 싸운다. `rtl/bringup/README.md` 참조.
+
+보드가 KC705 에서 이 킷으로 바뀌었다(2026-09-02). `docs/ICD.md` §7.1 의 FMC ·
+XM105 · VADJ 기술은 전부 폐기됐고 `docs/hanback_kit.md` 가 대체한다.
+
+---
+
 ## 현재 상태
 
 | 단계 | 내용 | 상태 |
