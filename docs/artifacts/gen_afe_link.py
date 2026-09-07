@@ -167,13 +167,13 @@ def chain() -> str:
   <text class="bs" x="40" y="82">동료 담당</text>
   <text class="bi" x="40" y="110">비교기 ×16</text>
   <text class="bi" x="40" y="130">2×25 박스헤더 (키홈)</text>
-  <text class="bi" x="40" y="150">전원은 자체 조달</text>
+  <text class="bi" x="40" y="150">LDO 5V → 1.8 V (+3.3 V)</text>
 
   <rect class="blk kit" x="630" y="34" width="250" height="132" rx="7"/>
   <text class="bt" x="650" y="62">FPGA 킷</text>
   <text class="bs" x="650" y="82">XC7S75 · 연구실</text>
   <text class="bi" x="650" y="110">J6 Exp. Port</text>
-  <text class="bi" x="650" y="130">2×25, 키홈, 5V·GND 포함</text>
+  <text class="bi" x="650" y="130">2×25, 키홈 · 5V·GND 제공</text>
   <text class="bi" x="650" y="150">직렬 33Ω 내장</text>
 
   <path class="lnk" d="M270 100 H630"/>
@@ -181,11 +181,11 @@ def chain() -> str:
   <text class="lv" x="450" y="124" text-anchor="middle">사용 18 / 50 · 나머지 30핀은 NC</text>
 
   <path class="flow sig" d="M630 196 H270"/>
-  <text class="fl sig" x="450" y="188" text-anchor="middle">비교기 16가닥 ─ 아날로그에서 FPGA 로 (필수)</text>
+  <text class="fl sig" x="450" y="188" text-anchor="middle">비교기 16가닥 ─ 아날로그에서 FPGA 로</text>
   <path class="flow gndf" d="M270 222 H630"/>
-  <text class="fl gndf" x="450" y="214" text-anchor="middle">GND ─ 기준 공유 (필수)</text>
-  <path class="flow v5" d="M270 248 H630" stroke-dasharray="2 5"/>
-  <text class="fl v5" x="450" y="240" text-anchor="middle">5V ─ 선택. 별도 전원을 쓰면 안 잇는다</text>
+  <text class="fl gndf" x="450" y="214" text-anchor="middle">GND ─ 기준 공유. 대안이 없다</text>
+  <path class="flow v5" d="M270 248 H630"/>
+  <text class="fl v5" x="450" y="240" text-anchor="middle">5V ─ 킷에서 AFE 로. 기판 LDO 입력 (필수)</text>
 
   <rect class="ghost" x="352" y="266" width="196" height="26" rx="5"/>
   <text class="gl" x="450" y="284" text-anchor="middle">어댑터는 여기 들어간다 — 조건부</text>
@@ -199,10 +199,10 @@ def afe_side() -> str:
     좌변의 블록과 우변의 헤더 핀을 **같은 y 에** 두어 배선이 수평 직선이 되게 한다.
     선이 꺾이면 보는 사람이 "왜 꺾였지" 를 먼저 묻는데, 여기엔 이유가 없다.
     """
-    rows = [("1·2", "5V — 선택", "v5"), ("3", "ch00", "sig"),
+    rows = [("1·2", "5V → LDO", "v5"), ("3", "ch00", "sig"),
             ("4", "ch01", "sig"), ("5–16", "ch02–ch13", "sig"), ("17", "ch14", "sig"),
             ("18", "ch15", "sig"), ("19–48", "연결 안 함 · 30핀", "nc"),
-            ("49·50", "GND — 필수", "gnd")]
+            ("49·50", "GND", "gnd")]
     step, y0 = 40, 54
     ys = [y0 + i * step for i in range(len(rows))]
     h = ys[-1] + 46
@@ -216,7 +216,7 @@ def afe_side() -> str:
                  f'rx="4"{dash}/>')
         o.append(f'<text class="ct" x="32" y="{y + 4}">{label}</text>')
 
-    block(ys[0], "LDO 입력 — 안 써도 된다", dashed=True)
+    block(ys[0], "LDO → 1.8 V (+3.3 V)")
     block(ys[1], "비교기 ch00")
     block(ys[2], "비교기 ch01")
     block(ys[3], "비교기 ch02 ~ ch13   (12개)", dashed=True)
@@ -234,7 +234,7 @@ def afe_side() -> str:
              f'2×25 박스헤더 → 리본 → 킷 J6</text>')
 
     for (p, lab, rl), y in zip(rows, ys):
-        dash = ' stroke-dasharray="3 4"' if rl in ("v5", "nc") else ""
+        dash = ' stroke-dasharray="3 4"' if rl == "nc" else ""
         if rl != "nc":
             o.append(f'<path class="w {rl}" d="M206 {y} H500"{dash}/>')
         o.append(f'<circle class="hp {rl}" cx="500" cy="{y}" r="6"/>')
@@ -418,6 +418,12 @@ code{font-family:'IBM Plex Mono',monospace; font-size:.9em;
 .chip .cc{color:var(--sig); font-weight:500}
 .chip .cp{color:var(--ink3)}
 
+.sub-h{font-family:Archivo,sans-serif; font-size:17px; font-weight:600;
+  margin:30px 0 12px; color:var(--ink)}
+.tree{font-family:'IBM Plex Mono',monospace; font-size:12.5px; line-height:1.75;
+  background:var(--surface); border:1px solid var(--rule); border-radius:7px;
+  padding:16px 18px; overflow-x:auto; color:var(--ink2); margin:0}
+
 /* 조건부 표시 */
 .ghost{fill:none; stroke:var(--ink3); stroke-width:1.2; stroke-dasharray:5 4}
 .gl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
@@ -490,8 +496,8 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
   프로토콜이 필요 없다. 그래서 이 경계에는 협상도, 클럭 공유도, 방향 제어도 없다.</p>
   <div class="plate">
     __CHAIN__
-    <div class="cap">필수는 신호 16 + GND 뿐이다 · 5V 는 킷에서 받아도 되고
-    별도 전원을 써도 된다 · 어댑터는 아래 조건에서만 끼운다</div>
+    <div class="cap">신호 16 + 5V + GND = 18가닥 · 나머지 30핀은 NC ·
+    어댑터는 아래 조건에서만 끼운다</div>
   </div>
   <p style="margin-top:20px">50핀 중 18개만 쓰는 것이 낭비처럼 보이지만, 남는 30핀은
   <strong>패드 30개 값</strong>일 뿐이다. 그걸 줄이겠다고 중간에 변환 기판을 넣으면
@@ -553,19 +559,21 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
 </section>
 
 <section>
-  <div class="eyebrow"><span class="num">전원</span><h2>5V 는 선택, GND 는 필수</h2></div>
-  <p class="dek">이 둘을 같은 것으로 묶어 생각하기 쉬운데 성격이 다르다.</p>
-  <p><strong>GND 는 협상 대상이 아니다.</strong> 두 기판이 기준 전위를 공유하지 않으면
+  <div class="eyebrow"><span class="num">전원</span><h2>킷의 5V 에서 전부 만든다</h2></div>
+  <p class="dek">2026-09-01 에 정해진 것이다 — 아날로그 전원은 FPGA 보드에서 받는다.
+  보드가 KC705 에서 킷으로 바뀌면서 소스가 <strong>U103 의 3.3&nbsp;V 에서 J6 핀 1·2 의
+  5&nbsp;V</strong> 로 바뀌었을 뿐이고, 헤드룸은 오히려 늘었다.</p>
+  <pre class="tree">J6 핀 1·2  (VCC5V) ──리본──→ AFE 기판 ┬─ LDO → 1.8 V   아날로그 · 비교기 · 변환기 A측
+                                       └─ LDO → 3.3 V   변환기 B측
+J6 핀 49·50 (GND) ──리본──→ 기준 접지</pre>
+  <p style="margin-top:16px">로컬 LDO 를 두는 이유는 킷의 5&nbsp;V 가 스위칭
+  레귤레이터에서 오기 때문이다. 리플이 리본을 타고 오는데 LDO 한 겹이 PSRR 로 그걸
+  깎고 디커플링을 부하 옆으로 가져온다. 고를 때 볼 것은 전류 용량이 아니라
+  <strong>출력 잡음과 PSRR</strong> 이다 — 능동 소자 합이 150~280&nbsp;µA 뿐이고,
+  가장 약한 ch15 의 스윙이 16&nbsp;mV 라 비교기 오프셋 대비 5.3배밖에 안 된다.</p>
+  <p><strong>GND 는 성격이 다르다.</strong> 두 기판이 기준 전위를 공유하지 않으면
   비교기가 내는 "1.8&nbsp;V" 가 FPGA 입장에서 몇 볼트인지 정의되지 않는다.
-  케이블에 GND 두 가닥은 무조건 들어간다.</p>
-  <p><strong>5V 는 편의다.</strong> AFE 의 능동 소자 합이 150~280&nbsp;µA 뿐이라
-  전원이라고 부르기도 민망한 양이고, 그래서 별도 공급이 어렵지 않다. 오히려
-  <code>docs/ICD.md</code> 는 <strong>FPGA 보드에서 아날로그 전원을 뽑지 않기를
-  권한다</strong> — 가장 약한 ch15 의 스윙이 16&nbsp;mV 라 비교기 오프셋 대비
-  5.3배뿐이고, 디지털 스위칭 잡음이 공유 레일로 들어오면 그 여유를 직접 깎는다.</p>
-  <p>그래서 권하는 형태는 <strong>패드는 두고 잇지는 않는 것</strong>이다. 핀 1·2 를
-  기판까지 끌어오되 0&nbsp;Ω 이나 점퍼 자리를 두면, 잡음이 문제가 되는지 재보고
-  나중에 정할 수 있다. 지금 정하면 둘 중 하나는 틀린 채로 만들게 된다.</p>
+  전원과 달리 <strong>대안이 없다.</strong></p>
 </section>
 
 <section>
@@ -585,12 +593,44 @@ footer{margin-top:72px; padding-top:20px; border-top:1px solid var(--rule);
         <td class="q"><b>여기</b></td></tr>
     </tbody>
   </table>
-  <p>중요한 것은 <strong>지금 안 정해도 된다</strong>는 점이다. 어댑터가 양쪽에 같은
-  2×25 를 쓰면 나중에 케이블 사이에 끼워 넣기만 하면 되고,
-  <strong>AFE 기판은 바뀌지 않는다.</strong></p>
-  <p style="margin-top:20px">만들게 되면 배치는 이렇다. 두 헤더의 1번 핀을 같은 열에
-  맞추면 배선이 전부 수직 직선이 된다 (아래 그림은 출력 쪽을 20핀으로 줄인
-  변형이다 — 변환기를 넣는다면 그 자리에 IC 가 들어간다).</p>
+  <p><strong>변환기를 AFE 기판에 올려도 된다.</strong> "아날로그 무손상" 이라는 이 선택의
+  이유는 기판이 <em>이미 만들어졌을 때</em> 값을 한다. 아직 설계 중이면 AFE 기판에
+  직접 올리는 편이 커넥터 한 벌과 기판 하나를 아낀다. 어댑터는
+  <strong>기판이 이미 제작됐을 때의 구제책</strong>이다.</p>
+
+  <h3 class="sub-h">SN74AVCH16T245 를 넣으면 무엇이 바뀌나</h3>
+  <table class="tbl" style="margin-bottom:22px">
+    <tbody>
+      <tr><td class="m">아날로그 회로</td><td><b>안 바뀐다.</b> 비교기 1.8 V, R7/R8 그대로</td></tr>
+      <tr><td class="m">전원</td><td>3.3 V 레일 하나 추가 — <b>디지털 전용</b>, 아날로그에 안 닿는다</td></tr>
+      <tr><td class="m">기판</td><td>'245 1개 + 디커플링. DIR→1.8 V, OE→GND 4가닥</td></tr>
+      <tr><td class="m">커넥터 · 핀맵</td><td><b>안 바뀐다</b></td></tr>
+      <tr><td class="m">RTL · 가중치</td><td><b>안 바뀐다.</b> 경계는 여전히 비교기 16가닥뿐</td></tr>
+    </tbody>
+  </table>
+  <table class="tbl" style="margin-bottom:22px">
+    <thead><tr><th>데이터시트 SCES587D</th><th>값</th><th>우리 경우</th></tr></thead>
+    <tbody>
+      <tr><td class="m">A측 V_IH</td><td class="m">VCCA × 0.65 = 1.17 V</td>
+        <td class="q">비교기 최악 VOH 1.63 V → 여유 +460 mV</td></tr>
+      <tr><td class="m">B측 VOH @ 100 µA</td><td class="m">VCCB − 0.2 = 3.1 V</td>
+        <td class="q">FPGA V_IH 2.0 V → 여유 +1.1 V</td></tr>
+      <tr><td class="m">DIR / OE 기준</td><td class="m">VCCA</td>
+        <td class="q">DIR→1.8 V, OE→GND · 뱅크 2개라 각 2개</td></tr>
+      <tr><td class="m">버스홀드 과구동</td><td class="m">~200 µA @ 1.8 V</td>
+        <td class="q">LPV7215 는 500 µA 보장 → 통과. 여유의 40%를 먹는다</td></tr>
+      <tr><td class="m">Ioff</td><td class="m">±5 µA</td>
+        <td class="q">한쪽 VCC 가 GND 면 양 포트 Hi-Z</td></tr>
+    </tbody>
+  </table>
+  <p>버스홀드는 부수 효과가 오히려 좋다. 뒤집으려면 과구동해야 하므로
+  <strong>인터페이스에 히스테리시스가 생긴다</strong> — LPV7215 에 내부 히스테리시스가
+  없다는 것이 ICD §7 의 9번 걱정이었는데 그 일부를 덮는다.
+  다만 <strong>A측에 풀업·풀다운을 달면 안 된다</strong> (데이터시트 명시, 버스홀드와 싸운다).</p>
+
+  <p style="margin-top:20px">어댑터를 만들게 되면 배치는 이렇다. 두 헤더의 1번 핀을
+  같은 열에 맞추면 배선이 전부 수직 직선이 된다 (그림은 출력을 20핀으로 줄인
+  변형이다 — 변환기를 넣으면 그 자리에 IC 가 들어간다).</p>
   <div class="plate">
     __PERF__
     <div class="cap">만능기판 90×70&nbsp;mm · 위 13홀만 쓴다 ·
