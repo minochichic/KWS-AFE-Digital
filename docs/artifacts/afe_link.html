@@ -522,10 +522,10 @@ J6 핀 49·50 (GND) ──리본──→ 기준 접지</pre>
 
 <section>
   <div class="eyebrow"><span class="num">조건부</span><h2>어댑터가 값을 하는 한 경우</h2></div>
-  <p class="dek">중간 기판이 필요해지는 상황은 사실상 하나다 —
-  <strong>Exp. Port 의 VCCO 가 3.3&nbsp;V 이고, 비교기를 그대로 1.8&nbsp;V 로 두고
-  레벨 변환기를 넣기로 할 때</strong>. 변환기가 어딘가엔 살아야 하는데, 아날로그
-  기판에 올리면 "아날로그를 안 건드린다" 는 그 선택의 이유 자체가 사라진다.</p>
+  <p class="dek">어댑터가 필요한 이유는 레벨 변환기 자체가 아니라
+  <strong>그 칩을 놓을 자리가 없을 때</strong> 하나뿐이다. AFE 기판이 아직 설계
+  중이면 거기 같이 올리면 되고 <strong>어댑터는 사라진다.</strong> 이미 제작된
+  기판에 뒤늦게 변환기가 필요해졌을 때가 어댑터의 자리다.</p>
   <table class="tbl" style="margin-bottom:24px">
     <thead><tr><th>VCCO</th><th>선택</th><th>어댑터</th></tr></thead>
     <tbody>
@@ -533,7 +533,9 @@ J6 핀 49·50 (GND) ──리본──→ 기준 접지</pre>
         <td class="q">필요 없음</td></tr>
       <tr><td class="m">3.3 V</td><td>비교기를 3.3 V 로 올린다 (부품 0개)</td>
         <td class="q">필요 없음</td></tr>
-      <tr><td class="m">3.3 V</td><td>SN74AVCH16T245 레벨 변환기</td>
+      <tr><td class="m">3.3 V</td><td>'245 · AFE 기판이 아직 설계 중</td>
+        <td class="q"><b>필요 없음</b> — 기판에 같이 올린다</td></tr>
+      <tr><td class="m">3.3 V</td><td>'245 · AFE 기판이 이미 제작됨</td>
         <td class="q"><b>여기</b></td></tr>
     </tbody>
   </table>
@@ -542,7 +544,15 @@ J6 핀 49·50 (GND) ──리본──→ 기준 접지</pre>
   직접 올리는 편이 커넥터 한 벌과 기판 하나를 아낀다. 어댑터는
   <strong>기판이 이미 제작됐을 때의 구제책</strong>이다.</p>
 
-  <h3 class="sub-h">SN74AVCH16T245 를 넣으면 무엇이 바뀌나</h3>
+  <h3 class="sub-h">A측은 비교기, B측은 FPGA</h3>
+  <p>'245 는 양방향 트랜시버라 두 포트가 대칭이고, 어느 쪽을 A 로 쓸지는 우리가
+  정한다. 정하는 기준은 두 가지다 — <strong>제어핀(DIR·OE)이 VCCA 기준</strong>이라
+  A 를 1.8&nbsp;V 쪽에 두면 DIR 을 아날로그 기판의 1.8&nbsp;V 레일에 그냥 묶을 수 있고,
+  <strong>버스홀드가 A측(데이터 입력)에</strong> 있으므로 A 가 받는 쪽이어야 한다.</p>
+  <pre class="tree">비교기 16 ──1.8V──▶ A측 │ '245 │ B측 ──3.3V──▶ 헤더 핀 3–18 ──리본──▶ 킷 J6 ──▶ FPGA
+                    VCCA = 1.8 V   VCCB = 3.3 V
+                    DIR → 1.8 V (A→B)      OE → GND</pre>
+  <h3 class="sub-h">'245 를 넣으면 무엇이 바뀌나</h3>
   <table class="tbl" style="margin-bottom:22px">
     <tbody>
       <tr><td class="m">아날로그 회로</td><td><b>안 바뀐다.</b> 비교기 1.8 V, R7/R8 그대로</td></tr>
@@ -563,6 +573,8 @@ J6 핀 49·50 (GND) ──리본──→ 기준 접지</pre>
         <td class="q">DIR→1.8 V, OE→GND · 뱅크 2개라 각 2개</td></tr>
       <tr><td class="m">버스홀드 과구동</td><td class="m">~200 µA @ 1.8 V</td>
         <td class="q">LPV7215 는 500 µA 보장 → 통과. 여유의 40%를 먹는다</td></tr>
+      <tr><td class="m">양 포트 입력 내압</td><td class="m">4.6 V (절대최대)</td>
+        <td class="q">5 V 레일이 스쳐도 안 죽는다</td></tr>
       <tr><td class="m">Ioff</td><td class="m">±5 µA</td>
         <td class="q">한쪽 VCC 가 GND 면 양 포트 Hi-Z</td></tr>
     </tbody>
