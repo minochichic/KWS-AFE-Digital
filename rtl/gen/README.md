@@ -18,6 +18,22 @@ python -m export.golden --tag xl_g12 --out rtl/gen/xl_g12/golden --clips 2
 **재학습했으면 반드시 다시 뽑는다.** 안 그러면 테스트벤치가 옛 가중치로
 새 RTL을 검증한다 — 통과해도 아무 의미가 없다.
 
+## 뽑은 뒤 커밋 누락 점검
+
+`.hex`만 눈에 띄어서 **`paths.vh` 두 개를 빠뜨리기 쉽다.** 실제로 한 번 빠졌고,
+그 상태로 새로 클론하면 `run_tb.sh`도 `rtl/build.tcl`도 시작조차 못 한다
+(2026-09-08 에 매니페스트로 복구).
+
+```bash
+git ls-files rtl/gen/<tag>/paths.vh rtl/gen/<tag>/golden/paths.vh
+```
+
+두 줄이 다 나와야 한다. 하나라도 비면 커밋이 안 된 것이다.
+
+`paths.vh`는 `manifest.json`/`golden.json`에서 기계적으로 재생성되므로, 잃어도
+체크포인트 없이 되살릴 수 있다 — 다만 그걸 알아채는 시점이 보통 "다른 기계에서
+클론했는데 안 돌 때"라 값이 비싸다.
+
 ## 클립 수를 2로 두는 이유
 
 기능 검증에는 2개면 충분하고, 8개면 누산기 덤프가 4배가 된다. 더 넓은 회귀가
