@@ -63,3 +63,28 @@ rtl/gen/active.vh
 /transfer_v3_*/
 /vpp_5mV/
 /vthr_*/
+
+# --- Vivado ---
+# 합성 산출물. rtl/.gitignore 에도 out/ 이 있지만 그건 rtl/out/ 만 잡는다 --
+# build.tcl 과 build_bringup.tcl 은 **리포 루트로 cd 한 뒤** out/ 에 쓰므로
+# 루트에 생긴다. 비트스트림·체크포인트·리포트라 전부 재생성 가능하다.
+/out/
+
+# 도구가 **현재 디렉터리**에 흘리는 것들. 이름이 vivado_<pid>.backup.* 로도
+# 나와서 글롭이 필요하다.
+#
+# -nolog -nojournal 로 아예 안 만들 수도 있지만 **합성에는 붙이지 않는다**:
+# 나중에 경고를 뒤질 유일한 기록이 로그다 (rtl/build.tcl 이 리포트를 out/ 에
+# 따로 쓰지만, 로그에만 있는 INFO/WARNING 이 많다).
+vivado*.jou
+vivado*.log
+vivado*.str
+.Xil/
+# 배치 모드에서 in-memory 프로젝트를 쓰므로 .xpr 은 안 생겨야 정상이다. GUI 를
+# 실수로 켜서 프로젝트를 만들었을 때 커밋되지 않도록 막아 둔다 -- 그 흐름은
+# 이 리포의 방식이 아니다 (rtl/RUNNING.md 5).
+*.xpr
+*.cache/
+*.hw/
+*.runs/
+*.sim/
