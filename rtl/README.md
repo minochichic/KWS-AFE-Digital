@@ -1063,3 +1063,141 @@ Number of cells: 48
 
 **남은 확인은 Vivado 다.** yosys 가 메모리로 유지한다고 Vivado 가 BRAM 을 준다는
 보장은 아니다 — 도구가 다르다. `build.tcl` 의 `== BRAM 셀 N 개 ==` 가 최종 답이다.
+
+### Vivado 가 답했다 (2026-09-09)
+
+`vivado -mode batch -source rtl/build.tcl` — **0 errors, 0 critical warnings.**
+
+```
+== clocks: sys_clk ==
+== BRAM cells: 6 ==
+```
+
+**BRAM 6 개. 그런데 그 6 개는 평면이 아니다.** 합성 로그의 매핑 리포트가 어디로
+갔는지 정확히 말한다:
+
+| 무엇 | 어디로 갔나 |
+|---|---|
+| `kws_affine` 의 `a1_reg` / `b1_reg` (꼬리 게인·오프셋 ROM) | **Block RAM** x4 |
+| `kws_dense_conv` 의 `act_reg` (conv3·conv4 프레임 버퍼) | **Block RAM** x2 |
+| **`kws_plane` 의 `mem` x4 (활성 평면)** | **분산 RAM** — `RAM64M` x109 |
+| 가중치 ROM 35 개 (`conv1_w` 는 32768x8) | **LUT** |
+
+**그래도 §3-08 의 수정은 성공이다.** 그 절이 막으려던 것은 *"Vivado 에서 8192 개
+플립플롭"* 이었고 그건 막혔다 — 평면 4 장이 LUTRAM 442 개(전체 LUT 의 2%)에
+들어갔다. BRAM 대신 SLICEM 에 앉았을 뿐이다. yosys 가 "메모리로 유지된다"고
+말한 것도 여기까지는 맞았다.
+
+#### 점유율 — 추정이 8 배 틀렸다
+
+| 자원 | 사용 | 가용 | 비율 |
+|---|---:|---:|---:|
+| **LUT** | **20,160** | 48,000 | **42%** |
+| FF | 16,431 | 96,000 | 17% |
+| DSP | 7 | 140 | 5% |
+| RAMB18 | 6 | 180 | 3% |
+| RAMB36 | **0** | 90 | 0% |
+
+`docs/hanback_kit.md` §1 이 *"가중치 ROM 457 Kbit(약 BRAM36 18 개), 로직 ~5%,
+DSP 1 개"* 로 추정했었다. **로직이 8 배, BRAM 은 0, DSP 는 7 개다.**
+
+원인은 하나다: **가중치 ROM 이 BRAM 이 아니라 LUT 이 됐다.** `conv1_w` 혼자
+32768x8 = 256 Kbit 이고, `u_c1` 이 3,505 LUT 를 먹는 이유가 그것이다.
+
+##### LUT 가 어디로 갔나
+
+| 블록 | LUT | 비중 |
+|---|---:|---:|
+| `u_b1` | 3,739 | 19% |
+| **`u_c1`** (conv1) | **3,505** | 17% |
+| `u_tail` | 3,474 | 17% |
+| `u_b3` | 3,134 | 16% |
+| **`u_c2`** (conv2_dw) | **2,802** | 14% |
+| `u_b2` | 2,788 | 14% |
+| 평면 4 장 | 677 | 3% |
+
+블록 안에서는 **depthwise 가 압도적**이다 — `b3` 는 3,134 중 2,399(77%)가 dw 둘이다.
+`conv2_dw` 혼자 2,699 LUT + 3,789 FF 이고, 그 FF 는 라인버퍼 `SPAN 57 x 64ch =
+3,648` 과 맞아떨어진다(§3-069).
+
+LUT 쪽 범인은 **gather** 다(§3-0). K 개의 C 비트 레지스터에서 `ch` 번째 비트만
+뽑으려면 C-to-1 먹스가 K 개 필요하고, 셀 통계의 `MUXF7 4,291 / MUXF8 806` 이
+그것이다.
+
+**CLAUDE.md §3.4 의 비대칭이 반대 방향에서도 확인됐다.** 문서는 "depthwise 는
+팩킹 이득이 작다" 고 했는데, 합성은 "depthwise 는 gather 때문에 LUT 도 더 먹는다"
+고 말한다. 두 PE 를 합치지 말라는 결론은 더 강해졌다.
+
+#### 타이밍 — 통과, 여유 30%
+
+```
+WNS 6.003 ns    TNS 0.000    실패 엔드포인트 0 / 35,613
+WHS 0.064 ns    (홀드도 통과)
+All user specified timing constraints are met.
+```
+
+50 MHz(20 ns)에서 크리티컬 패스가 **13.997 ns** — 최대 약 **71 MHz**.
+`docs/hanback_kit.md` §3.3 이 적어둔 *"타이밍이 안 닫히면 클럭을 낮추면 된다"*
+는 자유도를 **쓸 필요가 없다.**
+
+#### 그래서 42% 가 문제인가
+
+**아니다 — 들어간다.** 절반 이상 남고 타이밍도 30% 여유다. 다만 *"여유가 크다"*
+는 문장은 이제 정확하지 않고, 두 가지에 영향이 있다:
+
+- **conv2 `separable: false`(dense) ablation** — CLAUDE.md §3.3 의 1 순위
+  ablation 인데 파라미터가 96.5K -> 324K 로 3.4 배 된다. 42% 에서 그걸 하면 위험하다
+- **C 나 T 를 키우는 방향** — 마찬가지
+
+#### `$readmemh` 는 전부 성공했다
+
+`build.tcl` 머리말이 걱정한 조용한 실패 — *"못 찾아도 에러가 아니다. ROM 이 X 로
+남고 합성은 성공하며, 가중치가 전부 없는 회로가 조용히 나온다"* — 는 일어나지
+않았다. 로그에 `$readmem data file '...' is read successfully` 가 **35 번** 찍힌다.
+`.hex` 를 run 디렉터리로 복사하고 `paths.vh` 를 파일명만 남기게 다시 쓰는 장치가
+의도대로 작동했다.
+
+### 경고 22 개 중 하나를 파봤다 — `8-7137` 은 무해하다
+
+```
+WARNING: [Synth 8-7137] Register s1_frame_reg in module kws_block has both Set
+         and reset with same priority. This may cause simulation mismatches.
+```
+
+**"시뮬 불일치 가능성" 을 도구가 직접 말한 것**이라 골든 벡터로 검증된 설계에서는
+그냥 넘길 수 없었다. 체크포인트를 열어 실제 프리미티브를 셌다:
+
+```
+s1_frame_reg :  192 개, 전부 FDRE      (클럭 인에이블 + 동기 리셋)
+FDSE / FDRSE (set 계열) :  설계 전체에 0 개
+```
+
+192 = 블록 3 개 x `C_MID` 64 비트로 맞고, **set 계열 FF 이 하나도 없다.** 경고는
+RTL 추론 단계에서 떴고 최종 네트리스트에는 충돌이 남지 않았다.
+
+덤으로 `FDPE`(비동기 프리셋) 15 개의 정체도 밝혀졌다 — 전부
+`FSM_onehot_st_reg[0]` 이다. Vivado 가 `dw_conv`/`pw_conv`/`tail` 의 FSM 을
+one-hot 으로 인코딩했고, one-hot 에서 `S_IDLE` 은 비트 0 이 1 이라 리셋 시
+프리셋이 필요하다. 정상이다.
+
+> 다만 기록할 비대칭이 하나 있다. **`s1_frame` 은 리셋 분기에 없다** — 같은 블록의
+> `y_lat`/`x_lat` 는 리셋되는데 이것만 빠져 있다. `s1_push` 가 0 으로 리셋되므로
+> 로드되기 전엔 아무도 안 읽어서 기능상 안전하지만, 경고가 뜬 이유가 이것이다.
+
+### 다음 — 보드 레벨 래퍼
+
+여기까지가 「합성이 되나」였다. **아직 안 된 것은 「보드에 올라가나」다.**
+
+`kws_top_synth` 에는 `cmp` 도 `class_*` 도 없다(`rtl/constraints/kws_top.xdc` [3]).
+그래서 합성 로그의 `== applied 9 pin constraints ==` 는 `clk`/`rst_n`/`start`/
+`class_valid`/`class_idx[0..3]`/`busy` 뿐이고, **§6 에서 확정한 `cmp` 16 핀은 아직
+한 번도 밟히지 않았다.**
+
+래퍼가 생기면 세 가지가 한꺼번에 열린다:
+
+1. `cmp` 제약이 실제로 걸린다 — `write_bitstream` 앞 DRC(UCIO-1/NSTD-1)가 검사한다
+2. `-impl` 이 의미를 갖는다 — 배치배선, 진짜 비트스트림
+3. **`kws_frame_ctrl` 과 `kws_top` 을 함께 시뮬할 수 있다.** `docs/hanback_kit.md`
+   §3.3 의 경고대로, 둘은 아직 **따로만** 검증됐다 — `tb_frame_ctrl` 은
+   `FRAME_CYCLES=24` 로 홀로, `tb_top` 은 프레임을 직접 먹인다. "22 배 여유" 는 두
+   숫자를 나눠서 얻은 값이지 실행으로 확인한 것이 아니다.
