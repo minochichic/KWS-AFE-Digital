@@ -56,7 +56,8 @@ puts "== part $part / tag $tag / top $top =="
 # 바꿔 그걸 include 한다. RTL 도 emit.py 도 손대지 않는다 -- 시뮬 경로는 그대로
 # 원본 paths.vh 를 쓴다.
 if {![file exists $gen/paths.vh]} {
-    puts "ERROR: $gen/paths.vh 가 없다. export 를 먼저 돌린다."
+    puts "ERROR: $gen/paths.vh not found -- run the export first."
+    puts "       python -m export.emit --tag $tag --out $gen"
     exit 1
 }
 set synth_inc $out/inc
@@ -81,8 +82,8 @@ puts $fh "`include \"$gen/parameters.vh\""
 close $fh
 
 set n_hex [llength [glob -nocomplain $synth_inc/*.hex]]
-puts "   .hex $n_hex 개를 $synth_inc 로 복사, paths.vh 를 파일명 기준으로 재작성"
-if {$n_hex == 0} { puts "ERROR: .hex 가 하나도 없다"; exit 1 }
+puts "   copied $n_hex .hex files to $synth_inc, rewrote paths.vh to bare filenames"
+if {$n_hex == 0} { puts "ERROR: no .hex files found"; exit 1 }
 
 # ---- 소스 ---------------------------------------------------------------- #
 # 최상위는 kws_top 이 아니라 kws_top_synth 다. kws_top 의 ROM 경로 파라미터는
@@ -92,12 +93,54 @@ create_project -in_memory -part $part
 read_verilog [concat [glob rtl/*.v] [glob rtl/synth/*.v]]
 # include 검색 경로: 재작성한 paths.vh 가 원본보다 먼저 걸리도록 앞에 둔다
 set_property include_dirs [list $synth_inc $gen rtl/gen] [current_fileset]
-read_xdc rtl/constraints/kws_top.xdc
+# -unmanaged: 이 파일을 **온전한 Tcl 스크립트**로 취급하라는 뜻이다.
+#
+# 그냥 read_xdc 로 넣으면 Vivado 가 XDC 를 **제한된 부분집합**으로 읽고
+# for / if / proc 를 거부한다 (2026-09-08 에 bringup.xdc 로 실측):
+#
+#     CRITICAL WARNING: [Designutils 20-1307] Command 'foreach' is not
+#                       supported in the xdc constraint file.
+#
+# 거부한 자리를 **통째로 건너뛰고 계속 간다.** kws_top.xdc 는 핀 배정을 proc 과
+# for 안에서 하므로, 그러면 제약이 하나도 안 걸린 채 합성이 "성공" 한다.
+#
+# bringup 쪽은 source 로 옮겨서 풀었는데(synth_design 뒤로), 여기는 그 방법이
+# 덜 좋다. kws_top.xdc 의 [1] 타이밍 절(create_clock / set_false_path /
+# ASYNC_REG)은 XDC 문법으로 전부 합법이고 **합성 중에 있어야 제 값을 한다**.
+# 뒤로 옮기면 합성이 클럭 없이 돌아간다. -unmanaged 는 위치를 안 옮기고
+# 제한만 푼다.
+read_xdc -unmanaged rtl/constraints/kws_top.xdc
 
 # ---- 합성 ---------------------------------------------------------------- #
 # -flatten_hierarchy none: 계층을 유지해야 utilization 이 모듈별로 나온다.
 # 어느 블록이 무엇을 먹는지가 이 단계에서 알고 싶은 전부다.
 synth_design -top $top -flatten_hierarchy none
+
+# ---- 타이밍 제약이 실제로 걸렸는지 확인한다 -------------------------------- #
+# 이 검사를 두는 이유는 제약이 날아가는 방식이 **조용하기** 때문이다. 브링업에서는
+# write_bitstream 앞의 DRC 가 막아 줬지만, 여기는 기본으로 -impl 을 안 하므로
+# 비트스트림도 DRC 도 없다. 제약이 통째로 날아가도 utilization 과 timing 리포트가
+# 멀쩡하게 나오고, 그 리포트는 **우리가 묻는 질문에 답하지 않는 리포트**다.
+#
+# **핀 배치는 여기서 검사하지 않는다.** 2026-09-08 에 한 번 그렇게 썼다가 틀렸다:
+#
+#     INFO: Property 'PACKAGE_PIN' is not supported for elaborated designs
+#     INFO: [Project 1-236] Implementation specific constraints were found ...
+#           will be ignored for synthesis but will be used in implementation
+#
+# 핀 배치는 배치배선의 입력이지 합성의 입력이 아니다. 합성 단계에서 0 인 것이
+# 정상이므로, 그걸 실패로 삼으면 멀쩡한 합성을 막는다. 핀은 -impl 쪽에서
+# write_bitstream 앞의 DRC (UCIO-1 / NSTD-1) 가 잡는다 -- 그게 제 자리다.
+#
+# 합성 단계에서 의미 있는 검사는 **클럭**이다. 없으면 timing_synth.rpt 가
+# 「제약 없음」이 되고, 그건 통과가 아니라 아무것도 안 잰 것이다.
+if {[llength [get_clocks -quiet]] == 0} {
+    puts "ERROR: no clocks were defined -- kws_top.xdc section \[1\] did not run."
+    puts "       timing_synth.rpt would be meaningless, so stopping here."
+    puts "       Look above for errors from the constraint file."
+    exit 1
+}
+puts "== clocks: [get_clocks] =="
 
 report_utilization      -hierarchical -file $out/utilization.rpt
 report_timing_summary   -file $out/timing_synth.rpt
@@ -106,9 +149,10 @@ write_checkpoint -force $out/post_synth.dcp
 # ROM 이 실제로 채워졌는지. $readmemh 가 조용히 실패하면 여기서 BRAM/LUTRAM 이
 # 0 으로 나오므로, 리포트를 사람이 안 열어봐도 로그에 남는다.
 set bram [get_cells -quiet -hier -filter {PRIMITIVE_GROUP == BMEM}]
-puts "== BRAM 셀 [llength $bram] 개 =="
+puts "== BRAM cells: [llength $bram] =="
 if {[llength $bram] == 0} {
-    puts "WARNING: BRAM 이 하나도 추론되지 않았다. \$readmemh 경로나 ROM 크기를 확인할 것."
+    puts "WARNING: no BRAM was inferred. Check the \$readmemh paths or ROM sizes."
+    puts "         A silent \$readmemh failure looks exactly like this."
 }
 
 if {$do_impl} {
@@ -125,7 +169,7 @@ if {$do_impl} {
     # 미제약 핀은 도구가 임의로 배정하므로, 보드에 올리면 신호가 우리가 배선한
     # 곳이 아닌 데로 나가고 증상은 "동작 안 함" 뿐이다.
     write_bitstream -force $out/kws_top.bit
-    puts "== 비트스트림: $out/kws_top.bit =="
+    puts "== bitstream: $out/kws_top.bit =="
 }
 
-puts "== 완료. 산출물: $out =="
+puts "== done. artifacts in $out =="

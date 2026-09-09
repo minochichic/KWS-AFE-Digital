@@ -23,11 +23,23 @@
 #     FRAME_CYCLES = clk_hz x 10 / 1000 = 50e6 x 0.01 = 500,000
 create_clock -name sys_clk -period 20.000 [get_ports clk]
 
-# B6 가 클럭 가능 핀(MRCC/SRCC)인지 아직 확인 못 했다 -- UG475 의 볼-뱅크 표는
-# 그림이라 텍스트가 없다. `rtl/probe_part.tcl` 이 Vivado 에서 한 줄로 답한다.
-# 일반 I/O 로 밝혀지면 이 우회가 필요하고, 그때는 다른 MAIN_CLOCK 핀(M8/M15/P15)을
-# 먼저 시도하는 편이 낫다.
-set_property CLOCK_DEDICATED_ROUTE ANY [get_nets -quiet clk_IBUF]
+# B6 는 **MRCC 다** (`rtl/probe_part.tcl` 실측, 2026-09-08):
+#
+#     MAIN_CLOCK1    B6     bank 36   IO_L13P_T2_MRCC_36
+#
+# 그래서 여기 있던
+#
+#     set_property CLOCK_DEDICATED_ROUTE ANY [get_nets -quiet clk_IBUF]
+#
+# 는 지웠다. 「일반 I/O 로 밝혀지면」을 전제로 걸어둔 우회인데 그 전제가 깨졌다.
+# 게다가 이 줄은 합성을 **깨뜨린다**: 제약이 엘라보레이션 단계에서 처리되는데
+# 그때는 `clk_IBUF` 넷이 아직 없고, `-quiet` 는 get_nets 의 경고만 죽일 뿐
+# 빈 결과를 받은 set_property 는 그대로 에러를 낸다.
+#
+#     ERROR: [Common 17-55] 'set_property' expects at least one object.
+#
+# MAIN_CLOCK 은 넷 다 MRCC 이므로(M8/M15/P15) 어느 것으로 옮겨도 이 우회는
+# 필요 없다. docs/hanback_kit.md 3.3.
 
 # --- 비동기 리셋 ------------------------------------------------------------ #
 # rst_n 은 클럭과 무관하게 눌린다. 릴리스만 동기화되면 되므로 입력 경로는 뺀다.
@@ -39,12 +51,26 @@ set_false_path -from [get_ports rst_n]
 # 도구가 존재하지 않는 경로를 맞추려다 실패하거나, 더 나쁘게는 맞추려고 로직을
 # 비튼다.
 #
-# quiet 인 이유: kws_top 만 합성하면 이 포트가 없다. 그때 조용히 넘어가야 한다.
-set_false_path -from [get_ports -quiet {cmp[*]}]
+# **`-quiet` 로는 부족하다** (2026-09-08 에 실측). `-quiet` 는 get_ports 가
+# "못 찾았다" 고 내는 경고만 죽인다. 빈 목록을 받은 **set_false_path 자체가**
+# 에러를 낸다:
+#
+#     ERROR: [Vivado 12-4739] set_false_path: No valid object(s) found for
+#            '-from [get_ports -quiet {cmp[*]}]'.
+#
+# kws_top_synth 에는 cmp 가 없으므로(아래 [3] 절) 매번 여기서 멈춘다. 그래서
+# 존재를 먼저 확인하고 건다. 이 파일은 read_xdc -unmanaged 로 읽히므로 if 를
+# 쓸 수 있다 -- 평범한 XDC 였으면 if 가 거부됐을 것이다(rtl/build.tcl 참고).
+if {[llength [get_ports -quiet {cmp[*]}]] > 0} {
+    set_false_path -from [get_ports {cmp[*]}]
+}
 
 # 2단 동기화기 자체에는 ASYNC_REG 가 필요하다 -- 두 FF 를 같은 슬라이스에 묶어
 # 메타스테이빌리티 해소 시간을 벌어준다. RTL 에 속성이 없으면 여기서 건다.
-set_property ASYNC_REG TRUE [get_cells -quiet -hier -filter {NAME =~ *sync_ff*}]
+# 위와 같은 이유로 존재를 먼저 확인한다 (frame_ctrl 이 없으면 동기화기도 없다).
+set _sync [get_cells -quiet -hier -filter {NAME =~ *sync_ff*}]
+if {[llength $_sync] > 0} { set_property ASYNC_REG TRUE $_sync }
+unset _sync
 
 # =========================================================================== #
 # [2] 핀 배치 — Expansion Port (J6)
@@ -59,33 +85,56 @@ set_property ASYNC_REG TRUE [get_cells -quiet -hier -filter {NAME =~ *sync_ff*}]
 #     핀 49,50 = GND
 # 모든 EXT 라인에 직렬 33 Ohm 이 들어가 있다(FPGA 입력이 고임피던스라 무해).
 #
-# cmp 를 EXT0 부터 연속으로 두는 이유: 리본 도선 번호와 채널 번호가
-# `핀 = ch + 3` 하나로 묶여서 빨간 줄(1번 도선)부터 세기 쉽다. 채널이 섞이면
-# 증상이 "정확도가 좀 낮다" 뿐이라 증상으로는 못 찾는다 -- 배선 후 주파수 스윕
-# 대각선 테스트(ICD 7.1)는 생략 불가다.
+# cmp 를 연속 번호로 두는 이유: 리본 도선 번호와 채널 번호가 덧셈 하나로 묶여서
+# 세기 쉽다. 채널이 섞이면 증상이 "정확도가 좀 낮다" 뿐이라 증상으로는 못 찾는다
+# -- 배선 후 주파수 스윕 대각선 테스트(ICD 7.1)는 생략 불가다.
 
-# EXT0 .. EXT23 의 볼. 인덱스가 곧 EXT 번호다.
+# EXT0 .. EXT45 의 볼 전부. 인덱스가 곧 EXT 번호다.
+# (probe_part.tcl 로 46 개를 다 조회했다 -- 2026-09-08)
 set EXT {
     Y21  AA22 AB21 AA21 AA20 Y20  Y19  AB20
     Y18  AB19 AB18 AA18 Y17  W17  AB17 AA17
     V16  U16  AA16 W16  T15  AB16 V15  U15
+    AA15 W15  V14  T14  Y14  W14  AB14 AA14
+    V13  T13  AA13 Y13  U12  AB13 W12  V12
+    AB12 Y12  Y11  W11  AB11 AA11
 }
 
-# --- IOSTANDARD: ⬜ 아직 모른다 --------------------------------------------- #
-# Spartan-7 은 HR 뱅크만 있고 1.2~3.3 V 를 지원하므로(DS180) 칩 쪽 제약은 없다.
-# 킷이 이 뱅크의 VCCO 를 몇 V 로 배선했는지가 전부이고, 매뉴얼 94~99 쪽에는 없다.
+# --- cmp 의 시작점 -- 동료 AFE 기판 배선에서 온다 (확정 2026-09-09) --------- #
+# 동료가 J102(AFE 쪽 2x25) 를 이렇게 배선했다:
 #
-#   VCCO 1.8 V -> LVCMOS18, V_IH 1.17 V  : 비교기 최악 VOH 1.63 V 대비 +460 mV
-#   VCCO 2.5 V -> LVCMOS25, V_IH 1.700 V : -70 mV                   ⚠️
-#   VCCO 3.3 V -> LVCMOS33, V_IH 2.000 V : 미달 -> 변환기 또는 비교기를 3.3 V 로
+#     비교기 0 -> 커넥터 핀 33   ...   비교기 15 -> 커넥터 핀 48
 #
-# 온보드 주변장치가 3.3/5 V 계열이고 헤더로 5 V 를 내보내는 보드라 **3.3 V 일
-# 가능성이 높다.** 예제 .xdc 한 줄이나 멀티미터 한 번이면 끝난다.
+# 1:1 스트레이트 리본이므로 킷 J6 도 같은 핀 번호이고, `EXT = 핀 - 3` 이니
 #
-# 잘못 선언하면 조용히 위험하다: 3.3 V 로 배선된 뱅크에 LVCMOS18 을 선언해도
-# VCCO 는 안 바뀌고(공급 핀이지 설정이 아니다) 출력 드라이브 예측만 틀어진다.
-# 그래서 **확정 전까지 여기 값을 바꾸지 않는다.** 지금 값은 "가장 그럴듯한 쪽" 이
-# 아니라 "틀려도 입력만 읽는 우리 설계에서 가장 무해한 쪽" 이다.
+#     cmp[k] -> EXT(30 + k)        k = 0..15   ->  EXT30 .. EXT45
+#
+# EXT45 가 확장 포트의 마지막 핀이다. 딱 끝까지 쓴다.
+#
+# **16 개가 전부 뱅크 13 이다** (probe_part.tcl). 종전 EXT0~15 는 뱅크 14 아홉 +
+# 13 일곱으로 갈려 있었는데, 동료 배선이 우연히 한 도메인으로 떨어졌다.
+# VCCO 가 양쪽 다 3.3 V 라 전기적 차이는 없지만 도메인이 하나면 더 안전하다.
+#
+# 이 값 하나만 바꾸면 배선이 바뀌어도 RTL 도 가중치도 .hex 도 그대로다.
+# docs/ICD.md 가 존재하는 이유가 이것이다.
+set CMP_EXT0 30
+
+# --- IOSTANDARD: ✅ 실측으로 확정 (2026-09-09) ------------------------------ #
+# vcco_probe 를 올리고 J6 에서 잰 값: **3.308 V**. 뱅크 13 과 14 가 같은 값이다.
+# (재는 법과 판정표는 rtl/bringup/README.md 1, 원리는 docs/hanback_kit.md 4.4)
+#
+# 그러니 LVCMOS33 이 맞다 -- 종전에도 같은 값이었지만 그때는 "틀려도 무해한 쪽"
+# 이라서 고른 잠정값이었고, 지금은 확정이다.
+#
+# 이 값이 아날로그 쪽에 뜻하는 것:
+#
+#   LVCMOS33 V_IH = 2.000 V
+#   비교기 LPV7215 @1.8 V 최악 VOH = 1.63 V
+#   -> **미달.** 레벨 변환기가 필요하다.
+#
+# 동료 기판이 SN74LXC8T245 두 개(VCCA 1.8 V / VCCB 3.3 V)로 그걸 한다.
+# 그 A 측 슈미트 문턱 VT+ 는 1.8 V 에서 약 1.23 V 라 비교기 1.63 V 대비 여유
+# +400 mV 다 (데이터시트 6.5 표를 1.65 V 행에서 보간). docs/hanback_kit.md 4.2.
 set IOSTD LVCMOS33
 
 # --- 배정 ------------------------------------------------------------------- #
@@ -101,14 +150,18 @@ proc kws_pin {port ball iostd} {
 
 set n 0
 
-# 비교기 16가닥 -> EXT0..EXT15 -> 커넥터 핀 3..18
+# 비교기 16가닥 -> EXT30..EXT45 -> 커넥터 핀 33..48 (전부 뱅크 13)
 for {set c 0} {$c < 16} {incr c} {
-    incr n [kws_pin "cmp\[$c\]" [lindex $EXT $c] $IOSTD]
+    incr n [kws_pin "cmp\[$c\]" [lindex $EXT [expr {$CMP_EXT0 + $c}]] $IOSTD]
 }
 
 # 제어 입력. 원래는 보드의 버튼/DIP 스위치가 맞는데 그 핀 구성표가 아직 없어서
 # 확장 포트로 뺐다. 케이블을 안 물려도 안전한 값으로 읽히도록 내부 저항을 건다 --
 # rst_n 은 풀업(리셋 해제), start 는 풀다운(시작 안 함).
+#
+# EXT16~23 은 cmp(EXT30~45)와 겹치지 않는다. 그리고 동료 AFE 기판은 그 핀들을
+# 연결하지 않았으므로(신호는 33~48, 전원 1~2, 접지 49~50 뿐) 리본을 물려도
+# 이쪽은 여전히 미연결이고, 위 내부 저항이 그대로 안전값을 만든다.
 incr n [kws_pin rst_n [lindex $EXT 16] $IOSTD]
 incr n [kws_pin start [lindex $EXT 17] $IOSTD]
 set_property PULLUP   true [get_ports -quiet rst_n]
@@ -126,7 +179,7 @@ incr n [kws_pin busy [lindex $EXT 23] $IOSTD]
 # 없다 -- M8 / M15 / P15 가 대안이다.
 incr n [kws_pin clk B6 $IOSTD]
 
-puts "== 핀 제약 $n 개 적용 (IOSTANDARD $IOSTD) =="
+puts "== applied $n pin constraints (IOSTANDARD $IOSTD) =="
 
 # =========================================================================== #
 # [3] 아직 없는 것 — 보드 레벨 래퍼
