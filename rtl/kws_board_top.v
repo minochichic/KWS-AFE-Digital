@@ -113,15 +113,10 @@ module kws_board_top #(
     // 3. 아날로그 경계 -> 네트워크
     // ======================================================================= //
     //
-    // 핸드셰이크는 이름까지 맞는다. 다만 **한 사이클 차이가 있다**:
-    // frame_ctrl 은 out_ready 를 본 사이클에 `take` 하고 out_valid 는 그
-    // 다음 사이클에 뜬다. 그 사이에 kws_top 의 can_push 가 내려가면 프레임이
-    // 조용히 사라진다 -- rtl/README.md 3-09 가 두 번 대가를 치른 종류다.
-    //
-    // 지금은 frame_ctrl 이 유일한 푸셔라 그 사이에 상태가 바뀔 이유가 없어서
-    // 성립할 것으로 본다. **그러나 그것을 여기서 단정하지 않는다** --
-    // kws_top.v:416 의 `in_valid && !in_ready` 어서션과 kws_frame_ctrl 의
-    // `frame_edge && pending` 어서션이 tb_board_top 에서 그것을 판정한다.
+    // frame_ctrl 은 표준 ready/valid 계약을 쓴다. fc_valid 와 fc_frame 을
+    // top_ready 가 올라와 실제 전송될 때까지 그대로 유지한다. 전송은
+    // fc_valid && top_ready 인 클럭 엣지에서만 일어난다. 다음 10 ms 경계까지도
+    // 전송되지 않으면 kws_frame_ctrl 의 pending 어서션이 실시간 위반을 잡는다.
     wire                 fc_valid;
     wire [`KWS_N_CH-1:0] fc_frame;
     wire                 fc_busy;
