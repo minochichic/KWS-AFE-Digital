@@ -1184,20 +1184,29 @@ one-hot 으로 인코딩했고, one-hot 에서 `S_IDLE` 은 비트 0 이 1 이�
 > `y_lat`/`x_lat` 는 리셋되는데 이것만 빠져 있다. `s1_push` 가 0 으로 리셋되므로
 > 로드되기 전엔 아무도 안 읽어서 기능상 안전하지만, 경고가 뜬 이유가 이것이다.
 
-### 다음 — 보드 레벨 래퍼
+### 보드 레벨 래퍼와 XSim 통합 검증 (2026-09-10)
 
-여기까지가 「합성이 되나」였다. **아직 안 된 것은 「보드에 올라가나」다.**
+`kws_board_top`이 `cmp[15:0]`, 리셋·start 동기화, `kws_frame_ctrl`, 가중치가 연결된
+`kws_top_synth`, busy 합성, 클래스 래치를 한 계층에 묶었다. 이 top으로 Vivado 합성을
+다시 돌렸을 때 `cmp`를 포함한 25개 포트 제약이 적용됐고 오류 없이 끝났다. 보드 래퍼
+포함 결과는 LUT 20,236개(42%), FF 16,535개(17%), RAMB18 6개, DSP48E1 7개다.
+50 MHz 합성 타이밍 추정은 WNS +6.003 ns, TNS 0 ns로 통과했다. 이 값은 배치·배선 전
+합성 결과이므로 최종 구현 타이밍은 `place_design`/`route_design` 뒤에 다시 확인한다.
 
-`kws_top_synth` 에는 `cmp` 도 `class_*` 도 없다(`rtl/constraints/kws_top.xdc` [3]).
-그래서 합성 로그의 `== applied 9 pin constraints ==` 는 `clk`/`rst_n`/`start`/
-`class_valid`/`class_idx[0..3]`/`busy` 뿐이고, **§6 에서 확정한 `cmp` 16 핀은 아직
-한 번도 밟히지 않았다.**
+`tb_board_top`은 각 비교기 채널에 서로 다른 시점의 1클럭 펄스를 넣는다. 따라서 완성된
+16비트 프레임을 직접 주는 테스트가 아니라 다음 경로 전체를 검증한다:
 
-래퍼가 생기면 세 가지가 한꺼번에 열린다:
+```
+cmp 펄스 -> 2FF 동기화 -> sticky OR -> 14+100+14 프레임
+         -> Conv1/B1/B2/B3/tail -> class_valid + class_idx
+```
 
-1. `cmp` 제약이 실제로 걸린다 — `write_bitstream` 앞 DRC(UCIO-1/NSTD-1)가 검사한다
-2. `-impl` 이 의미를 갖는다 — 배치배선, 진짜 비트스트림
-3. **`kws_frame_ctrl` 과 `kws_top` 을 함께 시뮬할 수 있다.** `docs/hanback_kit.md`
-   §3.3 의 경고대로, 둘은 아직 **따로만** 검증됐다 — `tb_frame_ctrl` 은
-   `FRAME_CYCLES=24` 로 홀로, `tb_top` 은 프레임을 직접 먹인다. "22 배 여유" 는 두
-   숫자를 나눠서 얻은 값이지 실행으로 확인한 것이 아니다.
+XSim 2026.1 결과는 2클립 모두 128프레임 일치, class 5/11 일치, 0 failures다.
+`FRAME_CYCLES=24,000`으로 실행해 Conv1의 최악 22,528 term cycle보다 작은 여유에서도
+프레임 유실이 없음을 확인했다. 이 통합 테스트가 두 버그를 찾아냈다:
+
+1. `kws_frame_ctrl`은 pending 데이터가 accept될 때까지 `valid`와 데이터를 유지하도록
+   표준 ready/valid 방식으로 수정했다.
+2. 보드 출력의 `class_valid`를 한 클럭 늦춰 래치된 `class_idx`와 같은 사이클에 맞췄다.
+
+Windows 실행 명령과 GUI 여는 법은 `rtl/RUNNING.md`에 있다.

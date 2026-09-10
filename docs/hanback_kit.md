@@ -245,10 +245,14 @@ create_clock -period 20.000     FRAME_CYCLES = 50e6 x 10 / 1000 = 500,000
 > 편이 안전하다. 핀 성질이 배제됐으므로, `walk_probe` 에서 클럭이 안 들어오면
 > 원인은 이쪽이다.
 
-> ⚠️ `kws_frame_ctrl` 과 `kws_top` 은 **아직 함께 시뮬된 적이 없다.**
-> `tb_frame_ctrl` 은 `FRAME_CYCLES = 24` 로 홀로 돌고, `tb_top` 은 프레임을 직접
-> 먹인다. 위 22× 여유는 두 숫자를 나눠서 얻은 것이지 실행으로 확인한 게 아니다.
-> 보드 상위 래퍼를 만들 때 함께 돌려야 한다.
+> ✅ **통합 XSim 완료 (2026-09-10).** `tb_board_top`이 비교기 16가닥의 서로 다른
+> 시점 펄스부터 `kws_frame_ctrl`·전체 네트워크·래치된 클래스 출력까지 함께 돌렸다.
+> 실제 500,000클럭보다 훨씬 빡빡한 `FRAME_CYCLES = 24,000`에서 2클립 × 128프레임과
+> 최종 class 5/11이 모두 일치했다. 프레임 컨트롤러의 `frame edge with the previous
+> frame unread` assertion도 발생하지 않았다. 따라서 위 22× 여유는 산술 추정뿐 아니라
+> 통합 실행으로도 확인됐다. 로그: `out/xsim/board_top/xsim.log`. 같은 래퍼를 Vivado로
+> 재합성한 결과 25개 핀 제약 적용, LUT 20,236개, FF 16,535개, RAMB18 6개, DSP 7개이며
+> 50 MHz 합성 타이밍 추정도 WNS +6.003 ns로 통과했다.
 
 ---
 

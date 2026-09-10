@@ -179,18 +179,27 @@ module kws_board_top #(
     // 확장 포트 핀 22~25 로 나가고 동료 기판은 그 핀을 연결하지 않았다. 핀표가
     // 오면 배선만 옮기면 되고 이 래치는 그대로다.
     reg [3:0] class_idx_r;
+    reg       class_valid_r;
 
     always @(posedge clk or negedge rst_n_s) begin
-        if (!rst_n_s)        class_idx_r <= 4'd0;
-        else if (cls_valid)  class_idx_r <= cls_idx;
+        if (!rst_n_s) begin
+            class_idx_r   <= 4'd0;
+            class_valid_r <= 1'b0;
+        end else begin
+            class_valid_r <= cls_valid;
+            if (cls_valid) class_idx_r <= cls_idx;
+        end
     end
 
     assign class_idx = class_idx_r;
 
-    // class_valid 는 그대로 내보낸다. 이쪽은 "새 결과가 나왔다" 는 스트로브이고,
-    // 값을 들고 있는 것은 위 래치의 일이다. LED 로 눈에 보이게 하려면 여기에
-    // 스트레처가 필요하지만 그것은 LED 핀표가 온 뒤에 정할 일이다.
-    assign class_valid = cls_valid;
+    // class_valid is delayed with class_idx so the output pair has normal
+    // synchronous-valid timing. An LED pulse stretcher can be added after the
+    // board's LED/FND pin map is known.
+    // Delay valid by the same cycle used to latch class_idx. A consumer that
+    // samples class_idx when class_valid is high therefore sees the new class,
+    // while class_idx remains stable between classifications for an LED/FND.
+    assign class_valid = class_valid_r;
 
 `ifdef KWS_ASSERT
     // 이 래퍼가 존재하는 이유 자체를 검사한다. FRAME_CYCLES 는 보드 사실에서

@@ -150,6 +150,10 @@ module kws_block #(
     reg                        skip_iv;
     wire                       skip_busy;
     wire signed [SKIP_ACC-1:0] skip_val;
+    reg                          s1pw_iv;
+    wire                         s1pw_busy, s1pw_av;
+    wire [CO_BITS-1:0]           s1pw_ach;
+    wire signed [S1_PW_ACC-1:0]  s1pw_aval;
 
     generate
     if (SKIP_ID != 0) begin : g_skip_identity
@@ -180,11 +184,6 @@ module kws_block #(
         assign skip_val = skip_acc[s1pw_ach];
     end
     endgenerate
-
-    reg                          s1pw_iv;
-    wire                         s1pw_busy, s1pw_av;
-    wire [CO_BITS-1:0]           s1pw_ach;
-    wire signed [S1_PW_ACC-1:0]  s1pw_aval;
 
     kws_pw_conv #(.C_IN(C_MID), .C_OUT(C_OUT), .ACC_BITS(S1_PW_ACC),
                   .WORD_BITS(WORD_BITS), .W_FILE(S1_PW_W), .T_FILE(""),

@@ -48,8 +48,8 @@ module kws_frame_ctrl #(
 
     // one frame at a time into kws_top, which answers with in_ready
     input  wire             out_ready,
-    output reg              out_valid,
-    output reg  [N_CH-1:0]  out_frame,
+    output wire             out_valid,
+    output wire [N_CH-1:0]  out_frame,
     output wire             busy
 );
 
@@ -111,16 +111,19 @@ module kws_frame_ctrl #(
     reg               pending;  // a frame is waiting for the consumer
     reg [N_CH-1:0]    held;
 
-    wire take = pending && out_ready;
+    // Standard ready/valid contract: once a frame is pending, valid and data
+    // stay asserted until the consumer accepts them. Registering out_valid one
+    // cycle after observing out_ready loses a frame when ready drops in that
+    // cycle, which Conv1 does after every accepted input.
+    assign out_valid = pending;
+    assign out_frame = held;
+    wire take = out_valid && out_ready;
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             st <= S_IDLE; fc <= {FC_BITS{1'b0}}; cnt <= {TB_BITS{1'b0}};
             pending <= 1'b0; held <= {N_CH{1'b0}};
-            out_valid <= 1'b0; out_frame <= {N_CH{1'b0}};
         end else begin
-            out_valid <= 1'b0;
-
             if (start) begin
                 // the left padding is emitted at once; there is no time
                 // associated with it, only with the 100 real windows
@@ -128,8 +131,6 @@ module kws_frame_ctrl #(
                 pending <= 1'b1; held <= {N_CH{1'b0}};
             end else begin
                 if (take) begin
-                    out_valid <= 1'b1;
-                    out_frame <= held;
                     pending   <= 1'b0;
                     cnt       <= cnt + ONE;
                 end

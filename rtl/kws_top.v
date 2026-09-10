@@ -115,12 +115,12 @@ module kws_top #(
     input  wire                rst_n,
 
     input  wire                start,     // new clip
+    // Ready/valid input. The source keeps in_valid and in_frame stable until
+    // the cycle in which in_ready is high.
     input  wire                in_valid,  // one AFE frame, +-1, N_CH wide
     input  wire [N_CH-1:0]     in_frame,
-    // "a frame offered THIS cycle will be taken". Not derivable from `busy`,
-    // which is high for the whole clip, and not from conv1's busy either: that
-    // rises a cycle after the push reaches it, so a caller watching it pushes
-    // again into the gap and the frame is dropped without a trace.
+    // A frame transfers only when in_valid && in_ready. in_ready is not
+    // derivable from busy, which stays high for the whole clip.
     output wire                in_ready,
     output wire                busy,
 
@@ -305,6 +305,10 @@ module kws_top #(
         .start(start), .in_valid(c2_ov), .in_frame(c2_of), .busy(tl_busy),
         .class_valid(class_valid), .class_idx(class_idx));
 
+    // Completion pulses are consumed by the sequencer below, so Verilog-2001
+    // requires these declarations to appear before that always block.
+    reg pa_seen, pb_seen, pc_seen, pd_seen;
+
     // ---- the sequencer ----------------------------------------------------- //
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -381,7 +385,6 @@ module kws_top #(
     //
     // Phase 5 had this from the start (pd_seen) and phases 2-4 did not, which
     // is how a condition that can never be satisfied got written three times.
-    reg pa_seen, pb_seen, pc_seen, pd_seen;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n || start) begin
             pa_seen <= 1'b0; pb_seen <= 1'b0;
@@ -409,13 +412,6 @@ module kws_top #(
     end
     always @(posedge clk) if (pd_rs && !pd_full) begin
         $display("ASSERT %m: the tail started before plane D filled"); $finish;
-    end
-    // The drop that caused a hang rather than a failure. There is no else on
-    // the S_C1 push branch, so a frame offered while conv1 is busy vanishes and
-    // pc stops short -- plane A never fills and the phase waits forever.
-    always @(posedge clk) if (in_valid && !in_ready) begin
-        $display("ASSERT %m: frame offered while not ready -- it is dropped");
-        $finish;
     end
     always @(posedge clk) if (phase_cyc > PHASE_LIMIT[23:0]) begin
         $display("ASSERT %m: phase %0d stalled for %0d cycles (pc=%0d)",

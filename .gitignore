@@ -88,3 +88,10 @@ vivado*.str
 *.hw/
 *.runs/
 *.sim/
+
+# Vivado Simulator (XSim). Logs and waveform databases are written under
+# /out/ by rtl/run_xsim.ps1; xelab still creates its compiled snapshot here.
+/xsim.dir/
+xvlog.pb
+xelab.pb
+xsim*.jou

@@ -10,6 +10,28 @@
 ./rtl/run_tb.sh <모듈> [태그]
 ```
 
+Windows에서 Vivado Simulator(XSim)를 쓸 때는 다음 명령을 쓴다:
+
+```powershell
+# 비교기 펄스 -> 128 프레임 (빠른 경계 테스트)
+powershell -ExecutionPolicy Bypass -File rtl/run_xsim.ps1 -Name frame_ctrl
+
+# 비교기 펄스 -> 프레임 컨트롤러 -> 전체 네트워크 -> 최종 클래스
+powershell -ExecutionPolicy Bypass -File rtl/run_xsim.ps1 -Name board_top
+
+# 같은 테스트를 XSim GUI에서 열기
+powershell -ExecutionPolicy Bypass -File rtl/run_xsim.ps1 -Name board_top -Gui
+```
+
+`run_xsim.ps1`도 기본 태그는 `xl_g12`다. `rtl/gen/xl_g12/`에 커밋된 35개
+가중치/임계값 HEX와 `golden/input.hex`, `golden/predictions_fixed.txt`를 사용하므로
+기본 회귀 테스트에는 학습 체크포인트나 원격 파일이 필요 없다. 실제 AFE 측정 파형을
+시험할 때만 `paths.vh`를 포함한 별도 벡터 폴더를 `-Vectors <폴더>`로 지정한다.
+
+배치 실행 결과는 `out/xsim/<모듈>/xsim.log`, 파형은 같은 폴더의 `.wdb`에 남는다.
+스크립트가 `FAIL`/`ASSERT`와 마지막 `0 failures`를 검사하므로 XSim의 종료 코드가 0인
+것만으로 통과 처리하지 않는다.
+
 `태그` 는 어느 export 를 쓸지이고 기본값은 `xl_g12` 다. **RTL 은 태그를 모른다** —
 `rtl/*.v` 에 태그 문자열이 한 번도 안 나온다.
 
