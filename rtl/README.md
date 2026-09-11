@@ -1,5 +1,8 @@
 # RTL 설계 노트
 
+> **신호와 계층을 먼저 찾으려면 [`docs/rtl_signal_map.md`](../docs/rtl_signal_map.md).**
+> `cmp`부터 `class_idx`까지의 연결, handshake, B1 skip, XSim/Vivado 추적 명령을 한곳에 모았다.
+
 `docs/ICD.md`가 아날로그 경계를 정한다면, 여기는 **경계 오른쪽의 설계 결정**을 적는다.
 결정을 바꾸려면 여기부터 고친다.
 
