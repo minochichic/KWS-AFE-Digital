@@ -103,15 +103,21 @@ grep -qE ', 0 failures' "$LOG" || { echo "no pass line in output" >&2; exit 1; }
 # that rots. docs/make_site.py reads this file; nothing else may write it.
 RES="rtl/results.json"
 CHECKED=$(grep -oE '[0-9]+ frames checked' "$LOG" | tail -1 | grep -oE '^[0-9]+')
-python3 - "$RES" "$NAME" "${CHECKED:-0}" "$LOG" <<'EOPY'
+python3 - "$RES" "$NAME" "${CHECKED:-0}" "$LOG" "$TAG" <<'EOPY'
 import json, pathlib, subprocess, sys, datetime
-path, name, checked, log = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
+path, name, checked, log, tag = sys.argv[1:6]
+checked = int(checked)
 p = pathlib.Path(path)
 data = json.loads(p.read_text()) if p.is_file() else {}
 sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"],
                      capture_output=True, text=True).stdout.strip()
+# 키는 모듈 이름 하나다. 즉 **같은 모듈을 다른 태그로 돌리면 앞 기록을 덮는다** --
+# 이 파일은 "지금 검증된 상태" 를 담지 이력을 담지 않는다. 그래서 태그를 안 적으면
+# "무엇을 무엇에 대해 검증했는가" 의 뒷부분이 통째로 빈다. 이 파일이 존재하는 이유가
+# 바로 그 문장인데(아래 원주석) 정작 대상이 빠져 있었다.
 data[name] = {
     "passed": True,
+    "tag": tag,
     "checked": checked,
     "commit": sha,
     "when": datetime.datetime.now().astimezone().isoformat(timespec="seconds"),
