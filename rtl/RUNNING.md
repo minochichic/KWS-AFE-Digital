@@ -1,5 +1,8 @@
 # RTL 돌리는 법
 
+> 파형과 schematic의 신호 이름은 [`docs/rtl_signal_map.md`](../docs/rtl_signal_map.md)에서
+> 블록별 입출력과 생산자/소비자 관계로 확인한다.
+
 `rtl/README.md` 가 **왜 그렇게 설계했나**라면, 여기는 **어떻게 돌리나**다.
 
 ---
