@@ -49,6 +49,10 @@ TB="rtl/tb/tb_${NAME}.v"
 # (dw_conv wraps bin_mac) and a missing one is a link error, not a
 # design question worth asking the caller about
 ALL_RTL=$(ls rtl/*.v)
+# kws_board_top 은 kws_top_synth 를 인스턴스화하는데 그 파일은 rtl/synth/ 에 있어
+# 위 글롭에 안 걸린다. board_top 을 돌릴 때만 붙인다 -- 다른 테스트에까지 넣으면
+# 매크로로 파라미터를 전부 박은 네트워크가 한 벌 더 엘라보레이션된다.
+[ "$NAME" = board_top ] && ALL_RTL="$ALL_RTL $(ls rtl/synth/*.v)"
 [ -f "$DUT" ] || { echo "no such module: $DUT" >&2; exit 1; }
 [ -f "$TB" ]  || { echo "no testbench: $TB" >&2; exit 1; }
 
@@ -60,7 +64,7 @@ if command -v verilator >/dev/null 2>&1; then
     # than the one that runs. Lint should see the code the simulator sees.
     # -Wall minus the style-only ones that fight Verilog-2001 conventions.
     echo "tag: ${TAG}"
-    verilator --lint-only -Wall -DKWS_ASSERT \
+    verilator --lint-only -Wall -DKWS_ASSERT -I. \
               -Wno-DECLFILENAME -Wno-VARHIDDEN \
               --top-module "kws_${NAME}" $ALL_RTL
     echo "lint clean"
@@ -73,7 +77,15 @@ OUT="$(mktemp -d)/tb_${NAME}"
 LOG="${OUT}.log"
 # -DKWS_ASSERT arms the accumulator bound checks inside the DUT.
 # -I. so the testbench can include the generated vectors/expect.vh by repo path.
-iverilog -g2005 -Wall -DKWS_ASSERT -I. -o "$OUT" $ALL_RTL "$TB"
+#
+# -s 로 루트를 못박는다. 없으면 iverilog 가 **아무도 인스턴스화하지 않는 모듈을
+# 전부 루트로 잡아** 엘라보레이션한다. kws_board_top 이 생기면서(2026-09-10) 그게
+# 문제가 됐다 -- 그 모듈이 rtl/synth/kws_top_synth 를 부르는데 위 글롭에 없어서
+# **모든 단위 테스트가** "Unknown module type: kws_top_synth" 로 죽었다.
+#
+# verilator 는 --top-module 이 있어서 거기까지 가지 않았고, 그래서 lint 는
+# 통과하고 시뮬만 죽는 모양이 됐다. 루트를 양쪽 다 못박아 그 비대칭을 없앤다.
+iverilog -g2005 -Wall -DKWS_ASSERT -I. -s "tb_${NAME}" -o "$OUT" $ALL_RTL "$TB"
 vvp "$OUT" | tee "$LOG"
 
 # Do not rely on $fatal to set the exit status: it is a SystemVerilog task and
