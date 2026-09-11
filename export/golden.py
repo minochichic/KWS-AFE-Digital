@@ -398,18 +398,41 @@ def main() -> None:
 
     run = Path(args.runs) / args.tag
     cfg = load_config(str(run / "config.yaml"))
-    afe = AFEFrontend(cfg.afe).eval()
     model = BinaryMatchboxNet(cfg.model).eval()
     ck = torch.load(run / "best.pt", map_location="cpu", weights_only=True)
     model.load_state_dict(ck["model"])
-    load_afe_state(afe, ck["afe"])
 
-    te = build_dataloaders(cfg.data, cfg.train.batch_size, cfg.afe.sample_rate,
-                           seed=cfg.train.seed)[2]
-    wav, labels = next(iter(te))
-    wav, labels = wav[:args.clips], labels[:args.clips]
-    with torch.no_grad():
-        x = afe(wav, target_T=cfg.model.T)
+    # 런이 두 종류이고 입력을 얻는 길이 다르다. `train.py` 가 갈랐던 것과 **같은
+    # 조건**으로 가른다 (`train.py:369`) -- 거기서 갈린 결과가 체크포인트에 그대로
+    # 남기 때문이다.
+    #
+    #   오디오 런  : 파형 -> AFE(학습된 threshold) -> 프레임.  `ck["afe"]` 가 있다.
+    #   프레임 런  : 동료 회로가 필터·검출기·비교기를 이미 통과시켰다. 흉내낼 AFE 가
+    #                없어 `Trainer(afe=None)` 으로 돌았고, 체크포인트에 "afe" 키가
+    #                아예 없다.
+    #
+    # 이 분기가 없어서 프레임 런(`bd_v4frames`)이 `KeyError: 'afe'` 로 죽었다
+    # (2026-09-11). 보드에 실을 가중치가 바로 그쪽이라 검증이 통째로 막혀 있었다.
+    #
+    # 프레임 런은 로더가 내는 것이 곧 모델 입력이다 -- `analog_spectrogram.py` 의
+    # `__getitem__` 이 float32 의 ±1 을 내고 `Trainer._forward` 는 afe 가 없으면
+    # 그대로 `model(x)` 에 넣는다. 그래서 여기서도 변환하지 않는다.
+    if getattr(cfg.data, "analog_csv_root", ""):
+        from data.analog_spectrogram import build_analog_dataloaders
+        te = build_analog_dataloaders(cfg.data, cfg.train.batch_size,
+                                      target_T=cfg.model.T,
+                                      seed=cfg.train.seed)[2]
+        x, labels = next(iter(te))
+        x, labels = x[:args.clips], labels[:args.clips]
+    else:
+        afe = AFEFrontend(cfg.afe).eval()
+        load_afe_state(afe, ck["afe"])
+        te = build_dataloaders(cfg.data, cfg.train.batch_size, cfg.afe.sample_rate,
+                               seed=cfg.train.seed)[2]
+        wav, labels = next(iter(te))
+        wav, labels = wav[:args.clips], labels[:args.clips]
+        with torch.no_grad():
+            x = afe(wav, target_T=cfg.model.T)
 
     out = Path(args.out) if args.out else run / "rtl" / "golden"
     man = dump_golden(model, x, out, args.tag)
