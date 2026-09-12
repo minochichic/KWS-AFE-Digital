@@ -1,0 +1,458 @@
+<title>언제 추론할 것인가</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap">
+<style>
+:root{
+  --paper:#F1F2EE; --surface:#FBFBF9; --sunk:#E6E8E2;
+  --ink:#1B1D1A; --ink2:#4C514A; --ink3:#7E847B;
+  --rule:#D2D6CC; --rule2:#BFC4B8;
+  --sig:#1B6E70; --word:#8A5A1E; --miss:#BB3A2B; --ok:#2F7A4A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
+    --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
+    --rule:#2C312B; --rule2:#3C423A;
+    --sig:#4EB6B2; --word:#D2A054; --miss:#E4705B; --ok:#6FC08C;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131512; --surface:#1B1E1A; --sunk:#0E100D;
+  --ink:#E9EBE4; --ink2:#AFB5AA; --ink3:#7C8379;
+  --rule:#2C312B; --rule2:#3C423A;
+  --sig:#4EB6B2; --word:#D2A054; --miss:#E4705B; --ok:#6FC08C;
+}
+
+*{box-sizing:border-box}
+body{background:var(--paper); color:var(--ink); margin:0;
+  font-family:'Source Sans 3',system-ui,-apple-system,sans-serif;
+  font-size:16px; line-height:1.62; -webkit-font-smoothing:antialiased}
+.wrap{max-width:960px; margin:0 auto; padding:48px 24px 96px}
+
+header.mast{border-bottom:2px solid var(--ink); padding-bottom:20px;
+  display:flex; flex-wrap:wrap; align-items:flex-end; gap:18px 32px}
+h1{font-family:Archivo,system-ui,sans-serif; font-weight:700; font-size:38px;
+  line-height:1.08; letter-spacing:-.015em; margin:0; text-wrap:balance; flex:1 1 320px}
+.sub{font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink3);
+  letter-spacing:.06em; text-transform:uppercase; line-height:1.9}
+.sub b{color:var(--ink2); font-weight:500}
+.lede{margin:26px 0 0; font-size:18px; color:var(--ink2); max-width:64ch}
+.lede strong{color:var(--ink); font-weight:600}
+
+section{margin-top:54px}
+.eyebrow{display:flex; align-items:baseline; gap:14px; margin-bottom:6px}
+.num{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500;
+  color:var(--sig); letter-spacing:.1em; border:1px solid var(--rule2);
+  padding:2px 7px; border-radius:3px}
+h2{font-family:Archivo,sans-serif; font-weight:600; font-size:25px;
+  letter-spacing:-.012em; margin:0; text-wrap:balance}
+.dek{color:var(--ink2); margin:8px 0 22px; max-width:66ch}
+p{margin:0 0 14px; max-width:68ch}
+code{font-family:'IBM Plex Mono',monospace; font-size:.9em;
+  background:var(--sunk); padding:1px 5px; border-radius:3px}
+
+.plate{background:var(--surface); border:1px solid var(--rule);
+  border-radius:8px; padding:20px; overflow-x:auto}
+.plate svg{display:block; width:100%; height:auto; min-width:640px}
+.cap{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink3);
+  margin-top:12px; padding-top:10px; border-top:1px solid var(--rule)}
+
+/* 타임라인 공통 */
+.ax{stroke:var(--ink3); stroke-width:1.2}
+.tick{stroke:var(--rule2); stroke-width:1}
+.ttl{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink3)}
+.word{fill:var(--word); opacity:.85}
+.wordl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--surface)}
+.win{fill:none; stroke:var(--sig); stroke-width:1.5}
+.win.miss{stroke:var(--miss); stroke-dasharray:5 4}
+.win.faint{stroke:var(--rule2); stroke-width:1.2}
+.win.good{stroke:var(--ok); stroke-width:2.2; fill:var(--ok); fill-opacity:.1}
+.winl{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink2)}
+.ovl{fill:var(--word); opacity:.28}
+.pct{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.pct.good{fill:var(--ok)}
+.lane{font-family:Archivo,sans-serif; font-size:14px; font-weight:600; fill:var(--ink)}
+.sub2{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+.rate{font-family:'IBM Plex Mono',monospace; font-size:12.5px; fill:var(--ink)}
+.big{font-family:Archivo,sans-serif; font-size:17px; font-weight:700; fill:var(--sig)}
+rect.cap{fill:var(--sig); opacity:.22; stroke:var(--sig); stroke-width:1.4}
+rect.rep{fill:var(--word); opacity:.22; stroke:var(--word); stroke-width:1.4}
+.fr{stroke:var(--ink3); stroke-width:.6; opacity:.55}
+
+/* 예산 */
+.idle{fill:var(--sunk); stroke:var(--rule2); stroke-width:1}
+.busy{fill:var(--sig); opacity:.8}
+
+/* 투표 */
+.ans{stroke:var(--rule2); stroke-width:1}
+.ans.sil{fill:var(--sunk)}
+.ans.unk{fill:var(--rule)}
+.ans.yes{fill:var(--ok); opacity:.8}
+.ans.no{fill:var(--rule)}
+.ansl{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink)}
+.fire{stroke:var(--ok); stroke-width:2; fill:none}
+.firel{font-family:'IBM Plex Mono',monospace; font-size:12px; fill:var(--ok)}
+
+/* 블록도 */
+.blk{fill:var(--surface); stroke-width:1.5}
+.blk.have{stroke:var(--rule2); stroke-dasharray:5 4}
+.blk.new{stroke:var(--sig)}
+.bt{font-family:Archivo,sans-serif; font-size:16px; font-weight:700; fill:var(--ink)}
+.bs{font-family:'IBM Plex Mono',monospace; font-size:10.5px; fill:var(--ink3)}
+.bs.new{fill:var(--sig)}
+.bi{font-family:'Source Sans 3',sans-serif; font-size:13px; fill:var(--ink2)}
+.lnk{stroke:var(--ink2); stroke-width:1.5; fill:none}
+.ll{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
+
+.warn{border-left:3px solid var(--miss); background:var(--surface);
+  border-top:1px solid var(--rule); border-right:1px solid var(--rule);
+  border-bottom:1px solid var(--rule); border-radius:0 7px 7px 0;
+  padding:16px 20px; margin:20px 0 0}
+.warn h3{font-family:Archivo,sans-serif; font-size:15px; font-weight:600;
+  margin:0 0 6px; color:var(--miss)}
+.warn p{font-size:14.5px; color:var(--ink2)}
+
+.steps{list-style:none; padding:0; margin:0; display:grid; gap:2px;
+  counter-reset:s}
+.steps li{background:var(--surface); border:1px solid var(--rule);
+  padding:14px 18px 14px 52px; position:relative; font-size:15px; color:var(--ink2)}
+.steps li:first-child{border-radius:8px 8px 0 0}
+.steps li:last-child{border-radius:0 0 8px 8px}
+.steps li b{color:var(--ink); font-weight:600}
+.steps li::before{content:counter(s); counter-increment:s;
+  font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--sig);
+  position:absolute; left:18px; top:15px; border:1px solid var(--rule2);
+  border-radius:3px; padding:1px 6px}
+
+footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
+  font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ink3);
+  display:flex; flex-wrap:wrap; gap:8px 24px}
+@media (max-width:640px){h1{font-size:29px} h2{font-size:21px} .wrap{padding:32px 16px 64px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <h1>언제 추론할 것인가</h1>
+  <div class="sub">
+    프레임 <b>10 ms</b> · 창 <b>1.28 s</b><br>
+    추론 <b>57.4 ms</b> @ 50 MHz<br>
+    아이디어만 · 코드 변경 없음
+  </div>
+</header>
+
+<p class="lede">지금 <code>start</code> 는 확장 포트의 핀 하나이고 DIP 스위치를
+가정하고 있다. 보드에서는 <strong>아무도 누르지 않는다.</strong> 비교기는 쉬지 않고
+들어오는데 언제 1초를 잘라 신경망에 넣을지를 정하는 것이 아직 없다.</p>
+
+<section>
+  <div class="eyebrow"><span class="num">문제</span><h2>그냥 반복하면 단어가 잘린다</h2></div>
+  <p class="dek">가장 단순한 답은 <code>start = ~busy</code> 로 1.28초마다 쉬지 않고
+  도는 것이다. 창이 서로 겹치지 않으므로 <strong>단어가 경계에 걸리면 어느 쪽도
+  온전히 보지 못한다.</strong></p>
+  <div class="plate">
+    <svg viewBox="0 0 900 232" role="img" aria-label="겹치지 않는 창에서 단어가 경계에 걸려 잘리는 모습">
+<line class="ax" x1="58.0" y1="46" x2="858.0" y2="46"/>
+<line class="tick" x1="58.0" y1="42" x2="58.0" y2="50"/>
+<text class="ttl" x="58.0" y="34" text-anchor="middle">0.0s</text>
+<line class="tick" x1="158.0" y1="42" x2="158.0" y2="50"/>
+<text class="ttl" x="158.0" y="34" text-anchor="middle">0.5s</text>
+<line class="tick" x1="258.0" y1="42" x2="258.0" y2="50"/>
+<text class="ttl" x="258.0" y="34" text-anchor="middle">1.0s</text>
+<line class="tick" x1="358.0" y1="42" x2="358.0" y2="50"/>
+<text class="ttl" x="358.0" y="34" text-anchor="middle">1.4s</text>
+<line class="tick" x1="458.0" y1="42" x2="458.0" y2="50"/>
+<text class="ttl" x="458.0" y="34" text-anchor="middle">1.9s</text>
+<line class="tick" x1="558.0" y1="42" x2="558.0" y2="50"/>
+<text class="ttl" x="558.0" y="34" text-anchor="middle">2.4s</text>
+<line class="tick" x1="658.0" y1="42" x2="658.0" y2="50"/>
+<text class="ttl" x="658.0" y="34" text-anchor="middle">2.9s</text>
+<line class="tick" x1="758.0" y1="42" x2="758.0" y2="50"/>
+<text class="ttl" x="758.0" y="34" text-anchor="middle">3.4s</text>
+<line class="tick" x1="858.0" y1="42" x2="858.0" y2="50"/>
+<text class="ttl" x="858.0" y="34" text-anchor="middle">3.8s</text>
+<rect class="word" x="266.3" y="58" width="187.5" height="26" rx="4"/>
+<text class="wordl" x="360.1" y="76" text-anchor="middle">"yes" 발화 · 900 ms</text>
+<rect class="win miss" x="58.0" y="104" width="266.7" height="26" rx="4"/>
+<text class="winl" x="66.0" y="122">창 0</text>
+<rect class="ovl" x="266.3" y="104" width="58.3" height="26"/>
+<text class="pct" x="316.7" y="122" text-anchor="end">단어의 31% 만</text>
+<rect class="win miss" x="324.7" y="144" width="266.7" height="26" rx="4"/>
+<text class="winl" x="332.7" y="162">창 1</text>
+<rect class="ovl" x="324.7" y="144" width="129.2" height="26"/>
+<text class="pct" x="583.3" y="162" text-anchor="end">단어의 69% 만</text>
+<rect class="win" x="591.3" y="184" width="266.7" height="26" rx="4"/>
+<text class="winl" x="599.3" y="202">창 2</text>
+</svg>
+    <div class="cap">창 1 과 창 2 가 단어를 나눠 갖는다 · 어느 쪽도 학습 때 본
+    모양이 아니다 · 단어가 1초 가까이라 이 일은 자주 일어난다</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">해법</span><h2>창을 100 ms 씩 밀면서 여러 번 본다</h2></div>
+  <p class="dek">같은 소리를 <strong>여러 정렬로</strong> 본다. 학습 데이터(GSC)는
+  단어가 1초 안에 대충 가운데 놓여 있으므로, 미는 창들 중 하나는 그 모양에 가깝게
+  떨어진다. 경계 문제가 사라지는 것이 아니라 <strong>매번 다른 곳에 생겼다가
+  지나간다.</strong></p>
+  <div class="plate">
+    <svg viewBox="0 0 900 320" role="img" aria-label="100 ms 마다 미는 슬라이딩 창이 여러 정렬을 시도하는 모습">
+<line class="ax" x1="58.0" y1="46" x2="858.0" y2="46"/>
+<line class="tick" x1="58.0" y1="42" x2="58.0" y2="50"/>
+<text class="ttl" x="58.0" y="34" text-anchor="middle">0.0s</text>
+<line class="tick" x1="158.0" y1="42" x2="158.0" y2="50"/>
+<text class="ttl" x="158.0" y="34" text-anchor="middle">0.5s</text>
+<line class="tick" x1="258.0" y1="42" x2="258.0" y2="50"/>
+<text class="ttl" x="258.0" y="34" text-anchor="middle">1.0s</text>
+<line class="tick" x1="358.0" y1="42" x2="358.0" y2="50"/>
+<text class="ttl" x="358.0" y="34" text-anchor="middle">1.4s</text>
+<line class="tick" x1="458.0" y1="42" x2="458.0" y2="50"/>
+<text class="ttl" x="458.0" y="34" text-anchor="middle">1.9s</text>
+<line class="tick" x1="558.0" y1="42" x2="558.0" y2="50"/>
+<text class="ttl" x="558.0" y="34" text-anchor="middle">2.4s</text>
+<line class="tick" x1="658.0" y1="42" x2="658.0" y2="50"/>
+<text class="ttl" x="658.0" y="34" text-anchor="middle">2.9s</text>
+<line class="tick" x1="758.0" y1="42" x2="758.0" y2="50"/>
+<text class="ttl" x="758.0" y="34" text-anchor="middle">3.4s</text>
+<line class="tick" x1="858.0" y1="42" x2="858.0" y2="50"/>
+<text class="ttl" x="858.0" y="34" text-anchor="middle">3.8s</text>
+<rect class="word" x="266.3" y="58" width="187.5" height="26" rx="4"/>
+<text class="wordl" x="360.1" y="76" text-anchor="middle">"yes"</text>
+<rect class="win faint" x="162.2" y="100" width="266.7" height="18" rx="3"/>
+<rect class="win faint" x="183.0" y="124" width="266.7" height="18" rx="3"/>
+<rect class="win faint" x="203.8" y="148" width="266.7" height="18" rx="3"/>
+<rect class="win good" x="224.7" y="172" width="266.7" height="18" rx="3"/>
+<text class="pct good" x="499.3" y="185">단어가 거의 가운데 — 학습 분포와 같은 모양</text>
+<rect class="win faint" x="245.5" y="196" width="266.7" height="18" rx="3"/>
+<rect class="win faint" x="266.3" y="220" width="266.7" height="18" rx="3"/>
+<rect class="win faint" x="287.2" y="244" width="266.7" height="18" rx="3"/>
+<rect class="win faint" x="308.0" y="268" width="266.7" height="18" rx="3"/>
+<text class="pct" x="162.2" y="308">창 간격 100 ms · 창 폭 1.28 s · 같은 단어를 여덟 가지 정렬로 본다</text>
+</svg>
+    <div class="cap">창 폭은 그대로 1.28 s · 시작점만 100 ms 씩 민다 ·
+    같은 단어에 대해 열 번 넘게 답이 나오고 그 중 잘 맞은 것이 섞인다</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">구조</span><h2>담는 속도와 꺼내는 속도가 다르다</h2></div>
+  <p class="dek">이것이 설계의 핵심이다. <strong>프레임을 10 ms 간격으로 신경망에
+  줄 필요가 없다.</strong> <code>kws_top</code> 은 ready/valid 로 받으므로 받아들일 수
+  있는 만큼 빨리 밀어넣으면 되고, 그 한계는 conv1 이 정해서 프레임당 0.45 ms 다.</p>
+  <div class="plate">
+    <svg viewBox="0 0 900 250" role="img" aria-label="포착과 재생의 속도 차이">
+<text class="lane" x="140" y="76" text-anchor="end">포착</text>
+<rect class="cap" x="150.0" y="56" width="660.0" height="30" rx="4"/>
+<line class="fr" x1="150.0" y1="56" x2="150.0" y2="86"/>
+<line class="fr" x1="183.0" y1="56" x2="183.0" y2="86"/>
+<line class="fr" x1="216.0" y1="56" x2="216.0" y2="86"/>
+<line class="fr" x1="249.0" y1="56" x2="249.0" y2="86"/>
+<line class="fr" x1="282.0" y1="56" x2="282.0" y2="86"/>
+<line class="fr" x1="315.0" y1="56" x2="315.0" y2="86"/>
+<line class="fr" x1="348.0" y1="56" x2="348.0" y2="86"/>
+<line class="fr" x1="381.0" y1="56" x2="381.0" y2="86"/>
+<line class="fr" x1="414.0" y1="56" x2="414.0" y2="86"/>
+<line class="fr" x1="447.0" y1="56" x2="447.0" y2="86"/>
+<line class="fr" x1="480.0" y1="56" x2="480.0" y2="86"/>
+<line class="fr" x1="513.0" y1="56" x2="513.0" y2="86"/>
+<line class="fr" x1="546.0" y1="56" x2="546.0" y2="86"/>
+<line class="fr" x1="579.0" y1="56" x2="579.0" y2="86"/>
+<line class="fr" x1="612.0" y1="56" x2="612.0" y2="86"/>
+<line class="fr" x1="645.0" y1="56" x2="645.0" y2="86"/>
+<line class="fr" x1="678.0" y1="56" x2="678.0" y2="86"/>
+<line class="fr" x1="711.0" y1="56" x2="711.0" y2="86"/>
+<line class="fr" x1="744.0" y1="56" x2="744.0" y2="86"/>
+<line class="fr" x1="777.0" y1="56" x2="777.0" y2="86"/>
+<line class="fr" x1="810.0" y1="56" x2="810.0" y2="86"/>
+<text class="rate" x="822.0" y="76">1000 ms</text>
+<text class="sub2" x="150.0" y="104">프레임 하나에 10 ms — 비교기가 정하는 속도</text>
+<text class="lane" x="140" y="166" text-anchor="end">재생</text>
+<rect class="rep" x="150.0" y="146" width="660.0" height="30" rx="4"/>
+<line class="fr" x1="150.0" y1="146" x2="150.0" y2="176"/>
+<line class="fr" x1="183.0" y1="146" x2="183.0" y2="176"/>
+<line class="fr" x1="216.0" y1="146" x2="216.0" y2="176"/>
+<line class="fr" x1="249.0" y1="146" x2="249.0" y2="176"/>
+<line class="fr" x1="282.0" y1="146" x2="282.0" y2="176"/>
+<line class="fr" x1="315.0" y1="146" x2="315.0" y2="176"/>
+<line class="fr" x1="348.0" y1="146" x2="348.0" y2="176"/>
+<line class="fr" x1="381.0" y1="146" x2="381.0" y2="176"/>
+<line class="fr" x1="414.0" y1="146" x2="414.0" y2="176"/>
+<line class="fr" x1="447.0" y1="146" x2="447.0" y2="176"/>
+<line class="fr" x1="480.0" y1="146" x2="480.0" y2="176"/>
+<line class="fr" x1="513.0" y1="146" x2="513.0" y2="176"/>
+<line class="fr" x1="546.0" y1="146" x2="546.0" y2="176"/>
+<line class="fr" x1="579.0" y1="146" x2="579.0" y2="176"/>
+<line class="fr" x1="612.0" y1="146" x2="612.0" y2="176"/>
+<line class="fr" x1="645.0" y1="146" x2="645.0" y2="176"/>
+<line class="fr" x1="678.0" y1="146" x2="678.0" y2="176"/>
+<line class="fr" x1="711.0" y1="146" x2="711.0" y2="176"/>
+<line class="fr" x1="744.0" y1="146" x2="744.0" y2="176"/>
+<line class="fr" x1="777.0" y1="146" x2="777.0" y2="176"/>
+<line class="fr" x1="810.0" y1="146" x2="810.0" y2="176"/>
+<text class="rate" x="822.0" y="166">45 ms</text>
+<text class="sub2" x="150.0" y="194">프레임 하나에 0.45 ms — kws_top 의 in_ready 가 정하는 속도</text>
+<text class="big" x="480.0" y="118" text-anchor="middle">같은 100 프레임 · 22배</text>
+<text class="sub2" x="150.0" y="222">그래서 재생이 도는 동안 새 프레임이 들어와도 덮이지 않는다 — 쓰기가 4.5칸 나아갈 때 읽기는 100칸을 끝낸다.</text>
+</svg>
+    <div class="cap">포착은 비교기·sticky OR 이 정하고 재생은 kws_top 이 정한다 ·
+    이 22배가 원형 버퍼 하나로 두 속도를 잇게 해 준다</div>
+  </div>
+  <p style="margin-top:20px">그래서 <strong>최근 100 프레임을 늘 들고 있는 원형
+  버퍼</strong> 하나면 된다. 100 × 16 비트 = 1,600 비트로, BRAM 한 개도 안 쓴다.
+  트리거가 오면 그 100 개를 앞뒤에 <code>-1</code> 패딩 14 개씩 붙여 빠르게 밀어넣는다.</p>
+
+  <div class="warn">
+    <h3>패딩을 학습과 똑같이 유지하는 것이 조건이다</h3>
+    <p>네트워크는 <b>−1 로 채운 14 프레임 + 실제 100 프레임 + −1 14 프레임</b>을
+    보도록 학습됐다. 버퍼를 100 으로 두고 재생기가 패딩을 붙이면 입력 분포가
+    학습과 <b>완전히 같다</b> — 재학습도, 가중치 변경도, ICD 변경도 없다.
+    최근 프레임을 패딩 자리에 끼워 넣고 싶은 유혹이 생기는데, 그러면 학습 때 본 적
+    없는 입력이 된다.</p>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">예산</span><h2>57.4 ms 가 주기 안에 들어가는가</h2></div>
+  <div class="plate">
+    <svg viewBox="0 0 900 210" role="img" aria-label="10 Hz 와 5 Hz 에서의 연산 시간 예산">
+<text class="lane" x="82" y="74" text-anchor="end">10 Hz</text>
+<rect class="idle" x="92.0" y="52" width="700.0" height="32" rx="4"/>
+<rect class="busy" x="92.0" y="52" width="100.4" height="32" rx="3"/>
+<rect class="busy" x="267.0" y="52" width="100.4" height="32" rx="3"/>
+<rect class="busy" x="442.0" y="52" width="100.4" height="32" rx="3"/>
+<rect class="busy" x="617.0" y="52" width="100.4" height="32" rx="3"/>
+<text class="rate" x="804.0" y="73">여유 1.7×</text>
+<text class="lane" x="82" y="154" text-anchor="end">5 Hz</text>
+<rect class="idle" x="92.0" y="132" width="700.0" height="32" rx="4"/>
+<rect class="busy" x="92.0" y="132" width="100.4" height="32" rx="3"/>
+<rect class="busy" x="442.0" y="132" width="100.4" height="32" rx="3"/>
+<text class="rate" x="804.0" y="153">여유 3.5×</text>
+<line class="tick" x1="92.0" y1="40" x2="92.0" y2="176"/>
+<text class="ttl" x="92.0" y="32" text-anchor="middle">0 ms</text>
+<line class="tick" x1="267.0" y1="40" x2="267.0" y2="176"/>
+<text class="ttl" x="267.0" y="32" text-anchor="middle">100 ms</text>
+<line class="tick" x1="442.0" y1="40" x2="442.0" y2="176"/>
+<text class="ttl" x="442.0" y="32" text-anchor="middle">200 ms</text>
+<line class="tick" x1="617.0" y1="40" x2="617.0" y2="176"/>
+<text class="ttl" x="617.0" y="32" text-anchor="middle">300 ms</text>
+<line class="tick" x1="792.0" y1="40" x2="792.0" y2="176"/>
+<text class="ttl" x="792.0" y="32" text-anchor="middle">400 ms</text>
+<text class="sub2" x="92.0" y="198">짙은 칸이 추론 57.4 ms (2.87 M 사이클 / 50 MHz). 빠듯하면 주기를 늘리면 되지 설계를 고칠 일이 아니다.</text>
+</svg>
+    <div class="cap">2.87 M 사이클은 tb_top 이 실제로 기록한 값이다 ·
+    10 Hz 는 1.7배, 5 Hz 는 3.5배</div>
+  </div>
+  <p style="margin-top:18px">10 Hz 가 <code>CLAUDE.md</code> §0 이 가정한 추론율이지만
+  여유가 1.7배로 빠듯하다. <strong>5 Hz 로 시작하는 편이 안전하다</strong> — 1초짜리
+  단어를 200 ms 간격으로 훑어도 놓치지 않고, 여유가 두 배가 된다. 파라미터 하나다.</p>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">출력</span><h2>초당 열 개의 답을 어떻게 다룰 것인가</h2></div>
+  <p class="dek">빠뜨리기 쉬운 부분이다. 10 Hz 로 돌리면 답도 10 Hz 로 나온다.
+  그대로 LED 에 걸면 <strong>100 ms 마다 바뀐다.</strong></p>
+  <div class="plate">
+    <svg viewBox="0 0 900 210" role="img" aria-label="연속 투표로 출력을 평활하는 방법">
+<text class="lane" x="58" y="44">kws_top 이 내는 답 — 100 ms 마다 하나</text>
+<rect class="ans sil" x="58" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="76.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans sil" x="98" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="116.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans sil" x="138" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="156.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans unk" x="178" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="196.0" y="84" text-anchor="middle">unk</text>
+<rect class="ans yes" x="218" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="236.0" y="84" text-anchor="middle">yes</text>
+<rect class="ans yes" x="258" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="276.0" y="84" text-anchor="middle">yes</text>
+<rect class="ans unk" x="298" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="316.0" y="84" text-anchor="middle">unk</text>
+<rect class="ans yes" x="338" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="356.0" y="84" text-anchor="middle">yes</text>
+<rect class="ans yes" x="378" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="396.0" y="84" text-anchor="middle">yes</text>
+<rect class="ans yes" x="418" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="436.0" y="84" text-anchor="middle">yes</text>
+<rect class="ans yes" x="458" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="476.0" y="84" text-anchor="middle">yes</text>
+<rect class="ans unk" x="498" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="516.0" y="84" text-anchor="middle">unk</text>
+<rect class="ans sil" x="538" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="556.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans sil" x="578" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="596.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans no" x="618" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="636.0" y="84" text-anchor="middle">no</text>
+<rect class="ans sil" x="658" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="676.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans sil" x="698" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="716.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans sil" x="738" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="756.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans sil" x="778" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="796.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans sil" x="818" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="836.0" y="84" text-anchor="middle">sil</text>
+<path class="fire" d="M454 94 V122"/>
+<text class="firel" x="464" y="140">yes 3연속 → 검출 선언, 이후 1초 락아웃</text>
+<text class="sub2" x="58" y="182">평활이 없으면 LED 가 100 ms 마다 바뀐다. 우리 출력은 class_idx (argmax) 뿐이라 확률 평균은 못 내지만, 연속 투표면 충분하다.</text>
+</svg>
+    <div class="cap">"동작한다" 와 "동작하는 것처럼 보인다" 를 가르는 부분이다</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">자리</span><h2>어디에 넣을 것인가</h2></div>
+  <div class="plate">
+    
+<svg viewBox="0 0 900 210" role="img" aria-label="새 창 모듈이 들어갈 자리">
+  <rect class="blk have" x="16" y="56" width="176" height="86" rx="6"/>
+  <text class="bt" x="32" y="84">kws_frame_ctrl</text>
+  <text class="bs" x="32" y="104">있음 · 검증됨</text>
+  <text class="bi" x="32" y="126">sticky OR · 10 ms</text>
+
+  <rect class="blk new" x="336" y="56" width="200" height="86" rx="6"/>
+  <text class="bt" x="352" y="84">kws_window</text>
+  <text class="bs new" x="352" y="104">새로 만들 것</text>
+  <text class="bi" x="352" y="126">원형버퍼 100 · 재생 · 트리거</text>
+
+  <rect class="blk have" x="676" y="56" width="176" height="86" rx="6"/>
+  <text class="bt" x="692" y="84">kws_top</text>
+  <text class="bs" x="692" y="104">있음 · 검증됨</text>
+  <text class="bi" x="692" y="126">57.4 ms / 추론</text>
+
+  <path class="lnk" d="M192 99 H336"/>
+  <text class="ll" x="264" y="88" text-anchor="middle">프레임 100 Hz</text>
+  <path class="lnk" d="M536 99 H676"/>
+  <text class="ll" x="606" y="88" text-anchor="middle">창 128 프레임</text>
+
+  <text class="sub2" x="16" y="186">기존 두 모듈을 고치지 않는다. 둘 다 검증이 끝나 있고, 창을 고르는 일은 프레임을 포착하는 일과 다른 일이다.</text>
+</svg>
+
+    <div class="cap">frame_ctrl 과 kws_top 은 손대지 않는다</div>
+  </div>
+</section>
+
+<section>
+  <div class="eyebrow"><span class="num">순서</span><h2>단계로 나누면</h2></div>
+  <ol class="steps">
+    <li><b><code>start = ~busy</code> 로 자동 반복.</b> RTL 추가가 0 이고, 보드에서
+      end-to-end 가 도는지부터 본다. 경계에 걸린 단어는 놓치지만 <b>도는 것</b>은
+      확인된다.</li>
+    <li><b>원형 버퍼 + 재생기 + 주기 트리거.</b> 위 구조. 새 모듈 하나이고
+      기존 둘은 안 건드린다.</li>
+    <li><b>연속 투표 평활.</b> 여기서부터 데모로 보인다.</li>
+    <li><b>외부 <code>start</code> 핀은 수동 단발로 남긴다.</b> 브링업과 XSim
+      테스트벤치가 그것을 쓴다 — 자동화가 들어와도 그 경로를 없애면 안 된다.</li>
+  </ol>
+</section>
+
+<footer>
+  <span>근거: rtl/kws_frame_ctrl.v · rtl/kws_top.v · rtl/tb/tb_top.v</span>
+  <span>CLAUDE.md §2.8 · docs/ICD.md §5</span>
+  <span>생성: docs/artifacts/gen_windowing.py</span>
+</footer>
+
+</div>
