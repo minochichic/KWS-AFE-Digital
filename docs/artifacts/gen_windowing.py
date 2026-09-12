@@ -23,7 +23,9 @@ PAD        = 14      # 좌우 패딩 프레임 (값은 -1)
 T          = 128     # NATIVE_T + 2*PAD
 CLIP_MS    = T * FRAME_MS          # 1280
 INFER_MS   = 57.4    # 2.87 M 사이클 / 50 MHz
-PERIOD_MS  = 100     # 10 Hz 트리거
+PERIOD_MS  = 100     # 10 Hz 트리거 -- 5 Hz 가 아닌 이유는 연산이 아니라 표다
+VOTE_N     = 3       # 연속 몇 번 같아야 믿는가
+WORD_MS    = 900     # 이 길이의 발화를 온전히 담는 창이 몇 개인가를 계산한다
 
 
 def lane(x0: float, w: float) -> "tuple":
@@ -332,6 +334,15 @@ rect.rep{fill:var(--word); opacity:.22; stroke:var(--word); stroke-width:1.4}
 .lnk{stroke:var(--ink2); stroke-width:1.5; fill:none}
 .ll{font-family:'IBM Plex Mono',monospace; font-size:11px; fill:var(--ink3)}
 
+.tbl{width:100%; border-collapse:collapse; font-size:14.5px; margin-top:16px;
+  font-variant-numeric:tabular-nums}
+.tbl th{font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:500;
+  text-transform:uppercase; letter-spacing:.08em; color:var(--ink3);
+  text-align:left; padding:0 12px 8px; border-bottom:1px solid var(--rule2)}
+.tbl td{padding:7px 12px; border-bottom:1px solid var(--rule); color:var(--ink2)}
+.tbl td.m{font-family:'IBM Plex Mono',monospace; color:var(--ink)}
+.tbl td.ok{color:var(--ok); font-weight:600}
+
 .warn{border-left:3px solid var(--miss); background:var(--surface);
   border-top:1px solid var(--rule); border-right:1px solid var(--rule);
   border-bottom:1px solid var(--rule); border-radius:0 7px 7px 0;
@@ -430,9 +441,22 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
     <div class="cap">2.87 M 사이클은 tb_top 이 실제로 기록한 값이다 ·
     10 Hz 는 1.7배, 5 Hz 는 3.5배</div>
   </div>
-  <p style="margin-top:18px">10 Hz 가 <code>CLAUDE.md</code> §0 이 가정한 추론율이지만
-  여유가 1.7배로 빠듯하다. <strong>5 Hz 로 시작하는 편이 안전하다</strong> — 1초짜리
-  단어를 200 ms 간격으로 훑어도 놓치지 않고, 여유가 두 배가 된다. 파라미터 하나다.</p>
+  <p style="margin-top:18px"><strong>그런데 주기는 연산만 보고 고를 수 없다.</strong>
+  한때 여기 "여유가 두 배인 5 Hz 로 시작하라" 고 적었는데 틀렸다 — 창이 성기면
+  <strong>투표할 표가 안 모인다.</strong> 폭 1.28 s 창이 900 ms 발화를 온전히 담으려면
+  시작점이 380 ms 안에 들어와야 하고, 그런 창이 10 Hz 에서는 최소 3개, 5 Hz 에서는 최소 1개다 (격자 위상에 따라 하나 더 나올 수 있으므로 <b>보장값</b>으로 센다).</p>
+  <table class="tbl">
+    <thead><tr><th>발화 길이</th><th>담는 창 폭 S</th><th>10 Hz 보장</th><th>5 Hz 보장</th></tr></thead>
+    <tbody>
+      <tr><td class="m">600 ms</td><td class="m">680 ms</td><td class="m ok">6개</td><td class="m">3개</td></tr>
+      <tr><td class="m">800 ms</td><td class="m">480 ms</td><td class="m ok">4개</td><td class="m">2개</td></tr>
+      <tr><td class="m">980 ms</td><td class="m">300 ms</td><td class="m ok">3개 ← 한계</td><td class="m">1개</td></tr>
+    </tbody>
+  </table>
+  <p style="margin-top:14px"><strong>10 Hz + 3연속 투표</strong>로 간다. 그 조합이
+  보장되는 조건은 발화가 <b>980 ms 이하</b>인 것이고, GSC 는 1초 클립에 실제 발화가 보통
+  400~800 ms 라 여유 있게 만족한다. 대신 연산 여유가 1.7배뿐이라
+  <strong>사이클 수가 입력과 무관하게 일정한지를 먼저 재야 한다.</strong></p>
 </section>
 
 <section>
@@ -461,7 +485,7 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
       확인된다.</li>
     <li><b>원형 버퍼 + 재생기 + 주기 트리거.</b> 위 구조. 새 모듈 하나이고
       기존 둘은 안 건드린다.</li>
-    <li><b>연속 투표 평활.</b> 여기서부터 데모로 보인다.</li>
+    <li><b>연속 투표 평활 — 같은 클래스 3회 연속, 이후 1초 락아웃.</b> 여기서부터 데모로 보인다.</li>
     <li><b>외부 <code>start</code> 핀은 수동 단발로 남긴다.</b> 브링업과 XSim
       테스트벤치가 그것을 쓴다 — 자동화가 들어와도 그 경로를 없애면 안 된다.</li>
   </ol>
