@@ -279,3 +279,34 @@ trig = (auto_tick | force_pulse) & ~busy
 P5-g 는 "보드에서 돈다" 이고 이 계획은 "보드에서 **쓸모 있게** 돈다" 다.
 
 단계 1 은 P5-g 의 일부로 봐도 된다 — 그것 없이는 보드에서 아무 일도 안 일어난다.
+
+---
+
+## 8. Python 연속창 평가 (RTL 작성 전)
+
+`experiments/eval_streaming.py`는 학습에 사용한 이진 AFE CSV와 `best.pt`를 이용해
+창 이동과 판정 정책을 먼저 검증한다. 원격 GPU 환경에서 실행한다.
+
+```bash
+git pull
+python -m pytest tests/test_streaming_window.py tests/test_eval_streaming.py
+python -m experiments.eval_streaming --tag bd_base --split val --clips-per-class 32
+```
+
+평가 스트림 하나는 같은 split의 클립으로 만든
+`silence 1초 + target 1초 + silence 1초`이다. 300개의 10 ms 프레임에서
+`[0,100)`, `[10,110)`, ..., `[200,300)`의 21개 창을 만들고, 각 창의 추론 결과를
+`N=3`, cooldown 10창 판정기에 넣는다. `[100,200)` 가운데 창은 원래 target 클립과
+비트 단위로 같아야 하며, 스크립트가 이를 매번 검사한다.
+
+생성물은 다음 두 파일이다.
+
+- `out/streaming/bd_base_val_windows.csv`: 모든 창의 범위, target 포함 프레임 수,
+  logits, 예측 class, 연속 횟수, cooldown, 최종 검출 이벤트
+- `out/streaming/bd_base_val_summary.json`: 가운데 창 정확도, keyword event recall,
+  quiet stream 오검출, 최초 정답 검출 지연, class별 집계
+
+먼저 `val` 결과로 N과 cooldown 후보를 비교한다. 값을 고른 뒤 고정하고 `--split test`를
+한 번 실행한다. 이 평가는 잘라 붙인 녹음으로 창 이동과 제어 정책을 보는 시험이다.
+실제 연속 음성의 false alarms/hour나 현장 정확도로 해석하지 않는다. 그 수치는 실제
+연속 AFE 기록을 확보한 뒤 같은 evaluator에 넣어 별도로 측정한다.
