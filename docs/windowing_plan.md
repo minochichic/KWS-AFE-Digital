@@ -312,3 +312,15 @@ python -m experiments.eval_streaming --tag bd_base --split val --clips-per-class
 한 번 실행한다. 이 평가는 잘라 붙인 녹음으로 창 이동과 제어 정책을 보는 시험이다.
 실제 연속 음성의 false alarms/hour나 현장 정확도로 해석하지 않는다. 그 수치는 실제
 연속 AFE 기록을 확보한 뒤 같은 evaluator에 넣어 별도로 측정한다.
+
+N과 cooldown을 정한 뒤에도 quiet 오검출이 크면 기존 window CSV의 logits에
+키워드 대 quiet margin gate를 적용한다. 신경망을 다시 실행하지 않는다.
+
+```bash
+python -m experiments.sweep_streaming_gate \
+  --trace out/streaming/bd_base_val128_n5_windows.csv
+```
+
+gate는 `예측 keyword logit - max(silence logit, unknown logit)`가 margin 이상인 창만
+투표에 넣는다. margin 0은 원래 판정과 같아야 하며 이 행이 기존 N=5 결과를 재현하는지
+먼저 확인한다. margin 선택도 validation에서만 하고, 선택 후 test를 한 번 연다.
