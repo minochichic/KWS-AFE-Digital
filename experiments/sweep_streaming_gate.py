@@ -95,6 +95,25 @@ def keyword_quiet_margin(
     )
 
 
+def gate_predictions(
+    windows: Sequence[TraceWindow],
+    margin: float,
+    quiet_classes: Tuple[int, ...] = (10, 11),
+    rejected_class: int = 10,
+) -> List[int]:
+    """Replay the gate, including its original quiet/re-arm semantics."""
+
+    if rejected_class not in quiet_classes:
+        raise ValueError("rejected_class must be a quiet class")
+    return [
+        window.prediction
+        if (window.prediction in quiet_classes or margin <= 0.0
+            or keyword_quiet_margin(window, quiet_classes) >= margin)
+        else rejected_class
+        for window in windows
+    ]
+
+
 def evaluate_gate(
     cases: Sequence[TraceCase],
     margin: float,
@@ -131,17 +150,9 @@ def evaluate_gate(
     latencies: List[int] = []
 
     for case in cases:
-        gated: List[int] = []
-        for window in case.windows:
-            prediction = window.prediction
-            if prediction not in quiet_classes:
-                raw_keyword_windows += 1
-                if (margin <= 0.0
-                        or keyword_quiet_margin(window, quiet_classes) >= margin):
-                    accepted_keyword_windows += 1
-                else:
-                    prediction = rejected_class
-            gated.append(prediction)
+        gated = gate_predictions(case.windows, margin, quiet_classes, rejected_class)
+        raw_keyword_windows += sum(w.prediction not in quiet_classes for w in case.windows)
+        accepted_keyword_windows += sum(p not in quiet_classes for p in gated)
 
         steps = vote_sequence(
             gated,

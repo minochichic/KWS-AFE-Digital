@@ -324,3 +324,60 @@ python -m experiments.sweep_streaming_gate \
 gate는 `예측 keyword logit - max(silence logit, unknown logit)`가 margin 이상인 창만
 투표에 넣는다. margin 0은 원래 판정과 같아야 하며 이 행이 기존 N=5 결과를 재현하는지
 먼저 확인한다. margin 선택도 validation에서만 하고, 선택 후 test를 한 번 연다.
+
+## 9. 정확도 개선 전 실패 유형 진단
+
+사용자가 원격에서 보고한 `bd_base` epoch 82, val 128개/class 결과:
+
+| N | margin | keyword event recall | quiet false streams | wrong events | median delay |
+|---|---|---|---|---|---|
+| 4 | 0 | 964/1280 (75.31%) | 101/256 (39.45%) | 308 | 900 ms |
+| 5 | 0 | 942/1280 (73.59%) | 63/256 (24.61%) | 217 | 1000 ms |
+| 4 | 2.0 | 69.84% | 28/256 (10.94%) | 143 | 900 ms |
+| 5 | 1.25 | 70.00% | 28/256 (10.94%) | 140 | 1000 ms |
+| 5 | 1.5 | 68.44% | 16/256 (6.25%) | 115 | 1000 ms |
+
+모두 cooldown=10창이다. N=5/margin=1.25는 비교 기준 후보이며 최종 정책이 아니다.
+900/1000 ms는 target 클립을 붙인 경계부터 창 끝까지의 시간이다. 실제 발음 onset이나
+FPGA의 추론 완료 시각을 측정한 값이 아니다. quietFA는 3초 시험 스트림 중 이벤트가
+한 번이라도 난 비율이며 false alarms/hour가 아니다.
+
+현재 event recall은 오답 이벤트와 정답 이벤트가 함께 나와도 정답이 있으면 성공으로
+센다. 다음 진단은 그 값과 함께 **정답 이벤트 정확히 1회, 다른 이벤트 0회**인 case도
+집계한다. 기존 trace를 재사용하므로 GPU 추론이 필요 없다.
+
+```bash
+python -m experiments.diagnose_streaming \
+  --trace out/streaming/bd_base_val128_n5_windows.csv \
+  --required-consecutive 5 --cooldown-windows 10 --margin 1.25
+```
+
+키워드 case는 아래 순서로 한 범주에만 들어간다.
+
+| 출력 | 의미 | 다음에 확인할 후보 |
+|---|---|---|
+| `hit` | 현재 정책으로 정답 이벤트가 한 번 이상 발생 | 다른 이벤트 동반 여부 |
+| `no_correct_window` | target 클립과 겹친 창 어디에도 정답 top-1이 없음 | 혼동 클래스와 학습 데이터 |
+| `correct_but_not_consecutive` | 정답 창은 있지만 N연속에 못 미침 | 최근 K창 점수 평균 또는 M-of-K 투표 |
+| `margin_broke_correct_streak` | N연속 정답은 있었으나 margin 적용 뒤 끊김 | 점수 누적 방식과 threshold 보정 |
+| `blocked_after_detection` | gate를 통과한 N연속 정답이 있으나 실제 이벤트 없음 | cooldown 및 quiet 재허용 조건 |
+
+이는 실패를 순서대로 분류한 것이며 원인의 독립적인 효과를 측정한 값은 아니다.
+여러 문제가 동시에 있을 수 있다. `raw_any_correct_window_cases`는 정답 라벨을 알고
+창을 골라 센 진단치이며, 실제 검출기가 달성할 수 있는 recall로 해석하지 않는다.
+
+추가 실험 후보(아직 구현·선택하지 않음):
+
+- 현재는 margin 탈락을 silence로 바꾸므로 streak가 끊기면서 재검출도 허용될 수 있다.
+  약한 keyword는 보류하고 실제 silence/unknown만 재허용에 쓰는 정책과 따로 비교한다.
+- hard top-1 N연속과 최근 K창의 class별 점수 평균을 같은 오검출 수준에서 비교한다.
+  일시적으로 순위가 바뀌어도 정답의 점수가 유지되는지 본다. 향상은 보장되지 않는다.
+- 실패 분석 후 train split에서만 연속창 적응 학습을 시도한다. 단어가 온전히 포함된
+  여러 위치의 창과 어려운 무음/unknown을 쓰고, 불완전한 단어 창의 라벨은 별도 규칙이
+  필요하다. validation에서 찾은 파일 자체를 학습에 재사용하지 않는다.
+- AFE 임계값·고정 정규화·모델 구조를 유지한 추가 학습을 우선 후보로 둔다. 기존
+  ±1 학습 경로와 QAT를 유지하고 새 tag로 저장한다. 모델 변경은 별도 설계 판단이다.
+- 현재 CSV는 각 1초 클립을 AFE로 변환한 **뒤에** 이어 붙인 결과다. 실제 연속 AFE의
+  경계 응답을 검증하려면 연속 파형/기록의 프레임화와 긴 무음 대조군이 추가로 필요하다.
+- float logits로 고른 margin은 정수 tail/pooled score 경로에서도 다시 검증한다.
+  평균과 합, 고정소수점 스케일을 확인하기 전에는 값을 RTL 상수로 옮기지 않는다.
