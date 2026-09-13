@@ -366,7 +366,7 @@ python -m experiments.diagnose_streaming \
 여러 문제가 동시에 있을 수 있다. `raw_any_correct_window_cases`는 정답 라벨을 알고
 창을 골라 센 진단치이며, 실제 검출기가 달성할 수 있는 recall로 해석하지 않는다.
 
-추가 실험 후보(아직 구현·선택하지 않음):
+추가 실험 후보(당시 계획; 점수 평균·M-of-K 비교 구현은 §10 참조):
 
 - 현재는 margin 탈락을 silence로 바꾸므로 streak가 끊기면서 재검출도 허용될 수 있다.
   약한 keyword는 보류하고 실제 silence/unknown만 재허용에 쓰는 정책과 따로 비교한다.
@@ -381,3 +381,107 @@ python -m experiments.diagnose_streaming \
   경계 응답을 검증하려면 연속 파형/기록의 프레임화와 긴 무음 대조군이 추가로 필요하다.
 - float logits로 고른 margin은 정수 tail/pooled score 경로에서도 다시 검증한다.
   평균과 합, 고정소수점 스케일을 확인하기 전에는 값을 RTL 상수로 옮기지 않는다.
+
+## 10. 누락 진단 이후 판정 방식 비교 (2026-09-14)
+
+원격에서 보고한 N=5, cooldown=10, margin=1.25 진단 결과:
+
+| 범주 | 사례 수 | 전체 keyword 1280건 중 |
+|---|---:|---:|
+| hit | 896 | 70.00% |
+| 정답 top-1 창이 없음 | 74 | 5.78% |
+| 정답 창은 있으나 5연속 부족 | 257 | 20.08% |
+| raw 5연속은 있으나 margin 후 끊김 | 51 | 3.98% |
+| 통과 가능한 정답 구간이 있으나 판정 상태에 막힘 | 2 | 0.16% |
+
+`clean_single_hit_cases=896`이므로 성공 사례에는 다른 이벤트가 동반되지 않았다.
+이는 전체 오답 이벤트 140건이 없다는 뜻은 아니다. 실패 사례 및 quiet 사례의 오답은
+별도로 남을 수 있다. quiet false streams는 28/256(10.94%)이다.
+
+누락 384건 중 257건(66.9%)이 연속 횟수 부족으로 분류됐다. 따라서 첫 실험은 판정
+방식 비교다. 이 분류는 순서가 있는 진단이며, 그 257건을 모두 복구할 수 있다는
+뜻은 아니다. `raw_any_correct_window_cases=1206`(94.22%) 역시 정답 라벨을 알고
+관찰한 값으로, 실제 검출률의 약속이나 모델의 절대 상한이 아니다. 평균 점수로
+top-1이 아니었던 클래스를 찾을 가능성도 있고, 반대로 오검출 때문에 버려야 할 창도 있다.
+
+### 10.1 이번에 구현한 비교 실험
+
+`experiments.compare_streaming_policies`는 저장된 float logits를 재생한다.
+학습, AFE, 신경망 가중치, RTL, 기존 ConsecutiveVote는 변경하지 않는다.
+
+| 방식 | 규칙 | 기본 탐색 |
+|---|---|---|
+| 기준 | margin 적용 후 N연속 | N5, margin1.25, cooldown10 |
+| M-of-K | 최근 K창 중 같은 keyword가 M번; 현재 창도 해당 keyword여야 함 | 4/5, 4/6, 5/6, 5/7 |
+| mean_logits | 최근 K창의 클래스별 logit 평균 → top-1과 keyword-quiet margin | K=3,5,7 |
+| mean_probs | 각 창에 stable softmax → 최근 K창의 클래스별 확률 평균 → top-1 확률 임계값 | K=3,5,7 |
+
+logit margin은 0, 0.5, 1, 1.25, 1.5, 2, 2.5, 3을 비교한다.
+확률 임계값은 0.4, 0.5, 0.6, 0.7, 0.8, 0.9를 비교한다. 기준 포함 75개 설정이다.
+logit 평균에 softmax를 한 값과 softmax 확률들을 평균한 값은 다르며, 서로 다른
+정책으로 기록한다. mean 방식에 추가 N연속을 겹쳐 적용하지 않는다.
+
+점수 평활의 참고 구현은 [TensorFlow recognize_commands.cc](https://raw.githubusercontent.com/tensorflow/tensorflow/master/tensorflow/examples/speech_commands/recognize_commands.cc),
+관련 연구는 [Deep KWS §2.3](https://research.google.com/pubs/archive/42537.pdf)다.
+이번 K값·임계값·재감지 규칙은 우리 프로젝트의 비교 실험 설정이며 해당 연구의 재현은 아니다.
+
+시간 규칙:
+
+- 현재/과거 창만 사용한다. K개의 인접한 창이 모이기 전에는 평균 결과를 내지 않는다.
+- 창 ID가 건너뛰면 평균·투표 이력을 비운다. 부족한 이력은 quiet 증거로 취급하지 않는다.
+- M-of-K는 완전한 K창 이력이 필요하며, 발행 후와 잠금 상태에서 투표 이력을 버린다.
+- 기존과 같이 quiet 결과 관찰과 cooldown 경과가 모두 있어야 재감지를 허용한다.
+- 임계값에 탈락한 keyword는 기존 gate처럼 quiet로 바꾼다. 평활로 quiet가 나오는
+  시점도 달라질 수 있으므로, 이번 결과는 평활만의 독립적인 효과를 측정한 것이 아니다.
+- 사례별 시작 시 상태를 초기화하는 기존 합성 스트림 평가 조건을 유지한다.
+
+### 10.2 실행 및 비교 기준
+
+원격 Linux의 저장소에서:
+
+```bash
+git pull --ff-only
+python -m experiments.compare_streaming_policies \
+  --trace out/streaming/bd_base_val128_n5_windows.csv
+```
+
+GPU 및 checkpoint가 필요 없고 numpy와 기존 CSV만 필요하다. 기준 N5 집계를
+기존 `evaluate_gate`와 매번 대조하며, 다르면 중단한다. sidecar가 test split이면
+탐색을 거부한다. sidecar가 없는 CSV는 사용자가 validation 데이터임을 확인해야 한다.
+
+출력 접두사는 기본 `bd_base_val128_n5_policy_compare`다:
+
+- `_sweep.csv`: 모든 설정의 결과. 예산을 못 맞춘 후보도 보존한다.
+- `_summary.json`: 기준, 탐색 개수, 원본 SHA256·메타데이터, 방식별 예산 내 최상위 후보,
+  후보가 새로 살린/잃은 사례 수 및 기존 진단 범주별 복구 수.
+- `_best_cases.csv`: 위 후보들의 사례별 이벤트 집계와 기준 진단 범주. 예산 내 후보가
+  전혀 없으면 기준 사례들을 저장한다.
+
+화면에는 기준과 다음 예산을 모두 만족한 방식별 후보를 출력한다. 기준보다 증가하면
+안 되는 항목은 quiet false streams(총수 및 silence/unknown 각각), 전체 wrong events,
+outside events, duplicate correct events, median latency다. 현재 데이터에서는
+quiet≤28/256, silence≤9/128, unknown≤19/128, wrong≤140, median latency≤1000ms다.
+값은 하드코딩하지 않고 같은 CSV의 기준 실행에서 계산한다.
+
+예산 내에서 `clean_single_hit` 수, any-hit 수, 낮은 quiet 오검출, 낮은 wrong 수,
+짧은 median latency 순으로 선택한다. **방식별 최상위가 기존 기준보다 좋다는 보장은
+없다.** `recovered_clean_cases`와 `lost_clean_cases`를 함께 확인한다. 같은 오검출
+총수라도 발생 사례가 달라질 수 있어 new/resolved quiet false cases도 따로 기록한다.
+
+검출 정답 조건은 이전처럼 `target_frames > 0`인 창에서 정답 이벤트가 발생한 경우다.
+실제 발음 경계 라벨이 없으므로 작은 클립 겹침만 있어도 성공으로 셀 수 있다.
+latency는 삽입 클립 시작부터 창 끝까지이며, 기준 시각은 기본 100 frame, 10ms/frame다.
+현장 단어 끝 기준 지연 및 FPGA 계산 시간과 구분한다.
+
+### 10.3 이후 단계
+
+1. 위 결과에서 기준 성공 사례를 보존하면서 연속 부족 257건을 살리는 후보가 있는지 본다.
+2. 선택 후보는 다른 validation 사례 또는 전체 validation에서 재확인한다. 여러 설정을
+   같은 128개/class에서 골랐다는 선택 편향이 있으므로 아직 독립 test 성능으로 부르지 않는다.
+3. 판정으로 남는 실패는 train split의 위치 변화·어려운 unknown/잡음 예제로 적응 학습한다.
+   AFE 임계값·fixed 정규화·모델 구조·QAT 경로는 유지하고 새 tag로 저장한다. 잘린 단어의
+   라벨 규칙은 먼저 정하며 validation 파일을 학습으로 옮기지 않는다.
+4. 실제 연속 파형과 긴 음성/잡음 대조군에서 검출률·시간당 오검출·지연·중복을 평가한다.
+   현재 3초 합성 스트림의 비율을 시간당 오검출로 환산하지 않는다.
+5. 정책을 고정한 뒤 test를 평가하고, fixed-point pooled score와의 일치를 확인해 RTL로 옮긴다.
+   float logit margin이나 확률 threshold를 그대로 RTL 상수로 복사하지 않는다.
