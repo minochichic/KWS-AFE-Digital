@@ -1,7 +1,9 @@
 import numpy as np
 import pytest
+import torch
 
 from experiments.eval_streaming import (
+    collect_balanced_waveforms,
     select_balanced_indices,
     splice_clips,
     target_frames_in_window,
@@ -33,6 +35,23 @@ def test_balanced_selection_is_deterministic_and_capped():
 def test_balanced_selection_rejects_non_positive_cap(clips_per_class):
     with pytest.raises(ValueError, match="positive"):
         select_balanced_indices([0, 1], clips_per_class, 2, seed=0)
+
+
+def test_waveform_reservoir_is_balanced_and_reproducible():
+    loader = [
+        (torch.arange(12, dtype=torch.float32).reshape(4, 3),
+         torch.tensor([0, 0, 1, 1])),
+        (torch.arange(12, 24, dtype=torch.float32).reshape(4, 3),
+         torch.tensor([0, 1, 2, 2])),
+    ]
+
+    first = collect_balanced_waveforms(loader, 2, 3, seed=9)
+    second = collect_balanced_waveforms(loader, 2, 3, seed=9)
+
+    assert first[0] == second[0]
+    torch.testing.assert_close(first[1], second[1])
+    np.testing.assert_array_equal(first[2], [0, 0, 1, 1, 2, 2])
+    assert first[1].shape == (6, 3)
 
 
 def test_splice_clips_preserves_order_and_changes_to_time_major():

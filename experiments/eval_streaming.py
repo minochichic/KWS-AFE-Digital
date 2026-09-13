@@ -155,6 +155,50 @@ def _resolve_device(requested: str) -> torch.device:
     return device
 
 
+def collect_balanced_waveforms(
+    loader,
+    clips_per_class: int,
+    n_classes: int,
+    seed: int,
+) -> Tuple[List[int], torch.Tensor, np.ndarray]:
+    """Reservoir-sample balanced waveforms without retaining the full split."""
+
+    if clips_per_class <= 0:
+        raise ValueError("clips_per_class must be positive")
+    rng = np.random.default_rng(seed)
+    seen = np.zeros(n_classes, dtype=np.int64)
+    reservoir: List[List[Tuple[int, torch.Tensor]]] = [
+        [] for _ in range(n_classes)
+    ]
+    source_index = 0
+    for waves, labels in loader:
+        for wave, label_value in zip(waves, labels):
+            label = int(label_value)
+            if label < 0 or label >= n_classes:
+                raise ValueError(f"label {label} is outside n_classes")
+            seen[label] += 1
+            item = (source_index, wave.detach().cpu().clone())
+            bucket = reservoir[label]
+            if len(bucket) < clips_per_class:
+                bucket.append(item)
+            else:
+                replace = int(rng.integers(0, seen[label]))
+                if replace < clips_per_class:
+                    bucket[replace] = item
+            source_index += 1
+
+    chosen: List[Tuple[int, torch.Tensor, int]] = []
+    for label, bucket in enumerate(reservoir):
+        chosen.extend((i, wave, label) for i, wave in sorted(bucket))
+    if not chosen:
+        raise ValueError("data loader produced no waveforms")
+    return (
+        [i for i, _, _ in chosen],
+        torch.stack([wave for _, wave, _ in chosen]),
+        np.asarray([label for _, _, label in chosen], dtype=np.int64),
+    )
+
+
 def _write_csv(path: Path, rows: List[Dict[str, object]], n_classes: int) -> None:
     fields = [
         "case_id",
@@ -200,7 +244,6 @@ def main() -> None:
                     help="output prefix; default out/streaming/<tag>_<split>")
     args = ap.parse_args()
 
-    from data.analog_spectrogram import build_analog_dataloaders
     from data.speech_commands import KEYWORDS, SILENCE_INDEX, UNKNOWN_INDEX
     from models.binary_matchboxnet import BinaryMatchboxNet
     from train.config import load_config
@@ -210,10 +253,6 @@ def main() -> None:
     cfg = load_config(str(run / "config.yaml"))
     if args.csv_root:
         cfg.data.analog_csv_root = args.csv_root
-    if not cfg.data.analog_csv_root:
-        raise SystemExit(
-            "set data.analog_csv_root in config.yaml or pass --csv-root"
-        )
     if cfg.model.n_classes != len(names):
         raise SystemExit(
             f"this evaluator expects {len(names)} classes, got "
@@ -229,36 +268,82 @@ def main() -> None:
         )
 
     device = _resolve_device(args.device)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
     checkpoint = torch.load(run / "best.pt", map_location="cpu", weights_only=True)
     model = BinaryMatchboxNet(cfg.model)
     model.load_state_dict(checkpoint["model"])
     model.to(device).eval()
 
-    loaders = build_analog_dataloaders(
-        cfg.data,
-        batch_size=args.batch_size,
-        target_T=cfg.model.T,
-        num_workers=0,
-        seed=cfg.train.seed,
-    )
-    dataset = loaders[{"train": 0, "val": 1, "test": 2}[args.split]].dataset
-    bits = np.asarray(dataset.bits)
-    labels = np.asarray(dataset.labels)
+    split_index = {"train": 0, "val": 1, "test": 2}[args.split]
+    if getattr(cfg.data, "analog_csv_root", ""):
+        from data.analog_spectrogram import build_analog_dataloaders
+
+        loaders = build_analog_dataloaders(
+            cfg.data,
+            batch_size=args.batch_size,
+            target_T=cfg.model.T,
+            num_workers=0,
+            seed=cfg.train.seed,
+        )
+        dataset = loaders[split_index].dataset
+        all_bits = np.asarray(dataset.bits)
+        all_labels = np.asarray(dataset.labels)
+        selected = select_balanced_indices(
+            all_labels,
+            clips_per_class=args.clips_per_class,
+            n_classes=cfg.model.n_classes,
+            seed=args.seed,
+        )
+        sample_indices = selected
+        bits = all_bits[selected]
+        labels = all_labels[selected]
+        input_source = "analog_csv"
+    else:
+        if "afe" not in checkpoint:
+            raise SystemExit(
+                "checkpoint has no saved AFE state; this is a frame model, so "
+                "set data.analog_csv_root or pass --csv-root"
+            )
+        from data.afe import AFEFrontend, load_afe_state
+        from data.speech_commands import build_dataloaders
+
+        loaders = build_dataloaders(
+            cfg.data,
+            args.batch_size,
+            cfg.afe.sample_rate,
+            num_workers=0,
+            seed=cfg.train.seed,
+        )
+        sample_indices, waves, labels = collect_balanced_waveforms(
+            loaders[split_index],
+            clips_per_class=args.clips_per_class,
+            n_classes=cfg.model.n_classes,
+            seed=args.seed,
+        )
+        afe = AFEFrontend(cfg.afe)
+        load_afe_state(afe, checkpoint["afe"])
+        afe.to(device).eval()
+        chunks: List[np.ndarray] = []
+        with torch.no_grad():
+            for lo in range(0, len(waves), args.batch_size):
+                native = afe(
+                    waves[lo : lo + args.batch_size].to(device),
+                    target_T=spec.native_frames,
+                )
+                chunks.append((native > 0).to(torch.uint8).cpu().numpy())
+        bits = np.concatenate(chunks, axis=0)
+        input_source = "software_afe_from_wav"
+
     if bits.ndim != 3 or bits.shape[1:] != (
         spec.n_channels,
         spec.native_frames,
     ):
         raise SystemExit(
-            "analog clips must have shape [N, 16, 100], got "
+            "selected clips must have shape [N, 16, 100], got "
             f"{bits.shape}"
         )
-
-    selected = select_balanced_indices(
-        labels,
-        clips_per_class=args.clips_per_class,
-        n_classes=cfg.model.n_classes,
-        seed=args.seed,
-    )
     silence_pool = np.flatnonzero(labels == SILENCE_INDEX)
     if silence_pool.size == 0:
         raise SystemExit(f"split {args.split!r} contains no silence clips")
@@ -266,20 +351,20 @@ def main() -> None:
     rng = np.random.default_rng(args.seed + 1)
     cases: List[Tuple[int, int, List[WindowSnapshot]]] = []
     all_inputs: List[np.ndarray] = []
-    for sample_index in selected:
+    for local_index, sample_index in enumerate(sample_indices):
         before_i, after_i = rng.choice(silence_pool, size=2, replace=True)
         stream = splice_clips(
-            bits[int(before_i)], bits[sample_index], bits[int(after_i)], spec
+            bits[int(before_i)], bits[local_index], bits[int(after_i)], spec
         )
         snapshots = make_snapshots(stream, spec)
         if len(snapshots) != 21:
             raise RuntimeError(f"three-second stream produced {len(snapshots)} windows")
         center = next((s for s in snapshots if s.start_frame == TARGET_START_FRAME), None)
         if center is None or not np.array_equal(
-            center.model_input, _padded_clip(bits[sample_index], spec)
+            center.model_input, _padded_clip(bits[local_index], spec)
         ):
             raise RuntimeError("center snapshot does not reproduce the source clip")
-        cases.append((sample_index, int(labels[sample_index]), snapshots))
+        cases.append((sample_index, int(labels[local_index]), snapshots))
         all_inputs.extend(s.model_input for s in snapshots)
 
     input_array = np.stack(all_inputs)
@@ -409,6 +494,7 @@ def main() -> None:
         "checkpoint": str(run / "best.pt"),
         "checkpoint_epoch": checkpoint.get("epoch"),
         "split": args.split,
+        "input_source": input_source,
         "analog_csv_root": str(cfg.data.analog_csv_root),
         "device": str(device),
         "seed": args.seed,

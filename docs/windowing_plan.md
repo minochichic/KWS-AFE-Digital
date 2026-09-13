@@ -284,8 +284,10 @@ P5-g 는 "보드에서 돈다" 이고 이 계획은 "보드에서 **쓸모 있�
 
 ## 8. Python 연속창 평가 (RTL 작성 전)
 
-`experiments/eval_streaming.py`는 학습에 사용한 이진 AFE CSV와 `best.pt`를 이용해
-창 이동과 판정 정책을 먼저 검증한다. 원격 GPU 환경에서 실행한다.
+`experiments/eval_streaming.py`는 `best.pt`와 학습 당시 입력 경로를 이용해 창 이동과
+판정 정책을 먼저 검증한다. `bd_base` 같은 오디오 런은 원본 WAV를 체크포인트에 저장된
+AFE threshold로 이진화한다. 프레임 런은 `analog_csv_root`의 이진 CSV를 읽는다.
+원격 GPU 환경에서 실행한다.
 
 ```bash
 git pull
