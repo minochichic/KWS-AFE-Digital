@@ -37,7 +37,7 @@ NAMES MUST MATCH THE MANIFEST, or the testbench looks for files that do not
 exist, compares nothing, and passes. tests/test_golden.py asserts the two name
 sets are identical.
 
-Run:  python -m export.golden --tag xl_g12 --clips 8
+Run:  python -m export.golden --tag xl_g12 --clips 8 --split val
 """
 from __future__ import annotations
 
@@ -253,7 +253,7 @@ def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
 
 @torch.no_grad()
 def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
-                tag: str) -> Dict[str, Any]:
+                tag: str, source_split: Optional[str] = None) -> Dict[str, Any]:
     """Run `x` [N, C, T] in {-1,+1} and write every layer's reference values."""
     out.mkdir(parents=True, exist_ok=True)
     model = model.eval()
@@ -358,6 +358,8 @@ def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
            "n_channels": int(x.shape[1]), "T": int(x.shape[2]),
            "files": files, "tail": tail_report,
            "note": "compare layer by layer; the first mismatch names the module"}
+    if source_split is not None:
+        man["source_split"] = source_split
     (out / "golden.json").write_text(json.dumps(man, indent=2))
     return man
 
@@ -389,6 +391,8 @@ def main() -> None:
     ap.add_argument("--tag", required=True)
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--clips", type=int, default=8)
+    ap.add_argument("--split", choices=["train", "val", "test"], default="val",
+                    help="dataset split used for golden inputs (default: val)")
     ap.add_argument("--out", default=None, help="default runs/<tag>/rtl/golden")
     args = ap.parse_args()
 
@@ -401,6 +405,7 @@ def main() -> None:
     model = BinaryMatchboxNet(cfg.model).eval()
     ck = torch.load(run / "best.pt", map_location="cpu", weights_only=True)
     model.load_state_dict(ck["model"])
+    split_index = {"train": 0, "val": 1, "test": 2}[args.split]
 
     # 런이 두 종류이고 입력을 얻는 길이 다르다. `train.py` 가 갈랐던 것과 **같은
     # 조건**으로 가른다 (`train.py:369`) -- 거기서 갈린 결과가 체크포인트에 그대로
@@ -421,21 +426,21 @@ def main() -> None:
         from data.analog_spectrogram import build_analog_dataloaders
         te = build_analog_dataloaders(cfg.data, cfg.train.batch_size,
                                       target_T=cfg.model.T,
-                                      seed=cfg.train.seed)[2]
+                                      seed=cfg.train.seed)[split_index]
         x, labels = next(iter(te))
         x, labels = x[:args.clips], labels[:args.clips]
     else:
         afe = AFEFrontend(cfg.afe).eval()
         load_afe_state(afe, ck["afe"])
         te = build_dataloaders(cfg.data, cfg.train.batch_size, cfg.afe.sample_rate,
-                               seed=cfg.train.seed)[2]
+                               seed=cfg.train.seed)[split_index]
         wav, labels = next(iter(te))
         wav, labels = wav[:args.clips], labels[:args.clips]
         with torch.no_grad():
             x = afe(wav, target_T=cfg.model.T)
 
     out = Path(args.out) if args.out else run / "rtl" / "golden"
-    man = dump_golden(model, x, out, args.tag)
+    man = dump_golden(model, x, out, args.tag, source_split=args.split)
     write_golden_paths_vh(man, out, args.out or str(run / "rtl" / "golden"))
     (out / "labels.txt").write_text(
         "\n".join(str(int(v)) for v in labels.tolist()) + "\n")

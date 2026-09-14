@@ -799,8 +799,8 @@ margin 1.00은 전체 quiet false 수는 예산 이하지만 unknown false가 42
 
 다음 순서는 아래와 같다.
 
-1. 선택 checkpoint를 `export.emit`과 `export.golden`으로 변환하고 float/fixed argmax를
-   확인한다.
+1. 선택 checkpoint를 `export.emit`과 `export.golden --split val`로 변환하고
+   float/fixed argmax를 확인한다.
 2. 기존 validation 입력에서 fixed-point logit margin을 계산해 float margin 1.05에 대응하는
    정수 문턱을 고정한다. 필요한 경우 인접한 정수 문턱만 비교하며 N, hop, checkpoint는
    다시 고르지 않는다.
