@@ -763,3 +763,50 @@ python -m train.train \
 두 run의 validation clip accuracy와 100 ms streaming recall/quiet/wrong을 먼저 비교한다.
 partial run이 control보다 좋아야 augmentation 효과로 인정한다. 그 뒤에만 noise fill과
 50 ms hop을 조합한다. test split과 RTL 변경은 최종 정책을 고정한 다음 단계다.
+
+### 10.9 validation 운영점 고정 (2026-09-14)
+
+`bd_base_ft20_partial75`는 중앙 clip 정확도 2540/3072(82.68%)로 같은 조건의
+fine-tune control과 같았다. 그러나 margin을 적용하기 전 100 ms streaming recall은
+1853/2560(72.38%)로 control의 1814/2560(70.86%)보다 높았고, quiet false stream도
+69/512로 control의 113/512보다 적었다. partial-window 학습은 중앙 clip 정확도를
+올리기보다 경계 창과 quiet 판정을 개선했다.
+
+기존 `bd_base`의 100 ms N5/margin1.25 결과를 임시 비퇴행 예산으로 사용한다:
+quiet false 52/512 이하, silence false 15/256 이하, unknown false 37/256 이하,
+wrong event 287 이하, outside/duplicate 0, median latency 1000 ms 이하. 이 예산은 실제
+현장 false-accept 요구사항에서 유도된 값이 아니므로 추후 연속 녹음 평가에서 다시 정한다.
+
+| 모델/정책 | recall | quiet false | silence / unknown | wrong | latency |
+|---|---:|---:|---:|---:|---:|
+| 기존 `bd_base`, N5, margin 1.25 | 1734/2560 (67.73%) | 52/512 | 15 / 37 | 287 | 1000 ms |
+| partial75, N5, margin 1.00 | 69.77% | 46/512 | 4 / 42 | 250 | 1000 ms |
+| **partial75, N5, margin 1.05** | **1780/2560 (69.53%)** | **41/512** | **4 / 37** | **242** | **1000 ms** |
+| partial75, N5, margin 1.25 | 1760/2560 (68.75%) | 35/512 | 2 / 33 | 229 | 1000 ms |
+
+따라서 현재 validation 운영점은 다음과 같이 고정한다.
+
+- checkpoint: `runs/bd_base_ft20_partial75/best.pt` (epoch 20)
+- snapshot hop: 100 ms (`hop_frames=10`)
+- 판정: 같은 keyword 5회 연속
+- keyword 대 quiet logit margin: 1.05
+- cooldown: 10 windows = 1 s
+
+margin 1.00은 전체 quiet false 수는 예산 이하지만 unknown false가 42로 기준 37을
+넘는다. 1.05는 시험한 값 중 모든 비퇴행 예산을 만족하면서 recall이 가장 높다.
+기존 운영점보다 keyword hit가 46개(+1.80%p), quiet false가 11개, wrong event가
+45개 개선됐다. 이 선택으로 validation 정책 탐색을 끝낸다.
+
+다음 순서는 아래와 같다.
+
+1. 고정한 설정 그대로 official test split을 한 번 평가한다. test 결과로 margin, N,
+   checkpoint를 다시 고르지 않는다.
+2. 선택 checkpoint를 `export.emit`과 `export.golden`으로 변환하고 float/fixed argmax를
+   확인한다.
+3. 기존 단일 snapshot RTL을 새 ROM과 골든 벡터로 XSim 검증한 뒤 Vivado 합성한다.
+4. 100 ms snapshot scheduler, N5 voter, margin gate, 1 s cooldown을 board wrapper에
+   단계적으로 추가한다. margin 1.05는 float 값을 그대로 RTL 상수로 쓰지 않고 export된
+   logit 고정소수점 스케일에 맞춰 정수화한다.
+5. 장시간 silence, `_background_noise_`, unknown, 실제 AFE 연속 입력으로 시간당/분당
+   false accept를 측정해 현장 예산을 정한다. 그 데이터가 생기기 전에는 50 ms hop이나
+   추가 재학습을 기본 설계에 넣지 않는다.
