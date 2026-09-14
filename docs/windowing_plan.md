@@ -366,6 +366,15 @@ python -m experiments.diagnose_streaming \
 여러 문제가 동시에 있을 수 있다. `raw_any_correct_window_cases`는 정답 라벨을 알고
 창을 골라 센 진단치이며, 실제 검출기가 달성할 수 있는 recall로 해석하지 않는다.
 
+진단 CSV와 summary에는 정답 top-1 창의 총수(`raw_correct_windows`), 최장 연속 길이
+(`raw_max_correct_streak`), N개의 정답 창을 포함하는 최소 연속 구간
+(`raw_min_span_for_required`)도 기록한다. margin 적용 후의 같은 세 값은 `gated_*`로
+기록한다. `raw_correct_windows >= N`인데 최장 연속 길이가 N보다 작으면 정답 표는
+충분하지만 서로 떨어져 있는 경우다. 이때 최소 구간은 N-of-K가 수용할 수 있는 K의
+기하학적 하한이다. 실제 검출 여부에는 full-history, gate, cooldown 조건도 함께 작용한다.
+반대로 총수부터 N보다 작으면 투표 규칙만 느슨하게 해서는 N표를 만들 수 없다. 이 값들도
+정답을 알고 계산하는 진단치이며 운영 중 검출기가 보는 신호는 아니다.
+
 추가 실험 후보(당시 계획; 점수 평균·M-of-K 비교 구현은 §10 참조):
 
 - 현재는 margin 탈락을 silence로 바꾸므로 streak가 끊기면서 재검출도 허용될 수 있다.

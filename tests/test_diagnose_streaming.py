@@ -1,7 +1,11 @@
 """Small trace scenarios with independently specified event outcomes."""
 import unittest
 
-from experiments.diagnose_streaming import diagnose_case, diagnose_cases
+from experiments.diagnose_streaming import (
+    correct_support,
+    diagnose_case,
+    diagnose_cases,
+)
 from experiments.streaming_window import VoteConfig
 from experiments.sweep_streaming_gate import TraceCase, TraceWindow, evaluate_gate
 
@@ -33,8 +37,28 @@ class DiagnoseStreamingTests(unittest.TestCase):
                          "correct_but_not_consecutive")
 
     def test_gap_breaks_correct_streak(self):
-        self.assertEqual(self.outcome(make_case([2, 2, 2], ids=[0, 1, 3])),
-                         "correct_but_not_consecutive")
+        case = make_case([2, 2, 2], ids=[0, 1, 3])
+        self.assertEqual(self.outcome(case), "correct_but_not_consecutive")
+        self.assertEqual(correct_support(case, [2, 2, 2], 3), (3, 2, None))
+
+    def test_correct_support_separates_count_streak_and_minimum_span(self):
+        case = make_case([2, 10, 2, 10, 2, 2])
+        predictions = [2, 10, 2, 10, 2, 2]
+        self.assertEqual(correct_support(case, predictions, 3), (4, 2, 4))
+        row = diagnose_case(case, 1.0, self.config)
+        self.assertEqual(row["raw_correct_windows"], 4)
+        self.assertEqual(row["raw_max_correct_streak"], 2)
+        self.assertEqual(row["raw_min_span_for_required"], 4)
+
+    def test_gate_support_is_reported_separately(self):
+        case = make_case([2, 2, 2], margins=[2, .5, 2])
+        row = diagnose_case(case, 1.0, self.config)
+        self.assertEqual((row["raw_correct_windows"],
+                          row["raw_max_correct_streak"],
+                          row["raw_min_span_for_required"]), (3, 3, 3))
+        self.assertEqual((row["gated_correct_windows"],
+                          row["gated_max_correct_streak"],
+                          row["gated_min_span_for_required"]), (2, 1, None))
 
     def test_gate_breaks_an_otherwise_sufficient_correct_streak(self):
         self.assertEqual(self.outcome(make_case([2, 2, 2], margins=[2, .5, 2])),
@@ -90,12 +114,16 @@ class DiagnoseStreamingTests(unittest.TestCase):
             self.assertEqual(summary[key], reference[key])
         self.assertEqual(sum(r["wrong_events"] for r in rows),
                          reference["wrong_detections_while_target_overlaps"])
+        self.assertEqual(sum(summary["raw_support_partition"].values()), 5)
+        self.assertEqual(summary["schema_version"], 2)
 
     def test_invalid_inputs(self):
         with self.assertRaises(ValueError):
             diagnose_cases([], 1.0, self.config)
         with self.assertRaises(ValueError):
             diagnose_case(make_case([2]), float("nan"), self.config)
+        with self.assertRaises(ValueError):
+            correct_support(make_case([2]), [2], 0)
 
 
 if __name__ == "__main__":
