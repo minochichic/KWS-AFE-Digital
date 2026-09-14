@@ -485,3 +485,71 @@ latency는 삽입 클립 시작부터 창 끝까지이며, 기준 시각은 기�
    현재 3초 합성 스트림의 비율을 시간당 오검출로 환산하지 않는다.
 5. 정책을 고정한 뒤 test를 평가하고, fixed-point pooled score와의 일치를 확인해 RTL로 옮긴다.
    float logit margin이나 확률 threshold를 그대로 RTL 상수로 복사하지 않는다.
+
+### 10.4 판정 방식 비교 결과 (2026-09-14)
+
+128개/class validation trace의 75개 설정 탐색에서는 엄격한 예산을 모두 만족하면서
+기준보다 높은 recall을 내는 후보가 없었다. 엄격한 예산은 quiet 오검출 총수뿐 아니라
+silence/unknown 각각의 오검출, wrong/outside/duplicate 이벤트, median latency가 모두
+기준보다 증가하지 않아야 한다는 조건이다.
+
+이 조건에서 방식별로 남은 최상위 후보는 다음과 같았다.
+
+| 정책 | keyword recall | quiet false streams | wrong | median latency |
+|---|---:|---:|---:|---:|
+| 기준: N5, margin 1.25 | 896/1280 (70.00%) | 28/256 | 140 | 1000 ms |
+| 4-of-6, margin 2.5 | 894/1280 (69.84%) | 23/256 | 125 | 1000 ms |
+| mean probabilities, K5, p=0.8 | 772/1280 (60.31%) | 19/256 | 69 | 1000 ms |
+
+mean logits에는 엄격한 예산을 만족한 후보가 없었다. 이는 전체 탐색 결과에서 해당
+방식이 항상 나빴다는 뜻이 아니라, 위의 모든 제한을 동시에 통과하지 못했다는 뜻이다.
+
+전체 quiet 오검출 예산만 먼저 적용해 탈락 후보를 다시 조사하니
+**5-of-6, margin 1.5, cooldown 10**이 발견됐다. 이 후보는 unknown 오검출이
+19/128에서 21/128로 2건 늘어 엄격한 예산에서 제외됐지만, silence 오검출은
+9/128에서 6/128로 줄고 전체 quiet 오검출은 28/256에서 27/256으로 줄었다.
+
+128개/class의 사례별 비교:
+
+| 항목 | 기준 N5/margin1.25 | 후보 5-of-6/margin1.5 | 변화 |
+|---|---:|---:|---:|
+| keyword clean hit | 896/1280 (70.00%) | 918/1280 (71.72%) | +22 |
+| quiet false streams | 28/256 | 27/256 | -1 |
+| wrong events | 140 | 139 | -1 |
+| outside / duplicate | 0 / 0 | 0 / 0 | 동일 |
+| median latency | 1000 ms | 1000 ms | 동일 |
+
+후보는 기준 성공 11건을 잃고 실패 33건을 새로 살려 순증 22건이었다. 새로 살린
+33건의 기준 진단 범주는 `correct_but_not_consecutive` 21건,
+`margin_broke_correct_streak` 11건, `blocked_after_detection` 1건이다.
+quiet 사례에서는 기존 오검출 7건을 해결하고 6건에 새 오검출을 만들었다. 따라서
+오검출 대상은 일부 교체됐으며, 총수 -1만으로 모든 quiet 사례가 안정됐다고 보지 않는다.
+
+같은 두 정책만 256개/class validation trace에서 확대 비교했다. 이 trace는 3072개
+case와 64512개 window를 포함하며 center-window accuracy는 2567/3072(83.56%)였다.
+
+| 항목 | 기준 N5/margin1.25 | 후보 5-of-6/margin1.5 | 변화 |
+|---|---:|---:|---:|
+| keyword clean hit | 1734/2560 (67.73%) | 1784/2560 (69.69%) | +50 |
+| quiet false streams | 52/512 | 51/512 | -1 |
+| silence false streams | 15/256 | 15/256 | 동일 |
+| unknown false streams | 37/256 | 36/256 | -1 |
+| wrong events | 287 | 296 | +9 |
+| outside / duplicate | 0 / 0 | 0 / 0 | 동일 |
+| median latency | 1000 ms | 1000 ms | 동일 |
+
+후보의 recall 증가는 +1.72%p와 +1.95%p로 두 평가 크기에서 비슷하게 관찰됐다.
+다만 256개/class 평가는 128개/class와 일부 validation 사례가 겹칠 수 있으므로
+독립 재현으로 세지 않는다. 확대 평가에서는 keyword 구간의 wrong event가 9건 늘었다.
+
+현재 결정은 다음과 같다.
+
+- 기존 N5/margin1.25는 보수적인 기준 정책으로 유지한다.
+- 5-of-6/margin1.5/cooldown10은 추가 학습과 후속 평가에서 함께 비교할 후보로 유지한다.
+- 후보를 최종 운영 정책이나 RTL 사양으로 확정하지 않는다. float logits에 맞춘 margin을
+  fixed-point 상수로 옮기지도 않는다.
+- 판정 방식만으로 확인된 순개선은 약 2%p다. 다음 큰 개선 실험은 train split에서
+  단어 위치 변화와 어려운 unknown/잡음을 반영하는 추가 학습이다. AFE threshold,
+  `normalize: fixed`, 모델 구조와 QAT 경로는 유지하고 별도 tag로 결과를 저장한다.
+- 추가 학습 전후를 같은 두 판정 정책으로 비교하고, 최종 선택 후에만 test split을 연다.
+- 실제 연속 파형과 장시간 음성/잡음에서 검출률, 시간당 오검출, 지연을 별도로 평가한다.
