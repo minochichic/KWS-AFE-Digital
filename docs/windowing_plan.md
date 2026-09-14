@@ -799,14 +799,17 @@ margin 1.00은 전체 quiet false 수는 예산 이하지만 unknown false가 42
 
 다음 순서는 아래와 같다.
 
-1. 고정한 설정 그대로 official test split을 한 번 평가한다. test 결과로 margin, N,
-   checkpoint를 다시 고르지 않는다.
-2. 선택 checkpoint를 `export.emit`과 `export.golden`으로 변환하고 float/fixed argmax를
+1. 선택 checkpoint를 `export.emit`과 `export.golden`으로 변환하고 float/fixed argmax를
    확인한다.
-3. 기존 단일 snapshot RTL을 새 ROM과 골든 벡터로 XSim 검증한 뒤 Vivado 합성한다.
-4. 100 ms snapshot scheduler, N5 voter, margin gate, 1 s cooldown을 board wrapper에
+2. 기존 validation 입력에서 fixed-point logit margin을 계산해 float margin 1.05에 대응하는
+   정수 문턱을 고정한다. 필요한 경우 인접한 정수 문턱만 비교하며 N, hop, checkpoint는
+   다시 고르지 않는다.
+3. 고정한 fixed-point 정책 그대로 official test split을 한 번 평가한다. test 결과로
+   margin, N, checkpoint를 다시 고르지 않는다.
+4. 기존 단일 snapshot RTL을 새 ROM과 골든 벡터로 XSim 검증한 뒤 Vivado 합성한다.
+5. 100 ms snapshot scheduler, N5 voter, margin gate, 1 s cooldown을 board wrapper에
    단계적으로 추가한다. margin 1.05는 float 값을 그대로 RTL 상수로 쓰지 않고 export된
    logit 고정소수점 스케일에 맞춰 정수화한다.
-5. 장시간 silence, `_background_noise_`, unknown, 실제 AFE 연속 입력으로 시간당/분당
+6. 장시간 silence, `_background_noise_`, unknown, 실제 AFE 연속 입력으로 시간당/분당
    false accept를 측정해 현장 예산을 정한다. 그 데이터가 생기기 전에는 50 ms hop이나
    추가 재학습을 기본 설계에 넣지 않는다.
