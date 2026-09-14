@@ -562,3 +562,34 @@ case와 64512개 window를 포함하며 center-window accuracy는 2567/3072(83.5
   `normalize: fixed`, 모델 구조와 QAT 경로는 유지하고 별도 tag로 결과를 저장한다.
 - 추가 학습 전후를 같은 두 판정 정책으로 비교하고, 최종 선택 후에만 test split을 연다.
 - 실제 연속 파형과 장시간 음성/잡음에서 검출률, 시간당 오검출, 지연을 별도로 평가한다.
+
+### 10.5 단어 위치 강건성 측정
+
+기존 streaming trace의 offset 정확도는 원본 1초 클립을 앞뒤로 밀면서 창 밖 부분을
+잘라낸 결과다. 따라서 위치 변화와 단어 절단이 섞여 있다. 특히 음수가 양수보다 좋은
+비대칭은 원본 단어가 정확히 중앙에 있지 않다는 영향도 받는다. 이 표만으로 위치 증강의
+효과를 판단하거나, 잘린 모든 창에 원래 keyword 라벨을 붙여 학습하지 않는다.
+
+`experiments/window_offset.py`는 먼저 RMS로 단어 구간을 찾고 그 구간 전체를 보존한 채
+1초 창의 왼쪽 끝부터 오른쪽 끝까지 옮긴다. 빈 구간은 원본 클립의 단어 밖 noise floor에
+맞춘 Speech Commands `_background_noise_` crop(`room`) 또는 정확한 0(`zero`)으로 채운다.
+`room`이 실제 강건성 판단용이고 `zero`는 배경의 영향을 분리하는 대조군이다. 기본값은
+validation split의 10개 keyword만 평가한다. silence/unknown은 단어 위치라는 개념이
+없으므로 기본 곡선에서 제외한다.
+
+원격 GPU 환경에서 실행한다.
+
+```bash
+git pull --ff-only origin codex/windowing
+python -m pytest tests/test_window_offset.py
+python experiments/window_offset.py bd_base \
+  --split val \
+  --fill room,zero \
+  --steps 9
+```
+
+데이터셋 경로가 run config와 다르면 마지막 명령에
+`--root /실제/SpeechCommands/경로`를 추가한다. 위치 0은 단어가 창 왼쪽 끝에 붙은 경우,
+1은 오른쪽 끝에 붙은 경우다. 모든 위치에서 같은 clip 집합과 단어 전체를 사용하므로
+가운데 대비 양 끝 정확도 하락이 실제 위치 민감도를 나타낸다. 정책과 학습법을 선택하는
+동안에는 `--split test`를 사용하지 않는다.

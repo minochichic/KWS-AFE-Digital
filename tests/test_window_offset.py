@@ -14,7 +14,7 @@ import pytest
 import torch
 
 from experiments.window_offset import (FILLS, make_bed, noise_floor_rms,
-                                       reposition, word_span)
+                                       offset_curve, reposition, word_span)
 
 SR = 16000
 
@@ -88,3 +88,24 @@ def test_reposition_conserves_energy_at_both_edges() -> None:
                        torch.zeros_like(x))
         for i in range(x.shape[0]):
             assert abs(float(y[i].pow(2).sum()) / e0[i] - 1.0) < 1e-4
+
+
+def test_offset_curve_can_report_keywords_only() -> None:
+    """The position curve must not be inflated by silence/unknown cases."""
+    class IdentityAFE:
+        def __call__(self, x, target_T):
+            return x
+
+    class ZeroModel:
+        def __call__(self, x):
+            return torch.zeros(x.shape[0], 12)
+
+    x = _clip(n=4)
+    y = torch.tensor([0, 9, 10, 11])
+    result = offset_curve(
+        IdentityAFE(), ZeroModel(), [(x, y)], target_T=128,
+        steps=3, fills=("zero",), keyword_only=True,
+    )
+
+    assert result["total"] == 2
+    assert result["kept"] == 2

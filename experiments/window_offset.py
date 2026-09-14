@@ -174,7 +174,7 @@ def reposition(x: torch.Tensor, a: torch.Tensor, b: torch.Tensor,
 @torch.no_grad()
 def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
                  fills=("room", "zero"), device: str = "cpu", seed: int = 0,
-                 data_root: str | None = None):
+                 data_root: str | None = None, keyword_only: bool = False):
     """Accuracy vs where the word sits inside the window. Returns a dict.
 
     Exposed as a function so the notebook and the CLI share ONE implementation
@@ -205,6 +205,11 @@ def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
     g = torch.Generator(device="cpu").manual_seed(seed)
     for x, y in loader:
         x, y = x.to(device), y.to(device)
+        if keyword_only:
+            keep = y < 10
+            x, y = x[keep], y[keep]
+            if not y.numel():
+                continue
         total += y.numel()
         a, b = word_span(x)
         ok = b > a
@@ -264,6 +269,10 @@ def main() -> None:
                    help=f"콤마 구분. {FILLS} 중에서")
     p.add_argument("--steps", type=int, default=9, help="positions across the "
                    "window, 0 = word flush left, 1 = flush right")
+    p.add_argument("--split", choices=("val", "test"), default="val",
+                   help="evaluation split; keep test unopened until final selection")
+    p.add_argument("--all-classes", action="store_true",
+                   help="include silence/unknown; default reports keywords only")
     args = p.parse_args()
 
     dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -287,12 +296,18 @@ def main() -> None:
     model.load_state_dict(ck["model"])
     load_afe_state(afe, ck["afe"])
 
-    _, _, te = build_dataloaders(cfg.data, cfg.train.batch_size, SR,
-                                 seed=cfg.train.seed)
+    loaders = build_dataloaders(cfg.data, cfg.train.batch_size, SR,
+                                seed=cfg.train.seed)
+    loader = loaders[1 if args.split == "val" else 2]
 
     fills = [s.strip() for s in args.fill.split(",") if s.strip()]
-    res = offset_curve(afe, model, te, cfg.model.T, steps=args.steps,
-                       fills=fills, device=dev, data_root=cfg.data.root)
+    print(f"split: {args.split}; classes: "
+          f"{'all' if args.all_classes else 'keywords only'}")
+    res = offset_curve(
+        afe, model, loader, cfg.model.T, steps=args.steps, fills=fills,
+        device=dev, data_root=cfg.data.root,
+        keyword_only=not args.all_classes,
+    )
     print_offset_curve(res, args.tag)
 
 
