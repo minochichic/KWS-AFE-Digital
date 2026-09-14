@@ -294,10 +294,18 @@ def main() -> None:
     ap.add_argument("--resume", action="store_true",
                     help="continue from runs/<tag>/last.pt if it exists "
                          "(safe on a fresh run: just starts from epoch 1)")
+    ap.add_argument("--init-from", default=None,
+                    help="initialize model/AFE weights from a checkpoint but "
+                         "start a fresh optimizer and run directory")
+    ap.add_argument("--skip-test", action="store_true",
+                    help="do not evaluate the held-out test split while "
+                         "selecting an experiment on validation")
     ap.add_argument("overrides", nargs="*",
                     help="dotted config overrides, e.g. data.root=/content/ds "
                          "model.C=32")
     args = ap.parse_args()
+    if args.resume and args.init_from:
+        ap.error("--resume and --init-from cannot be used together")
 
     if args.overfit_smoke:
         _run_overfit_smoke(args)
@@ -316,6 +324,8 @@ def _run_analog_csv(args, cfg) -> None:
 
     set_seed(cfg.train.seed)
     model = BinaryMatchboxNet(cfg.model)
+    if args.init_from:
+        _load_initial_state(model, None, args.init_from)
     train_loader, val_loader, test_loader = build_analog_dataloaders(
         cfg.data, cfg.train.batch_size, target_T=cfg.model.T, seed=cfg.train.seed)
 
@@ -323,7 +333,23 @@ def _run_analog_csv(args, cfg) -> None:
           f"n_classes={cfg.model.n_classes}")
     trainer = Trainer(cfg, model, afe=None)
     trainer.fit(train_loader, val_loader, resume=args.resume)
-    _report(trainer, model, None, test_loader)
+    if args.skip_test:
+        print(f"\nvalidation-only run complete: {trainer.run_dir}")
+    else:
+        _report(trainer, model, None, test_loader)
+
+
+def _load_initial_state(model, afe, path: str) -> None:
+    """Warm-start weights only; optimizer/scheduler deliberately start fresh."""
+    state = torch.load(path, map_location="cpu", weights_only=True)
+    model.load_state_dict(state["model"])
+    if afe is not None:
+        if "afe" not in state:
+            raise ValueError(f"checkpoint {path} has no AFE state")
+        from data.afe import load_afe_state
+        load_afe_state(afe, state["afe"])
+    print(f"initialized model/AFE from {path} (epoch {state.get('epoch', '?')}); "
+          "optimizer starts fresh")
 
 
 def _base_overrides(args, default_tag: str) -> dict:
@@ -389,15 +415,21 @@ def _run_speech_commands(args) -> None:
     # not frames. Measured across two seeds it moved 2.4x on one batch
     # (data/afe.py collect_init_batch). That number is the V_ref offset handed
     # to the analog side.
-    waves = collect_init_batch(train_loader)         # 2048 clips
-    if cfg.afe.normalize in _NEEDS_SCALE:
-        afe.init_fixed_scale(waves)                  # delta first
-    afe.init_thresholds(waves)                       # then the thresholds
+    if args.init_from:
+        _load_initial_state(model, afe, args.init_from)
+    else:
+        waves = collect_init_batch(train_loader)     # 2048 clips
+        if cfg.afe.normalize in _NEEDS_SCALE:
+            afe.init_fixed_scale(waves)              # delta first
+        afe.init_thresholds(waves)                   # then the thresholds
 
     trainer = Trainer(cfg, model, afe=afe)
     trainer.fit(train_loader, val_loader, resume=args.resume)
 
-    _report(trainer, model, afe, test_loader)
+    if args.skip_test:
+        print(f"\nvalidation-only run complete: {trainer.run_dir}")
+    else:
+        _report(trainer, model, afe, test_loader)
 
 
 def _report(trainer, model, afe, test_loader) -> None:

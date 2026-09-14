@@ -414,6 +414,15 @@ class DataConfig:
     # as the dominant loss, ~-8pp). Training across gains is the only
     # purely-software lever against it. e.g. [-10, 10] = x0.32..x3.2.
     aug_gain_db: List[float] = field(default_factory=lambda: [0.0, 0.0])
+    # Streaming adaptation.  With this probability, a keyword training clip is
+    # converted to a one-second boundary snapshot containing only a controlled
+    # fraction of its RMS-detected word span.  Quiet/unknown labels are never
+    # changed.  Defaults are an exact no-op for baseline reproduction.
+    aug_keyword_partial_prob: float = 0.0
+    aug_keyword_partial_min_coverage: float = 0.75
+    aug_keyword_partial_max_coverage: float = 1.0
+    aug_keyword_partial_active_frac: float = 0.02
+    aug_keyword_partial_fill: str = "zero"  # "zero" | "noise"
     aug_specaug_time_masks: int = 0    # SpecAugment: deferred (not implemented)
     aug_specaug_freq_masks: int = 0
 
@@ -465,6 +474,24 @@ class Config:
         # otherwise create a directory literally named "~" and then download a
         # fresh copy into it.
         self.data.root = os.path.expanduser(self.data.root)
+
+        d = self.data
+        if not 0.0 <= d.aug_keyword_partial_prob <= 1.0:
+            raise ValueError("data.aug_keyword_partial_prob must be in [0, 1]")
+        if not (0.0 < d.aug_keyword_partial_min_coverage
+                <= d.aug_keyword_partial_max_coverage <= 1.0):
+            raise ValueError(
+                "data keyword partial coverage must satisfy "
+                "0 < min <= max <= 1"
+            )
+        if not 0.0 < d.aug_keyword_partial_active_frac < 1.0:
+            raise ValueError(
+                "data.aug_keyword_partial_active_frac must be in (0, 1)"
+            )
+        if d.aug_keyword_partial_fill not in ("zero", "noise"):
+            raise ValueError(
+                "data.aug_keyword_partial_fill must be 'zero' or 'noise'"
+            )
 
         k = getattr(a, "comparators_per_channel", 1)
         if k < 1:

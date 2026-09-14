@@ -215,6 +215,14 @@ data:
   aug_time_shift_ms: 0.0
   aug_noise_prob: 0.0
   aug_noise_snr_db: [5.0, 30.0]
+  # Streaming boundary adaptation. A keyword-only crop keeps a random
+  # 75--100% of the RMS-detected word at the left or right edge. OFF keeps the
+  # established baseline exact; enable only under a new run tag.
+  aug_keyword_partial_prob: 0.0
+  aug_keyword_partial_min_coverage: 0.75
+  aug_keyword_partial_max_coverage: 1.0
+  aug_keyword_partial_active_frac: 0.02
+  aug_keyword_partial_fill: zero
   aug_specaug_time_masks: 0     # SpecAugment deferred
   aug_specaug_freq_masks: 0
 

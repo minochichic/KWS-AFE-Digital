@@ -142,7 +142,18 @@ class SpeechCommands12(Dataset):
             aug = WaveformAugment(
                 sample_rate, cfg.aug_time_shift_ms, cfg.aug_noise_prob,
                 tuple(cfg.aug_noise_snr_db), self._noise,
-                tuple(getattr(cfg, "aug_gain_db", (0.0, 0.0))))
+                tuple(getattr(cfg, "aug_gain_db", (0.0, 0.0))),
+                keyword_partial_prob=cfg.aug_keyword_partial_prob,
+                keyword_partial_min_coverage=(
+                    cfg.aug_keyword_partial_min_coverage
+                ),
+                keyword_partial_max_coverage=(
+                    cfg.aug_keyword_partial_max_coverage
+                ),
+                keyword_partial_active_frac=(
+                    cfg.aug_keyword_partial_active_frac
+                ),
+                keyword_partial_fill=cfg.aug_keyword_partial_fill)
             if not aug.is_noop():
                 self._augment = aug
 
@@ -174,7 +185,7 @@ class SpeechCommands12(Dataset):
             wave, word = self._items[self._real[idx]]
             wave = wave.reshape(-1)
             if self._augment is not None:        # real utterances only
-                wave = self._augment(wave)
+                wave = self._augment(wave, keyword=(word in _KW_TO_IDX))
             return wave, label_to_index(word)
         # silence: generated on demand, deterministic per (split, position)
         s = idx - len(self._real)

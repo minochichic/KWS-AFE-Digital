@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import math
 
+import pytest
 import torch
 
 from data.augment import WaveformAugment
@@ -113,3 +114,44 @@ def test_gain_augment_scales_only_and_is_off_by_default() -> None:
 
     gains = [float((aug(w.clone()) / w)[w.abs() > 1e-3].median()) for _ in range(50)]
     assert max(gains) / min(gains) > 2.0           # actually varies per call
+
+
+# --------------------------------------------------------------------------- #
+# partial keyword windows
+# --------------------------------------------------------------------------- #
+def test_partial_window_is_keyword_only() -> None:
+    aug = WaveformAugment(
+        1000, keyword_partial_prob=1.0,
+        keyword_partial_min_coverage=0.75,
+        keyword_partial_max_coverage=0.75,
+    )
+    wave = torch.zeros(1000)
+    wave[400:800] = 1.0
+    assert torch.equal(aug(wave.clone(), keyword=False), wave)
+
+
+def test_partial_window_keeps_requested_coverage_at_an_edge() -> None:
+    torch.manual_seed(0)
+    aug = WaveformAugment(
+        1000, keyword_partial_prob=1.0,
+        keyword_partial_min_coverage=0.75,
+        keyword_partial_max_coverage=0.75,
+        keyword_partial_active_frac=0.02,
+        keyword_partial_fill="zero",
+    )
+    wave = torch.zeros(1000)
+    wave[400:800] = 1.0                  # 40 active 10 ms frames
+    out = aug(wave, keyword=True)
+
+    assert out.shape == wave.shape
+    assert int(out.sum()) == 300         # exactly 75% of the 400 samples
+    assert bool(torch.all(out[:300] == 1) or torch.all(out[-300:] == 1))
+
+
+def test_partial_window_rejects_bad_configuration() -> None:
+    with pytest.raises(ValueError, match="coverage"):
+        WaveformAugment(
+            16000,
+            keyword_partial_min_coverage=0.9,
+            keyword_partial_max_coverage=0.75,
+        )

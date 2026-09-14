@@ -185,6 +185,29 @@ def test_augment_leaves_silence_untouched() -> None:
     assert torch.equal(a, b)                            # deterministic (no aug)
 
 
+def test_partial_window_augment_is_applied_only_to_keywords() -> None:
+    wave = torch.zeros(16000)
+    wave[4000:10400] = 1.0              # 40 active 10 ms frames
+    cfg = DataConfig(
+        unknown_fraction=1.0,
+        silence_fraction=0.0,
+        aug_keyword_partial_prob=1.0,
+        aug_keyword_partial_min_coverage=0.75,
+        aug_keyword_partial_max_coverage=0.75,
+    )
+    ds = SpeechCommands12(
+        [(wave.clone(), "yes"), (wave.clone(), "bird")],
+        [], cfg, split="training", seed=0, sample_rate=16000, augment=True,
+    )
+
+    keyword_wave, keyword_label = ds[0]
+    unknown_wave, unknown_label = ds[1]
+    assert keyword_label == 0
+    assert int(keyword_wave.sum()) == 4800
+    assert unknown_label == UNKNOWN_INDEX
+    assert torch.equal(unknown_wave, wave)
+
+
 def test_dataset_has_all_12_classes_represented() -> None:
     ds = make_dataset(silence_fraction=0.2, unknown_fraction=0.2)
     labels = [ds[i][1] for i in range(len(ds))]

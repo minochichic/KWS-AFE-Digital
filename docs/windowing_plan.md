@@ -690,4 +690,76 @@ done
 
 50ms 결과는 기존 100ms 기준 N5/margin1.25의 validation 예산인 keyword recall
 67.73%, quiet false streams 52/512, wrong 287, median latency 1000ms와 비교한다.
-quiet와 wrong을 늘리지 않으면서 recall을 높이는 후보가 있는지 먼저 본다.
+
+### 10.7 50 ms hop 실측과 paired 비교 (2026-09-14)
+
+같은 2560개 keyword case와 512개 quiet case를 100 ms 기준과 직접 짝지어
+비교했다. 50 ms hop은 추론 횟수를 두 배로 만들기 때문에, 작은 숫자 차이만으로 RTL을
+바꾸지 않는다.
+
+| 정책 | keyword recall | quiet false | silence / unknown | wrong | latency |
+|---|---:|---:|---:|---:|---:|
+| 100 ms 기준 N5, margin 1.25 | 1734/2560 (67.73%) | 52/512 | 15 / 37 | 287 | 1000 ms |
+| 50 ms N6, margin 1.75 | 1769/2560 (69.10%) | 45/512 | 16 / 29 | 267 | 900 ms |
+| 50 ms N6, margin 2.0 | 1732/2560 (67.66%) | 32/512 | 12 / 20 | 228 | 900 ms |
+| 50 ms N5, margin 2.0 | 1817/2560 (70.98%) | 52/512 | 17 / 35 | 305 | 850 ms |
+
+paired 변화는 다음과 같다.
+
+- N6/margin1.75: 129 case 회복, 94 case 손실, 순 +35(+1.37%p). 대응 95% 구간은
+  +0.23~+2.51%p이고 정확 McNemar 검정은 p=0.0226이다. quiet false case는 17개가
+  새로 생기고 24개가 사라져 순 -7이다.
+- N6/margin2.0: 115 case 회복, 117 case 손실로 recall 변화가 없다. 대신 quiet false는
+  8개가 생기고 28개가 사라져 유의하게 감소한다(-3.91%p, p=0.00119).
+- N5/margin2.0: 169 case 회복, 86 case 손실, 순 +83(+3.24%p). 대응 95% 구간은
+  +2.03~+4.46%p이고 p=2.23e-7이다. 전체 quiet false는 22개 생성/22개 해소로 같지만,
+  wrong event는 18개 늘었다. clean single hit는 1816 case라 hit 1817과 한 case 차이다.
+
+따라서 N5/margin2.0은 **고-recall 후보**, N6/margin1.75는 **균형 후보**,
+N6/margin2.0은 **저오검출 후보**로 보존한다. 현 단계의 기본 RTL은 100 ms hop을
+유지한다. 50 ms의 2배 추론 비용을 정당화하려면 partial-window 학습 후에도 이 차이가
+남는지 다시 확인해야 한다.
+
+### 10.8 첫 partial-window 적응 학습
+
+단어 75% 이상을 포함하는 창은 모든 keyword case에 연속 5회 이상 존재하지만, 실제로
+정답이 연속 5회 나오는 case는 1645/2560(64.3%)뿐이었다. 따라서 첫 학습은 keyword
+샘플의 RMS 단어 구간 중 75~100%를 한쪽 창 경계에 남기는 방식으로 제한한다.
+25~75%의 애매한 조각에는 keyword 라벨을 강제로 붙이지 않는다. unknown과 silence의
+라벨도 바꾸지 않는다.
+
+`data.aug_keyword_partial_*`는 기본적으로 꺼져 있어 기존 run을 그대로 재현한다.
+켜면 training keyword에만 적용되고, `fill=zero`는 잘림 효과를 먼저 분리하며
+`fill=noise`는 `_background_noise_`를 경계 바깥에 넣는 후속 실험이다.
+
+기존 `bd_base/best.pt`에서 같은 20 epoch, 같은 새 optimizer로 control과 partial을
+미세조정한다. 후보 선택 중에는 test split을 열지 않는다.
+
+```bash
+python -m train.train \
+  --config runs/bd_base/config.yaml \
+  --tag bd_base_ft20_control \
+  --epochs 20 \
+  --init-from runs/bd_base/best.pt \
+  --skip-test \
+  train.lr=0.0001 \
+  train.lr_patience=5
+
+python -m train.train \
+  --config runs/bd_base/config.yaml \
+  --tag bd_base_ft20_partial75 \
+  --epochs 20 \
+  --init-from runs/bd_base/best.pt \
+  --skip-test \
+  train.lr=0.0001 \
+  train.lr_patience=5 \
+  data.aug_keyword_partial_prob=0.5 \
+  data.aug_keyword_partial_min_coverage=0.75 \
+  data.aug_keyword_partial_max_coverage=1.0 \
+  data.aug_keyword_partial_active_frac=0.02 \
+  data.aug_keyword_partial_fill=zero
+```
+
+두 run의 validation clip accuracy와 100 ms streaming recall/quiet/wrong을 먼저 비교한다.
+partial run이 control보다 좋아야 augmentation 효과로 인정한다. 그 뒤에만 noise fill과
+50 ms hop을 조합한다. test split과 RTL 변경은 최종 정책을 고정한 다음 단계다.
