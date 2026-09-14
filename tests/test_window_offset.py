@@ -109,3 +109,9 @@ def test_offset_curve_can_report_keywords_only() -> None:
 
     assert result["total"] == 2
     assert result["kept"] == 2
+    assert result["original_hit"] == 1
+
+
+def test_word_span_rejects_invalid_active_fraction() -> None:
+    with pytest.raises(ValueError, match="between 0 and 1"):
+        word_span(_clip(), active_frac=0.0)

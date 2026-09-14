@@ -129,17 +129,20 @@ def make_bed(kind: str, x: torch.Tensor, floor: torch.Tensor,
 
 
 # --------------------------------------------------------------------------- #
-def word_span(x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+def word_span(x: torch.Tensor, active_frac: float = ACTIVE_FRAC
+              ) -> tuple[torch.Tensor, torch.Tensor]:
     """First and last active sample index per clip. x: [B, L] -> ([B], [B]).
 
     Energy gate on 10 ms frames.  Deliberately the same grid the AFE bins on,
     so a span boundary can never land mid-bin and smear one frame of the word
     into the fill.
     """
+    if not 0.0 < active_frac < 1.0:
+        raise ValueError("active_frac must be between 0 and 1")
     b, length = x.shape
     n = length // FRAME
     rms = x[:, : n * FRAME].reshape(b, n, FRAME).pow(2).mean(-1).sqrt()
-    gate = rms > rms.amax(1, keepdim=True) * ACTIVE_FRAC
+    gate = rms > rms.amax(1, keepdim=True) * active_frac
     idx = torch.arange(n, device=x.device).expand(b, n)
     first = torch.where(gate, idx, torch.full_like(idx, n)).amin(1)
     last = torch.where(gate, idx, torch.full_like(idx, -1)).amax(1)
@@ -174,7 +177,8 @@ def reposition(x: torch.Tensor, a: torch.Tensor, b: torch.Tensor,
 @torch.no_grad()
 def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
                  fills=("room", "zero"), device: str = "cpu", seed: int = 0,
-                 data_root: str | None = None, keyword_only: bool = False):
+                 data_root: str | None = None, keyword_only: bool = False,
+                 active_frac: float = ACTIVE_FRAC):
     """Accuracy vs where the word sits inside the window. Returns a dict.
 
     Exposed as a function so the notebook and the CLI share ONE implementation
@@ -189,7 +193,7 @@ def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
     """
     ps = [i / (steps - 1) for i in range(steps)]
     hit = {(f, i): 0 for f in fills for i in range(steps)}
-    kept = total = 0
+    kept = total = original_hit = 0
     travel = 0.0
 
     bank = None
@@ -211,12 +215,14 @@ def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
             if not y.numel():
                 continue
         total += y.numel()
-        a, b = word_span(x)
+        a, b = word_span(x, active_frac=active_frac)
         ok = b > a
         if not ok.any():
             continue
         x, y, a, b = x[ok], y[ok], a[ok], b[ok]
         kept += y.numel()
+        original_pred = model(afe(x, target_T=target_T)).argmax(1)
+        original_hit += (original_pred == y).sum().item()
 
         # How far this clip's word can travel at all.  Stationary silence fills
         # the window, so its range is ~0 and it stays put at every p -- which
@@ -236,13 +242,16 @@ def offset_curve(afe, model, loader, target_T: int, steps: int = 9,
     if not kept:
         raise RuntimeError("no clip had a detectable word span")
     return {"ps": ps, "fills": list(fills), "hit": hit, "kept": kept,
-            "total": total, "travel_ms": travel / kept}
+            "total": total, "travel_ms": travel / kept,
+            "original_hit": original_hit, "active_frac": active_frac}
 
 
 def print_offset_curve(res, tag: str = "") -> None:
     ps, fills, hit, kept = res["ps"], res["fills"], res["hit"], res["kept"]
     print(f"{tag}   {kept}/{res['total']} 클립, 평균 이동 가능 폭 "
           f"{res['travel_ms']:.0f} ms  (창 안에서 단어가 움직일 수 있는 거리)\n")
+    print(f"RMS active 문턱: peak의 {res['active_frac'] * 100:g}%")
+    print(f"원본(변형 없음): {res['original_hit'] / kept:.4f}\n")
     print(f"{'위치':>7}{''.join(f'{f:>12}' for f in fills)}   기준=중앙")
     mid = len(ps) // 2
     base = {f: hit[(f, mid)] / kept for f in fills}
@@ -273,6 +282,8 @@ def main() -> None:
                    help="evaluation split; keep test unopened until final selection")
     p.add_argument("--all-classes", action="store_true",
                    help="include silence/unknown; default reports keywords only")
+    p.add_argument("--active-frac", type=float, default=ACTIVE_FRAC,
+                   help="word-span RMS threshold as a fraction of clip peak")
     args = p.parse_args()
 
     dev = "cuda" if torch.cuda.is_available() else "cpu"
@@ -307,6 +318,7 @@ def main() -> None:
         afe, model, loader, cfg.model.T, steps=args.steps, fills=fills,
         device=dev, data_root=cfg.data.root,
         keyword_only=not args.all_classes,
+        active_frac=args.active_frac,
     )
     print_offset_curve(res, args.tag)
 

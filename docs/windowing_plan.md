@@ -577,6 +577,18 @@ case와 64512개 window를 포함하며 center-window accuracy는 2567/3072(83.5
 validation split의 10개 keyword만 평가한다. silence/unknown은 단어 위치라는 개념이
 없으므로 기본 곡선에서 제외한다.
 
+2026-09-14 `bd_base` validation keyword 3703개 결과에서 평균 이동 가능 폭은 588ms였다.
+`room` 정확도는 평균 69.94%(최저 69.05%, 최고 70.94%), `zero`는 평균
+73.80%(최저 72.75%, 최고 74.70%)였다. 두 배경 모두 위치별 낙폭은 1.9%p뿐이었다.
+따라서 창 안의 단어 위치는 현재 주 병목이 아니며, 위치 증강을 우선하지 않는다.
+`room`과 `zero`의 평균 차이 3.86%p는 배경 스펙트럼 민감도를 보여준다.
+
+이 절대 정확도에는 RMS span 밖의 저에너지 음소와 원래 녹음 배경을 제거한 영향도
+들어간다. 도구는 같은 clip의 변형 전 정확도(`원본(변형 없음)`)를 함께 출력하고,
+`--active-frac`으로 peak RMS 대비 단어 경계 문턱을 바꿀 수 있다. 원본과 재구성된
+중앙 위치의 차이, 그리고 2%/5%/10% 문턱에 따른 차이를 본 뒤에 배경 잡음 증강을
+결정한다.
+
 원격 GPU 환경에서 실행한다.
 
 ```bash
@@ -585,7 +597,8 @@ python -m pytest tests/test_window_offset.py
 python experiments/window_offset.py bd_base \
   --split val \
   --fill room,zero \
-  --steps 9
+  --steps 9 \
+  --active-frac 0.10
 ```
 
 데이터셋 경로가 run config와 다르면 마지막 명령에
