@@ -606,3 +606,51 @@ python experiments/window_offset.py bd_base \
 1은 오른쪽 끝에 붙은 경우다. 모든 위치에서 같은 clip 집합과 단어 전체를 사용하므로
 가운데 대비 양 끝 정확도 하락이 실제 위치 민감도를 나타낸다. 정책과 학습법을 선택하는
 동안에는 `--split test`를 사용하지 않는다.
+
+2%/5%/10% RMS 문턱을 같은 3703개 keyword에 비교한 결과:
+
+| active 문턱 | 평균 이동 가능 폭 | 원본 | room 중앙 | zero 중앙 | 위치 최대 낙폭 |
+|---:|---:|---:|---:|---:|---:|
+| 2% | 377 ms | 83.93% | 82.28% | 83.07% | 0.9%p |
+| 5% | 489 ms | 83.93% | 76.72% | 79.80% | 0.8%p |
+| 10% | 588 ms | 83.93% | 70.73% | 74.16% | 1.7%p |
+
+10%에서 보였던 큰 절대 하락은 위치보다 RMS span 밖의 저에너지 음소를 잘라낸 영향이다.
+2%에서는 zero 중앙이 원본보다 0.86%p, room 중앙이 1.65%p 낮고 위치 효과는 0.9%p
+이하다. 따라서 위치 증강은 우선하지 않는다. 실제 room 배경의 추가 비용은 zero 대비
+중앙 0.79%p로 보이며, streaming recall 손실 전체를 설명하지는 못한다.
+
+### 10.6 실제 단어 포함률과 N=5 가능성
+
+2% 문턱의 평균 단어 길이는 약 623ms다. 1초 snapshot을 100ms 간격으로 만들면 단어
+전체가 들어가는 시작점 범위는 평균 377ms여서, 완전한 단어가 든 창은 대략 3~4개다.
+현재 N=5는 일부 부분 단어 창까지 같은 keyword로 맞혀야 성립할 가능성이 있다.
+
+기존 `target_frames`는 실제 단어가 아니라 삽입된 1초 target clip의 겹침량이다. 새
+`eval_streaming` trace schema 2는 software AFE 입력에 다음 열을 추가한다:
+`word_start_frame`, `word_end_frame`, `word_frames`, `word_fraction`. 경계는 10ms RMS와
+2% 기본 문턱으로 구하며, quiet class는 비워 둔다. 이 문턱은 분석용 표식일 뿐 AFE,
+학습 threshold, RTL 또는 PCB 설정을 바꾸지 않는다.
+
+원격 GPU에서 새 validation trace를 한 번 만들고, 두 번째 명령은 CSV만 분석한다.
+
+```bash
+python -m experiments.eval_streaming \
+  --tag bd_base \
+  --split val \
+  --clips-per-class 256 \
+  --required-consecutive 5 \
+  --cooldown-windows 10 \
+  --word-active-frac 0.02 \
+  --out out/streaming/bd_base_val256_wordspan_n5
+
+python -m experiments.analyze_streaming_word_overlap \
+  --trace out/streaming/bd_base_val256_wordspan_n5_windows.csv \
+  --required-consecutive 5
+```
+
+포함률 구간별 정확도는 단어 일부가 보일 때 분류가 어디서 무너지는지 보여준다.
+`geometry N-run`은 예측과 무관하게 해당 포함률의 창이 N개 연속 존재한 case 수이고,
+`correct N-run`은 그 창들이 실제로 정답까지 낸 case 수다. 부분 단어 창은 자동으로
+keyword 학습 라벨이 되는 것이 아니다. 결과를 보고 충분한 포함률 구간만 keyword로
+학습하고 중간 경계 구간은 loss에서 제외할지 결정한다.

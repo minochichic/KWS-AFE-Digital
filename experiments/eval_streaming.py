@@ -100,20 +100,30 @@ def splice_clips(
     return np.concatenate(clips, axis=1).T.astype(np.uint8, copy=True)
 
 
+def interval_frames_in_window(
+    snapshot: WindowSnapshot,
+    start_frame: int,
+    end_frame: int,
+) -> int:
+    """Number of interval frames present in one half-open snapshot."""
+
+    if start_frame < 0 or end_frame <= start_frame:
+        raise ValueError("interval must be non-negative and non-empty")
+    return max(
+        0,
+        min(snapshot.end_frame, end_frame)
+        - max(snapshot.start_frame, start_frame),
+    )
+
+
 def target_frames_in_window(
     snapshot: WindowSnapshot,
     target_start: int = TARGET_START_FRAME,
     target_end: int = TARGET_END_FRAME,
 ) -> int:
-    """Number of target frames present in one half-open snapshot interval."""
+    """Number of inserted-clip frames present in one snapshot interval."""
 
-    if target_start < 0 or target_end <= target_start:
-        raise ValueError("target interval must be non-negative and non-empty")
-    return max(
-        0,
-        min(snapshot.end_frame, target_end)
-        - max(snapshot.start_frame, target_start),
-    )
+    return interval_frames_in_window(snapshot, target_start, target_end)
 
 
 def _padded_clip(clip: np.ndarray, spec: WindowSpec) -> np.ndarray:
@@ -209,6 +219,10 @@ def _write_csv(path: Path, rows: List[Dict[str, object]], n_classes: int) -> Non
         "start_frame",
         "end_frame",
         "target_frames",
+        "word_start_frame",
+        "word_end_frame",
+        "word_frames",
+        "word_fraction",
         "is_center",
         "prediction",
         "prediction_name",
@@ -240,9 +254,13 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=20260913)
     ap.add_argument("--device", default="auto",
                     help="auto, cpu, cuda, or a device such as cuda:1")
+    ap.add_argument("--word-active-frac", type=float, default=0.02,
+                    help="peak-relative 10 ms RMS gate for keyword boundaries")
     ap.add_argument("--out", default="",
                     help="output prefix; default out/streaming/<tag>_<split>")
     args = ap.parse_args()
+    if not 0.0 < args.word_active_frac < 1.0:
+        ap.error("--word-active-frac must be between 0 and 1")
 
     from data.speech_commands import KEYWORDS, SILENCE_INDEX, UNKNOWN_INDEX
     from models.binary_matchboxnet import BinaryMatchboxNet
@@ -300,6 +318,7 @@ def main() -> None:
         bits = all_bits[selected]
         labels = all_labels[selected]
         input_source = "analog_csv"
+        word_intervals: List[Tuple[int, int] | None] = [None] * len(labels)
     else:
         if "afe" not in checkpoint:
             raise SystemExit(
@@ -322,6 +341,27 @@ def main() -> None:
             n_classes=cfg.model.n_classes,
             seed=args.seed,
         )
+        from experiments.window_offset import FRAME as WORD_FRAME, word_span
+
+        if cfg.afe.sample_rate != 100 * WORD_FRAME:
+            raise SystemExit(
+                "word-boundary diagnostic expects 10 ms frames at the AFE "
+                f"sample rate, got {cfg.afe.sample_rate} Hz"
+            )
+        word_a, word_b = word_span(waves, active_frac=args.word_active_frac)
+        word_intervals = []
+        for label, a, b in zip(labels, word_a.tolist(), word_b.tolist()):
+            if int(label) < len(KEYWORDS):
+                if b <= a:
+                    raise RuntimeError(
+                        f"keyword label {int(label)} has no detectable word span"
+                    )
+                word_intervals.append((
+                    TARGET_START_FRAME + int(a) // WORD_FRAME,
+                    TARGET_START_FRAME + int(b) // WORD_FRAME,
+                ))
+            else:
+                word_intervals.append(None)
         afe = AFEFrontend(cfg.afe)
         load_afe_state(afe, checkpoint["afe"])
         afe.to(device).eval()
@@ -349,9 +389,13 @@ def main() -> None:
         raise SystemExit(f"split {args.split!r} contains no silence clips")
 
     rng = np.random.default_rng(args.seed + 1)
-    cases: List[Tuple[int, int, List[WindowSnapshot]]] = []
+    cases: List[
+        Tuple[int, int, Tuple[int, int] | None, List[WindowSnapshot]]
+    ] = []
     all_inputs: List[np.ndarray] = []
-    for local_index, sample_index in enumerate(sample_indices):
+    for local_index, (sample_index, word_interval) in enumerate(
+        zip(sample_indices, word_intervals)
+    ):
         before_i, after_i = rng.choice(silence_pool, size=2, replace=True)
         stream = splice_clips(
             bits[int(before_i)], bits[local_index], bits[int(after_i)], spec
@@ -364,7 +408,9 @@ def main() -> None:
             center.model_input, _padded_clip(bits[local_index], spec)
         ):
             raise RuntimeError("center snapshot does not reproduce the source clip")
-        cases.append((sample_index, int(labels[local_index]), snapshots))
+        cases.append((
+            sample_index, int(labels[local_index]), word_interval, snapshots
+        ))
         all_inputs.extend(s.model_input for s in snapshots)
 
     input_array = np.stack(all_inputs)
@@ -395,7 +441,9 @@ def main() -> None:
     ]
     cursor = 0
     first_latencies_ms: List[int] = []
-    for case_id, (sample_index, target, snapshots) in enumerate(cases):
+    for case_id, (
+        sample_index, target, word_interval, snapshots
+    ) in enumerate(cases):
         n = len(snapshots)
         case_logits = logits[cursor : cursor + n]
         case_predictions = predictions[cursor : cursor + n]
@@ -444,6 +492,14 @@ def main() -> None:
             snapshots, case_logits, case_predictions, steps
         ):
             overlap = target_frames_in_window(snapshot)
+            if word_interval is None:
+                word_start = word_end = word_overlap = word_fraction = ""
+            else:
+                word_start, word_end = word_interval
+                word_overlap = interval_frames_in_window(
+                    snapshot, word_start, word_end
+                )
+                word_fraction = f"{word_overlap / (word_end - word_start):.6f}"
             row: Dict[str, object] = {
                 "case_id": case_id,
                 "sample_index": sample_index,
@@ -453,6 +509,10 @@ def main() -> None:
                 "start_frame": snapshot.start_frame,
                 "end_frame": snapshot.end_frame,
                 "target_frames": overlap,
+                "word_start_frame": word_start,
+                "word_end_frame": word_end,
+                "word_frames": word_overlap,
+                "word_fraction": word_fraction,
                 "is_center": int(snapshot.start_frame == TARGET_START_FRAME),
                 "prediction": int(prediction),
                 "prediction_name": names[int(prediction)],
@@ -484,7 +544,7 @@ def main() -> None:
     )
 
     summary = {
-        "schema_version": 1,
+        "schema_version": 2,
         "scope": "synthetic_spliced_three_second_stream",
         "warning": (
             "Controlled spliced-recording stress test; do not interpret as "
@@ -502,6 +562,12 @@ def main() -> None:
         "window": asdict(spec),
         "vote": asdict(vote_cfg),
         "target_interval_frames": [TARGET_START_FRAME, TARGET_END_FRAME],
+        "word_boundary": {
+            "available": input_source == "software_afe_from_wav",
+            "method": "10_ms_rms_relative_to_clip_peak",
+            "active_fraction": args.word_active_frac,
+            "quiet_classes_recorded_as_blank": True,
+        },
         "metrics": {
             "clips": total,
             "windows": len(rows),

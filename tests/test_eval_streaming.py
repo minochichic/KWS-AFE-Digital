@@ -4,6 +4,7 @@ import torch
 
 from experiments.eval_streaming import (
     collect_balanced_waveforms,
+    interval_frames_in_window,
     select_balanced_indices,
     splice_clips,
     target_frames_in_window,
@@ -91,3 +92,8 @@ def test_splice_rejects_non_binary_data():
 )
 def test_target_frames_in_window(start, end, expected):
     assert target_frames_in_window(_snapshot(start, end)) == expected
+
+
+def test_interval_frames_in_window_uses_custom_word_boundary():
+    snapshot = _snapshot(80, 180)
+    assert interval_frames_in_window(snapshot, 120, 190) == 60
