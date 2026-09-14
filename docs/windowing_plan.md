@@ -654,3 +654,40 @@ python -m experiments.analyze_streaming_word_overlap \
 `correct N-run`은 그 창들이 실제로 정답까지 낸 case 수다. 부분 단어 창은 자동으로
 keyword 학습 라벨이 되는 것이 아니다. 결과를 보고 충분한 포함률 구간만 keyword로
 학습하고 중간 경계 구간은 loss에서 제외할지 결정한다.
+
+첫 256개/class 결과에서 단어 100% 포함 창의 5연속 기회는 1327/2560(51.8%),
+90% 이상은 1555/2560(60.7%)에 불과했다. 75% 이상에서는 모든 case가 기하학적으로
+가능했지만 실제 5연속 정답은 1645/2560(64.3%)였고, 50% 이상에서 1824/2560
+(71.3%)였다. raw N5 event recall 1843/2560(72.0%)과 거의 같으므로, 현재 N=5는
+많은 case에서 단어 절반 정도만 든 창까지 맞혀야 성립한다.
+
+부분 단어를 바로 keyword로 학습시키기 전에 snapshot hop을 100ms에서 50ms로 줄이는
+소프트웨어 ablation을 한다. 50ms는 관측 횟수를 두 배로 만들어 같은 단어 구간 안에서
+더 많은 연속 판정 기회를 준다. 추론 횟수와 동적 전력도 약 두 배가 될 수 있으므로
+정확도 이득이 확인된 뒤에만 RTL 후보로 검토한다. 기본 `hop_frames=10`과 RTL 계약은
+바뀌지 않는다.
+
+```bash
+python -m experiments.eval_streaming \
+  --tag bd_base \
+  --split val \
+  --clips-per-class 256 \
+  --required-consecutive 10 \
+  --cooldown-windows 20 \
+  --hop-frames 5 \
+  --word-active-frac 0.02 \
+  --out out/streaming/bd_base_val256_hop50
+
+for n in 5 6 7 8 9 10; do
+  python -m experiments.sweep_streaming_gate \
+    --trace out/streaming/bd_base_val256_hop50_windows.csv \
+    --required-consecutive "$n" \
+    --cooldown-windows 20 \
+    --margins 0 0.5 1 1.25 1.5 1.75 2 2.5 3 \
+    --out "out/streaming/bd_base_val256_hop50_n${n}_margin_sweep.csv"
+done
+```
+
+50ms 결과는 기존 100ms 기준 N5/margin1.25의 validation 예산인 keyword recall
+67.73%, quiet false streams 52/512, wrong 287, median latency 1000ms와 비교한다.
+quiet와 wrong을 늘리지 않으면서 recall을 높이는 후보가 있는지 먼저 본다.

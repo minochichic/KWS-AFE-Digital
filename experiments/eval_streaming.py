@@ -254,11 +254,15 @@ def main() -> None:
     ap.add_argument("--seed", type=int, default=20260913)
     ap.add_argument("--device", default="auto",
                     help="auto, cpu, cuda, or a device such as cuda:1")
+    ap.add_argument("--hop-frames", type=int, default=10,
+                    help="snapshot stride in 10 ms frames (default: 10 = 100 ms)")
     ap.add_argument("--word-active-frac", type=float, default=0.02,
                     help="peak-relative 10 ms RMS gate for keyword boundaries")
     ap.add_argument("--out", default="",
                     help="output prefix; default out/streaming/<tag>_<split>")
     args = ap.parse_args()
+    if args.hop_frames <= 0 or TARGET_START_FRAME % args.hop_frames:
+        ap.error("--hop-frames must be a positive divisor of 100")
     if not 0.0 < args.word_active_frac < 1.0:
         ap.error("--word-active-frac must be between 0 and 1")
 
@@ -277,7 +281,7 @@ def main() -> None:
             f"{cfg.model.n_classes}"
         )
 
-    spec = WindowSpec()
+    spec = WindowSpec(hop_frames=args.hop_frames)
     if cfg.model.in_channels != spec.n_channels or cfg.model.T != spec.model_frames:
         raise SystemExit(
             "checkpoint geometry does not match the streaming contract: "
@@ -401,8 +405,14 @@ def main() -> None:
             bits[int(before_i)], bits[local_index], bits[int(after_i)], spec
         )
         snapshots = make_snapshots(stream, spec)
-        if len(snapshots) != 21:
-            raise RuntimeError(f"three-second stream produced {len(snapshots)} windows")
+        expected_snapshots = (
+            (stream.shape[0] - spec.native_frames) // spec.hop_frames + 1
+        )
+        if len(snapshots) != expected_snapshots:
+            raise RuntimeError(
+                "three-second stream produced "
+                f"{len(snapshots)} windows, expected {expected_snapshots}"
+            )
         center = next((s for s in snapshots if s.start_frame == TARGET_START_FRAME), None)
         if center is None or not np.array_equal(
             center.model_input, _padded_clip(bits[local_index], spec)

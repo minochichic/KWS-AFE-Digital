@@ -68,6 +68,14 @@ def test_offline_wrapper_has_the_same_100_then_10_frame_schedule() -> None:
     ]
 
 
+def test_five_frame_hop_produces_41_windows_for_three_seconds() -> None:
+    spec = WindowSpec(hop_frames=5)
+    snaps = make_snapshots(_frames(300), spec)
+
+    assert len(snaps) == 41
+    assert [snaps[i].start_frame for i in (0, 1, -1)] == [0, 5, 200]
+
+
 def test_bad_frame_shape_or_value_is_rejected() -> None:
     buffer = StreamingWindowBuffer()
     with pytest.raises(ValueError, match="shape"):
