@@ -22,7 +22,10 @@ module kws_top_synth (
     output wire        in_ready,
     output wire        busy,
     output wire        class_valid,
-    output wire [3:0]  class_idx
+    output wire [3:0]  class_idx,
+    output wire        score_valid,
+    output wire [3:0]  keyword_idx,
+    output wire signed [`KWS_CONV4_POOL_BITS:0] keyword_margin
 );
 
     // tb_top 의 localparam 과 같은 정의. 여기서도 필요하다.
@@ -113,12 +116,15 @@ module kws_top_synth (
               .TL_A4_G(`KWS_CONV4_GAIN_BITS), .TL_A4_B(`KWS_CONV4_BIAS_BITS),
               .TL_A4_S(`KWS_CONV4_SHIFT), .TL_A4_O(`KWS_CONV4_OUT_BITS),
               .TL_A4_F(`KWS_ROM_CONV4_BN),
-              .TL_POOL(`KWS_CONV4_POOL_BITS), .TL_C4O_B(4)
+              .TL_POOL(`KWS_CONV4_POOL_BITS), .TL_C4O_B(4),
+              .TL_KEYWORDS(`KWS_N_CLASSES - 2)
     ) u_top (
         .clk(clk), .rst_n(rst_n),
         .start(start), .in_valid(in_valid), .in_frame(in_frame),
         .in_ready(in_ready), .busy(busy),
-        .class_valid(class_valid), .class_idx(class_idx)
+        .class_valid(class_valid), .class_idx(class_idx),
+        .score_valid(score_valid), .keyword_idx(keyword_idx),
+        .keyword_margin(keyword_margin)
     );
 
 endmodule

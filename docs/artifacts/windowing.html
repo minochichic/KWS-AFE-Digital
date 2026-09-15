@@ -399,10 +399,10 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
 <text class="ansl" x="436.0" y="84" text-anchor="middle">yes</text>
 <rect class="ans yes" x="458" y="64" width="36" height="30" rx="3"/>
 <text class="ansl" x="476.0" y="84" text-anchor="middle">yes</text>
-<rect class="ans unk" x="498" y="64" width="36" height="30" rx="3"/>
-<text class="ansl" x="516.0" y="84" text-anchor="middle">unk</text>
-<rect class="ans sil" x="538" y="64" width="36" height="30" rx="3"/>
-<text class="ansl" x="556.0" y="84" text-anchor="middle">sil</text>
+<rect class="ans yes" x="498" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="516.0" y="84" text-anchor="middle">yes</text>
+<rect class="ans unk" x="538" y="64" width="36" height="30" rx="3"/>
+<text class="ansl" x="556.0" y="84" text-anchor="middle">unk</text>
 <rect class="ans sil" x="578" y="64" width="36" height="30" rx="3"/>
 <text class="ansl" x="596.0" y="84" text-anchor="middle">sil</text>
 <rect class="ans no" x="618" y="64" width="36" height="30" rx="3"/>
@@ -417,9 +417,9 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
 <text class="ansl" x="796.0" y="84" text-anchor="middle">sil</text>
 <rect class="ans sil" x="818" y="64" width="36" height="30" rx="3"/>
 <text class="ansl" x="836.0" y="84" text-anchor="middle">sil</text>
-<path class="fire" d="M454 94 V122"/>
-<text class="firel" x="464" y="140">yes 3연속 → 검출 선언, 이후 1초 락아웃</text>
-<text class="sub2" x="58" y="182">평활이 없으면 LED 가 100 ms 마다 바뀐다. 우리 출력은 class_idx (argmax) 뿐이라 확률 평균은 못 내지만, 연속 투표면 충분하다.</text>
+<path class="fire" d="M534 94 V122"/>
+<text class="firel" x="544" y="140">yes 5연속 + margin → 검출 선언, 이후 1초 cooldown</text>
+<text class="sub2" x="58" y="182">kws_tail 이 best keyword와 best quiet의 pooled-score 차를 내고, kws_vote 가 생성된 정수 margin과 연속성을 함께 검사한다.</text>
 </svg>
     <div class="cap">"동작한다" 와 "동작하는 것처럼 보인다" 를 가르는 부분이다</div>
   </div>
@@ -431,18 +431,18 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
     
 <svg viewBox="0 0 900 210" role="img" aria-label="새 창 모듈이 들어갈 자리">
   <rect class="blk have" x="16" y="56" width="176" height="86" rx="6"/>
-  <text class="bt" x="32" y="84">kws_frame_ctrl</text>
-  <text class="bs" x="32" y="104">있음 · 검증됨</text>
+  <text class="bt" x="32" y="84">kws_capture</text>
+  <text class="bs" x="32" y="104">구현 · 검증됨</text>
   <text class="bi" x="32" y="126">sticky OR · 10 ms</text>
 
   <rect class="blk new" x="336" y="56" width="200" height="86" rx="6"/>
   <text class="bt" x="352" y="84">kws_window</text>
-  <text class="bs new" x="352" y="104">새로 만들 것</text>
+  <text class="bs new" x="352" y="104">구현 · 검증됨</text>
   <text class="bi" x="352" y="126">원형버퍼 100 · 재생 · 트리거</text>
 
   <rect class="blk have" x="676" y="56" width="176" height="86" rx="6"/>
-  <text class="bt" x="692" y="84">kws_top</text>
-  <text class="bs" x="692" y="104">있음 · 검증됨</text>
+  <text class="bt" x="692" y="84">kws_top + vote</text>
+  <text class="bs" x="692" y="104">통합 elaboration 통과</text>
   <text class="bi" x="692" y="126">57.4 ms / 추론</text>
 
   <path class="lnk" d="M192 99 H336"/>
@@ -450,7 +450,7 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
   <path class="lnk" d="M536 99 H676"/>
   <text class="ll" x="606" y="88" text-anchor="middle">창 128 프레임</text>
 
-  <text class="sub2" x="16" y="186">기존 두 모듈을 고치지 않는다. 둘 다 검증이 끝나 있고, 창을 고르는 일은 프레임을 포착하는 일과 다른 일이다.</text>
+  <text class="sub2" x="16" y="186">포착은 start와 분리해 항상 실행한다. snapshot은 folded network가 idle일 때만 시작하며 놓친 주기는 overrun으로 기록한다.</text>
 </svg>
 
     <div class="cap">frame_ctrl 과 kws_top 은 손대지 않는다</div>
@@ -465,14 +465,14 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
       확인된다.</li>
     <li><b>원형 버퍼 + 재생기 + 주기 트리거.</b> 위 구조. 새 모듈 하나이고
       기존 둘은 안 건드린다.</li>
-    <li><b>연속 투표 평활 — 같은 클래스 3회 연속, 이후 1초 락아웃.</b> 여기서부터 데모로 보인다.</li>
+    <li><b>연속 투표 평활 — margin을 통과한 같은 keyword 5회 연속, 이후 1초 cooldown.</b> 여기서부터 데모로 보인다.</li>
     <li><b>외부 <code>start</code> 핀은 수동 단발로 남긴다.</b> 브링업과 XSim
       테스트벤치가 그것을 쓴다 — 자동화가 들어와도 그 경로를 없애면 안 된다.</li>
   </ol>
 </section>
 
 <footer>
-  <span>근거: rtl/kws_frame_ctrl.v · rtl/kws_top.v · rtl/tb/tb_top.v</span>
+  <span>근거: rtl/kws_capture.v · rtl/kws_window.v · rtl/kws_stream_core.v · rtl/kws_vote.v</span>
   <span>CLAUDE.md §2.8 · docs/ICD.md §5</span>
   <span>생성: docs/artifacts/gen_windowing.py</span>
 </footer>

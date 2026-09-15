@@ -90,7 +90,11 @@ kws_dense_conv ✅ conv3·conv4 정수 MAC (다중비트 × 다중비트, 진짜
 kws_tail      ✅  꼬리 전체 — 이진 프레임 → 클래스 인덱스
 kws_conv1     ✅  int8 가중치 × ±1 — 곱셈기 없는 부호 누산 (stride 2)
 kws_top       ✅  conv1 + b1~b3 + conv2_dw + 평면 4장 → kws_tail
-kws_frame_ctrl ✅ 아날로그 경계 — 2FF 동기화 + sticky OR + 14/14 패딩 (ICD §5)
+kws_capture    ✅ 아날로그 경계 — 자유 실행 2FF 동기화 + 10 ms sticky OR
+kws_frame_ctrl ✅ 기존 start 기반 클립 제어 — kws_capture + 14/14 패딩 (ICD §5)
+kws_window     ✅ 연속 100-frame history/snapshot + 100 ms sliding replay
+kws_vote       ✅ 생성된 정수 margin + 동일 keyword N회 + cooldown/quiet 재무장
+kws_stream_core ✅ kws_window + folded network + kws_vote 통합
 ```
 
 **RTL 은 여기까지다.** 열두 모듈 전부 골든 벡터에 대해 검증됐고, 사슬이 양쪽 끝에서

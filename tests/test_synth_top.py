@@ -41,8 +41,8 @@ def bindings(block: str) -> dict:
 
 
 def test_synth_wrapper_matches_testbench() -> None:
-    tb = bindings(param_block(TB.read_text()))
-    sy = bindings(param_block(SYNTH.read_text()))
+    tb = bindings(param_block(TB.read_text(encoding="utf-8")))
+    sy = bindings(param_block(SYNTH.read_text(encoding="utf-8")))
     assert tb, "tb_top 에서 파라미터를 못 읽었다"
     missing = sorted(set(tb) - set(sy))
     extra = sorted(set(sy) - set(tb))
@@ -62,8 +62,8 @@ def test_rom_paths_all_reach_the_wrapper() -> None:
     이름으로 고르지 않는다 -- TL_C3_W 는 경로가 아니라 비트폭이라 이름 규칙으로는
     구별이 안 된다. **무엇에 묶였는가**로 본다: `KWS_ROM_* 에 묶인 것만 경로다.
     """
-    tb = bindings(param_block(TB.read_text()))
-    sy = bindings(param_block(SYNTH.read_text()))
+    tb = bindings(param_block(TB.read_text(encoding="utf-8")))
+    sy = bindings(param_block(SYNTH.read_text(encoding="utf-8")))
     tb_rom = {k for k, v in tb.items() if v.startswith("`KWS_ROM")}
     sy_rom = {k for k, v in sy.items() if v.startswith("`KWS_ROM")}
     assert tb_rom, "테스트벤치에서 ROM 경로를 하나도 못 찾았다"

@@ -71,7 +71,10 @@ module kws_tail #(
     // widths the ports need, which a localparam cannot supply here
     parameter integer C2O_BITS  = 7,     // $clog2(C2_OUT)
     parameter integer C3O_BITS  = 7,     // $clog2(C3_OUT)
-    parameter integer C4O_BITS  = 4      // $clog2(C4_OUT)
+    parameter integer C4O_BITS  = 4,     // $clog2(C4_OUT)
+    // Classes [0, KEYWORD_CLASSES) are keywords; the remaining classes are
+    // quiet alternatives (silence and unknown in the 12-class model).
+    parameter integer KEYWORD_CLASSES = 10
 ) (
     input  wire                clk,
     input  wire                rst_n,
@@ -82,7 +85,10 @@ module kws_tail #(
     output wire                busy,
 
     output reg                 class_valid,
-    output reg [C4O_BITS-1:0]  class_idx
+    output reg [C4O_BITS-1:0]  class_idx,
+    output reg                 score_valid,
+    output reg [C4O_BITS-1:0]  keyword_idx,
+    output reg signed [POOL_BITS:0] keyword_margin
 );
 
     // ---- conv2_pw ------------------------------------------------------- //
@@ -252,6 +258,17 @@ module kws_tail #(
     reg [1:0]                  ast;
     reg [C4O_BITS-1:0]         scan, best;
     reg signed [POOL_BITS-1:0] best_v;
+    reg [C4O_BITS-1:0]         keyword_best;
+    reg signed [POOL_BITS-1:0] keyword_best_v, quiet_best_v;
+
+    localparam signed [POOL_BITS-1:0] POOL_MIN =
+        {1'b1, {(POOL_BITS-1){1'b0}}};
+    wire signed [POOL_BITS:0] keyword_best_x =
+        {keyword_best_v[POOL_BITS-1], keyword_best_v};
+    wire signed [POOL_BITS:0] quiet_best_x =
+        {quiet_best_v[POOL_BITS-1], quiet_best_v};
+    wire signed [POOL_BITS:0] keyword_margin_w =
+        keyword_best_x - quiet_best_x;
 
     wire pool_ready = frame_done && (frames + {{(TF_BITS-1){1'b0}}, 1'b1}
                                      == TF_FULL);
@@ -260,9 +277,15 @@ module kws_tail #(
         if (!rst_n) begin
             ast <= S_IDLE; scan <= {C4O_BITS{1'b0}}; best <= {C4O_BITS{1'b0}};
             best_v <= {POOL_BITS{1'b0}};
+            keyword_best <= {C4O_BITS{1'b0}};
+            keyword_best_v <= {POOL_BITS{1'b0}};
+            quiet_best_v <= {POOL_BITS{1'b0}};
             class_valid <= 1'b0; class_idx <= {C4O_BITS{1'b0}};
+            score_valid <= 1'b0; keyword_idx <= {C4O_BITS{1'b0}};
+            keyword_margin <= {(POOL_BITS+1){1'b0}};
         end else begin
             class_valid <= 1'b0;
+            score_valid <= 1'b0;
             case (ast)
             S_IDLE:
                 // the last class of the last frame has just been added, so the
@@ -270,7 +293,10 @@ module kws_tail #(
                 if (pool_ready) begin
                     scan   <= {C4O_BITS{1'b0}};
                     best   <= {C4O_BITS{1'b0}};
-                    best_v <= {POOL_BITS{1'b1}} ^ {1'b0, {(POOL_BITS-1){1'b1}}};
+                    best_v <= POOL_MIN;
+                    keyword_best   <= {C4O_BITS{1'b0}};
+                    keyword_best_v <= POOL_MIN;
+                    quiet_best_v   <= POOL_MIN;
                     ast    <= S_SCAN;
                 end
             S_SCAN: begin
@@ -278,12 +304,23 @@ module kws_tail #(
                     best_v <= pool[scan];
                     best   <= scan;
                 end
+                if (scan < KEYWORD_CLASSES) begin
+                    if ($signed(pool[scan]) > keyword_best_v) begin
+                        keyword_best_v <= pool[scan];
+                        keyword_best   <= scan;
+                    end
+                end else if ($signed(pool[scan]) > quiet_best_v) begin
+                    quiet_best_v <= pool[scan];
+                end
                 if (scan == C4_LAST) ast <= S_DONE;
                 else scan <= scan + {{(C4O_BITS-1){1'b0}}, 1'b1};
             end
             S_DONE: begin
                 class_idx   <= best;
                 class_valid <= 1'b1;
+                keyword_idx    <= keyword_best;
+                keyword_margin <= keyword_margin_w;
+                score_valid    <= 1'b1;
                 ast         <= S_IDLE;
             end
             default: ast <= S_IDLE;
@@ -310,6 +347,12 @@ module kws_tail #(
     assign busy = in_flight | (ast != S_IDLE);
 
 `ifdef KWS_ASSERT
+    initial if (KEYWORD_CLASSES <= 0 || KEYWORD_CLASSES >= C4_OUT) begin
+        $display("ASSERT %m: KEYWORD_CLASSES=%0d must be inside 1..%0d",
+                 KEYWORD_CLASSES, C4_OUT-1);
+        $finish;
+    end
+
     // The sub-modules' busies are not wired into `busy` -- see above for why an
     // OR of them has holes. They are not dead, though: they are how the claim
     // gets checked. in_flight must cover every cycle any stage is working, and

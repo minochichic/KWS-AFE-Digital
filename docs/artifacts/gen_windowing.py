@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""`start` 를 누가 언제 올릴 것인가 -- 설계 아이디어를 그림으로만 설명한다.
+"""연속 포착·슬라이딩 창·투표 정책을 그림으로 설명한다.
 
 코드는 안 건드린다. 이 파일이 만드는 것은 문서 하나뿐이다.
 
@@ -17,7 +17,7 @@ from pathlib import Path
 OUT = Path(__file__).resolve().parent / "windowing.html"
 
 # --- 시간 상수 (전부 실제 설계값) ------------------------------------------ #
-FRAME_MS   = 10      # sticky OR 창 = kws_frame_ctrl 의 FRAME_CYCLES
+FRAME_MS   = 10      # sticky OR 창 = kws_capture 의 FRAME_CYCLES
 NATIVE_T   = 100     # 1 초 = 프레임 100 개
 PAD        = 14      # 좌우 패딩 프레임 (값은 -1)
 T          = 128     # NATIVE_T + 2*PAD
@@ -172,7 +172,7 @@ def svg_budget() -> str:
 def svg_vote() -> str:
     """10 Hz 면 초당 답이 10 개다. 그대로 쓰면 떨린다."""
     seq = ["sil", "sil", "sil", "unk", "yes", "yes", "unk", "yes",
-           "yes", "yes", "yes", "unk", "sil", "sil", "no", "sil",
+           "yes", "yes", "yes", "yes", "unk", "sil", "no", "sil",
            "sil", "sil", "sil", "sil"]
     bw, gap = 36, 4
     x0, y = 58, 64
@@ -186,15 +186,15 @@ def svg_vote() -> str:
         o.append(f'<text class="ansl" x="{x+bw/2}" y="{y+20}" '
                  f'text-anchor="middle">{s}</text>')
         run = run + 1 if s == "yes" else 0
-        if run == 3 and fired is None:
+        if run == 5 and fired is None:
             fired = i
     fx = x0 + fired * (bw + gap) + bw
     o.append(f'<path class="fire" d="M{fx:.0f} {y+30} V{y+58}"/>')
     o.append(f'<text class="firel" x="{fx+10:.0f}" y="{y+76}">'
-             f'yes 3연속 → 검출 선언, 이후 1초 락아웃</text>')
+             f'yes 5연속 + margin → 검출 선언, 이후 1초 cooldown</text>')
     o.append(f'<text class="sub2" x="{x0}" y="{y+118}">'
-             f'평활이 없으면 LED 가 100 ms 마다 바뀐다. 우리 출력은 class_idx '
-             f'(argmax) 뿐이라 확률 평균은 못 내지만, 연속 투표면 충분하다.</text>')
+             f'kws_tail 이 best keyword와 best quiet의 pooled-score 차를 내고, '
+             f'kws_vote 가 생성된 정수 margin과 연속성을 함께 검사한다.</text>')
     o.append("</svg>")
     return "\n".join(o)
 
@@ -204,18 +204,18 @@ def svg_block() -> str:
     return """
 <svg viewBox="0 0 900 210" role="img" aria-label="새 창 모듈이 들어갈 자리">
   <rect class="blk have" x="16" y="56" width="176" height="86" rx="6"/>
-  <text class="bt" x="32" y="84">kws_frame_ctrl</text>
-  <text class="bs" x="32" y="104">있음 · 검증됨</text>
+  <text class="bt" x="32" y="84">kws_capture</text>
+  <text class="bs" x="32" y="104">구현 · 검증됨</text>
   <text class="bi" x="32" y="126">sticky OR · 10 ms</text>
 
   <rect class="blk new" x="336" y="56" width="200" height="86" rx="6"/>
   <text class="bt" x="352" y="84">kws_window</text>
-  <text class="bs new" x="352" y="104">새로 만들 것</text>
+  <text class="bs new" x="352" y="104">구현 · 검증됨</text>
   <text class="bi" x="352" y="126">원형버퍼 100 · 재생 · 트리거</text>
 
   <rect class="blk have" x="676" y="56" width="176" height="86" rx="6"/>
-  <text class="bt" x="692" y="84">kws_top</text>
-  <text class="bs" x="692" y="104">있음 · 검증됨</text>
+  <text class="bt" x="692" y="84">kws_top + vote</text>
+  <text class="bs" x="692" y="104">통합 elaboration 통과</text>
   <text class="bi" x="692" y="126">57.4 ms / 추론</text>
 
   <path class="lnk" d="M192 99 H336"/>
@@ -223,7 +223,7 @@ def svg_block() -> str:
   <path class="lnk" d="M536 99 H676"/>
   <text class="ll" x="606" y="88" text-anchor="middle">창 128 프레임</text>
 
-  <text class="sub2" x="16" y="186">기존 두 모듈을 고치지 않는다. 둘 다 검증이 끝나 있고, 창을 고르는 일은 프레임을 포착하는 일과 다른 일이다.</text>
+  <text class="sub2" x="16" y="186">포착은 start와 분리해 항상 실행한다. snapshot은 folded network가 idle일 때만 시작하며 놓친 주기는 overrun으로 기록한다.</text>
 </svg>
 """
 
@@ -485,14 +485,14 @@ footer{margin-top:64px; padding-top:18px; border-top:1px solid var(--rule);
       확인된다.</li>
     <li><b>원형 버퍼 + 재생기 + 주기 트리거.</b> 위 구조. 새 모듈 하나이고
       기존 둘은 안 건드린다.</li>
-    <li><b>연속 투표 평활 — 같은 클래스 3회 연속, 이후 1초 락아웃.</b> 여기서부터 데모로 보인다.</li>
+    <li><b>연속 투표 평활 — margin을 통과한 같은 keyword 5회 연속, 이후 1초 cooldown.</b> 여기서부터 데모로 보인다.</li>
     <li><b>외부 <code>start</code> 핀은 수동 단발로 남긴다.</b> 브링업과 XSim
       테스트벤치가 그것을 쓴다 — 자동화가 들어와도 그 경로를 없애면 안 된다.</li>
   </ol>
 </section>
 
 <footer>
-  <span>근거: rtl/kws_frame_ctrl.v · rtl/kws_top.v · rtl/tb/tb_top.v</span>
+  <span>근거: rtl/kws_capture.v · rtl/kws_window.v · rtl/kws_stream_core.v · rtl/kws_vote.v</span>
   <span>CLAUDE.md §2.8 · docs/ICD.md §5</span>
   <span>생성: docs/artifacts/gen_windowing.py</span>
 </footer>

@@ -1,0 +1,10 @@
+{
+  "checkpoint_tag": "bd_base_ft20_partial75",
+  "hop_frames": 10,
+  "required_consecutive": 5,
+  "cooldown_windows": 10,
+  "margin_float": 1.05,
+  "selection_split": "val",
+  "status": "validation-selected; fixed-point validation and one-shot test evaluation pending",
+  "source": "docs/windowing_plan.md"
+}

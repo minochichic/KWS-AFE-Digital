@@ -17,6 +17,7 @@ Two claims are worth pinning because I derived them rather than read them off:
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 
 import pytest
@@ -25,6 +26,7 @@ import torch.nn as nn
 
 from export.emit import Emitter, write_parameters_vh, signed_bits
 from export.fuse import binary_accumulator
+from export.streaming_policy import add_streaming_policy
 from models.binary_ops import BinaryConv1d
 from models.binary_matchboxnet import BinaryMatchboxNet, PlainStage
 from train.config import load_config
@@ -202,6 +204,58 @@ def test_parameters_vh_agrees_with_manifest(manifest):
     for l in man["layers"]:
         p = f"KWS_L{man['layers'].index(l)}_{l['name'].upper()}_ACC_BITS"
         assert p in vh, f"{p} missing from parameters.vh"
+
+
+def test_streaming_margin_is_exported_in_pool_sum_units(manifest, tmp_path):
+    man, _, _, _ = manifest
+    with_policy = deepcopy(man)
+    stream = add_streaming_policy(with_policy, {
+        "checkpoint_tag": "test",
+        "hop_frames": 10,
+        "required_consecutive": 5,
+        "cooldown_windows": 10,
+        "margin_float": 1.05,
+        "selection_split": "val",
+    })
+
+    # T=128 becomes 64 frames after conv1 stride 2. The RTL pool is the sum,
+    # so Q*.6 average-logit margin 1.05 becomes ceil(1.05*64*64) = 4301.
+    assert man["tail"]["pool_frames"] == 64
+    assert stream["frac_bits"] == 6
+    assert stream["margin_int"] == 4301
+
+    header = tmp_path / "parameters.vh"
+    write_parameters_vh(with_policy, header)
+    vh = header.read_text()
+    assert "`define KWS_STREAM_HOP_FRAMES       10" in vh
+    assert "`define KWS_STREAM_REQUIRED         5" in vh
+    assert "`define KWS_STREAM_COOLDOWN_WINDOWS 10" in vh
+    assert "`define KWS_STREAM_MARGIN_INT       4301" in vh
+    assert "`define KWS_STREAM_POOL_FRAMES      64" in vh
+
+
+def test_streaming_policy_cannot_attach_to_another_checkpoint(manifest):
+    man, _, _, _ = manifest
+    with pytest.raises(ValueError, match="export tag"):
+        add_streaming_policy(deepcopy(man), {
+            "checkpoint_tag": "some_other_model",
+            "hop_frames": 10,
+            "required_consecutive": 5,
+            "cooldown_windows": 10,
+            "margin_float": 1.05,
+        })
+
+
+def test_streaming_margin_must_fit_rtl_signed_width(manifest):
+    man, _, _, _ = manifest
+    with pytest.raises(ValueError, match="does not fit signed"):
+        add_streaming_policy(deepcopy(man), {
+            "checkpoint_tag": "test",
+            "hop_frames": 10,
+            "required_consecutive": 5,
+            "cooldown_windows": 10,
+            "margin_float": 1000,
+        })
 
 
 def test_only_binary_fed_layers_carry_a_bound(manifest):

@@ -19,7 +19,7 @@
 # 5 MHz 로 내려도 실시간이 성립한다 -- 타이밍이 안 닫히면 클럭을 낮추면 되지 설계를
 # 고칠 일이 아니다.
 #
-# 이 주기가 kws_frame_ctrl 의 FRAME_CYCLES 를 정한다:
+# 이 주기가 kws_capture 의 FRAME_CYCLES 를 정한다:
 #     FRAME_CYCLES = clk_hz x 10 / 1000 = 50e6 x 0.01 = 500,000
 create_clock -name sys_clk -period 20.000 [get_ports clk]
 
@@ -45,7 +45,7 @@ create_clock -name sys_clk -period 20.000 [get_ports clk]
 # rst_n 은 클럭과 무관하게 눌린다. 릴리스만 동기화되면 되므로 입력 경로는 뺀다.
 set_false_path -from [get_ports rst_n]
 
-# --- 비교기 16가닥 (kws_frame_ctrl 을 합성할 때만) --------------------------- #
+# --- 비교기 16가닥 (board/stream wrapper를 합성할 때) ------------------------- #
 # ICD 5: cmp 는 시스템 클럭과 무관한 비동기 신호이고 2단 플립플롭으로 받는다.
 # 그 첫 단은 정의상 셋업/홀드를 만족할 수 없으므로 분석에서 빼야 한다. 안 빼면
 # 도구가 존재하지 않는 경로를 맞추려다 실패하거나, 더 나쁘게는 맞추려고 로직을
@@ -185,13 +185,12 @@ puts "== applied $n pin constraints (IOSTANDARD $IOSTD) =="
 # [3] 아직 없는 것 — 보드 레벨 래퍼
 # =========================================================================== #
 #
-# kws_frame_ctrl 과 kws_top 은 별도 모듈이고, 둘을 묶어 클럭/리셋을 붙이는 최상위가
-# 아직 없다. 위 [2] 는 그 래퍼의 포트 이름을 미리 가정하고 쓴 것이라, 지금
-# kws_top_synth 를 합성하면 cmp/class_* 는 없고 clk/rst_n/start 만 걸린다.
+# 단일 클립 브링업 래퍼는 kws_board_top, 연속 운용 래퍼는 kws_stream_top이다.
+# 기본 kws_top_synth를 합성하면 cmp/class_*는 없고 clk/rst_n/start만 걸린다.
+# 연속 운용 합성은 streaming policy가 포함된 export tag와
+# `-top kws_stream_top`을 함께 사용한다.
 #
-# 그래서 -impl(배치배선 + 비트스트림)은 래퍼가 생긴 뒤에 의미가 있다. P5-g.
-#
-# 래퍼를 쓸 때 같이 해야 하는 것: tb 에서 frame_ctrl 과 kws_top 을 **함께** 돌려
+# 래퍼를 쓸 때 같이 해야 하는 것: tb 에서 capture/window와 kws_top을 **함께** 돌려
 # 실시간 어서션을 실제로 밟아 보는 것. 지금까지 둘은 따로만 검증됐고(tb_frame_ctrl
 # 은 FRAME_CYCLES=24 로 홀로, tb_top 은 프레임을 직접 먹임), "22배 여유" 는 두
 # 숫자를 나눠서 얻은 값이지 실행으로 확인한 게 아니다.

@@ -44,6 +44,9 @@ module tb_tail;
     reg  [C2_IN-1:0] frame = {C2_IN{1'b0}};
     wire             busy, cls_v;
     wire [3:0]       cls;
+    wire             score_v;
+    wire [3:0]       keyword;
+    wire signed [`KWS_CONV4_POOL_BITS:0] margin;
 
     kws_tail #(.C2_IN(C2_IN), .C2_OUT(`KWS_CONV2_PW_N_OUT),
                .C2_ACC(`KWS_CONV2_PW_ACC_BITS), .WORD_BITS(`KWS_WORD_BITS),
@@ -72,7 +75,9 @@ module tb_tail;
                .C2O_BITS(7), .C3O_BITS(7), .C4O_BITS(4)) dut (
         .clk(clk), .rst_n(rst_n),
         .start(start), .in_valid(iv), .in_frame(frame), .busy(busy),
-        .class_valid(cls_v), .class_idx(cls));
+        .class_valid(cls_v), .class_idx(cls),
+        .score_valid(score_v), .keyword_idx(keyword),
+        .keyword_margin(margin));
 
     reg [`KWS_WORD_BITS-1:0] xin [0:CLIPS*T*NW-1];
     integer want [0:CLIPS-1];
@@ -82,9 +87,46 @@ module tb_tail;
     // in a register instead of polling after the fact.
     reg [3:0] got;
     reg       got_v;
-    always @(posedge clk) if (cls_v) begin got <= cls; got_v <= 1'b1; end
-
     integer errors = 0, n, t, j, fh, code;
+    integer scan_j;
+    reg [3:0] expected_keyword;
+    reg signed [`KWS_CONV4_POOL_BITS-1:0] expected_kw_v, expected_quiet_v;
+    reg signed [`KWS_CONV4_POOL_BITS:0] expected_margin;
+
+    always @(posedge clk) if (cls_v) begin
+        got   <= cls;
+        got_v <= 1'b1;
+
+        expected_keyword = 4'd0;
+        expected_kw_v = {1'b1, {(`KWS_CONV4_POOL_BITS-1){1'b0}}};
+        expected_quiet_v = {1'b1, {(`KWS_CONV4_POOL_BITS-1){1'b0}}};
+        for (scan_j = 0; scan_j < 10; scan_j = scan_j + 1)
+            if ($signed(dut.pool[scan_j]) > expected_kw_v) begin
+                expected_kw_v = dut.pool[scan_j];
+                expected_keyword = scan_j;
+            end
+        for (scan_j = 10; scan_j < 12; scan_j = scan_j + 1)
+            if ($signed(dut.pool[scan_j]) > expected_quiet_v)
+                expected_quiet_v = dut.pool[scan_j];
+        expected_margin =
+            $signed({expected_kw_v[`KWS_CONV4_POOL_BITS-1], expected_kw_v})
+          - $signed({expected_quiet_v[`KWS_CONV4_POOL_BITS-1], expected_quiet_v});
+
+        if (!score_v) begin
+            $display("FAIL class_valid without score_valid");
+            errors = errors + 1;
+        end
+        if (keyword !== expected_keyword) begin
+            $display("FAIL keyword got %0d want %0d", keyword,
+                     expected_keyword);
+            errors = errors + 1;
+        end
+        if ($signed(margin) !== expected_margin) begin
+            $display("FAIL margin got %0d want %0d", $signed(margin),
+                     expected_margin);
+            errors = errors + 1;
+        end
+    end
 
     initial begin
         $dumpfile("tb_tail.vcd");

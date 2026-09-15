@@ -47,6 +47,7 @@ import torch.nn as nn
 
 from export.fuse import fuse_bn_to_threshold, conv_alpha
 from export.pack import pack_pm1, to_hex_words, WORD_BITS
+from export.streaming_policy import add_streaming_policy
 from export.tailbuild import check_site, fixed_weights, tail_plan
 from export.tailfmt import FRAC_BITS
 from models.binary_ops import BinaryConv1d
@@ -475,6 +476,8 @@ class Emitter:
         widest_bin = max((l.acc_bits for l in self.layers if l.n_terms),
                          default=0)
         widest = max([widest_bin] + [r["acc_bits"] for r in tail_rows])
+        time_axis, _ = cfg.time_axis_report()
+        pool_frames = int(time_axis[-1][2])
         man = {
             "tag": tag,
             "n_channels": int(cfg.afe.n_channels),
@@ -497,6 +500,7 @@ class Emitter:
                                if not l.n_terms and not l.acc_bits],
             "tail": {
                 "frac_bits": FRAC_BITS,
+                "pool_frames": pool_frames,
                 "sites": tail_rows,
                 "note": "the tail's widths come from the measured ranges and "
                         "the confirmed frac (rtl/README.md 3-07), not from the "
@@ -568,6 +572,16 @@ def write_parameters_vh(man: Dict[str, Any], path: Path) -> None:
                 a(f"`define {p}_POOL_BITS {s['pool_acc_bits']}"
                   f"   // sum over T, no divide")
         a("")
+    stream = man.get("streaming")
+    if stream:
+        a("// ---- streaming decision policy (exported, do not hand-edit) ----")
+        a(f"`define KWS_STREAM_HOP_FRAMES       {stream['hop_frames']}")
+        a(f"`define KWS_STREAM_REQUIRED         {stream['required_consecutive']}")
+        a(f"`define KWS_STREAM_COOLDOWN_WINDOWS {stream['cooldown_windows']}")
+        a(f"`define KWS_STREAM_MARGIN_INT       {stream['margin_int']}")
+        a(f"`define KWS_STREAM_POOL_FRAMES      {stream['pool_frames']}")
+        a(f"`define KWS_STREAM_MARGIN_FRAC      {stream['frac_bits']}")
+        a("")
     a("`endif")
     path.write_text("\n".join(L) + "\n")
 
@@ -605,6 +619,9 @@ def main() -> None:
     ap.add_argument("--tag", required=True)
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--out", default=None, help="default runs/<tag>/rtl")
+    ap.add_argument("--stream-policy", default=None,
+                    help="JSON policy selected on validation; emits integer "
+                         "streaming constants into parameters.vh")
     args = ap.parse_args()
 
     from train.config import load_config
@@ -616,6 +633,18 @@ def main() -> None:
 
     out = Path(args.out) if args.out else run / "rtl"
     man = Emitter(model, out).run(cfg, args.tag)
+    if args.stream_policy:
+        policy = json.loads(Path(args.stream_policy).read_text())
+        stream = add_streaming_policy(man, policy)
+        # Emitter.run writes the base manifest before the optional policy is
+        # attached. Rewrite it so manifest.json and parameters.vh stay one
+        # auditable contract.
+        (out / "manifest.json").write_text(json.dumps(man, indent=2))
+        print("streaming policy: "
+              f"hop={stream['hop_frames']}, N={stream['required_consecutive']}, "
+              f"cooldown={stream['cooldown_windows']}, "
+              f"margin={stream['margin_float']} -> {stream['margin_int']} "
+              "pool-sum units")
     write_parameters_vh(man, out / "parameters.vh")
     # the out path as the caller gave it IS the repo-relative one the
     # simulator resolves against, since run_tb.sh runs from the repo root

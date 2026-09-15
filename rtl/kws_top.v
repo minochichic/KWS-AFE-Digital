@@ -105,6 +105,7 @@ module kws_top #(
     parameter         TL_A4_F   = "",
     parameter integer TL_POOL   = 21,
     parameter integer TL_C4O_B  = 4,
+    parameter integer TL_KEYWORDS = 10,
     // A stall is the one failure the other assertions cannot see: they all
     // check a value, and a stall has no wrong value to check. This bounds how
     // long any phase may take, so a hang names its phase instead of running out
@@ -125,7 +126,10 @@ module kws_top #(
     output wire                busy,
 
     output wire                class_valid,
-    output wire [TL_C4O_B-1:0] class_idx
+    output wire [TL_C4O_B-1:0] class_idx,
+    output wire                score_valid,
+    output wire [TL_C4O_B-1:0] keyword_idx,
+    output wire signed [TL_POOL:0] keyword_margin
 );
 
     localparam integer C1_FLUSH = C1_STRIDE * (T_OUT - 1) + C1_PAD - (T_IN - 1);
@@ -300,10 +304,13 @@ module kws_top #(
                .A4_GAIN(TL_A4_G), .A4_BIAS(TL_A4_B), .A4_SHIFT(TL_A4_S),
                .A4_OUT(TL_A4_O), .A4_FILE(TL_A4_F),
                .T_FRAMES(T_OUT), .POOL_BITS(TL_POOL),
-               .C2O_BITS(7), .C3O_BITS(7), .C4O_BITS(TL_C4O_B)) u_tail (
+               .C2O_BITS(7), .C3O_BITS(7), .C4O_BITS(TL_C4O_B),
+               .KEYWORD_CLASSES(TL_KEYWORDS)) u_tail (
         .clk(clk), .rst_n(rst_n),
         .start(start), .in_valid(c2_ov), .in_frame(c2_of), .busy(tl_busy),
-        .class_valid(class_valid), .class_idx(class_idx));
+        .class_valid(class_valid), .class_idx(class_idx),
+        .score_valid(score_valid), .keyword_idx(keyword_idx),
+        .keyword_margin(keyword_margin));
 
     // Completion pulses are consumed by the sequencer below, so Verilog-2001
     // requires these declarations to appear before that always block.

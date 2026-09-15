@@ -8,9 +8,10 @@
 //     PAD_LEFT zero frames + NATIVE_T captured frames + PAD_RIGHT zero frames.
 //
 // Capture never waits for replay or for the neural network. If a new automatic
-// or forced request arrives while a snapshot is being copied/replayed, that
-// request is skipped and overrun_count increments. The next periodic request
-// remains on the original capture-frame cadence.
+// or forced request arrives while a snapshot is being copied/replayed, or while
+// the downstream network is still busy, that request is skipped and
+// overrun_count increments. The next periodic request remains on the original
+// capture-frame cadence.
 
 `timescale 1ns/1ps
 `default_nettype none
@@ -22,7 +23,7 @@ module kws_window #(
     parameter integer PAD_LEFT       = 14,
     parameter integer PAD_RIGHT      = 14,
     parameter integer T              = 128,
-    parameter integer TRIGGER_FRAMES = 10,
+    parameter integer TRIGGER_FRAMES = 1,
     parameter integer CMP_INVERT     = 0
 ) (
     input  wire            clk,
@@ -31,12 +32,17 @@ module kws_window #(
     // Synchronous one-cycle diagnostic/manual request. It uses the most recent
     // complete history and does not disturb the automatic trigger phase.
     input  wire            force_start,
+    // A snapshot may launch only when the downstream network has completed
+    // its previous clip. Replay can finish long before the folded network's
+    // later phases, so local `busy` alone is not sufficient.
+    input  wire            launch_ready,
 
     output wire            clip_start,
     output wire            out_valid,
     output reg  [N_CH-1:0] out_frame,
     input  wire            out_ready,
     output wire            busy,
+    output reg             overrun,
     output reg  [7:0]      overrun_count
 );
 
@@ -81,10 +87,15 @@ module kws_window #(
                                         ? {PTR_BITS{1'b0}} : wr_ptr + 1'b1;
     wire history_full = (history_count == HC_FULL);
     // The capture closing this cycle can be the NATIVE_T-th history frame.
-    wire history_ready_after_capture = history_full
-                                     || (capture_valid && history_count == HC_PRE);
-    wire auto_request = capture_valid && (hop_count == HOP_LAST)
-                                      && history_ready_after_capture;
+    // Launch that first complete history immediately, then count the selected
+    // hop from that point. This remains correct when NATIVE_T is not an exact
+    // multiple of TRIGGER_FRAMES.
+    wire first_history_ready = capture_valid && !history_full
+                                             && history_count == HC_PRE;
+    wire history_ready_after_capture = history_full || first_history_ready;
+    wire auto_request = first_history_ready
+                     || (capture_valid && history_full
+                                      && hop_count == HOP_LAST);
     wire request = auto_request || force_start;
     wire [PTR_BITS-1:0] oldest_after_capture = capture_valid ? wr_next : wr_ptr;
 
@@ -96,9 +107,10 @@ module kws_window #(
         end else if (capture_valid) begin
             history[wr_ptr] <= capture_frame;
             wr_ptr          <= wr_next;
-            if (!history_full) history_count <= history_count + 1'b1;
-
-            if (hop_count == HOP_LAST)
+            if (!history_full) begin
+                history_count <= history_count + 1'b1;
+                hop_count     <= {HP_BITS{1'b0}};
+            end else if (hop_count == HOP_LAST)
                 hop_count <= {HP_BITS{1'b0}};
             else
                 hop_count <= hop_count + 1'b1;
@@ -137,18 +149,25 @@ module kws_window #(
             copy_src      <= {PTR_BITS{1'b0}};
             copy_idx      <= {PTR_BITS{1'b0}};
             replay_idx    <= {OUT_BITS{1'b0}};
+            overrun       <= 1'b0;
             overrun_count <= 8'd0;
         end else begin
+            overrun <= 1'b0;
             // Request acceptance is independent of capture bookkeeping above.
             // A request on the same edge as the final history write sees that
             // write on the following S_COPY cycle.
             if (request && history_ready_after_capture) begin
-                if (st == S_IDLE) begin
+                if (st == S_IDLE && launch_ready) begin
                     copy_src <= oldest_after_capture;
                     copy_idx <= {PTR_BITS{1'b0}};
                     st       <= S_COPY;
                 end else if (overrun_count != 8'hff) begin
+                    overrun       <= 1'b1;
                     overrun_count <= overrun_count + 1'b1;
+                end else begin
+                    // Keep the event pulse alive even after the diagnostic
+                    // counter saturates.
+                    overrun <= 1'b1;
                 end
             end
 

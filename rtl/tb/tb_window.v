@@ -2,8 +2,8 @@
 //
 // Twelve captured frames produce three overlapping histories:
 //   clip 0 = 1..8, clip 1 = 3..10, clip 2 = 5..12.
-// The ninth frame arrives while clip 0 is still replaying, so passing clips 1
-// and 2 also proves that capture continues while the consumer is busy.
+// Later frames arrive while earlier clips are being processed, so passing
+// clips 1 and 2 also proves capture continues while the consumer is busy.
 
 `timescale 1ns/1ps
 `default_nettype none
@@ -11,12 +11,14 @@
 module tb_window;
 
     localparam integer N_CH      = 4;
-    localparam integer NATIVE_T  = 8;
+    // Deliberately not divisible by HOP: the first complete history must
+    // launch on frame 7, then continue every two frames.
+    localparam integer NATIVE_T  = 7;
     localparam integer PAD_LEFT  = 2;
     localparam integer PAD_RIGHT = 2;
-    localparam integer T         = 12;
+    localparam integer T         = 11;
     localparam integer FC        = 12;
-    localparam integer HOP       = 2;
+    localparam integer HOP       = 4;
 
     reg clk = 1'b0, rst_n = 1'b0;
     always #5 clk = ~clk;
@@ -24,7 +26,8 @@ module tb_window;
     reg [N_CH-1:0] cmp = {N_CH{1'b0}};
     reg force_start = 1'b0;
     reg out_ready = 1'b1;
-    wire clip_start, out_valid, busy;
+    reg launch_ready = 1'b1;
+    wire clip_start, out_valid, busy, overrun;
     wire [N_CH-1:0] out_frame;
     wire [7:0] overrun_count;
 
@@ -34,17 +37,19 @@ module tb_window;
         .TRIGGER_FRAMES(HOP), .CMP_INVERT(0)
     ) dut (
         .clk(clk), .rst_n(rst_n), .cmp(cmp),
-        .force_start(force_start), .clip_start(clip_start),
+        .force_start(force_start), .launch_ready(launch_ready),
+        .clip_start(clip_start),
         .out_valid(out_valid), .out_frame(out_frame),
-        .out_ready(out_ready), .busy(busy),
+        .out_ready(out_ready), .busy(busy), .overrun(overrun),
         .overrun_count(overrun_count)
     );
 
     reg [N_CH-1:0] got [0:4*T-1];
-    integer starts = 0, transferred = 0;
+    integer starts = 0, transferred = 0, overruns = 0;
 
     always @(posedge clk) begin
         if (clip_start) starts <= starts + 1;
+        if (overrun) overruns <= overruns + 1;
         if (out_valid && out_ready) begin
             got[transferred] <= out_frame;
             transferred      <= transferred + 1;
@@ -86,7 +91,7 @@ module tb_window;
         rst_n = 1'b1;
         repeat (3) @(negedge clk);
 
-        for (i = 1; i <= 12; i = i + 1)
+        for (i = 1; i <= 15; i = i + 1)
             drive_capture_frame(i[N_CH-1:0]);
 
         timeout = 0;
@@ -134,8 +139,22 @@ module tb_window;
         while (busy) @(negedge clk);
         repeat (2) @(negedge clk);
 
-        if (overrun_count !== 8'd1) begin
-            $display("FAIL overrun_count got %0d want 1", overrun_count);
+        if (overrun_count !== 8'd1 || overruns !== 1) begin
+            $display("FAIL overrun count/pulses got %0d/%0d want 1/1",
+                     overrun_count, overruns);
+            errors = errors + 1;
+        end
+
+        // Window replay may be idle while the folded network is still in a
+        // later phase. Such a request must not restart that network.
+        launch_ready = 1'b0;
+        force_start = 1'b1;
+        @(negedge clk);
+        force_start = 1'b0;
+        @(negedge clk);
+        if (busy || overrun_count !== 8'd2 || overruns !== 2) begin
+            $display("FAIL launch interlock busy=%b count/pulses=%0d/%0d want 0/2/2",
+                     busy, overrun_count, overruns);
             errors = errors + 1;
         end
 

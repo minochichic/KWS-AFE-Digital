@@ -480,9 +480,9 @@ add_wave /tb_board_top/rst_n
 add_wave /tb_board_top/start
 add_wave -radix hex /tb_board_top/requested
 add_wave -radix hex /tb_board_top/cmp
-add_wave -radix hex /tb_board_top/dut/u_fc/sync1
-add_wave -radix hex /tb_board_top/dut/u_fc/sync2
-add_wave -radix hex /tb_board_top/dut/u_fc/sticky
+add_wave -radix hex /tb_board_top/dut/u_fc/u_capture/sync1
+add_wave -radix hex /tb_board_top/dut/u_fc/u_capture/sync2
+add_wave -radix hex /tb_board_top/dut/u_fc/u_capture/sticky
 add_wave -radix unsigned /tb_board_top/dut/u_fc/st
 add_wave -radix hex /tb_board_top/dut/fc_frame
 add_wave /tb_board_top/dut/fc_valid

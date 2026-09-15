@@ -10,7 +10,12 @@
 | 추론 주기 | **10 Hz** (프레임 10개마다) |
 | 투표 깊이 | **N = 5** 연속 (`margin = 1.05`, validation 확정 후보) |
 | 창 폭 | 1.28 s (`−1` 14 + 실제 100 + `−1` 14) |
-| 연산 예산 | 57.4 ms / 100 ms = **여유 1.7배** |
+| 연산 예산 | 57.4 ms / 100 ms = **여유 42.6 ms (1.7배)** |
+
+> **클럭 환산 주의.** `rtl/tb/tb_board_top.v`의 `always #5`는 100 MHz라서
+> XSim의 약 2.87 M cycle이 28.7 ms로 보인다. KC705 보드의 50 MHz
+> `MAIN_CLOCK`에서는 같은 추론이 약 57.4 ms이며, 100 ms hop에서 남는 시간은
+> 71.3 ms가 아니라 **42.6 ms**다.
 
 ---
 
@@ -173,15 +178,16 @@ B 를 버리는 이유도 같다. 경계 로직이 두 벌이면 둘 중 하나�
 **모듈 및 단위 테스트 완료 (2026-09-15).** `rtl/kws_window.v`는 포착기를 항상 켠 채
 100프레임 원형 history와 100프레임 snapshot을 분리한다. snapshot 복사는 100클럭이라
 실제 50 MHz에서 2 us이며 다음 10 ms 포착 전에 끝난다. 저장량은 history 1,600비트와
-snapshot 1,600비트를 합쳐 **3,200비트**다. `window` XSim은 세 개의 겹치는 창
-(총 36 출력 프레임), 추론 중 연속 포착, 강제 요청 overrun을 0 failure로 통과했다.
+snapshot 1,600비트를 합쳐 **3,200비트**다. `window` XSim은 비배수 시험값
+`NATIVE_T=7`, `hop=4`에서 세 개의 겹치는 창(총 33 출력 프레임), 추론 중 연속
+포착, 강제 요청 overrun, downstream busy interlock을 0 failure로 통과했다.
 
 ```
 kws_window #(N_CH=16, NATIVE_T=100, PAD_LEFT=14, PAD_RIGHT=14,
              FRAME_CYCLES=500000,
              TRIGGER_FRAMES=10)        // 10 프레임 = 100 ms = 10 Hz
-  clk, rst_n, cmp[15:0], force_start
-  out_valid, out_frame, out_ready, busy, overrun_count[7:0]
+  clk, rst_n, cmp[15:0], force_start, launch_ready
+  out_valid, out_frame, out_ready, busy, overrun, overrun_count[7:0]
 ```
 
 속: `kws_capture` + 원형 RAM(100 × 16 = **1,600 비트**) + 재생 FSM(PADL → 버퍼
@@ -209,38 +215,51 @@ kws_window #(N_CH=16, NATIVE_T=100, PAD_LEFT=14, PAD_RIGHT=14,
 
 ### 단계 4 — 투표 및 margin gate (`N = 5`, `margin = 1.05`)
 
-`rtl/kws_vote.v` — `class_valid`/`class_idx` 를 받아 **같은 비-`silence`·비-`unknown`
-클래스가 3회 연속**이면 검출을 선언하고, 이후 락아웃 동안 다시 선언하지 않는다.
+`rtl/kws_vote.v` — 꼬리에서 계산한 최상위 keyword와
+`best_keyword_pool - best_quiet_pool`을 받아, margin을 통과한 **같은 keyword가 5회
+연속**이면 검출을 선언하고 이후 cooldown과 quiet 확인이 끝날 때까지 다시 선언하지
+않는다.
 
 ```
-sil sil sil unk yes yes unk yes yes yes yes unk sil ...
-                                  └──3연속──┘ → 검출, 이후 락아웃
+sil sil sil unk yes yes unk yes yes yes yes yes unk sil ...
+                                  └────5연속────┘ → 검출, 이후 cooldown
 ```
 
-- 락아웃 길이 초기값: **1초**(트리거 10개). 한 발화가 두 번 세어지는 것을 막는
+- cooldown 길이: **1초**(트리거 10개). 한 발화가 두 번 세어지는 것을 막는
   것이 목적이다.
-- `kws_top` 은 안 건드린다.
-- 검증: 순수 시퀀스 로직이라 테스트벤치가 짧다. 입력 열 → 기대 출력 열.
-- **N 과 락아웃은 보드에서 오검출률을 보고 다시 정한다.** §1 의 표는 N=3 이
-  원리적으로 가능하다는 것만 말하지, 그게 최선이라는 말이 아니다.
+- `kws_tail`은 기존 12-class `class_valid/class_idx`를 유지하면서 최상위 keyword와
+  quiet 점수 차를 함께 낸다. 기존 완료 시퀀스와 단일 클립 검증은 그대로 유지된다.
+- `margin = 1.05`는 float logit을 RTL에 직접 적지 않는다. export가 64-frame pooled
+  sum과 Q*.6 형식을 적용해 `ceil(1.05 × 64 × 64) = 4301`로 변환하고
+  `parameters.vh`의 `KWS_STREAM_MARGIN_INT`로 낸다.
+- **구현 상태 (2026-09-15):** `kws_vote` XSim 3 시나리오 0 failure,
+  `kws_tail` 2 clip 0 failure, 전체 `tb_top` 2 clip 0 failure. `kws_stream_core`와
+  `kws_stream_top`은 생성 상수 `MARGIN_INT=4301`을 주입해 전체 계층 elaboration까지
+  통과했다. 선택 checkpoint의 새 ROM export·고정소수점 스트리밍 평가와 최종 합성은
+  아직 남아 있다.
 
 ### 단계 5 — `start` 핀을 override 로 정리
 
-자동 트리거와 OR 하되 `busy` 로 게이트한다:
+자동 트리거와 수동 pulse를 request로 합친다. 실제 snapshot 시작은 history가 찼고
+`kws_window`와 folded network가 모두 idle일 때만 허용한다:
 
 ```
-trig = (auto_tick | force_pulse) & ~busy
+request = auto_request | force_start
+launch  = request & history_ready & window_idle & ~net_busy
 ```
 
 브링업과 XSim 테스트벤치가 수동 경로를 쓴다. 자동화가 들어와도 **그 경로를 없애면
-안 된다** — 보드에서 한 발만 쏴보는 능력은 디버깅의 기본이다.
+안 된다** — 보드에서 한 발만 쏴보는 능력은 디버깅의 기본이다. launch하지 못한
+주기에는 `overrun_count`가 증가하고, 다음 vote streak 전에 `window_gap`으로
+전달된다. **구현 및 전체 계층 elaboration 완료 (2026-09-15).**
 
 ---
 
 ## 4. 왜 이 방안인가
 
-1. **검증된 두 모듈을 안 건드린다.** `kws_top`(12모듈 골든 검증)과 아날로그 경계
-   (ICD §5)는 그대로다. 위험이 새 모듈 하나에 갇힌다.
+1. **검증된 산술 데이터패스를 유지한다.** `kws_top`의 기존 12-class 완료 신호와
+   모든 convolution 산술은 그대로다. `kws_tail`의 기존 순차 scan에 keyword/quiet
+   최댓값만 함께 기록하고, 연속 제어는 별도 모듈에 둔다.
 
 2. **신경망이 보는 입력이 학습과 비트 단위로 같다.** `−1` 14개 + 실제 100개 +
    `−1` 14개. 패딩 `−1` 은 중립값이 아니라 **학습된 관측**이고(CLAUDE.md §2.8),
@@ -249,12 +268,13 @@ trig = (auto_tick | force_pulse) & ~busy
 3. **등가로 검증한다.** 새 골든 벡터가 필요 없고, 따라서 학습 박스가 필요 없다.
    `input.hex` 오라클을 두 번 재사용한다(단계 2, 단계 3).
 
-4. **원래 독립인 두 속도를 분리한다.** 포착 속도는 아날로그가 정하고(sticky OR 창
-   = CLAUDE.md §2.8 의 이산화 규칙) 추론 속도는 제품 결정이다. 지금은 묶여 있어
-   한쪽을 바꾸면 다른 쪽이 끌려간다.
+4. **원래 독립인 두 속도를 분리했다.** 포착 속도는 아날로그가 정하고(sticky OR 창
+   = CLAUDE.md §2.8 의 이산화 규칙) 추론 속도는 제품 결정이다. `kws_capture`는
+   자유 실행하고, `kws_window`가 별도의 hop으로 snapshot을 요청한다.
 
-5. **22배 여유가 어려운 부분을 없앤다.** 더블버퍼도 중재도 스냅샷 복사도 필요 없다.
-   그 여유는 conv1 처리량에서 나오고 **측정값**이지 가정이 아니다.
+5. **42.6 ms 여유로 단일 추론 엔진을 쓴다.** history→snapshot 복사는 50 MHz에서
+   약 2 us이고 추론은 57.4 ms다. snapshot이 입력을 고정하므로 포착은 계속되며,
+   네트워크가 100 ms hop을 넘기면 조용히 덮지 않고 overrun으로 남긴다.
 
 6. **경계 놓침을 고치는 가장 작은 것이다.** VAD 트리거도 겹치는 추론 파이프라인도
    더 크고, 우리에게 없는 문제를 푼다.
@@ -268,7 +288,7 @@ trig = (auto_tick | force_pulse) & ~busy
 | **겹치지 않는 자동 반복만** | 단계 1 로 남긴다. 경계에 걸린 단어를 놓치는 것은 설계 결함이지 튜닝 문제가 아니다 |
 | **VAD / 에너지 트리거** | `silence` 클래스가 조용한 창을 이미 처리한다. FPGA 는 콘센트를 꽂고 쓴다. 그리고 **튜닝할 문턱이 하나 생긴다** — ICD 가 없애려던 그 종류 |
 | **5 Hz 트리거** | 연산 여유는 3.5배로 좋지만 **표가 안 모인다**(§1) — N=3 보장이 `L ≤ 680 ms` 라 짧은 단어만 된다. N=2 로 내려야 하고 증거가 얇다 |
-| **원형 버퍼 더블버퍼링** | RAM 이 3,200 비트로 늘 뿐 싸다. 다만 22배 여유가 측정값이라 지금은 불필요. **클럭을 낮추게 되면 이쪽으로 간다** |
+| **두 추론 엔진 / ping-pong snapshot** | 현재 history + stable snapshot은 이미 3,200비트로 포착과 재생을 분리한다. 추론 엔진이나 snapshot을 한 벌 더 두는 것은 57.4 ms / 100 ms에서 필요 없다 |
 | **증분/스트리밍 추론** (겹치는 창끼리 연산 재사용) | 훨씬 효율적이지만 conv1 과 파이프라인 전체를 다시 짜야 한다. 57.4 ms / 100 ms 에서 그럴 이유가 없다 |
 
 ---
@@ -279,7 +299,7 @@ trig = (auto_tick | force_pulse) & ~busy
 |---|---|---|
 | 1 | **2.87 M 사이클이 입력과 무관하게 일정한가** | **선행 조건.** 10 Hz 의 여유가 1.7배뿐이라 여기 달렸다. 단계 0 |
 | 2 | ~~트리거 주기 5 Hz vs 10 Hz~~ | ✅ **10 Hz** (§1) |
-| 3 | 투표 깊이 N 과 락아웃 길이 | **초기값 N=3 · 락아웃 1초.** 보드에서 오검출률을 보고 다시 정한다 |
+| 3 | 투표 깊이 N 과 cooldown 길이 | **validation 후보 N=5 · cooldown 1초 · margin 1.05.** 고정소수점 평가와 보드 실측 후 확정 |
 | 4 | `overrun` 을 어디에 보여줄 것인가 | LED 핀표가 아직 없다. 없으면 확장 포트로 뺀다 |
 | 5 | 단계 1 에서 `class_idx` 를 어떻게 볼 것인가 | 지금 확장 포트 핀으로 나간다. LED 핀표가 오면 그쪽이 낫다 |
 
@@ -310,7 +330,7 @@ python -m experiments.eval_streaming --tag bd_base --split val --clips-per-class
 평가 스트림 하나는 같은 split의 클립으로 만든
 `silence 1초 + target 1초 + silence 1초`이다. 300개의 10 ms 프레임에서
 `[0,100)`, `[10,110)`, ..., `[200,300)`의 21개 창을 만들고, 각 창의 추론 결과를
-`N=3`, cooldown 10창 판정기에 넣는다. `[100,200)` 가운데 창은 원래 target 클립과
+`N=5`, cooldown 10창 판정기에 넣는다. `[100,200)` 가운데 창은 원래 target 클립과
 비트 단위로 같아야 하며, 스크립트가 이를 매번 검사한다.
 
 생성물은 다음 두 파일이다.

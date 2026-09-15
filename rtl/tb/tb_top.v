@@ -131,7 +131,8 @@ module tb_top;
               .TL_A4_G(`KWS_CONV4_GAIN_BITS), .TL_A4_B(`KWS_CONV4_BIAS_BITS),
               .TL_A4_S(`KWS_CONV4_SHIFT), .TL_A4_O(`KWS_CONV4_OUT_BITS),
               .TL_A4_F(`KWS_ROM_CONV4_BN),
-              .TL_POOL(`KWS_CONV4_POOL_BITS), .TL_C4O_B(4)) dut (
+              .TL_POOL(`KWS_CONV4_POOL_BITS), .TL_C4O_B(4),
+              .TL_KEYWORDS(`KWS_N_CLASSES - 2)) dut (
         .clk(clk), .rst_n(rst_n),
         .start(start), .in_valid(iv), .in_frame(frame),
         .in_ready(rdy), .busy(busy),
