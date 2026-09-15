@@ -20,7 +20,7 @@
 //
 // FRAME_CYCLES COMES FROM THE BOARD, NOT THE MANIFEST. The manifest carries
 // 10 ms (`KWS_FRAME_MS`); turning that into clocks needs the clock frequency,
-// which is a board fact. At 100 MHz it is 1,000,000.
+// which is a board fact. The current 50 MHz board default makes it 500,000.
 //
 // It is also one of only three things in docs/ICD.md section 6 that an analog
 // change can force into RTL, alongside N_CH and CMP_INVERT. Everything else the
@@ -55,49 +55,19 @@ module kws_frame_ctrl #(
 
     localparam integer PAD_RIGHT = T - PAD_LEFT - NATIVE_T;
 
-    // ---- 1. two-flop synchroniser ---------------------------------------- //
-    // cmp has no relationship to this clock, so a single flop can go
-    // metastable. Vivado needs the attribute to keep the pair together and to
-    // stop it reporting a false path as a timing failure.
-    (* ASYNC_REG = "TRUE" *) reg [N_CH-1:0] sync1;
-    (* ASYNC_REG = "TRUE" *) reg [N_CH-1:0] sync2;
-
-    wire [N_CH-1:0] cmp_in = (CMP_INVERT != 0) ? ~cmp : cmp;
-
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n) begin
-            sync1 <= {N_CH{1'b0}};
-            sync2 <= {N_CH{1'b0}};
-        end else begin
-            sync1 <= cmp_in;
-            sync2 <= sync1;
-        end
-    end
-
-    // ---- 2. frame timer --------------------------------------------------- //
-    localparam integer FC_BITS = (FRAME_CYCLES <= 2) ? 1 : $clog2(FRAME_CYCLES);
-    localparam integer FC_LAST_I = FRAME_CYCLES - 1;
-    localparam [FC_BITS-1:0] FC_LAST = FC_LAST_I[FC_BITS-1:0];
-
     localparam [2:0] S_IDLE = 3'd0, S_PADL = 3'd1, S_RUN = 3'd2,
                      S_PADR = 3'd3;
-    reg [2:0]         st;
-    reg [FC_BITS-1:0] fc;
+    reg [2:0] st;
 
-    wire frame_edge = (st == S_RUN) && (fc == FC_LAST);
-
-    // ---- 3. the sticky OR ------------------------------------------------- //
-    // The cycle at the boundary belongs to the window that is closing, which is
-    // why the capture ORs in sync2 and the clear goes to zero rather than to
-    // sync2. Every cycle lands in exactly one window: none counted twice, none
-    // dropped.
-    reg [N_CH-1:0] sticky;
-
-    always @(posedge clk or negedge rst_n) begin
-        if (!rst_n || start)     sticky <= {N_CH{1'b0}};
-        else if (frame_edge)     sticky <= {N_CH{1'b0}};
-        else if (st == S_RUN)    sticky <= sticky | sync2;
-    end
+    // Capture is a separate, reusable boundary. Restricting enable to S_RUN
+    // preserves this module's legacy start-gated behavior exactly; kws_window
+    // will instantiate the same block with enable permanently asserted.
+    wire capture_valid;
+    wire [N_CH-1:0] capture_frame;
+    kws_capture #(.N_CH(N_CH), .FRAME_CYCLES(FRAME_CYCLES),
+                  .CMP_INVERT(CMP_INVERT)) u_capture (
+        .clk(clk), .rst_n(rst_n), .enable(st == S_RUN), .cmp(cmp),
+        .frame_valid(capture_valid), .frame(capture_frame));
 
     // ---- 4. the sequence: 14 pads, 100 frames, 14 pads -------------------- //
     localparam integer TB_BITS = (T <= 2) ? 1 : $clog2(T) + 1;
@@ -121,13 +91,13 @@ module kws_frame_ctrl #(
 
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
-            st <= S_IDLE; fc <= {FC_BITS{1'b0}}; cnt <= {TB_BITS{1'b0}};
+            st <= S_IDLE; cnt <= {TB_BITS{1'b0}};
             pending <= 1'b0; held <= {N_CH{1'b0}};
         end else begin
             if (start) begin
                 // the left padding is emitted at once; there is no time
                 // associated with it, only with the 100 real windows
-                st <= S_PADL; fc <= {FC_BITS{1'b0}}; cnt <= {TB_BITS{1'b0}};
+                st <= S_PADL; cnt <= {TB_BITS{1'b0}};
                 pending <= 1'b1; held <= {N_CH{1'b0}};
             end else begin
                 if (take) begin
@@ -143,7 +113,6 @@ module kws_frame_ctrl #(
                         if (cnt + ONE == PL_C) begin
                             st  <= S_RUN;
                             cnt <= {TB_BITS{1'b0}};
-                            fc  <= {FC_BITS{1'b0}};
                             pending <= 1'b0;   // the next frame is time-driven
                         end else begin
                             pending <= 1'b1;
@@ -151,10 +120,8 @@ module kws_frame_ctrl #(
                         end
                     end
                 S_RUN: begin
-                    fc <= (fc == FC_LAST) ? {FC_BITS{1'b0}}
-                                          : fc + {{(FC_BITS-1){1'b0}}, 1'b1};
-                    if (frame_edge) begin
-                        held    <= sticky | sync2;
+                    if (capture_valid) begin
+                        held    <= capture_frame;
                         pending <= 1'b1;
                     end
                     if (take && (cnt + ONE == NT_C)) begin
@@ -196,7 +163,7 @@ module kws_frame_ctrl #(
     // network did not finish inside FRAME_CYCLES -- a real-time violation, and
     // the one failure here that is about the SYSTEM rather than this module.
     // It would otherwise show up as a frame quietly overwritten.
-    always @(posedge clk) if (frame_edge && pending) begin
+    always @(posedge clk) if (capture_valid && pending) begin
         $display("ASSERT %m: frame edge with the previous frame unread");
         $finish;
     end

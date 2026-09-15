@@ -8,7 +8,7 @@
 | 결정 | 값 |
 |---|---|
 | 추론 주기 | **10 Hz** (프레임 10개마다) |
-| 투표 깊이 | **N = 3** 연속 |
+| 투표 깊이 | **N = 5** 연속 (`margin = 1.05`, validation 확정 후보) |
 | 창 폭 | 1.28 s (`−1` 14 + 실제 100 + `−1` 14) |
 | 연산 예산 | 57.4 ms / 100 ms = **여유 1.7배** |
 
@@ -154,6 +154,12 @@ B 를 버리는 이유도 같다. 경계 로직이 두 벌이면 둘 중 하나�
 
 ### 단계 2 — `kws_capture` 추출
 
+**구현 완료 (2026-09-15).** `rtl/kws_capture.v`로 2FF 동기화, sticky OR,
+10 ms 프레임 타이머를 분리했고, 기존 `kws_frame_ctrl`은 `enable = (st == S_RUN)`으로
+이를 사용한다. `frame_ctrl` XSim은 256프레임, 신규 `capture` XSim은 3프레임을 각각
+0 failure로 통과했다. 따라서 기존 수동-start 경로의 비트 정확도와 독립 포착 계약을
+동시에 보존한다.
+
 | | |
 |---|---|
 | 만드는 것 | `rtl/kws_capture.v` — 2FF + sticky OR + 프레임 타이머, `enable` 입력 |
@@ -163,6 +169,12 @@ B 를 버리는 이유도 같다. 경계 로직이 두 벌이면 둘 중 하나�
 테스트벤치를 한 줄도 안 고치고 통과해야 한다. 고쳐야 한다면 분리가 틀린 것이다.
 
 ### 단계 3 — `kws_window`
+
+**모듈 및 단위 테스트 완료 (2026-09-15).** `rtl/kws_window.v`는 포착기를 항상 켠 채
+100프레임 원형 history와 100프레임 snapshot을 분리한다. snapshot 복사는 100클럭이라
+실제 50 MHz에서 2 us이며 다음 10 ms 포착 전에 끝난다. 저장량은 history 1,600비트와
+snapshot 1,600비트를 합쳐 **3,200비트**다. `window` XSim은 세 개의 겹치는 창
+(총 36 출력 프레임), 추론 중 연속 포착, 강제 요청 overrun을 0 failure로 통과했다.
 
 ```
 kws_window #(N_CH=16, NATIVE_T=100, PAD_LEFT=14, PAD_RIGHT=14,
@@ -195,7 +207,7 @@ kws_window #(N_CH=16, NATIVE_T=100, PAD_LEFT=14, PAD_RIGHT=14,
 > 스트림 등가는 시뮬레이터만으로 확인된다. 아래층(`kws_top`)은 안 건드리므로 이미
 > 검증된 것이 그대로 유효하다.
 
-### 단계 4 — 투표 평활 (`N = 3`)
+### 단계 4 — 투표 및 margin gate (`N = 5`, `margin = 1.05`)
 
 `rtl/kws_vote.v` — `class_valid`/`class_idx` 를 받아 **같은 비-`silence`·비-`unknown`
 클래스가 3회 연속**이면 검출을 선언하고, 이후 락아웃 동안 다시 선언하지 않는다.

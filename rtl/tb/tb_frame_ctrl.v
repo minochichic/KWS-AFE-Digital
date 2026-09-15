@@ -14,9 +14,10 @@
 // only the last value would all fail -- whereas driving every channel together
 // at one instant would pass for any of them.
 //
-// FRAME_CYCLES IS SMALL HERE. The real one is a million (10 ms at 100 MHz),
-// which would be 10^8 cycles of simulation for one clip. The ratio between the
-// window and the pulse offsets is what is under test, not its absolute size.
+// FRAME_CYCLES IS SMALL HERE. The board default is 500,000 (10 ms at 50 MHz),
+// which would require tens of millions of simulation cycles for one clip. The
+// ratio between the window and the pulse offsets is what is under test, not its
+// absolute size.
 //
 // <gen> is whichever export run_tb.sh selected; the second argument picks it
 // and defaults to xl_g12.
@@ -34,7 +35,7 @@ module tb_frame_ctrl;
     localparam integer T        = `KWS_T;
     localparam integer NATIVE_T = `KWS_NATIVE_T;
     localparam integer PAD_L    = `KWS_PAD_LEFT;
-    localparam integer FC       = 24;      // stand-in for 1,000,000
+    localparam integer FC       = 24;      // stand-in for 500,000
     // The export decides how many clips the vectors hold (export/golden.py
     // --clips), so reading it from the generated header is the only way the
     // two cannot drift. Hardcoding 2 against a default of 8 checked a quarter
