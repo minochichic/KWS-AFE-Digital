@@ -65,8 +65,7 @@ module kws_stream_top #(
 
 `ifdef KWS_ASSERT
     initial begin
-        $display("kws_stream_top: CLK_HZ=%0d frame=%0d cycles, hop=%0d, "
-                 "N=%0d, cooldown=%0d, margin_int=%0d",
+        $display("kws_stream_top: CLK_HZ=%0d frame=%0d cycles, hop=%0d, N=%0d, cooldown=%0d, margin_int=%0d",
                  CLK_HZ, FRAME_CYCLES, `KWS_STREAM_HOP_FRAMES,
                  `KWS_STREAM_REQUIRED, `KWS_STREAM_COOLDOWN_WINDOWS,
                  `KWS_STREAM_MARGIN_INT);

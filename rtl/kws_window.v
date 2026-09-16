@@ -99,13 +99,21 @@ module kws_window #(
     wire request = auto_request || force_start;
     wire [PTR_BITS-1:0] oldest_after_capture = capture_valid ? wr_next : wr_ptr;
 
+    // Keep the storage write outside the asynchronously-reset bookkeeping
+    // process. The contents do not need reset: history is not eligible until
+    // all NATIVE_T entries have been written. This form also lets Vivado infer
+    // memory instead of one flip-flop per stored bit.
+    always @(posedge clk) begin
+        if (capture_valid)
+            history[wr_ptr] <= capture_frame;
+    end
+
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             wr_ptr        <= {PTR_BITS{1'b0}};
             history_count <= {HC_BITS{1'b0}};
             hop_count     <= {HP_BITS{1'b0}};
         end else if (capture_valid) begin
-            history[wr_ptr] <= capture_frame;
             wr_ptr          <= wr_next;
             if (!history_full) begin
                 history_count <= history_count + 1'b1;
@@ -133,6 +141,13 @@ module kws_window #(
     assign clip_start = (st == S_START);
     assign out_valid  = (st == S_REPLAY);
     assign busy       = (st != S_IDLE);
+
+    // As with history, every snapshot entry is overwritten before replay.
+    // A dedicated synchronous write process keeps the array RAM-inferable.
+    always @(posedge clk) begin
+        if (st == S_COPY)
+            snapshot[copy_idx] <= history[copy_src];
+    end
 
     always @* begin
         out_frame = {N_CH{1'b0}};
@@ -173,7 +188,6 @@ module kws_window #(
 
             case (st)
                 S_COPY: begin
-                    snapshot[copy_idx] <= history[copy_src];
                     if (copy_idx == PTR_LAST) begin
                         replay_idx <= {OUT_BITS{1'b0}};
                         st         <= S_START;
