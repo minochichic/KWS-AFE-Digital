@@ -133,8 +133,14 @@ def _conv_int(x: torch.Tensor, w: torch.Tensor, conv: nn.Module) -> torch.Tensor
 
 @torch.no_grad()
 def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
-               out: Path) -> tuple:
+               out: Path, write_layers: bool = True) -> tuple:
     """Chain the tail in integers and write what every register holds.
+
+    `write_layers=False` skips the per-layer `.hex` files but still chains the
+    integers and still returns the predictions. The self-test bitstream needs
+    `predictions_fixed` for a thousand clips and nothing else; the layer dumps
+    are 82 MB per file at that count (160 KB at the two clips this was built
+    for). The chaining is not skipped -- the prediction IS the chain's output.
 
     The chaining is the point. conv3's input is not the float model's conv2_pw
     output -- it is the QUANTIZED one, because that is what the previous layer's
@@ -162,24 +168,28 @@ def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
             a = _conv_int(cur, w, s.conv)
         y = apply_site(s, a)
 
-        fa, fy = f"{s.name}_acc.hex", f"{s.name}_out.hex"
-        (out / fa).write_text("\n".join(_int_words(a)) + "\n")
-        (out / fy).write_text("\n".join(_int_words(y)) + "\n")
-        files[f"{s.name}_acc"] = {
-            "file": fa, "shape": list(a.shape), "dtype": "int32",
-            "order": "clip-major, then out_ch, then frame",
-            "note": f"integer accumulator, {s.acc_bits} bits signed"}
-        files[f"{s.name}_out"] = {
-            "file": fy, "shape": list(y.shape), "dtype": "int32",
-            # multi-bit, so there is nothing to pack. A testbench that assumed
-            # `_out.hex` meant packed +-1 would misread these as 32 channels of
-            # nonsense, so the kind of file is declared rather than inferred
-            # from the name.
-            "packed": False,
-            "order": "clip-major, then out_ch, then frame",
-            "note": f"(A*acc + B + half) >> {s.fold.shift}"
-                    f"{', relu' if s.fold.relu else ''}, saturated to "
-                    f"{s.out_fmt} -- one word per value"}
+        # The manifest must not claim files that were not written -- a reader
+        # that trusts golden.json would then open a missing path, and in the
+        # testbench that surfaces as an empty ROM rather than as an error.
+        if write_layers:
+            fa, fy = f"{s.name}_acc.hex", f"{s.name}_out.hex"
+            (out / fa).write_text("\n".join(_int_words(a)) + "\n")
+            (out / fy).write_text("\n".join(_int_words(y)) + "\n")
+            files[f"{s.name}_acc"] = {
+                "file": fa, "shape": list(a.shape), "dtype": "int32",
+                "order": "clip-major, then out_ch, then frame",
+                "note": f"integer accumulator, {s.acc_bits} bits signed"}
+            files[f"{s.name}_out"] = {
+                "file": fy, "shape": list(y.shape), "dtype": "int32",
+                # multi-bit, so there is nothing to pack. A testbench that
+                # assumed `_out.hex` meant packed +-1 would misread these as 32
+                # channels of nonsense, so the kind of file is declared rather
+                # than inferred from the name.
+                "packed": False,
+                "order": "clip-major, then out_ch, then frame",
+                "note": f"(A*acc + B + half) >> {s.fold.shift}"
+                        f"{', relu' if s.fold.relu else ''}, saturated to "
+                        f"{s.out_fmt} -- one word per value"}
 
         # ---- two different questions, and the first version asked the wrong
         # one. Measuring the integer output against the CONTINUOUS float value
@@ -223,38 +233,55 @@ def _dump_tail(model: BinaryMatchboxNet, acc: Dict[str, torch.Tensor],
         cur = y
 
     # the head: sum over time, argmax, no divide
+    pred: List[int] = []
     if cur is not None:
         pooled = cur.sum(dim=2)                             # [N, classes]
-        (out / "pooled.txt").write_text(
-            "\n".join(" ".join(str(int(v)) for v in row)
-                      for row in pooled.tolist()) + "\n")
         pred = [pooled_argmax([[int(v) for v in cur[n, :, t].tolist()]
                                for t in range(cur.shape[2])])
                 for n in range(cur.shape[0])]
+        # The tie-rule check runs in BOTH modes. It is the one assertion here
+        # that is about correctness rather than about writing files, and the
+        # chunked path would otherwise skip it on every chunk but the last.
+        if pred != pooled.argmax(1).tolist():
+            raise ValueError("pooled_argmax disagrees with torch.argmax on the "
+                             "integer logits -- check the tie rule")
+        # These two are written in BOTH modes. They are summaries, not layer
+        # dumps: one row per clip, so a thousand clips is 60 KB of pooled.txt
+        # and 4 KB of predictions_fixed.txt. And predictions_fixed IS the
+        # self-test's answer key -- gating it would defeat the whole point.
+        (out / "pooled.txt").write_text(
+            "\n".join(" ".join(str(int(v)) for v in row)
+                      for row in pooled.tolist()) + "\n")
         (out / "predictions_fixed.txt").write_text(
             "\n".join(str(p) for p in pred) + "\n")
         files["pooled"] = {
             "file": "pooled.txt", "shape": list(pooled.shape), "dtype": "int",
-            "note": "sum of the per-frame logits over T. The pool's divide by T "
-                    "is not built: same positive factor on every class, and "
+            "note": "sum of the per-frame logits over T. The pool's divide by "
+                    "T is not built: same positive factor on every class, and "
                     "argmax ignores it"}
         files["predictions_fixed"] = {
             "file": "predictions_fixed.txt", "shape": [int(cur.shape[0])],
             "note": "argmax of the pooled integer logits -- the answer the "
-                    "hardware gives. Compare against predictions.txt, which is "
-                    "the float model's"}
-        # torch.argmax and pooled_argmax must agree on the same numbers, or one
-        # of the two tie rules is not what was assumed
-        if pred != pooled.argmax(1).tolist():
-            raise ValueError("pooled_argmax disagrees with torch.argmax on the "
-                             "integer logits -- check the tie rule")
-    return files, {"sites": report}
+                    "hardware gives. Compare against predictions.txt, which "
+                    "is the float model's"}
+    return files, {"sites": report, "predictions_fixed": pred}
 
 
 @torch.no_grad()
 def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
-                tag: str) -> Dict[str, Any]:
-    """Run `x` [N, C, T] in {-1,+1} and write every layer's reference values."""
+                tag: str, write_layers: bool = True) -> Dict[str, Any]:
+    """Run `x` [N, C, T] in {-1,+1} and write every layer's reference values.
+
+    `write_layers=False` keeps only what the self-test bitstream needs --
+    `input.hex` (the clips) and `predictions_fixed.txt` (the answer key) -- and
+    skips the 21 per-layer dumps. Those are 160 KB per file at two clips and
+    82 MB per file at a thousand, which is 1.6 GB of vectors nobody reads.
+
+    The layer dumps are how a MISMATCH gets localised, so they stay the default.
+    The self-test asks a different question: it sweeps a thousand clips to find
+    WHICH input fails, and then that one clip is re-run with the layer dumps on
+    to find WHICH LAYER fails. Wide on hardware, deep in simulation.
+    """
     out.mkdir(parents=True, exist_ok=True)
     model = model.eval()
     sites = layer_sites(model)
@@ -319,6 +346,8 @@ def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
 
     tail_names = {t.name for t in tail_plan(model)}
     for s in sites:
+        if not write_layers:
+            break
         if s.name in tail_names:
             # written by _dump_tail, which knows the width and the format.
             # conv2_pw would otherwise be dumped twice with the same contents
@@ -345,7 +374,8 @@ def dump_golden(model: BinaryMatchboxNet, x: torch.Tensor, out: Path,
                 "layout": "one word per (clip, frame)",
                 "note": "FusedThreshold.apply(acc) -- the compare RTL performs"}
     # ---- the tail, as the integers RTL holds ------------------------------ #
-    tail_files, tail_report = _dump_tail(model, acc, out)
+    tail_files, tail_report = _dump_tail(model, acc, out,
+                                         write_layers=write_layers)
     files.update(tail_files)
 
     (out / "logits.txt").write_text(
@@ -390,6 +420,11 @@ def main() -> None:
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--clips", type=int, default=8)
     ap.add_argument("--out", default=None, help="default runs/<tag>/rtl/golden")
+    ap.add_argument("--vectors-only", action="store_true",
+                    help="input.hex + predictions_fixed.txt only, no per-layer "
+                         "dumps. For the self-test bitstream, where a thousand "
+                         "clips would otherwise write 1.6 GB of vectors "
+                         "nobody reads.")
     args = ap.parse_args()
 
     from train.config import load_config
@@ -417,25 +452,62 @@ def main() -> None:
     # 프레임 런은 로더가 내는 것이 곧 모델 입력이다 -- `analog_spectrogram.py` 의
     # `__getitem__` 이 float32 의 ±1 을 내고 `Trainer._forward` 는 afe 가 없으면
     # 그대로 `model(x)` 에 넣는다. 그래서 여기서도 변환하지 않는다.
+    # `next(iter(te))` gives ONE batch. `--clips` above `batch_size` therefore
+    # returned batch_size clips and reported THAT number as if it were what was
+    # asked for -- harmless at the default 8 (batch_size is 128), wrong the
+    # moment the self-test wants a thousand. Collect across batches, and fail
+    # loudly if the test set cannot supply the count.
+    def _take(loader, n: int):
+        xs, ys, got = [], [], 0
+        for bx, by in loader:
+            xs.append(bx)
+            ys.append(by)
+            got += int(bx.shape[0])
+            if got >= n:
+                break
+        if not xs:
+            raise SystemExit("the test loader produced no batches")
+        return torch.cat(xs)[:n], torch.cat(ys)[:n]
+
     if getattr(cfg.data, "analog_csv_root", ""):
         from data.analog_spectrogram import build_analog_dataloaders
         te = build_analog_dataloaders(cfg.data, cfg.train.batch_size,
                                       target_T=cfg.model.T,
                                       seed=cfg.train.seed)[2]
-        x, labels = next(iter(te))
-        x, labels = x[:args.clips], labels[:args.clips]
+        x, labels = _take(te, args.clips)
     else:
         afe = AFEFrontend(cfg.afe).eval()
         load_afe_state(afe, ck["afe"])
         te = build_dataloaders(cfg.data, cfg.train.batch_size, cfg.afe.sample_rate,
                                seed=cfg.train.seed)[2]
-        wav, labels = next(iter(te))
-        wav, labels = wav[:args.clips], labels[:args.clips]
+        wav, labels = _take(te, args.clips)
         with torch.no_grad():
             x = afe(wav, target_T=cfg.model.T)
 
+    if int(x.shape[0]) < args.clips:
+        raise SystemExit(
+            f"asked for {args.clips} clips, the test set gave "
+            f"{int(x.shape[0])}. Lower --clips -- a short dump that reports "
+            f"itself as long is the failure this guard exists to prevent.")
+
     out = Path(args.out) if args.out else run / "rtl" / "golden"
-    man = dump_golden(model, x, out, args.tag)
+
+    # Mixing the two modes in one directory is the worst outcome available:
+    # a 1000-clip input.hex sitting next to 2-clip layer dumps. The testbench
+    # would read clip 0 of the goldens against clip 0 of the input and pass,
+    # then walk off the end of the goldens on clip 2 -- and `$readmemh` past
+    # the end is silent. Separate directories, enforced here.
+    if args.vectors_only:
+        stale = sorted(p.name for p in out.glob("*_acc.hex"))
+        if stale:
+            raise SystemExit(
+                f"{out} already holds per-layer dumps ({len(stale)} *_acc.hex, "
+                f"e.g. {stale[0]}). --vectors-only writes a different clip "
+                f"count into the same input.hex, so the two must not share a "
+                f"directory. Use --out <somewhere else>.")
+
+    man = dump_golden(model, x, out, args.tag,
+                      write_layers=not args.vectors_only)
     write_golden_paths_vh(man, out, args.out or str(run / "rtl" / "golden"))
     (out / "labels.txt").write_text(
         "\n".join(str(int(v)) for v in labels.tolist()) + "\n")
