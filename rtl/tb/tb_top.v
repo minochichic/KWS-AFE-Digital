@@ -44,8 +44,9 @@ module tb_top;
 
     reg                  start = 1'b0, iv = 1'b0;
     reg  [`KWS_N_CH-1:0] frame = {`KWS_N_CH{1'b0}};
-    wire                 busy, rdy, cls_v;
-    wire [3:0]           cls;
+    wire                 busy, rdy, cls_v, score_v;
+    wire [3:0]           cls, keyword;
+    wire signed [`KWS_CONV4_POOL_BITS:0] keyword_margin;
 
     kws_top #(.WORD_BITS(`KWS_WORD_BITS), .T_IN(T_IN), .T_OUT(T_OUT),
               .N_CH(`KWS_N_CH), .C1_OUT(`KWS_L0_CONV1_OUT_CH),
@@ -136,7 +137,9 @@ module tb_top;
         .clk(clk), .rst_n(rst_n),
         .start(start), .in_valid(iv), .in_frame(frame),
         .in_ready(rdy), .busy(busy),
-        .class_valid(cls_v), .class_idx(cls));
+        .class_valid(cls_v), .class_idx(cls),
+        .score_valid(score_v), .keyword_idx(keyword),
+        .keyword_margin(keyword_margin));
 
     reg [`KWS_WORD_BITS-1:0] xin [0:CLIPS*T_IN*NWI-1];
     integer want [0:CLIPS-1];

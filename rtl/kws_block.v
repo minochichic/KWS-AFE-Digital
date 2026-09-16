@@ -128,6 +128,21 @@ module kws_block #(
     reg [C_MID-1:0] y_lat;                 // sub1's depthwise output, held
     reg [C_IN-1:0]  x_lat;                 // the aligned block input for skip
 
+    // A real sub0 output wins over a drain request.  Keep the frame storage in
+    // a plain synchronous-enable register, separate from the asynchronously
+    // reset sequencing FSM.  Its old contents are never consumed: s1_push is
+    // asserted only after this load, and the downstream block samples both on
+    // the following clock edge.
+    wire              s1_has_input = s0_ov || !in_real;
+    wire [C_MID-1:0]  s1_next_frame = s0_ov ? s0_of : {C_MID{1'b0}};
+    wire              s1_load = (st == S_SUB0) && !s0_busy && !s0_push &&
+                                s1_has_input;
+
+    always @(posedge clk) begin
+        if (s1_load)
+            s1_frame <= s1_next_frame;
+    end
+
     // These two instances have no threshold ROM (T_FILE is empty) because the
     // layers they implement end in epilogue "none" -- their accumulators are
     // what the residual add consumes. The thresholded outputs therefore carry
@@ -235,14 +250,8 @@ module kws_block #(
                 // sub0 is sequential inside; wait for it to settle, then hand
                 // its frame on -- or inject a flush if the drain has reached it
                 if (!s0_busy && !s0_push) begin
-                    if (s0_ov) begin
-                        s1_frame <= s0_of;
-                        s1_real  <= 1'b1;
-                        s1_push  <= 1'b1;
-                        st       <= S_SUB1;
-                    end else if (!in_real) begin
-                        s1_frame <= {C_MID{1'b0}};
-                        s1_real  <= 1'b0;      // the flush sub1 still needs
+                    if (s1_has_input) begin
+                        s1_real  <= s0_ov;     // a pure flush is not real
                         s1_push  <= 1'b1;
                         st       <= S_SUB1;
                     end else begin
