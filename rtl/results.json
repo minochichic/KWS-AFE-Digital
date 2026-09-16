@@ -1,0 +1,59 @@
+{
+  "conv1": {
+    "passed": true,
+    "checked": 128,
+    "commit": "45c5816",
+    "when": "2026-08-20T18:14:19+09:00",
+    "lines": [
+      "ok   clip0: 64 frames from 132 pushes (4 flush)",
+      "ok   clip1: 64 frames from 132 pushes (4 flush)",
+      "128 frames checked, 0 failures"
+    ]
+  },
+  "dw_conv": {
+    "passed": true,
+    "checked": 256,
+    "commit": "e152048",
+    "when": "2026-08-20T22:55:49+09:00",
+    "lines": [
+      "ok   clip0: 64 frames",
+      "ok   clip1: 64 frames",
+      "ok   conv2_dw clip0: 64 frames (29 taps, dilation 2)",
+      "ok   conv2_dw clip1: 64 frames (29 taps, dilation 2)",
+      "256 frames checked, 0 failures"
+    ]
+  },
+  "frame_ctrl": {
+    "passed": true,
+    "checked": 256,
+    "commit": "eb20da1",
+    "when": "2026-09-01T18:26:09+09:00",
+    "lines": [
+      "ok   clip0: 128 frames (14 pad, 100 real, 14 pad)",
+      "ok   clip1: 128 frames (14 pad, 100 real, 14 pad)",
+      "256 frames checked, 0 failures"
+    ]
+  },
+  "plane": {
+    "passed": true,
+    "checked": 128,
+    "commit": "ab08ca3",
+    "when": "2026-08-30T13:09:05+09:00",
+    "lines": [
+      "ok   clip0: 64 frames, plane drove all of it",
+      "ok   clip1: 64 frames, plane drove all of it",
+      "128 frames checked, 0 failures"
+    ]
+  },
+  "top": {
+    "passed": true,
+    "checked": 2,
+    "commit": "5c30ded",
+    "when": "2026-09-11T14:09:47+09:00",
+    "lines": [
+      "ok   clip0: class 5",
+      "ok   clip1: class 11",
+      "2 frames checked, 0 failures"
+    ]
+  }
+}

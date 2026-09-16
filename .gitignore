@@ -95,3 +95,12 @@ vivado*.str
 xvlog.pb
 xelab.pb
 xsim*.jou
+
+# --- 편집기 잔재 ---------------------------------------------------------- #
+# vim 스왑 파일. 2026-09-13 에 notebooks/.gpu_local.ipynb.swp 가 원격 박스의
+# git status 에 떠서 알았다. 커밋되면 아무 쓸모가 없고, 열려 있는 세션의 흔적이라
+# 내용도 매번 다르다.
+*.swp
+*.swo
+*~
+.DS_Store
