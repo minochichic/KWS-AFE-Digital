@@ -57,12 +57,19 @@ notebooks/lab.ipynb
 # rtl/tb/vectors/ is COMMITTED -- small seeded fixtures the testbench
 # needs on machines without torch. Waveforms are output, so ignored.
 *.vcd
+# XSim 의 파형입니다. *.vcd 와 같은 범주 -- 시뮬레이터가 신호를 시간축으로 녹음한
+# 것이고, 같은 TB 를 다시 돌리면 그대로 다시 나옵니다. 크기는 담은 신호 수 x
+# 시뮬 길이에 비례해서 커집니다 (tb_board_top 이 348 KB).
+*.wdb
 rtl/gen/active.vh
 # 루트에 풀어놓은 동료 전송 폴더만. 앞의 / 가 없으면 어느 깊이든 잡아서
 # analog/AFE_board/transfer_v3_native/ 까지 삼킨다 (실제로 삼켰다).
 /transfer_v3_*/
 /vpp_5mV/
 /vthr_*/
+# 루트에 풀어놓은 로컬 스냅샷. **글롭(*.tgz)을 쓰지 않는다** -- 위 *.tar.gz 가
+# 동료 전송본을 두 번 삼킨 전례가 있어서(7~15 행), 이름을 박아 그 사고를 막는다.
+/windowing-baseline.tgz
 
 # --- Vivado ---
 # 합성 산출물. rtl/.gitignore 에도 out/ 이 있지만 그건 rtl/out/ 만 잡는다 --
