@@ -17,7 +17,7 @@
 | 합성 (600 클립 ROM 포함) | ✅ 완료 | 18 분, 에러 0 / 크리티컬 0 |
 | 배치배선 + 비트스트림 | ✅ 완료 | **WNS +4.96 ns**, WHS +0.006 ns, DRC 에러 0 |
 | 보드 실행 (`bd_base`, 클립 0–599) | ✅ **PASS** | **600 / 600 일치 × 2 회**, 57.5 ms/클립 (§5.3) |
-| 모델 2 (`bd_base_ft20_partial75`) | ⏳ 벡터만 준비 | §8 |
+| 모델 2 (`bd_base_ft20_partial75`, 클립 0–599) | ✅ **PASS** | **600 / 600 일치 × 2 회**, 57.4 ms/클립, WNS +4.53 ns (§5.4) |
 
 ---
 
@@ -195,6 +195,35 @@ PASS chip reproduces predictions_fixed.txt on every clip
   비교 대상은 **최종 카운터**(`done/total/match/any_fail/first_fail_*`)다. 전부
   일치했으므로 클립별 결과가 같다는 뜻이기도 하다 — 두 실행 모두 정답지와 600 개
   전부 같았기 때문이다.
+
+### 5.4 모델 2 — `bd_base_ft20_partial75` (2026-09-17 20:05)
+
+```bash
+python -m export.slice_selftest rtl/gen/bd_base_ft20_partial75/selftest --clips 600 --base 0 --out out/selftest/bd_base_ft20_partial75
+vivado -mode batch -source rtl/build.tcl -notrace -tclargs -tag bd_base_ft20_partial75 -top kws_selftest_board -selftest out/selftest/bd_base_ft20_partial75 -out out/build/bd_base_ft20_partial75 -impl
+vivado -mode batch -source rtl/selftest/run_selftest.tcl -nolog -nojournal -notrace -tclargs -dir out/build/bd_base_ft20_partial75 -runs 2
+```
+
+```
+== run 1 / 2 ==   34.4 s  total 600  match 600  any_fail 0   57.4 ms/clip
+== run 2 / 2 ==   34.4 s  total 600  match 600  any_fail 0   57.3 ms/clip
+PASS chip reproduces predictions_fixed.txt on every clip, 2 run(s) identical
+```
+
+- **같은 클립 0–599 에서 칩이 partial75 의 파이썬 정수 경로를 600 개 전부 재현.**
+  칩 정확도 = 0.818 (§3.4).
+- 빌드 확인: `inc/` 의 가중치 `.hex` 와 `selftest_expected.hex` 가 partial75 원본과
+  바이트 단위로 같다 (bd_base 와 섞이지 않음). `$readmem` 37 개 전부 성공.
+- 구현: LUT 20,753 (43.24 %), FF 17,844, BRAM 51, DSP 7 — bd_base 와 사실상 동일
+  (구조가 같고 가중치 값만 다르다). **WNS +4.533 ns / WHS +0.020 ns**, 위반 0.
+  경고 117 개는 종류·개수 모두 bd_base 와 같다. 빌드 약 32 분.
+- 산출물은 `out/build/bd_base_ft20_partial75/`, bd_base 는 `out/build/bd_base/` 에 보존.
+
+**범위 주의 — 질문 2 에서 아직 안 본 것:** 이 검사는 partial75 의 **창 하나 분류기**
+(`class_idx`)다. always-on 동작의 나머지 — 스트리밍 창 이동, 투표/margin 판정
+(`kws_stream_top`, `keyword_idx/keyword_margin`) — 는 `kws_selftest_top` 에서
+연결하지 않았다(§5.1, `unused_*`). 그 로직은 네트워크 뒤의 작은 부분이라 별도의
+짧은 벡터로 검증한다 (§8).
 
 ---
 
