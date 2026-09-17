@@ -47,10 +47,9 @@ def _full_grid(table):
 
 
 R.borders = _full_grid
-OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v6.docx"
+OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v7.docx"
 
-TITLE = ("An Always-On Keyword Spotting System Combining an Analog Binary Feature-Extraction "
-         "Front End and a Partially Binarized MatchboxNet Accelerator on FPGA")
+TITLE = "Keyword Spotting with an Analog Binary Front End and a Binarized MatchboxNet Accelerator"
 FIELD = "Analog + Digital / AI 반도체 (아날로그 특징 추출 전단 + 이진 신경망 가속기)"
 
 
