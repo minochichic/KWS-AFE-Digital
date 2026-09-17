@@ -29,7 +29,25 @@ from docx.shared import Cm, Pt  # noqa: E402
 # the contest asks for 맑은고딕 throughout
 R.LATIN = "Malgun Gothic"
 R.HANGUL = "Malgun Gothic"
-OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v2.docx"
+
+
+def _full_grid(table):
+    """Every cell boxed (instead of the three-rule paper style) -- easier to read here."""
+    tblpr = table._element.tblPr
+    b = OxmlElement("w:tblBorders")
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        e = OxmlElement(f"w:{edge}")
+        e.set(qn("w:val"), "single")
+        e.set(qn("w:sz"), "4")
+        e.set(qn("w:color"), "000000")
+        b.append(e)
+    tblpr.append(b)
+    for cell in table.rows[0].cells:     # light header shading
+        R.shade(cell, "E7E6E6")
+
+
+R.borders = _full_grid
+OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v3.docx"
 
 TITLE = ("An Always-On Keyword Spotting System Combining an Analog Binary Feature-Extraction "
          "Front End and a Partially Binarized MatchboxNet Accelerator on FPGA")
@@ -339,8 +357,9 @@ def report(doc):
     R.figure(doc, R.IMG / "fig_confusion_bd_base.png",
              "Baseline 정수 경로 혼동 행렬(클립 수, n = 4,888). 클래스당 396–425개로 [1]의 혼동 행렬과 같은 규모.", 8.5)
     R.para(doc,
-           "주요 혼동은 no↔go, down↔go로 [1]과 같은 경향이다. 연속 동작(검증 세트, 3초 스트림, 100 ms hop, 5연속 판정)에서 "
-           "Partial-75는 키워드 검출률 69.53 %(Baseline 67.73 %), quiet 오검출 41/512(52/512)로 개선되었다.")
+           "주요 혼동은 no↔go, down↔go로 [1]과 같은 경향이다. 연속 동작은 시뮬레이션으로 평가하였다(검증 세트, 무음–단어–무음 "
+           "3초 스트림, 100 ms hop, 5연속 판정). 그 결과 Partial-75는 키워드 검출률 69.53 %(Baseline 67.73 %), quiet 오검출 "
+           "41/512(Baseline 52/512)를 보였다.")
 
     h(doc, "3.6 기존 기술과의 비교", 11)
     R.table(doc, "Comparison with prior work on 12-class Google Speech Commands (clip accuracy)",
@@ -363,12 +382,11 @@ def report(doc):
              ["Classifier execution", "GAP8 MCU, energy estimated", "dedicated integer-only RTL on FPGA"],
              ["HW/SW agreement", "not reported", "2,400 / 2,400 on chip"],
              ["Acquisition", "trigger, one 1-s window", "sliding window (100-ms hop) + 5-in-a-row vote"],
-             ["Window-boundary robustness", "—", "partial-window fine-tuning (+46 detections, val)"]],
+             ["Window-boundary robustness", "—", "partial-window fine-tuning (+46 detections, simulation)"]],
             widths_cm=[3.6, 5.4, 7.6], size=9)
     R.para(doc,
            "16채널 정확도(82.6 %)는 [1]의 8채널(76.3 %)과 64채널(86.0 %) 사이이며, 제작 가능한 필터뱅크·임계값을 전제로 한 "
-           "정수 경로 결과가 칩에서 그대로 재현된다. FPGA의 정적 전력 때문에 µW급 ASIC과 전력은 직접 비교할 수 없고, 보드 "
-           "연결과 연속 판정의 칩 검증은 향후 과제이다.")
+           "정수 경로 결과가 칩에서 그대로 재현된다. 다만 FPGA는 정적 전력이 커서 µW급 ASIC과 전력을 직접 비교할 수는 없다.")
 
     h(doc, "참고문헌", 11)
     refs = [
