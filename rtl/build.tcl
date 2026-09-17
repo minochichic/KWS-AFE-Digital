@@ -55,12 +55,17 @@ set selftest ""
 # 남겨 두려면 따로 준다 -- 기본값으로 두 모델을 빌드하면 **통과한 비트스트림이
 # 다음 빌드에 덮인다.** (2026-09-17, bd_base 다음에 partial75 를 빌드하면서 추가)
 set outdir ""
+# -stream-selftest <dir>: export/slice_stream_selftest.py 의 출력. 스트리밍 자체
+# 검사(kws_stream_selftest_top/board) 의 프레임·기대값 ROM 을 inc/ 로 싣고 CASES 를
+# generic 으로 꽂는다. -selftest 와 같은 이유(합성 run 디렉터리 기준 $readmemh).
+set stream_selftest ""
 for {set i 0} {$i < [llength $argv]} {incr i} {
     switch -- [lindex $argv $i] {
         -part     { set part     [lindex $argv [incr i]] }
         -tag      { set tag      [lindex $argv [incr i]] }
         -top      { set top      [lindex $argv [incr i]] }
         -selftest { set selftest [lindex $argv [incr i]] }
+        -stream-selftest { set stream_selftest [lindex $argv [incr i]] }
         -out      { set outdir   [lindex $argv [incr i]] }
         -impl     { set do_impl 1 }
         default { puts "unknown arg: [lindex $argv $i]"; exit 1 }
@@ -173,6 +178,33 @@ if {$selftest ne ""} {
     puts "   clip ROM: $kbit Kbit at 32-bit (part has ~3,130 Kbit free)"
 }
 
+if {$stream_selftest ne ""} {
+    foreach f {stream_frames.hex stream_expected.hex paths.vh} {
+        if {![file exists $stream_selftest/$f]} {
+            puts "ERROR: $stream_selftest/$f missing. First:"
+            puts "       python -m export.slice_stream_selftest rtl/gen/<tag>/stream_selftest --cases N --out $stream_selftest"
+            exit 1
+        }
+    }
+    set fh [open $stream_selftest/paths.vh r]; set sx [read $fh]; close $fh
+    foreach {key var} {KWS_SST_CASES sst_cases KWS_SST_FRAMES sst_frames} {
+        if {![regexp "`define\\s+$key\\s+(\\d+)" $sx -> $var]} {
+            puts "ERROR: $stream_selftest/paths.vh has no $key"
+            exit 1
+        }
+    }
+    set n_f [st_lines $stream_selftest/stream_frames.hex]
+    set n_e [st_lines $stream_selftest/stream_expected.hex]
+    if {$n_f != $sst_cases * $sst_frames || $n_e != $sst_cases} {
+        puts "ERROR: stream ROM files have $n_f / $n_e lines, expected [expr {$sst_cases * $sst_frames}] / $sst_cases"
+        exit 1
+    }
+    file copy -force $stream_selftest/stream_frames.hex   $synth_inc/stream_frames.hex
+    file copy -force $stream_selftest/stream_expected.hex $synth_inc/stream_expected.hex
+    lappend generics "CASES=$sst_cases"
+    puts "   stream selftest: $sst_cases cases x $sst_frames frames from $stream_selftest"
+}
+
 # ---- 소스 ---------------------------------------------------------------- #
 # 최상위는 kws_top 이 아니라 kws_top_synth 다. kws_top 의 ROM 경로 파라미터는
 # 기본값이 "" 이고 RTL 이 그걸 걸러내므로, 그냥 합성하면 **가중치가 하나도 없는
@@ -230,6 +262,28 @@ if {$top eq "kws_selftest_board"} {
     # 링크 단계에서 이 체크포인트가 채운다.
     synth_ip [get_ips vio_st]
     puts "== VIO vio_st generated in $ipdir =="
+}
+
+# Streaming self-test VIO. Widths pair with rtl/synth/kws_stream_selftest_board.v:
+#   in : done 1, total 16, match 16, any_fail 1, first_fail_case 16, hit 16,
+#        wrong 16, quiet_false 16, outside 16, first_fail_got 40,
+#        first_fail_exp 40, window_now 5, overrun_count 8
+#   out: go 1, soft_rst 1
+if {$top eq "kws_stream_selftest_board"} {
+    set ipdir $out/ip
+    file mkdir $ipdir
+    create_ip -name vio -vendor xilinx.com -library ip \
+        -module_name vio_sst -dir $ipdir -force
+    set w {1 16 16 1 16 16 16 16 16 40 40 5 8}
+    set props [list CONFIG.C_NUM_PROBE_IN [llength $w] CONFIG.C_NUM_PROBE_OUT 2 \
+                    CONFIG.C_PROBE_OUT0_WIDTH 1 CONFIG.C_PROBE_OUT1_WIDTH 1]
+    for {set k 0} {$k < [llength $w]} {incr k} {
+        lappend props CONFIG.C_PROBE_IN${k}_WIDTH [lindex $w $k]
+    }
+    set_property -dict $props [get_ips vio_sst]
+    generate_target {instantiation_template synthesis} [get_ips vio_sst]
+    synth_ip [get_ips vio_sst]
+    puts "== VIO vio_sst generated in $ipdir =="
 }
 
 # ---- 합성 ---------------------------------------------------------------- #

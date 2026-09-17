@@ -60,7 +60,8 @@ module kws_stream_top #(
     ) u_stream (
         .clk(clk), .rst_n(rst_n_s), .force_start(force_start), .cmp(cmp),
         .busy(busy), .detection_valid(class_valid),
-        .detection_idx(class_idx), .overrun_count(overrun_count_nc)
+        .detection_idx(class_idx), .overrun_count(overrun_count_nc),
+        .obs_score_valid(), .obs_keyword_idx(), .obs_keyword_margin()
     );
 
 `ifdef KWS_ASSERT

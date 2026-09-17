@@ -31,7 +31,15 @@ module kws_stream_core #(
     output wire            busy,
     output wire            detection_valid,
     output wire [3:0]      detection_idx,
-    output wire [7:0]      overrun_count
+    output wire [7:0]      overrun_count,
+
+    // Per-window network result, the input of the vote. Observation only: the
+    // streaming self-test checks every window against the Python integer
+    // reference, not just the final detections. The deployable top leaves
+    // these unconnected.
+    output wire                          obs_score_valid,
+    output wire [3:0]                    obs_keyword_idx,
+    output wire signed [MARGIN_BITS-1:0] obs_keyword_margin
 );
 
     wire            clip_start;
@@ -105,6 +113,10 @@ module kws_stream_core #(
     );
 
     assign busy = window_busy || net_busy;
+
+    assign obs_score_valid    = score_valid;
+    assign obs_keyword_idx    = keyword_idx;
+    assign obs_keyword_margin = keyword_margin;
 
 `ifdef KWS_ASSERT
     initial begin
