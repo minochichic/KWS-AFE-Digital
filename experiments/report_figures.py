@@ -109,7 +109,12 @@ def fig_training(runs: Path, tags: List[str], out: Path) -> None:
 
 
 def fig_confusion(doc: Dict, out: Path, name: str) -> None:
-    """Row-normalised confusion matrix, percentages printed in each cell."""
+    """Confusion matrix with CLIP COUNTS in each cell, shaded by row share.
+
+    Counts, not percentages: this is how Cerutti et al. (Fig. 8) print theirs,
+    and a percentage matrix hides the sample size -- a reader comparing the two
+    cannot tell that both rest on ~400 clips per class.
+    """
     m = np.asarray(doc["confusion_fixed"], dtype=float)
     rows = m.sum(axis=1, keepdims=True)
     p = 100 * m / np.where(rows == 0, 1, rows)
@@ -118,9 +123,10 @@ def fig_confusion(doc: Dict, out: Path, name: str) -> None:
     ax.imshow(p, cmap="Greys", vmin=0, vmax=100)
     for t in range(len(names)):
         for q in range(len(names)):
-            if p[t, q] >= 0.5:
-                ax.text(q, t, f"{p[t, q]:.0f}", ha="center", va="center",
-                        fontsize=5, color="w" if p[t, q] > 55 else "k")
+            if m[t, q] > 0:
+                ax.text(q, t, f"{int(m[t, q])}", ha="center", va="center",
+                        fontsize=4.5, color="w" if p[t, q] > 55 else "k")
+    ax.set_title(f"n = {int(m.sum()):,} test clips", fontsize=7)
     ax.set_xticks(range(len(names)))
     ax.set_yticks(range(len(names)))
     ax.set_xticklabels(names, rotation=90)

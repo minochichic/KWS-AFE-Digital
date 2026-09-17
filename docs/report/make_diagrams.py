@@ -67,11 +67,11 @@ def fig_system():
     # analog side
     ax.add_patch(Rectangle((0.15, 0.35), 5.35, 3.15, fill=False, linewidth=0.6,
                            linestyle="--"))
-    ax.text(2.82, 3.3, "Analog front end (16 channels; simulated in this work)",
+    ax.text(2.82, 3.3, "Analog front end, 16 ch (PCB designed; simulated input in this work)",
             ha="center", fontsize=6.5, style="italic")
     box(ax, 0.35, 1.55, 0.8, 0.8, "MEMS\nmic")
-    box(ax, 1.5, 1.35, 1.1, 1.2, "Band-pass\nfilter bank\n125 Hz–5 kHz\nlog-spaced, Q=4.5")
-    box(ax, 2.95, 1.35, 1.05, 1.2, "Active envelope\ndetector")
+    box(ax, 1.5, 1.35, 1.1, 1.2, "Band-pass\nfilter bank")
+    box(ax, 2.95, 1.35, 1.05, 1.2, "Envelope\ndetector")
     box(ax, 4.35, 1.35, 0.95, 1.2, "Comparator\n$V_{env} \\geq V_{th,i}$\n(R divider)")
     arrow(ax, 1.15, 1.95, 1.5, 1.95)
     arrow(ax, 2.6, 1.95, 2.95, 1.95)

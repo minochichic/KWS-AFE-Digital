@@ -309,17 +309,17 @@ def build():
     para(doc,
          "본 보고서는 아날로그 필터뱅크·비교기가 만드는 16채널 이진 시간-주파수 이미지를 입력으로 "
          "받는 부분 이진화 MatchboxNet(BinaryMatchboxNet)을 Verilog RTL로 설계하고, Xilinx "
-         "Spartan-7 XC7S75 FPGA에 구현하여 칩에서 직접 검증한 중간 결과를 정리한다. 모델은 동료가 "
-         "설계한 보드용 필터뱅크(125 Hz–5 kHz, 로그 등간격, Q=4.5)를 소프트웨어로 모사한 입력으로 "
-         "학습하였으며, 비교기 임계값 16개를 네트워크와 함께 학습하여 저항 분압으로 옮길 수 있는 "
-         "절대 임계값으로 고정하였다. 배치 정규화는 정수 임계값으로, 후단 계층은 Q*.6 고정소수점으로 "
+         "Spartan-7 XC7S75 FPGA에 구현하여 칩에서 직접 검증한 중간 결과를 정리한다. 아날로그 전단은 "
+         "공동 연구자가 PCB 설계와 SPICE 시뮬레이션까지 완료한 회로이며, 본 보고서의 모델은 그 필터뱅크 "
+         "응답을 소프트웨어로 모사한 입력으로 학습하였다. 비교기 임계값 16개는 네트워크와 함께 학습하여 "
+         "저항 분압으로 옮길 수 있는 절대값으로 고정하였다. 배치 정규화는 정수 임계값으로, 후단 계층은 Q*.6 고정소수점으로 "
          f"변환하여 곱셈 없는 이진 연산 경로를 구성하였다. Google Speech Commands v2 12-class 공식 "
          f"test 세트 {T1_BASE['n_clips']:,}개 클립에서 정수 경로 정확도는 {pct(T1_BASE['fixed_acc'])} % "
          f"(float {pct(T1_BASE['float_acc'])} %)로 양자화 손실이 관측되지 않았다. FPGA 구현은 50 MHz에서 "
          f"setup 여유 {TS['wns']:+.3f} ns로 타이밍을 만족하였고, LUT 43 %, BRAM 57 %를 사용하였다. "
-         "칩 내부에 클립 ROM과 채점기를 두는 자체 검사 구조로 두 모델에 대해 총 2,400회의 클립 "
-         "분류를 수행한 결과, 칩의 분류 결과가 파이썬 정수 경로와 모든 클립에서 일치하였고 전원 "
-         "재투입 후 반복 실행에서도 동일하였다. 연속 동작(always-on) 판정은 검증 세트에서 "
+         "칩 내부에 클립 ROM과 채점기를 두는 자체 검사 구조로 두 모델 × 두 클립 세트(12개 클래스 균형 "
+         "세트 포함, 2,400개 조합)를 반복 실행하여 총 5,400회 분류한 결과, 칩의 분류 결과가 파이썬 정수 "
+         "경로와 모든 클립에서 일치하였고 전원 재투입 후에도 동일하였다. 연속 동작(always-on) 판정은 검증 세트에서 "
          "키워드 검출률 69.53 %를 보였으며, 칩 수준 검증은 다음 단계로 남아 있다.")
 
     # 1
@@ -343,8 +343,8 @@ def build():
         "이진화 MatchboxNet과, 이를 곱셈기 없이 정수 임계 비교로 실행하는 folded RTL 설계.",
         "평가 조건을 T1(클립 정확도), T2(하드웨어 재현성), T3(연속 동작)로 분리한 평가 체계와, "
         "이에 따른 선행연구 수치의 조건별 정리.",
-        "칩 내부 ROM·채점기·VIO를 이용한 자체 검사로 12개 클래스를 포함한 2,400회 분류에서 "
-        "소프트웨어 정수 경로와 100 % 일치를 확인한 칩 수준 검증.",
+        "칩 내부 ROM·채점기·VIO를 이용한 자체 검사로, 12개 클래스 균형 세트를 포함한 2,400개 "
+        "클립–모델 조합(반복 포함 5,400회 분류)에서 소프트웨어 정수 경로와 100 % 일치를 확인한 칩 수준 검증.",
         "전체 test 세트에서 float 대비 정수 경로의 정확도 손실이 없음(−0.06 %p 차, 정수 쪽이 높음)을 "
         "확인한 양자화 설계.",
     ])
@@ -363,7 +363,7 @@ def build():
             "1-s GSC clip, word inside window", "argmax = label", "full test set (4,888)"],
            ["T2 HW reproduction", "Does the chip compute the same integers?",
             "same clips, stored in on-chip ROM", "chip class = Python integer class",
-            "2,400 runs (4 sets × 600)"],
+            "4 sets × 600 clips, 9 runs"],
            ["T3 Always-on", "Is a keyword detected in a stream?",
             "3-s spliced stream, 100-ms hop", "5 consecutive + margin", "val: 2,560 kw + 512 quiet"]],
           widths_cm=[3.0, 3.8, 3.6, 3.4, 3.2], size=8)
@@ -398,19 +398,19 @@ def build():
            "frame, keeps a sliding 1-s window, classifies it with the folded BinaryMatchboxNet and "
            "applies a consecutive-vote decision.", 16.5)
     para(doc,
-         "아날로그 전단은 채널마다 대역통과 필터, 정밀 정류·평활을 수행하는 능동 포락선 검출기, 비교기로 "
-         "구성된다. 비교기의 기준 전압은 저항 분압으로 설정되므로, 학습에서 얻은 임계값이 채널마다 "
-         "상수로 고정되어야 실제 회로로 옮길 수 있다. FPGA로 들어오는 신호는 비교기 출력 16가닥뿐이며, "
+         "아날로그 전단은 채널마다 대역통과 필터, 포락선 검출기, 비교기로 구성되며, 비교기 기준 전압은 "
+         "저항 분압으로 정해진다. 디지털 단의 관점에서 전단과의 계약은 단순하다. FPGA로 들어오는 신호는 비교기 출력 16가닥뿐이며, "
          "디지털 단은 10 ms 동안 한 번이라도 1이 된 채널을 1로 기록하여(sticky-OR) 16비트 프레임을 만든다. "
          "1초(100프레임) 창을 좌우로 14프레임씩 채워 128프레임 입력으로 만든 뒤 네트워크에 넣는다.")
-    heading(doc, "3.2 입력 특징의 소프트웨어 모사", 2)
+    heading(doc, "3.2 입력 데이터와 아날로그 전단의 현재 상태", 2)
     para(doc,
-         "아날로그 회로는 아직 제작 전이므로, 학습과 평가에는 [1]의 IV-A절과 같은 스펙트로그램 수준 "
-         "모사를 사용하였다. STFT(25 ms 창, 10 ms hop, n_fft 512) 위에 동료가 SPICE로 추출한 보드 "
-         "필터뱅크 응답 행렬을 적용하고, sqrt 압축 후 10 ms 창의 최댓값을 취한 다음 채널별 학습 임계값과 "
-         "비교하여 이진화한다. 최댓값 축약과 임계 비교는 순서를 바꿔도 결과가 같으므로, 이는 "
-         "'비교기 출력이 창 안에서 한 번이라도 1이면 1'이라는 하드웨어 규칙과 수학적으로 동일하다. "
-         "포락선 평활 시상수(τ)는 논문에 수치가 없어 기준 모델에서는 적용하지 않았다.")
+         "아날로그 전단은 공동 연구자가 회로 설계, PCB 설계, SPICE 시뮬레이션까지 진행하였다. 부품 실장이 "
+         "아직 이루어지지 않아 실제 보드를 FPGA에 연결한 측정은 수행하지 못했지만, 시뮬레이션에서 얻은 "
+         "필터 응답으로 학습한 모델이 이상적인 mel 필터로 설계한 경우보다 오히려 높은 정확도를 보이는 등 "
+         "결과는 긍정적이다. 본 보고서의 학습·평가 입력은 [1]의 IV-A절과 같은 방식으로, 그 필터뱅크 응답을 "
+         "스펙트로그램 위에 적용해 이진 이미지를 만드는 소프트웨어 모사이다. 모사 규칙('10 ms 창 안에서 "
+         "비교기 출력이 한 번이라도 1이면 1')은 디지털 단의 프레임 포착 규칙과 같게 맞추었으므로, 실제 "
+         "보드가 연결되면 입력 소스만 바뀌고 디지털 단은 그대로 사용한다.")
     heading(doc, "3.3 네트워크 구조", 2)
     para(doc,
          "분류기는 MatchboxNet-3×2×64 [2] 골격에 정밀도를 층별로 다르게 적용한 부분 이진화 구조이다. "
@@ -445,7 +445,7 @@ def build():
     table(doc, "Training configuration",
           ["Item", "Baseline (bd_base)", "Partial-75 (fine-tune)"],
           [["Dataset / split", "GSC v2, official lists, 12 classes", "same"],
-           ["Front end", "board filter bank (SPICE matrix), sqrt, 10-ms max, fixed norm.", "same"],
+           ["Input", "16-ch binary image from simulated board front end, T = 128", "same"],
            ["Epochs / batch", "100 / 128", "20 (from Baseline best) / 128"],
            ["Optimizer, LR", "Adam, 1e-3, plateau ×0.1 (patience 10), min 1e-5", "Adam, 1e-4, patience 5"],
            ["Threshold STE clip", "0.003", "0.003"],
@@ -634,15 +634,15 @@ def build():
     figure(doc, FIG / "fig_per_class_recall.png",
            "Per-class recall of the integer path on the full test set. Legend values are overall accuracy.",
            16.5)
-    figure(doc, FIG / "fig_confusion_bd_base.png",
-           "Row-normalized confusion matrix (%) of the Baseline integer path on the full test set.", 8.5)
+    figure(doc, IMG / "fig_confusion_bd_base.png",
+           "Confusion matrix of the Baseline integer path on the full test set (clip counts; shading is "
+           "the share of the true-class row). Each class has 396–425 test clips, the same scale as the "
+           "confusion matrices reported in [1].", 9.0)
     para(doc,
          "클래스별로는 silence(99.3 %)가 가장 높고 unknown(64.4 %), down(76.1 %), go(77.6 %)가 낮다. "
          "가장 많이 혼동되는 쌍은 no↔go(70건), down↔go(56건)로 양방향이 비슷하여, 입력 특징이 이 소리들을 "
          "충분히 구분하지 못함을 시사한다. 이는 [1]의 혼동 행렬에서 이진 AFE 입력의 오류가 no·go·down에 "
          "모였다는 관찰과 같다.")
-    figure(doc, FIG / "fig_channel_firing.png",
-           "Probability that each comparator output is 1 over the test set (input statistics).", 8.5)
 
     heading(doc, "6.2 T2: 칩 재현성", 2)
     b600 = balanced_acc("bd_base", 600)
@@ -652,7 +652,7 @@ def build():
           [["Baseline", "test order 0–599", "2 (right, go)", "3", "600/600 each", "57.5", "81.33"],
            ["Partial-75", "test order 0–599", "2 (right, go)", "2", "600/600 each", "57.4", "81.83"],
            ["Baseline", "balanced 0–599", "12 × 50", "2", "600/600 each", "57.5", pct(b600)],
-           ["Partial-75", "balanced 0–599", "12 × 50", "2", "측정 결과 반영 예정", "—", pct(p600)]],
+           ["Partial-75", "balanced 0–599", "12 × 50", "2", "600/600 each", "57.5", pct(p600)]],
           widths_cm=[2.1, 2.8, 2.6, 1.2, 2.8, 1.7, 2.6], size=8,
           note="Runs include a power cycle and fresh programming before the repeated runs. "
                "Accuracy on set = Python integer-path accuracy, which the chip equals when all clips match.")
@@ -660,7 +660,8 @@ def build():
          "칩의 분류 결과는 측정한 모든 실행에서 파이썬 정수 경로와 600개 전부 일치하였고, 반복 실행 간 "
          "결과가 같았다. 클립당 처리 시간은 57.4–57.5 ms로 시뮬레이션 값(57.11 ms)과 폴링 해상도 안에서 "
          "일치한다. 0개 오류가 관측된 600회 실행에서 칩의 불일치율 95 % 상한은 약 0.5 %이고(rule of "
-         "three), 네 세트 2,400회를 합치면 약 0.13 %이다. 12개 클래스가 균형 있게 섞인 세트에서도 "
+         "three), 네 세트의 서로 다른 2,400개 클립–모델 조합을 합치면 약 0.13 %이다. 반복 실행을 포함한 "
+         "총 분류 횟수는 5,400회이다. 12개 클래스가 균형 있게 섞인 세트에서도 "
          "일치했으므로, 모든 출력 클래스 경로가 칩에서 올바르게 동작함을 확인하였다.")
 
     heading(doc, "6.3 T3: 연속 동작 (소프트웨어, 검증 세트)", 2)
@@ -694,24 +695,24 @@ def build():
            ["Accuracy (%)", "76.3", "86.0", "86.03", "89.5", f"{pct(T1_P75['fixed_acc'])}"],
            ["Accuracy basis", "SW float", "SW float", "chip", "chip", "SW integer = chip (T2)"],
            ["Implementation", "MCU (est.)", "MCU (est.)", "65 nm ASIC", "65 nm ASIC", "FPGA XC7S75"],
-           ["HW/SW equivalence shown", "—", "—", "—", "—", "2,400 / 2,400"]],
+           ["HW/SW equivalence shown", "—", "—", "—", "—", "2,400 / 2,400 clips"]],
           widths_cm=[3.2, 2.4, 2.4, 2.4, 2.4, 3.6], size=8)
     para(doc,
          "같은 계열(아날로그 이진 특징 + BNN)인 [1]과 비교하면, 16채널인 본 연구는 8채널(76.3 %)보다 "
          "6 %p 이상 높고 64채널(86.0 %)보다 3.4 %p 낮다. 채널 수가 4배인 64채널 구성은 필터·비교기 수와 "
-         "취득 에너지도 그만큼 늘어나므로, 16채널은 그 사이의 절충점에 해당한다. 또한 [1]의 수치는 "
-         "소프트웨어에서 이상적인 mel 필터로 얻은 float 정확도인 반면, 본 연구의 수치는 실제 보드 "
-         "필터뱅크의 응답과 저항 분압으로 구현 가능한 절대 임계값을 전제로 하고, 정수 경로 정확도가 "
-         "칩에서 그대로 재현됨을 확인한 값이다. 전용 ASIC [5], [6]과는 공정·플랫폼이 달라 전력을 직접 "
+         "취득 에너지도 그만큼 늘어나므로, 16채널은 그 사이의 절충점에 해당한다. 두 연구 모두 GSC v2, "
+         "12개 클래스, 공식 80:10:10 분할, 1초 클립당 1회 판정이라는 같은 조건에서 평가하였다. 다만 [1]의 "
+         "수치는 이상적인 mel 필터 모사와 float 모델에서 얻은 것이고, 본 연구의 수치는 PCB로 설계된 "
+         "필터뱅크의 모사 응답과 저항 분압으로 구현 가능한 임계값을 전제로 한 정수 경로 정확도이며, 칩에서 "
+         "그대로 재현됨을 확인한 값이다. 전용 ASIC [5], [6]과는 공정·플랫폼이 달라 전력을 직접 "
          "비교할 수 없으며, 정확도는 analog 시간영역 특징을 쓴 [5]보다 3.5 %p 낮다.")
 
     # 7
     heading(doc, "7. 차별점과 개선점", 1)
     bullets(doc, [
-        "**제작 가능한 조건을 학습에 반영.** 이상적인 mel 필터 대신 동료가 설계한 보드 필터뱅크의 응답을 "
-        "사용하고, 16개 임계값을 채널별 절대값(fixed 정규화)으로 학습하여 저항 분압 하나로 옮길 수 있게 "
-        "하였다. 필터뱅크를 보드 설계로 바꾼 것만으로 같은 조건의 기존 설계 대비 test 정확도가 "
-        "0.817에서 0.825로 올랐다(프로젝트 ablation 기록).",
+        "**제작 가능한 조건을 학습에 반영.** 이상적인 mel 필터 대신 PCB로 설계된 필터뱅크의 SPICE 응답을 "
+        "사용하고, 16개 임계값을 채널별 절대값으로 학습하여 저항 분압 하나로 옮길 수 있게 하였다. "
+        "필터뱅크만 바꾼 비교에서 test 정확도가 0.817에서 0.825로 올랐다(프로젝트 ablation 기록).",
         "**학습 기법에 의한 개선.** 임계값 STE 구간을 1.0에서 0.003으로 좁혀 이진 입력 모델의 정확도를 "
         "+10.0 %p 올렸고, partial-window 미세조정으로 클립 정확도를 유지하면서 연속 동작 검출률과 오검출을 "
         "함께 개선하였다.",
@@ -719,7 +720,8 @@ def build():
         "옮겨 곱셈기 없는 이진 경로(DSP 7개는 꼬리에만 사용)를 구성하면서도 전체 test 세트에서 float "
         "대비 정확도 손실이 없었다.",
         "**칩 수준 동치 검증.** 선행 연구가 소프트웨어 정확도나 칩 정확도 중 하나만 보고한 것과 달리, "
-        "학습 모델의 정수 경로와 칩 결과가 클립마다 같음을 12개 클래스를 포함한 2,400회 분류로 확인하였다. "
+        "학습 모델의 정수 경로와 칩 결과가 클립마다 같음을 12개 클래스 균형 세트를 포함한 2,400개 "
+        "클립–모델 조합(반복 포함 5,400회)으로 확인하였다. "
         "칩 내부 채점과 VIO를 사용하여 추가 배선 없이 반복 가능한 검증 절차를 만들었다.",
         "**평가 조건의 분리.** 클립 정확도(T1)와 연속 동작(T3)을 구분하여, 같은 모델이 클립 기준 82.7 %, "
         "연속 기준 69.5 %임을 함께 보고하였다. 선행 칩 논문들은 대부분 T1 조건만 보고한다.",
@@ -738,9 +740,10 @@ def build():
         "**전력은 추정치.** Vivado의 vectorless 추정(신뢰도 Medium)이며, 실측이나 시뮬레이션 활동 "
         "파일(SAIF) 기반 추정이 아니다. 또한 연속 동작에서는 대부분의 시간이 대기이므로 클립당 에너지 "
         "환산은 상한에 가깝다.",
-        "**아날로그 전단은 아직 모사.** 입력은 SPICE 필터뱅크 행렬을 적용한 스펙트로그램 수준 모사이며, "
-        "포락선 시상수, 비교기 오프셋, 소자 편차, 이벤트 기반 취득의 시간 해상도는 반영하지 않았다. 실제 "
-        "AFE 보드 연결 후 정확도 변화를 확인해야 한다.",
+        "**실제 아날로그 보드와의 연결 미수행.** 아날로그 전단은 PCB 설계와 SPICE 시뮬레이션까지 "
+        "완료되었고 시뮬레이션 결과는 긍정적이나, 실장이 이루어지지 않아 FPGA와 연결한 측정은 하지 "
+        "못했다. 현재 입력은 그 응답의 소프트웨어 모사이므로, 실장 후 실제 비교기 출력으로 정확도를 "
+        "다시 확인해야 한다.",
         "**정확도 목표 미달.** 클립 정확도 82.6 %로 목표(85 %)보다 2.4 %p 낮으며, unknown 클래스(64 %)와 "
         "no/go/down 혼동이 주된 손실이다. 비키워드 클립의 약 18 %가 키워드로 분류되어 always-on 오검출에 "
         "직접 영향을 준다.",
