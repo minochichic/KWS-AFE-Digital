@@ -29,11 +29,11 @@ from docx.shared import Cm, Pt  # noqa: E402
 # the contest asks for 맑은고딕 throughout
 R.LATIN = "Malgun Gothic"
 R.HANGUL = "Malgun Gothic"
-OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서.docx"
+OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v2.docx"
 
-TITLE = ("아날로그 이진 특징과 부분 이진화 MatchboxNet 기반 Always-on 키워드 스포팅 가속기의 "
-         "FPGA 구현 및 칩 수준 검증")
-FIELD = "Digital / AI 반도체 (이진 신경망 가속기 RTL 설계 및 FPGA 구현)"
+TITLE = ("An Always-On Keyword Spotting System Combining an Analog Binary Feature-Extraction "
+         "Front End and a Partially Binarized MatchboxNet Accelerator on FPGA")
+FIELD = "Analog + Digital / AI 반도체 (아날로그 특징 추출 전단 + 이진 신경망 가속기)"
 
 
 def run(p, text, size=10, bold=False, underline=False, italic=False):
@@ -176,8 +176,9 @@ def report(doc):
     # ---- 1. 설계 요약 ----
     h(doc, "1. 설계 요약", 12)
     summary_box(doc, [
-        "기능: 아날로그 필터뱅크·비교기가 만든 16채널 이진 시간-주파수 이미지를 받아 12개 클래스(키워드 10개 + "
-        "silence + unknown)를 분류하는 always-on 키워드 스포팅(KWS) 가속기",
+        "기능: 아날로그 필터뱅크·포락선 검출기·비교기로 ADC·FFT 없이 16채널 이진 특징을 추출하고, 이를 12개 클래스"
+        "(키워드 10개 + silence + unknown)로 분류하는 always-on 키워드 스포팅(KWS) 시스템",
+        "아날로그 전단: 16채널 특징 추출 회로 설계, PCB 설계 및 SPICE 시뮬레이션 완료",
         "구조: 부분 이진화 MatchboxNet(1D TCS, 96.5 k 파라미터) + 곱셈기 없는 정수 전용 folded RTL + 100 ms "
         "sliding window·5연속 투표 판정",
         f"정확도: Google Speech Commands v2 12-class test {T1B['n_clips']:,}개, 정수 경로 {R.pct(T1P['fixed_acc'])} % "
@@ -223,14 +224,13 @@ def report(doc):
     page_break(doc)
     h(doc, "2. 구성 및 동작", 12)
     R.figure(doc, R.IMG / "fig_system.png",
-             "전체 구성. 아날로그 전단(PCB 설계 완료, 본 설계에서는 응답을 모사)이 비교기 출력 16가닥을 내고, FPGA가 "
-             "10 ms 프레임 포착 → 1초 sliding window → folded BinaryMatchboxNet → 연속 투표 판정을 수행한다.", 16.5)
+             "전체 구성. 아날로그 전단이 비교기 출력 16가닥을 내고, FPGA가 10 ms 프레임 포착 → 1초 sliding window → "
+             "folded BinaryMatchboxNet → 연속 투표 판정을 수행한다.", 16.5)
+    h(doc, "2.1 아날로그 특징 추출 전단", 10.5)
+    R.para(doc, "[아날로그 전단 구성 및 동작 — 공동 연구자 작성 예정]", italic=True)
+    h(doc, "2.2 디지털 분류 가속기", 10.5)
     R.para(doc,
-           "아날로그 전단은 채널마다 대역통과 필터, 포락선 검출기, 저항 분압 기준의 비교기로 구성되며, 공동 연구자가 "
-           "PCB 설계와 SPICE 시뮬레이션까지 완료하였다. 실장이 이루어지지 않아 실제 보드 연결은 아직이지만, 시뮬레이션 "
-           "응답으로 학습한 모델이 이상적인 mel 필터 설계보다 높은 정확도를 보이는 등 결과는 긍정적이다. 디지털 단과의 "
-           "인터페이스는 비교기 출력 16가닥뿐이므로, 보드가 연결되어도 디지털 단은 그대로 사용한다.")
-    R.para(doc,
+           "아날로그 전단과의 인터페이스는 비교기 출력 16가닥뿐이다. "
            "디지털 단의 동작은 다음과 같다. (1) 프레임 포착: 10 ms 동안 한 번이라도 1이 된 채널을 1로 기록해 16비트 "
            "프레임을 만든다. (2) sliding window: 최근 100프레임을 원형 버퍼에 유지하고 100 ms마다 스냅숏을 떠서 좌우 "
            "14프레임을 채운 128프레임 입력을 만든다. (3) 네트워크: 계층마다 MAC 엔진 하나를 시분할로 재사용하는 folded "
@@ -248,11 +248,8 @@ def report(doc):
              ["Total", "", "", "", "", f"{n_par:,}", f"{mem_bits / 8 / 1000:.1f} kB"]],
             widths_cm=[1.6, 4.0, 3.2, 1.3, 1.4, 2.0, 2.2], size=9, bold_rows=(7,))
     R.para(doc,
-           "이진 MatchboxNet이 하드웨어에서 갖는 강점은 Table II와 같다. 이진층의 곱셈은 XNOR과 popcount로 바뀌고, "
-           "BN과 부호 함수는 정수 누산값에 대한 비교 하나로 접힌다. 입력이 ±1이므로 INT8 가중치의 conv1도 부호 있는 "
-           "누산만으로 계산된다. 곱셈이 남는 곳은 BN이 흡수되지 않는 후단뿐이며, 실제 구현에서도 DSP 7개가 모두 이 "
-           "부분에만 쓰였다. 활성값이 1비트여서 계층 사이 버퍼(64채널 × 64프레임 = 4,096비트)도 네 개를 합쳐 LUT 669개에 "
-           "불과하다.")
+           "이진층의 곱셈은 XNOR-popcount로, BN과 부호 함수는 정수 비교 하나로 바뀌며, 입력이 ±1이므로 conv1도 부호 있는 "
+           "누산만으로 계산된다. 곱셈은 BN이 흡수되지 않는 후단에만 남는다(Table II).")
     R.table(doc, "Hardware consequences of the partial binarization",
             ["Property", "Floating-point MatchboxNet", "This design", "Effect"],
             [["Multiply in B1–B3, conv2", "real multiply", "XNOR + popcount", "no multiplier; DSP only in tail (7/140)"],
@@ -272,14 +269,14 @@ def report(doc):
     # ---- 3. 설계 과정 및 실험 결과 ----
     page_break(doc)
     h(doc, "3. 설계 과정 및 실험 결과", 12)
-    h(doc, "3.1 설계 과정", 11)
+    h(doc, "3.1 아날로그 전단 설계 및 시뮬레이션", 11)
+    R.para(doc, "[회로·PCB 설계 및 SPICE 시뮬레이션 결과 — 공동 연구자 작성 예정]", italic=True)
+    h(doc, "3.2 디지털 단 설계 과정", 11)
     R.para(doc,
-           "(1) 학습: 필터뱅크 응답을 적용한 16채널 이진 입력으로 BinaryMatchboxNet을 QAT로 학습하고, 비교기 임계값 "
-           "16개를 STE로 함께 학습하였다(Table III). always-on용 Partial-75 모델은 창 경계에 걸린 단어를 포함하도록 "
-           "20에폭 미세조정하였다. (2) 정수 변환: BN을 정수 임계값으로 접고, 이진 가중치를 비트 패킹하며, 후단 계층을 "
-           "Q*.6 고정소수점의 이득·오프셋·시프트로 바꾸어 ROM 파일과 층별 골든 벡터를 생성하였다. (3) RTL·검증: 모듈별 "
-           "테스트벤치로 골든 벡터와 비트 단위 비교 후 Vivado로 합성·배치배선하였다. (4) 칩 검증: 자체 검사 비트스트림으로 "
-           "클립 세트를 칩에서 실행하였다.")
+           "(1) 학습: 아날로그 전단의 SPICE 필터 응답을 적용한 16채널 이진 입력으로 QAT 학습하고, 비교기 임계값 16개를 "
+           "STE로 함께 학습하였다(Table III). (2) 정수 변환: BN을 정수 임계값으로 접고 후단을 Q*.6 고정소수점으로 바꿔 "
+           "ROM 파일과 층별 골든 벡터를 생성하였다. (3) RTL 검증: 모듈별로 골든 벡터와 비트 단위 비교 후 합성·배치배선하였다. "
+           "(4) 칩 검증: 자체 검사 비트스트림으로 클립 세트를 칩에서 실행하였다.")
     R.table(doc, "Training configuration and result",
             ["Item", "Baseline", "Partial-75 (fine-tune)"],
             [["Data", "GSC v2, official split, 12 classes, 16-ch binary input", "same"],
@@ -288,10 +285,8 @@ def report(doc):
              ["Augmentation", "none", "partial keyword window (p = 0.5, 75–100 %)"],
              ["Best val. accuracy", "83.64 %", "83.32 %"]],
             widths_cm=[3.2, 7.4, 6.0], size=9)
-    R.figure(doc, R.FIG / "fig_training_curves.png",
-             "학습 곡선: (a) 검증 정확도, (b) 학습 손실. Partial-75(점선)는 Baseline 100에폭 체크포인트에서 이어 학습.", 15.5)
 
-    h(doc, "3.2 FPGA 구현 결과", 11)
+    h(doc, "3.3 FPGA 구현 결과", 11)
     tot = {k: R.util_row(R.HW / "util_summary.rpt", k) for k in
            ("Slice LUTs", "Slice Registers", "Block RAM Tile", "DSPs", "Bonded IOB")}
     avail = {"Slice LUTs": "48,000", "Slice Registers": "96,000", "Block RAM Tile": "90", "DSPs": "140",
@@ -316,17 +311,12 @@ def report(doc):
             ["Block", "LUT", "FF", "DSP", "Worst slack (ns)", "Logic levels"],
             rows, widths_cm=[4.6, 1.8, 1.8, 1.2, 2.8, 2.2], size=9)
     R.para(doc,
-           "네트워크는 LUT 약 19.8 k로 블록마다 고르게 분포하며, 최악 경로는 conv2 depthwise(k=29, dilation 2)의 MAC "
-           "입력 선택부터 누산기까지로 지연의 약 75 %가 배선이다. 가장 느린 속도 등급에서 5 ns 이상 여유가 있어 약 "
-           "66 MHz까지 동작 여유가 있다. 전력은 Vivado 추정으로 총 0.183 W(정적 0.094 W, 동적 0.090 W, 이 중 네트워크 "
-           "0.058 W)이며, 네트워크 기준 1회 추론 약 8.7 mJ(동적 약 3.3 mJ)에 해당한다.")
-    # device view and slack side by side would need a table; stack them compactly
+           "최악 경로는 conv2 depthwise(k=29)의 MAC 입력 선택부터 누산기까지이며, 가장 느린 속도 등급에서 5 ns 이상 "
+           "여유가 있다. 전력은 Vivado 추정으로 총 0.183 W(정적 0.094 W, 네트워크 동적 0.058 W)이다.")
     R.figure(doc, R.HW / "device_place.png",
-             "XC7S75 배치 결과(Vivado device view). 색칠된 영역은 네트워크 블록, 자체 검사 하네스, 디버그 로직이다.", 6.0)
-    R.figure(doc, R.IMG / "fig_slack_hist.png",
-             "배치배선 후 setup slack 분포(최악 20,000개 끝점, 전체 55,034개). 음수 slack 없음.", 8.0)
+             "XC7S75 배치 결과(Vivado device view). 색칠된 영역은 네트워크 블록, 자체 검사 하네스, 디버그 로직이다.", 5.0)
 
-    h(doc, "3.3 칩 수준 검증 결과", 11)
+    h(doc, "3.4 칩 수준 검증 결과", 11)
     b600 = R.balanced_acc("bd_base", 600)
     p600 = R.balanced_acc("bd_base_ft20_partial75", 600)
     R.table(doc, "On-chip self-test results (XC7S75, 50 MHz)",
@@ -338,11 +328,9 @@ def report(doc):
             widths_cm=[2.2, 3.0, 2.2, 1.3, 3.4, 3.0], size=9,
             note="Repeated runs include a power cycle and fresh programming.")
     R.para(doc,
-           "칩의 분류 결과는 모든 실행에서 소프트웨어 정수 경로와 600개 전부 일치하였고 반복 실행 결과도 같았다. 오류 0건의 "
-           "2,400개 클립–모델 조합으로부터 칩 불일치율의 95 % 상한은 약 0.13 %이며, 12개 클래스 균형 세트에서도 일치하여 "
-           "모든 출력 경로가 올바르게 동작함을 확인하였다.")
+           "모든 실행에서 칩과 소프트웨어 정수 경로가 600개 전부 일치하였다(불일치율 95 % 상한 약 0.13 %).")
 
-    h(doc, "3.4 인식 성능", 11)
+    h(doc, "3.5 인식 성능", 11)
     R.table(doc, f"Clip accuracy on the full GSC v2 test set ({T1B['n_clips']:,} clips, 12 classes)",
             ["Model", "Float (%)", "Integer path (%)", "Agreement (%)", "Non-keyword → keyword"],
             [["Baseline", R.pct(T1B["float_acc"]), R.pct(T1B["fixed_acc"]), R.pct(T1B["agree"]), f"{fw(T1B)} / 814"],
@@ -351,12 +339,10 @@ def report(doc):
     R.figure(doc, R.IMG / "fig_confusion_bd_base.png",
              "Baseline 정수 경로 혼동 행렬(클립 수, n = 4,888). 클래스당 396–425개로 [1]의 혼동 행렬과 같은 규모.", 8.5)
     R.para(doc,
-           "silence(99.3 %)가 가장 높고 unknown(64.4 %), down(76.1 %), go(77.6 %)가 낮으며 주요 혼동은 no↔go, down↔go로 "
-           "[1]의 이진 AFE 결과와 같은 경향이다. 연속 동작(검증 세트, 무음–단어–무음 3초 스트림, 100 ms hop, 5연속 판정)에서는 "
-           "Partial-75가 키워드 검출률 69.53 %(Baseline 67.73 %), quiet 오검출 41/512(52/512), 잘못된 검출 242건(287건)으로 "
-           "개선되었다. 같은 조건의 가운데 창 정확도는 82.68 %로, 클립 정확도가 실제 연속 동작 성능을 과대평가함을 보여 준다.")
+           "주요 혼동은 no↔go, down↔go로 [1]과 같은 경향이다. 연속 동작(검증 세트, 3초 스트림, 100 ms hop, 5연속 판정)에서 "
+           "Partial-75는 키워드 검출률 69.53 %(Baseline 67.73 %), quiet 오검출 41/512(52/512)로 개선되었다.")
 
-    h(doc, "3.5 기존 기술과의 비교", 11)
+    h(doc, "3.6 기존 기술과의 비교", 11)
     R.table(doc, "Comparison with prior work on 12-class Google Speech Commands (clip accuracy)",
             ["Work", "Feature extraction", "Classifier", "Acc. (%)", "Platform / basis", "HW = SW shown"],
             [["Cerutti [1], 64 ch", "analog BPF + comparator", "BNN (2D CNN)", "86.0", "SW float + MCU est.", "—"],
@@ -380,10 +366,9 @@ def report(doc):
              ["Window-boundary robustness", "—", "partial-window fine-tuning (+46 detections, val)"]],
             widths_cm=[3.6, 5.4, 7.6], size=9)
     R.para(doc,
-           "16채널인 본 설계의 정확도(82.6 %)는 [1]의 8채널(76.3 %)과 64채널(86.0 %) 사이이다. [1]이 이상적 mel 필터의 "
-           "float 결과인 데 비해 본 결과는 제작 가능한 필터뱅크·임계값을 전제로 한 정수 경로 정확도이며 칩에서 그대로 "
-           "재현된다. 한계로, FPGA는 정적 전력(0.094 W)이 커 µW급 ASIC과 전력을 직접 비교할 수 없고, 실제 아날로그 보드 "
-           "연결과 연속 판정의 칩 검증, 목표 정확도(85 %) 달성은 향후 과제로 남아 있다.")
+           "16채널 정확도(82.6 %)는 [1]의 8채널(76.3 %)과 64채널(86.0 %) 사이이며, 제작 가능한 필터뱅크·임계값을 전제로 한 "
+           "정수 경로 결과가 칩에서 그대로 재현된다. FPGA의 정적 전력 때문에 µW급 ASIC과 전력은 직접 비교할 수 없고, 보드 "
+           "연결과 연속 판정의 칩 검증은 향후 과제이다.")
 
     h(doc, "참고문헌", 11)
     refs = [
