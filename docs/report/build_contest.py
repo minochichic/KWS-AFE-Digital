@@ -47,7 +47,7 @@ def _full_grid(table):
 
 
 R.borders = _full_grid
-OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v4.docx"
+OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v5.docx"
 
 TITLE = ("An Always-On Keyword Spotting System Combining an Analog Binary Feature-Extraction "
          "Front End and a Partially Binarized MatchboxNet Accelerator on FPGA")
@@ -156,6 +156,28 @@ def summary_box(doc, lines):
         p.paragraph_format.line_spacing = 1.1
         run(p, "• " + ln, 9.5)
     doc.add_paragraph().paragraph_format.space_after = Pt(2)
+
+
+def side_by_side(doc, images, caption):
+    """Two pictures in one borderless row, one shared caption -- (a) left, (b) right."""
+    t = doc.add_table(rows=2, cols=len(images))
+    t.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for j, (path, width) in enumerate(images):
+        c = t.rows[0].cells[j]
+        c.width = Cm(width + 0.3)
+        p = c.paragraphs[0]
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.add_run().add_picture(str(path), width=Cm(width))
+        lab = t.rows[1].cells[j].paragraphs[0]
+        lab.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        lab.paragraph_format.space_after = Pt(0)
+        run(lab, f"({'ab'[j]})", 9)
+    R.FIG_N[0] += 1
+    c = doc.add_paragraph()
+    c.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
+    run(c, f"Fig. {R.FIG_N[0]}. ", 9, True)
+    run(c, caption, 9)
+    c.paragraph_format.space_after = Pt(8)
 
 
 def h(doc, text, size=11):
@@ -333,8 +355,10 @@ def report(doc):
     R.para(doc,
            "최악 경로는 conv2 depthwise(k=29)의 MAC 입력 선택부터 누산기까지이며, 가장 느린 속도 등급에서 5 ns 이상 "
            "여유가 있다. 전력은 Vivado 추정으로 총 0.183 W(정적 0.094 W, 네트워크 동적 0.058 W)이다.")
-    R.figure(doc, R.HW / "device_place.png",
-             "XC7S75 배치 결과(Vivado device view). 색칠된 영역은 네트워크 블록, 자체 검사 하네스, 디버그 로직이다.", 5.0)
+    side_by_side(doc,
+                 [(R.HW / "device_place.png", 4.6), (R.IMG / "schematic_net_wrapper.png", 11.4)],
+                 "(a) XC7S75 배치 결과(Vivado device view). 색칠된 영역은 네트워크 블록, 자체 검사 하네스, 디버그 로직이다. "
+                 "(b) 합성 후 스키매틱: 자체 검사 최상위(kws_selftest_top) 안의 네트워크(kws_top)와 입출력 인터페이스.")
 
     h(doc, "3.4 칩 수준 검증 결과", 11)
     b600 = R.balanced_acc("bd_base", 600)
