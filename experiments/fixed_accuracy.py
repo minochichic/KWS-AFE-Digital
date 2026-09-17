@@ -76,6 +76,10 @@ def main() -> None:
                     help="--vos-fixed 의 draw. 보드 한 장 = seed 하나")
     ap.add_argument("--limit", type=int, default=0,
                     help="stop after this many clips (0 = the whole split)")
+    ap.add_argument("--json-out", default="",
+                    help="also write n / float / fixed / agree, the confusion "
+                         "matrix and per-channel firing rates here. The report "
+                         "figures read this file, never the console output.")
     args = ap.parse_args()
 
     from train.config import load_config
@@ -234,6 +238,29 @@ def main() -> None:
         print(f"  channels {stuck} spend their bit saying nothing. No amount of "
               f"training\n  recovers a channel that is constant -- the "
               f"threshold is in the wrong place.")
+
+    if args.json_out:
+        import json
+        out = Path(args.json_out)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        m = confusion.tolist()
+        out.write_text(json.dumps({
+            "tag": args.tag,
+            "split": "test",
+            "n_clips": n,
+            "class_names": names,
+            # rows are truth, columns are predictions (experiments/confusion.py)
+            "clips_per_class": [sum(r) for r in m],
+            "float_acc": fl_ok / n,
+            "fixed_acc": fx_ok / n,
+            "agree": same / n,
+            "confusion_fixed": m,
+            "channel_fire_rate": rate,
+            "channel_bits": bits,
+            "vos": args.vos,
+            "limit": args.limit,
+        }, indent=2))
+        print(f"\nwrote {out}")
 
     print(f"\nwith nothing in the input at all (every channel -1, every frame):")
     print(f"  float says {names[fl_q]}, the integer path says {names[fx_q]}")
