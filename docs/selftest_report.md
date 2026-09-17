@@ -16,7 +16,7 @@
 | RTL 시뮬 (XSim, 노트북) | ✅ PASS | 2 클립 2/2 일치, **57.11 ms/클립** |
 | 합성 (600 클립 ROM 포함) | ✅ 완료 | 18 분, 에러 0 / 크리티컬 0 |
 | 배치배선 + 비트스트림 | ✅ 완료 | **WNS +4.96 ns**, WHS +0.006 ns, DRC 에러 0 |
-| 보드 실행 | ⏳ 대기 | 명령 준비됨 (§5) |
+| 보드 실행 (`bd_base`, 클립 0–599) | ✅ **PASS** | **600 / 600 일치**, 34.5 s = 57.5 ms/클립 (§5.3) |
 | 모델 2 (`bd_base_ft20_partial75`) | ⏳ 벡터만 준비 | §8 |
 
 ---
@@ -168,6 +168,27 @@ vivado -mode batch -source rtl/selftest/run_selftest.tcl -nolog -nojournal -notr
 | `FIRST MISMATCH: clip N got X want Y` | 불일치 — 클립 N 을 층별 벡터로 다시 export 해 시뮬 |
 | 두 실행 값이 다름 | 결정성 실패 — 타이밍/리셋 의심 |
 
+### 5.3 첫 보드 실행 결과 (2026-09-17 16:46, `-runs 1 -noprog`)
+
+```
+== run 1 / 1 ==
+     2.0 s  total   35  match   35  any_fail 0
+    ...
+    34.5 s  total  600  match  600  any_fail 0
+   34.5 s for 600 clips = 57.5 ms/clip (poll resolution 2 s)
+== summary ==
+total 600  match 600  any_fail 0
+PASS chip reproduces predictions_fixed.txt on every clip
+```
+
+- **XC7S75 위의 RTL 이 `bd_base` 파이썬 정수 경로를 600 클립 전부 재현했다.**
+  따라서 이 600 개에 대한 칩 정확도 = 0.813 (§3.4).
+- 속도 57.5 ms/클립 은 시뮬 57.11 ms 와 일치한다(폴링 해상도 2 s 오차 안).
+- 처음 시도는 `debug hub core was not detected` 로 실패했다. 원인은 베이스 보드
+  클럭 선택 스위치가 **0 Hz** 였던 것 — `docs/hanback_kit.md` §3.2. 스위치를
+  50 MHz 로 돌리고 재프로그래밍 없이 다시 읽어 통과.
+- 결정성(2 회 실행)은 아직 안 봤다: `-tclargs -runs 2 -noprog`.
+
 ---
 
 ## 6. 시뮬레이션 (XSim)
@@ -313,7 +334,7 @@ conv2 depthwise(k=29, dilation 2)의 MAC 입력 선택 → 누산기 경로다. 
 
 ## 8. 남은 일
 
-1. **보드 실행** (§5.2) — `bd_base`, 클립 0–599. PASS 면 질문 1 의 첫 증거.
+1. ~~보드 실행~~ ✅ 600/600 PASS (§5.3). 남은 것: `-runs 2` 결정성.
 2. **클래스 커버리지 보강** — 클립 선택을 섞거나 클래스별로 층화해서 다시 export.
    또는 워드 폭을 16 비트로 선언해 1000 클립을 한 비트스트림에.
 3. **오프셋 스윕** — `--base 600 --clips 400` 등으로 나머지 구간, 수천 개로 확장.
