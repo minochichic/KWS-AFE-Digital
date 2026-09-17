@@ -47,7 +47,7 @@ def _full_grid(table):
 
 
 R.borders = _full_grid
-OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v3.docx"
+OUT = R.ROOT / "out/report_build/2026_반도체설계경진대회_참가신청서_설계보고서_v4.docx"
 
 TITLE = ("An Always-On Keyword Spotting System Combining an Analog Binary Feature-Extraction "
          "Front End and a Partially Binarized MatchboxNet Accelerator on FPGA")
@@ -253,7 +253,9 @@ def report(doc):
            "프레임을 만든다. (2) sliding window: 최근 100프레임을 원형 버퍼에 유지하고 100 ms마다 스냅숏을 떠서 좌우 "
            "14프레임을 채운 128프레임 입력을 만든다. (3) 네트워크: 계층마다 MAC 엔진 하나를 시분할로 재사용하는 folded "
            "구조로 57 ms 안에 12개 클래스 점수를 계산한다. (4) 판정: 같은 키워드가 quiet 대비 margin 이상으로 5회 연속 "
-           "나오면 검출하고 1초간 재검출을 막는다.")
+           "나오면 검출하고 1초간 재검출을 막는다. (1), (2), (4)의 연속 판정 블록은 RTL로 설계하여 XSim 모듈 시뮬레이션"
+           "(프레임 포착 3프레임, sliding window 33프레임·overrun, 투표 3개 시나리오, 모두 0 failures)으로 검증하였고, "
+           "칩 수준 검증은 (3) 네트워크를 대상으로 수행하였다.")
     R.table(doc, "Network architecture (C = 64, T = 128, 12 classes)",
             ["Stage", "Type", "Precision", "Kernel", "Out ch.", "Params", "Weight bits"],
             [["conv1", "1D conv, stride 2", "INT8 (binary input)", "11", "128", "22,784", "8"],
@@ -357,7 +359,7 @@ def report(doc):
     R.figure(doc, R.IMG / "fig_confusion_bd_base.png",
              "Baseline 정수 경로 혼동 행렬(클립 수, n = 4,888). 클래스당 396–425개로 [1]의 혼동 행렬과 같은 규모.", 8.5)
     R.para(doc,
-           "주요 혼동은 no↔go, down↔go로 [1]과 같은 경향이다. 연속 동작은 시뮬레이션으로 평가하였다(검증 세트, 무음–단어–무음 "
+           "주요 혼동은 no↔go, down↔go로 [1]과 같은 경향이다. 연속 동작 인식 성능은 소프트웨어 시뮬레이션으로 평가하였다(검증 세트, 무음–단어–무음 "
            "3초 스트림, 100 ms hop, 5연속 판정). 그 결과 Partial-75는 키워드 검출률 69.53 %(Baseline 67.73 %), quiet 오검출 "
            "41/512(Baseline 52/512)를 보였다.")
 
