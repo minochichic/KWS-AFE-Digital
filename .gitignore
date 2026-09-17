@@ -102,6 +102,12 @@ vivado*.str
 xvlog.pb
 xelab.pb
 xsim*.jou
+xsim*.log
+
+# Vivado 크래시 덤프. 도구가 죽으면 cwd(리포 루트)에 떨어진다.
+hs_err_pid*
+
+# build.tcl 이 create_ip 로 만드는 VIO 등 IP 산출물은 out/ 아래라 이미 무시된다.
 
 # --- 편집기 잔재 ---------------------------------------------------------- #
 # vim 스왑 파일. 2026-09-13 에 notebooks/.gpu_local.ipynb.swp 가 원격 박스의

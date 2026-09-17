@@ -191,6 +191,39 @@ set_property include_dirs [list $synth_inc $gen rtl/gen] [current_fileset]
 # 제한만 푼다.
 read_xdc -unmanaged rtl/constraints/kws_top.xdc
 
+# ---- VIO (kws_selftest_board 전용) ---------------------------------------- #
+# 결과 약 58 비트를 핀 없이 JTAG 으로 읽는다. IP 를 리포에 .xci 로 커밋하지 않고
+# **매번 여기서 만든다** -- .xci 는 Vivado 버전마다 다시 써져 diff 가 지저분하고,
+# 설정은 아래 몇 줄이 전부다.
+#
+# 폭은 rtl/synth/kws_selftest_board.v 의 포트와 짝이다.
+#   in : done 1, total 16, match 16, any_fail 1, first_fail_idx 16, got 4, exp 4
+#   out: go 1, soft_rst 1
+if {$top eq "kws_selftest_board"} {
+    set ipdir $out/ip
+    file mkdir $ipdir
+    create_ip -name vio -vendor xilinx.com -library ip \
+        -module_name vio_st -dir $ipdir -force
+    set_property -dict [list \
+        CONFIG.C_NUM_PROBE_IN     7  \
+        CONFIG.C_NUM_PROBE_OUT    2  \
+        CONFIG.C_PROBE_IN0_WIDTH  1  \
+        CONFIG.C_PROBE_IN1_WIDTH  16 \
+        CONFIG.C_PROBE_IN2_WIDTH  16 \
+        CONFIG.C_PROBE_IN3_WIDTH  1  \
+        CONFIG.C_PROBE_IN4_WIDTH  16 \
+        CONFIG.C_PROBE_IN5_WIDTH  4  \
+        CONFIG.C_PROBE_IN6_WIDTH  4  \
+        CONFIG.C_PROBE_OUT0_WIDTH 1  \
+        CONFIG.C_PROBE_OUT1_WIDTH 1  \
+    ] [get_ips vio_st]
+    generate_target {instantiation_template synthesis} [get_ips vio_st]
+    # OOC 로 먼저 합성해 둔다. synth_design 은 vio_st 를 블랙박스로 보고,
+    # 링크 단계에서 이 체크포인트가 채운다.
+    synth_ip [get_ips vio_st]
+    puts "== VIO vio_st generated in $ipdir =="
+}
+
 # ---- 합성 ---------------------------------------------------------------- #
 # -flatten_hierarchy none: 계층을 유지해야 utilization 이 모듈별로 나온다.
 # 어느 블록이 무엇을 먹는지가 이 단계에서 알고 싶은 전부다.
@@ -253,8 +286,18 @@ if {$do_impl} {
     # 핀이 하나라도 제약 없이 남아 있으면 여기서 DRC 가 막는다. 그게 맞다 --
     # 미제약 핀은 도구가 임의로 배정하므로, 보드에 올리면 신호가 우리가 배선한
     # 곳이 아닌 데로 나가고 증상은 "동작 안 함" 뿐이다.
-    write_bitstream -force $out/kws_top.bit
-    puts "== bitstream: $out/kws_top.bit =="
+    #
+    # 파일명은 최상위 이름을 따른다. 예전에는 늘 kws_top.bit 이었는데, 최상위가
+    # 여럿이 되면서 자체 검사 비트스트림이 보드용을 덮어쓰는 일이 생길 수 있다.
+    write_bitstream -force $out/$top.bit
+    puts "== bitstream: $out/$top.bit =="
+
+    # 디버그 코어(VIO/ILA)가 있으면 .ltx 가 있어야 Hardware Manager 가 프로브
+    # 이름을 안다. 없으면 VIO 창이 비어 보인다.
+    if {[llength [get_debug_cores -quiet]] > 0} {
+        write_debug_probes -force $out/$top.ltx
+        puts "== probes: $out/$top.ltx =="
+    }
 }
 
 puts "== done. artifacts in $out =="

@@ -25,7 +25,8 @@
 //   직렬화     한두 핀으로 밀어내고 스코프/LA 로 받는다
 //   일부만     done / any_fail / first_fail_idx 만 EXT 여유 핀에 (EXT0~29 가 빈다)
 //
-// VIO 가 맞는 답으로 보이지만 하네스가 시뮬에서 깨끗해진 뒤에 붙인다.
+// VIO 로 정했다(2026-09-17). 하네스가 시뮬에서 통과한 뒤 **바깥에** 붙였다 --
+// rtl/synth/kws_selftest_board.v. 이 모듈은 시뮬과 칩이 공유하므로 손대지 않는다.
 
 `timescale 1ns/1ps
 `default_nettype none
