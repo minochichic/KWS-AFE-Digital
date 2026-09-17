@@ -274,7 +274,13 @@ def main() -> None:
     x_all = np.stack(inputs)
 
     # ---- float logits and integer pooled sums, same forward pass ----
-    sites = tail_plan(model)
+    # The integer tail (tailbuild.apply_site) keeps its gain/offset tensors on the
+    # CPU -- fixed_accuracy only ever ran there. Build the plan from a CPU copy and
+    # hand it a CPU accumulator; the float forward may stay on the GPU.
+    model_cpu = BinaryMatchboxNet(cfg.model)
+    model_cpu.load_state_dict(ck["model"])
+    model_cpu.eval()
+    sites = tail_plan(model_cpu)
     grabbed = {}
     h = model.stages["conv2"].pw.register_forward_pre_hook(
         lambda mod, inp: grabbed.__setitem__("acc", binary_accumulator(mod, inp[0]).detach()))
@@ -284,7 +290,8 @@ def main() -> None:
             for lo in range(0, len(x_all), args.batch_size):
                 x = torch.as_tensor(x_all[lo:lo + args.batch_size], dtype=torch.float32, device=device)
                 fl_logits.append(model(x).cpu().numpy())
-                pooled.append(fixed_logits(model, sites, grabbed["acc"]).cpu().numpy().astype(np.int64))
+                pooled.append(fixed_logits(model_cpu, sites, grabbed["acc"].cpu())
+                              .numpy().astype(np.int64))
     finally:
         h.remove()
     fl_logits = np.concatenate(fl_logits)
