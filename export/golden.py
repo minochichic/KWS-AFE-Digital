@@ -430,6 +430,11 @@ def main() -> None:
                          "dumps. For the self-test bitstream, where a thousand "
                          "clips would otherwise write 1.6 GB of vectors "
                          "nobody reads.")
+    ap.add_argument("--balanced", action="store_true",
+                    help="take an equal number of clips per class, interleaved "
+                         "(c0,c1,...,c11,c0,...) so any prefix stays balanced. "
+                         "Without it clips come in loader order, which for an "
+                         "unshuffled test split is grouped by class.")
     args = ap.parse_args()
 
     from train.config import load_config
@@ -475,18 +480,52 @@ def main() -> None:
             raise SystemExit("the test loader produced no batches")
         return torch.cat(xs)[:n], torch.cat(ys)[:n]
 
+    # --balanced: the test loader is NOT shuffled, so `_take` returns clips in
+    # class order. The first 1000 test clips held 3 classes (right/go/no) and the
+    # first 600 -- what went onto the chip on 2026-09-17 -- only 2. Fine for
+    # "does the datapath reproduce the integers", thin for "does every output
+    # path work".
+    #
+    # So: walk the split, keep up to ceil(n / n_classes) per class, then
+    # INTERLEAVE them round-robin (c0, c1, ..., c11, c0, ...). Interleaving is
+    # the point -- slice_selftest cuts prefixes (`--clips 600 --base 0`), and a
+    # prefix of an interleaved list is still balanced. Grouped by class, a
+    # 600-clip prefix of a 1000-clip dump would again miss classes.
+    def _take_balanced(loader, n: int, n_classes: int):
+        k = -(-n // n_classes)
+        per = [[] for _ in range(n_classes)]
+        for bx, by in loader:
+            for xi, yi in zip(bx, by.tolist()):
+                if len(per[yi]) < k:
+                    per[yi].append((xi, yi))
+            if all(len(p) >= k for p in per):
+                break
+        short = {c: len(p) for c, p in enumerate(per) if len(p) < k}
+        if short:
+            raise SystemExit(
+                f"--balanced wanted {k} clips per class, the {args.split} split "
+                f"has fewer for classes {short}. Lower --clips.")
+        order = [per[c][i] for i in range(k) for c in range(n_classes)][:n]
+        return (torch.stack([t for t, _ in order]),
+                torch.tensor([y for _, y in order]))
+
+    from data.speech_commands import KEYWORDS
+    n_classes = len(KEYWORDS) + 2          # + silence, unknown (speech_commands.py)
+    take = ((lambda ld, n: _take_balanced(ld, n, n_classes))
+            if args.balanced else _take)
+
     if getattr(cfg.data, "analog_csv_root", ""):
         from data.analog_spectrogram import build_analog_dataloaders
         te = build_analog_dataloaders(cfg.data, cfg.train.batch_size,
                                       target_T=cfg.model.T,
                                       seed=cfg.train.seed)[split_index]
-        x, labels = _take(te, args.clips)
+        x, labels = take(te, args.clips)
     else:
         afe = AFEFrontend(cfg.afe).eval()
         load_afe_state(afe, ck["afe"])
         te = build_dataloaders(cfg.data, cfg.train.batch_size, cfg.afe.sample_rate,
                                seed=cfg.train.seed)[split_index]
-        wav, labels = _take(te, args.clips)
+        wav, labels = take(te, args.clips)
         with torch.no_grad():
             x = afe(wav, target_T=cfg.model.T)
 
@@ -514,6 +553,11 @@ def main() -> None:
 
     man = dump_golden(model, x, out, args.tag, source_split=args.split,
                       write_layers=not args.vectors_only)
+    # Record HOW the clips were chosen. Two dumps of the same tag and count can
+    # hold entirely different clips; without this, golden.json cannot tell them
+    # apart and a chip result gets attributed to the wrong set.
+    man["selection"] = "balanced" if args.balanced else "loader_order"
+    (out / "golden.json").write_text(json.dumps(man, indent=2))
     write_golden_paths_vh(man, out, args.out or str(run / "rtl" / "golden"))
     (out / "labels.txt").write_text(
         "\n".join(str(int(v)) for v in labels.tolist()) + "\n")
