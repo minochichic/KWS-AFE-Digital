@@ -74,9 +74,17 @@ def fig_training(runs: Path, tags: List[str], out: Path) -> None:
     """Validation accuracy and training loss per epoch, one panel each."""
     fig, (a, b) = plt.subplots(1, 2, figsize=(COL2, 2.0))
     marks = ["-", "--", ":", "-."]
+    # A fine-tune starts where its parent stopped. Plotting it from epoch 1
+    # overlays it on the parent's first epochs and reads as a model that was
+    # already at 82 % before training -- so shift it by the parent's length.
+    offset = 0
     for i, tag in enumerate(tags):
         h = history(runs, tag)
-        ep = [r["epoch"] for r in h]
+        if i > 0 and "_ft" in tag:
+            offset = len(history(runs, tags[0]))
+        else:
+            offset = 0
+        ep = [r["epoch"] + offset for r in h]
         lab = SHORT.get(tag, tag)
         if "val_acc" in h[0]:
             a.plot(ep, [100 * r["val_acc"] for r in h], marks[i % 4],
@@ -90,6 +98,10 @@ def fig_training(runs: Path, tags: List[str], out: Path) -> None:
     b.set_ylabel("Training loss")
     for ax in (a, b):
         ax.grid(True, linewidth=0.3, color="0.8")
+    for ax in (a, b):
+        if len(tags) > 1 and "_ft" in tags[1]:
+            ax.axvline(len(history(runs, tags[0])), color="0.5",
+                       linewidth=0.5, linestyle=":")
     a.legend(loc="lower right")
     a.text(-0.18, 1.02, "(a)", transform=a.transAxes)
     b.text(-0.18, 1.02, "(b)", transform=b.transAxes)
@@ -136,10 +148,11 @@ def fig_per_class(docs: List[Dict], out: Path) -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(names)
     ax.set_ylabel("Recall (%)")
-    ax.set_ylim(0, 105)
+    ax.set_ylim(0, 100)
     ax.grid(True, axis="y", linewidth=0.3, color="0.8")
     ax.set_axisbelow(True)
-    ax.legend(loc="lower left", ncol=len(docs))
+    # above the axes: inside, it sat on top of the bars
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=len(docs))
     save(fig, out, "fig_per_class_recall")
 
 
@@ -154,8 +167,9 @@ def fig_channels(docs: List[Dict], out: Path) -> None:
     ax.set_xlabel("AFE channel (low to high frequency)")
     ax.set_ylabel("P(output = 1) (%)")
     ax.set_xticks(range(0, len(r), 2))
+    ax.set_ylim(0, 40)
     ax.grid(True, linewidth=0.3, color="0.8")
-    ax.legend()
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=len(docs))
     save(fig, out, "fig_channel_firing")
 
 

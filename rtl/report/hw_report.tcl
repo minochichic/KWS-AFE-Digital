@@ -76,7 +76,6 @@ if {!$have_gui} {
 if {[catch {
     show_schematic [get_cells {u_top u_vio dbg_hub}]
     write_schematic -force -format pdf -orientation landscape $rep/schematic_top.pdf
-    write_schematic -force -format png -scope visible $rep/schematic_top.png
 } err]} { puts "schematic_top: $err" }
 
 # One level down: the network's layers.
@@ -98,6 +97,8 @@ if {[catch {
         }
         incr k
     }
+    # write_device_image is not supported for spartan7 (Vivado 2026.1) -- take
+    # the Device view by hand: File > Export > Export Image.
     write_device_image -force $rep/device_placed.png
 } err]} { puts "device image: $err" }
 
