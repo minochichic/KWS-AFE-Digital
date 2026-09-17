@@ -1,0 +1,27 @@
+{
+  "tag": "bd_base_ft20_partial75",
+  "split": "test",
+  "cases": 240,
+  "frames_per_case": 300,
+  "windows_per_case": 21,
+  "policy": {
+    "KWS_STREAM_HOP_FRAMES": 10,
+    "KWS_STREAM_REQUIRED": 5,
+    "KWS_STREAM_COOLDOWN_WINDOWS": 10,
+    "KWS_STREAM_MARGIN_INT": 4301,
+    "KWS_CONV4_POOL_BITS": 21
+  },
+  "expected_format": "[39:24] crc16 | [23:20] target | [19:10] det1 {v,win5,idx4} | [9:0] det0",
+  "crc": "CRC-16/CCITT-FALSE over {idx[3:0], margin[21:0]} per window, MSB first",
+  "subset_summary": {
+    "keyword_cases": 200,
+    "keyword_hits": 132,
+    "keyword_recall": 0.66,
+    "quiet_cases": 40,
+    "quiet_false_streams": 3,
+    "wrong_detections": 15,
+    "outside_detections": 0,
+    "duplicate_detections": 0,
+    "median_latency_ms": 1000.0
+  }
+}
