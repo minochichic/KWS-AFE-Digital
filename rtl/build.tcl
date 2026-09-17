@@ -42,12 +42,22 @@ set part  xc7s75fgga484-1
 set tag   xl_g12
 set top   kws_top_synth
 set do_impl 0
+# -selftest <dir>: export/slice_selftest.py 가 만든 디렉터리. 지정하면 그
+# clips.hex / expected.hex 를 가중치와 **같은 취급**으로 inc/ 에 복사하고,
+# 그 디렉터리의 paths.vh 에서 읽은 CLIPS 를 generic 으로 최상위에 꽂는다.
+#
+# 이것이 없으면 kws_selftest_top 은 합성은 되지만 **클립 ROM 이 조용히 빈다** --
+# $readmemh 가 합성 run 디렉터리 기준으로 찾으므로 out/selftest/... 를 못 찾고,
+# 아래 60 행이 가중치에 대해 적어둔 그대로 **못 찾아도 에러가 아니다.**
+# 증상은 "클립 전부 불일치" 이고 원인이 RTL 로 보인다.
+set selftest ""
 for {set i 0} {$i < [llength $argv]} {incr i} {
     switch -- [lindex $argv $i] {
-        -part { set part [lindex $argv [incr i]] }
-        -tag  { set tag  [lindex $argv [incr i]] }
-        -top  { set top  [lindex $argv [incr i]] }
-        -impl { set do_impl 1 }
+        -part     { set part     [lindex $argv [incr i]] }
+        -tag      { set tag      [lindex $argv [incr i]] }
+        -top      { set top      [lindex $argv [incr i]] }
+        -selftest { set selftest [lindex $argv [incr i]] }
+        -impl     { set do_impl 1 }
         default { puts "unknown arg: [lindex $argv $i]"; exit 1 }
     }
 }
@@ -99,6 +109,62 @@ set n_hex [llength [glob -nocomplain $synth_inc/*.hex]]
 puts "   copied $n_hex .hex files to $synth_inc, rewrote paths.vh to bare filenames"
 if {$n_hex == 0} { puts "ERROR: no .hex files found"; exit 1 }
 
+# ---- 자체 검사 벡터 ------------------------------------------------------- #
+# 가중치 .hex 와 **같은 취급**이다: inc/ 로 복사하고 최상위는 파일명만 본다.
+# kws_selftest_top 의 기본 파라미터가 그 파일명이다.
+proc st_lines {path} {
+    set fh [open $path r]; set t [read $fh]; close $fh
+    return [llength [split [string trim $t] "\n"]]
+}
+
+set generics {}
+if {$selftest ne ""} {
+    foreach f {clips.hex expected.hex paths.vh} {
+        if {![file exists $selftest/$f]} {
+            puts "ERROR: $selftest/$f 가 없다. 먼저:"
+            puts "       python -m export.slice_selftest rtl/gen/<tag>/selftest \\"
+            puts "           --clips N --base 0 --out $selftest"
+            exit 1
+        }
+    }
+
+    # CLIPS 와 T 를 슬라이서가 쓴 paths.vh 에서 **읽는다.** 손으로 다시 적으면
+    # ROM 크기와 루프 한계가 어긋나고, 그 어긋남은 "뒤쪽 클립이 0 으로 읽힌다"
+    # 로 나타난다 -- 값이 0 이면 클래스도 0 이고, 그게 정답인 클립도 있어서
+    # 부분적으로만 틀린다. 가장 읽기 어려운 증상이다.
+    set fh [open $selftest/paths.vh r]; set stx [read $fh]; close $fh
+    if {![regexp {`define\s+KWS_ST_CLIPS\s+(\d+)} $stx -> st_clips]} {
+        puts "ERROR: $selftest/paths.vh 에 KWS_ST_CLIPS 가 없다"
+        exit 1
+    }
+    if {![regexp {`define\s+KWS_ST_T_IN\s+(\d+)} $stx -> st_t]} {
+        puts "ERROR: $selftest/paths.vh 에 KWS_ST_T_IN 이 없다"
+        exit 1
+    }
+
+    # 파일 길이를 CLIPS 와 대조한다. 안 맞으면 ROM 의 뒤쪽이 0 으로 남고
+    # $readmemh 는 그것을 조용히 넘긴다.
+    set n_clip [st_lines $selftest/clips.hex]
+    set n_exp  [st_lines $selftest/expected.hex]
+    set want   [expr {$st_clips * $st_t}]
+    if {$n_clip != $want} {
+        puts "ERROR: clips.hex 가 $n_clip 줄인데 CLIPS($st_clips) x T($st_t) = $want 이어야 한다"
+        exit 1
+    }
+    if {$n_exp != $st_clips} {
+        puts "ERROR: expected.hex 가 $n_exp 줄인데 CLIPS 는 $st_clips 이다"
+        exit 1
+    }
+
+    file copy -force $selftest/clips.hex    $synth_inc/selftest_clips.hex
+    file copy -force $selftest/expected.hex $synth_inc/selftest_expected.hex
+    lappend generics "CLIPS=$st_clips"
+
+    set kbit [expr {$want * 32 / 1024}]
+    puts "   selftest: $st_clips clips x $st_t frames from $selftest"
+    puts "   clip ROM: $kbit Kbit at 32-bit (part has ~3,130 Kbit free)"
+}
+
 # ---- 소스 ---------------------------------------------------------------- #
 # 최상위는 kws_top 이 아니라 kws_top_synth 다. kws_top 의 ROM 경로 파라미터는
 # 기본값이 "" 이고 RTL 이 그걸 걸러내므로, 그냥 합성하면 **가중치가 하나도 없는
@@ -128,7 +194,12 @@ read_xdc -unmanaged rtl/constraints/kws_top.xdc
 # ---- 합성 ---------------------------------------------------------------- #
 # -flatten_hierarchy none: 계층을 유지해야 utilization 이 모듈별로 나온다.
 # 어느 블록이 무엇을 먹는지가 이 단계에서 알고 싶은 전부다.
-synth_design -top $top -flatten_hierarchy none
+if {[llength $generics] > 0} {
+    puts "   generics: $generics"
+    synth_design -top $top -flatten_hierarchy none -generic $generics
+} else {
+    synth_design -top $top -flatten_hierarchy none
+}
 
 # ---- 타이밍 제약이 실제로 걸렸는지 확인한다 -------------------------------- #
 # 이 검사를 두는 이유는 제약이 날아가는 방식이 **조용하기** 때문이다. 브링업에서는

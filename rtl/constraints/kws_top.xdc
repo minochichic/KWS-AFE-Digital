@@ -167,9 +167,21 @@ for {set c 0} {$c < 16} {incr c} {
 # AFE 를 물리면 시프터의 푸시풀이 내부 풀다운(수십 kohm)을 가볍게 이기므로
 # 이 제약은 그대로 둬도 된다. 지울 이유가 없다.
 #
-# 자체 검사 비트스트림(클립을 BRAM 에서 먹이는 쪽)에서는 cmp 가 아예 안 쓰이지만,
-# 그때도 핀은 여전히 존재하므로 같은 이유로 걸어 둔다.
-set_property PULLDOWN true [get_ports -quiet {cmp[*]}]
+# 자체 검사 최상위(kws_selftest_top)에는 cmp 가 **아예 없다** -- 클립이 BRAM 에서
+# 오므로 아날로그 경계가 그 설계에 안 들어온다. 그래서 아래는 존재를 먼저 본다.
+
+# `-quiet` 는 get_ports 의 경고만 죽인다. **빈 목록을 받은 set_property 는
+# 그대로 에러다.** 이 파일에서 세 번 당했다 -- cmp 의 set_false_path, sync_ff 의
+# ASYNC_REG, 그리고 이 풀 저항들(kws_selftest_top 에 cmp 도 start 도 없어서
+# 2026-09-17 에 합성이 멈췄다). 개별 패치 대신 한 곳에 모아 부류를 없앤다.
+proc kws_pull {port kind} {
+    set p [get_ports -quiet $port]
+    if {[llength $p] == 0} { return 0 }
+    set_property $kind true $p
+    return 1
+}
+
+kws_pull {cmp[*]} PULLDOWN
 
 # 제어 입력. 원래는 보드의 버튼/DIP 스위치가 맞는데 그 핀 구성표가 아직 없어서
 # 확장 포트로 뺐다. 케이블을 안 물려도 안전한 값으로 읽히도록 내부 저항을 건다 --
@@ -180,8 +192,8 @@ set_property PULLDOWN true [get_ports -quiet {cmp[*]}]
 # 이쪽은 여전히 미연결이고, 위 내부 저항이 그대로 안전값을 만든다.
 incr n [kws_pin rst_n [lindex $EXT 16] $IOSTD]
 incr n [kws_pin start [lindex $EXT 17] $IOSTD]
-set_property PULLUP   true [get_ports -quiet rst_n]
-set_property PULLDOWN true [get_ports -quiet start]
+kws_pull rst_n PULLUP
+kws_pull start PULLDOWN
 
 # 결과 출력. LED/FND 핀 구성표가 오면 그쪽으로 옮기는 편이 훨씬 낫다 -- 분류
 # 결과를 눈으로 보는 것이 첫 브링업에서 가장 값싼 관측 수단이다.
