@@ -51,19 +51,24 @@ set do_impl 0
 # 아래 60 행이 가중치에 대해 적어둔 그대로 **못 찾아도 에러가 아니다.**
 # 증상은 "클립 전부 불일치" 이고 원인이 RTL 로 보인다.
 set selftest ""
+# -out <dir>: 산출물 디렉터리. 기본은 out/synth/<part>. 모델마다 비트스트림을
+# 남겨 두려면 따로 준다 -- 기본값으로 두 모델을 빌드하면 **통과한 비트스트림이
+# 다음 빌드에 덮인다.** (2026-09-17, bd_base 다음에 partial75 를 빌드하면서 추가)
+set outdir ""
 for {set i 0} {$i < [llength $argv]} {incr i} {
     switch -- [lindex $argv $i] {
         -part     { set part     [lindex $argv [incr i]] }
         -tag      { set tag      [lindex $argv [incr i]] }
         -top      { set top      [lindex $argv [incr i]] }
         -selftest { set selftest [lindex $argv [incr i]] }
+        -out      { set outdir   [lindex $argv [incr i]] }
         -impl     { set do_impl 1 }
         default { puts "unknown arg: [lindex $argv $i]"; exit 1 }
     }
 }
 
 set gen  rtl/gen/$tag
-set out  out/synth/$part
+set out  [expr {$outdir ne "" ? $outdir : "out/synth/$part"}]
 file mkdir $out
 puts "== part $part / tag $tag / top $top =="
 
@@ -86,6 +91,9 @@ if {![file exists $gen/paths.vh]} {
 }
 set synth_inc $out/inc
 file mkdir $synth_inc
+# 이전 빌드의 .hex 를 먼저 지운다. 태그를 바꿨는데 파일 하나가 새 export 에 없으면
+# 옛 모델의 가중치가 그대로 남아 **두 모델이 섞인 회로**가 에러 없이 나온다.
+foreach h [glob -nocomplain $synth_inc/*.hex] { file delete $h }
 foreach h [glob -nocomplain $gen/*.hex] { file copy -force $h $synth_inc }
 
 set fh [open $gen/paths.vh r]; set txt [read $fh]; close $fh

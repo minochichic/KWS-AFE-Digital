@@ -30,8 +30,11 @@ set top    kws_selftest_board
 set runs   2
 set prog   1
 set tmo_s  180
+# -dir <dir>: build.tcl -out 과 같은 값. 기본은 out/synth/<part>.
+set dir    ""
 for {set i 0} {$i < [llength $argv]} {incr i} {
     switch -- [lindex $argv $i] {
+        -dir     { set dir   [lindex $argv [incr i]] }
         -part    { set part  [lindex $argv [incr i]] }
         -runs    { set runs  [lindex $argv [incr i]] }
         -timeout { set tmo_s [lindex $argv [incr i]] }
@@ -39,8 +42,9 @@ for {set i 0} {$i < [llength $argv]} {incr i} {
         default { puts "unknown arg: [lindex $argv $i]"; exit 1 }
     }
 }
-set bit out/synth/$part/$top.bit
-set ltx out/synth/$part/$top.ltx
+if {$dir eq ""} { set dir out/synth/$part }
+set bit $dir/$top.bit
+set ltx $dir/$top.ltx
 foreach f [list $bit $ltx] {
     if {![file exists $f]} {
         puts "ERROR: $f not found. Build it first:"
