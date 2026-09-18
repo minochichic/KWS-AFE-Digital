@@ -111,3 +111,13 @@ xsim*.jou
 *.swo
 *~
 .DS_Store
+
+# --- 8.31 대회 폴더 ---
+# docx/html 생성기가 쓰는 node 의존성. 10 MB 이고 package-lock.json 으로 복원된다.
+8.31/node_modules/
+
+# 예외: 대회 제출물과 동료 전송본. 위의 `*.docx`(43행)가 이걸 통째로 삼켜서
+# `git add 8.31` 이 docx 9개를 말없이 건너뛰었다 -- 이 저장소에서 tar.gz 로
+# 두 번 당한 것과 같은 방식이다. 생성물(make_plan.js/make_sec5.js 산출물)까지
+# 같이 들어오지만, 조용히 사라지는 것보다 낫다.
+!8.31/**/*.docx

@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>디지털 판별부 설계 명세</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#F7F8FA; --card:#FFFFFF; --sunk:#EDF0F4;
+    --ink:#10161F; --muted:#59636F; --faint:#8A95A2;
+    --rule:#D3D9E0; --rule-soft:#E6EAEF;
+    --hot:#A9571F; --hot-bg:#F7EDE4;
+    --cool:#25646F; --cool-bg:#E4EEF0;
+    --stroke:#10161F; --fill:#F0F2F5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0D1218; --card:#141B23; --sunk:#111820;
+      --ink:#E8EDF3; --muted:#9CA8B5; --faint:#6E7B89;
+      --rule:#28323D; --rule-soft:#1C242D;
+      --hot:#E09456; --hot-bg:#2A1D12;
+      --cool:#6FBECC; --cool-bg:#0F2429;
+      --stroke:#D8DEE6; --fill:#1B232C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0D1218; --card:#141B23; --sunk:#111820;
+    --ink:#E8EDF3; --muted:#9CA8B5; --faint:#6E7B89;
+    --rule:#28323D; --rule-soft:#1C242D;
+    --hot:#E09456; --hot-bg:#2A1D12;
+    --cool:#6FBECC; --cool-bg:#0F2429;
+    --stroke:#D8DEE6; --fill:#1B232C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+    font-family:"IBM Plex Sans KR",system-ui,sans-serif;
+    font-weight:300; font-size:15.5px; line-height:1.8; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px; margin:0 auto; padding:58px 26px 100px}
+  h1,h2,h3{font-family:"Gowun Batang",Georgia,serif; font-weight:700; margin:0; text-wrap:balance}
+  p{margin:0 0 13px}
+  code{font-family:"IBM Plex Mono",monospace; font-size:.88em; background:var(--sunk);
+       padding:1.5px 5px; border-radius:2px}
+  b{font-weight:600}
+  header{border-bottom:2px solid var(--ink); padding-bottom:24px; margin-bottom:36px}
+  .eyebrow{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.16em;
+           text-transform:uppercase; color:var(--faint); margin-bottom:12px}
+  h1{font-size:clamp(28px,4.6vw,40px); line-height:1.28}
+  .lede{margin-top:15px; color:var(--muted); max-width:62ch; font-size:16.5px}
+  section{padding-top:44px; margin-top:38px; border-top:1px solid var(--rule)}
+  section:first-of-type{border-top:none; margin-top:0; padding-top:0}
+  h2{font-size:25px; margin-bottom:6px}
+  .kicker{font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.14em;
+          color:var(--faint); text-transform:uppercase; margin-bottom:9px}
+  h3{font-size:18px; margin:30px 0 9px}
+  h4{font-size:15px; margin:22px 0 6px; font-weight:600; font-family:"IBM Plex Sans KR",sans-serif}
+  figure{margin:24px 0 26px; text-align:center}
+  figure svg{max-width:100%; height:auto}
+  figcaption{margin-top:9px; font-size:13px; color:var(--muted); max-width:62ch;
+             margin-left:auto; margin-right:auto; line-height:1.65}
+  .stage{background:var(--card); border:1px solid var(--rule-soft); border-radius:3px;
+         padding:16px 12px 12px; overflow-x:auto}
+  .note{background:var(--cool-bg); border-left:2px solid var(--cool);
+        padding:14px 17px; margin:20px 0; font-size:14.5px; line-height:1.72}
+  .warn{background:var(--hot-bg); border-left-color:var(--hot)}
+  table{width:100%; border-collapse:collapse; margin:18px 0; font-size:14px}
+  th{text-align:left; font-family:"IBM Plex Mono",monospace; font-weight:500;
+     font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint);
+     padding:0 10px 8px 0; border-bottom:1px solid var(--rule)}
+  td{padding:9px 10px 9px 0; border-bottom:1px solid var(--rule-soft); vertical-align:top}
+  .mono{font-family:"IBM Plex Mono",monospace; font-size:13px}
+  .eq{background:var(--sunk); border-radius:3px; padding:13px 17px; margin:16px 0;
+      font-family:"IBM Plex Mono",monospace; font-size:13.5px; text-align:center}
+  .eq .sm{display:block; font-family:"IBM Plex Sans KR",sans-serif; font-size:12.5px;
+          color:var(--muted); margin-top:6px; font-weight:300}
+  svg text{font-family:"IBM Plex Sans KR",sans-serif; font-weight:300}
+  svg .m{font-family:"IBM Plex Mono",monospace}
+  footer{margin-top:56px; padding-top:20px; border-top:1px solid var(--rule);
+         font-size:12.5px; color:var(--faint)}
+  @media (max-width:640px){ .wrap{padding:38px 17px 70px} }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">IT창의챌린지 · 설계 명세</div>
+  <h1>회로와 학습 —<br>무엇을 배워서 어디에 심는가</h1>
+  <p class="lede">
+    디지털 판별부의 전체 배선, 블록별 원리, 신호 사전,
+    그리고 그 회로 상수를 정하는 학습 모델까지.
+  </p>
+</header>
+
+<!-- ═══════════════════ 1 ═══════════════════ -->
+<section>
+  <div class="kicker">1</div>
+  <h2>전체 배선</h2>
+
+  <p>채널 신호가 <b>두 갈래</b>로 갈라지는 것이 이 회로의 출발점이다.
+  하나는 <b>언제 시작인지</b>를 보고(START 검출), 하나는 <b>무엇이 맞는지</b>를
+  본다(형판 정합). 두 갈래는 <code>PASS</code> 플립플롭에서 다시 만난다.</p>
+
+  <figure>
+    <div class="stage">
+    <svg viewBox="-172 0 980 480" width="840" role="img"
+         aria-label="Complete signal routing of the digital decision stage">
+      <defs>
+        <marker id="k" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5"
+                markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--stroke)"/></marker>
+        <marker id="r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5"
+                markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--hot)"/></marker>
+      </defs>
+
+      <!-- 채널 버스 -->
+      <line x1="-84" y1="250" x2="-40" y2="250" stroke="var(--stroke)" stroke-width="2.6"/>
+      <line x1="-66" y1="242" x2="-58" y2="258" stroke="var(--stroke)" stroke-width="1"/>
+      <text x="-62" y="234" font-size="9" fill="var(--muted)" text-anchor="middle" class="m">N</text>
+      <text x="-88" y="254" font-size="10" fill="var(--muted)" text-anchor="end" class="m">CH0…CHn</text>
+      <text x="-88" y="268" font-size="8.5" fill="var(--faint)" text-anchor="end">비교기 출력</text>
+      <line x1="-40" y1="112" x2="-40" y2="418" stroke="var(--stroke)" stroke-width="2.6"/>
+      <circle cx="-40" cy="250" r="3.4" fill="var(--stroke)"/>
+      <line x1="-40" y1="112" x2="16" y2="112" stroke="var(--stroke)" stroke-width="2.6"/>
+      <line x1="-40" y1="418" x2="266" y2="418" stroke="var(--stroke)" stroke-width="2.6"/>
+
+      <!-- 상단 열 -->
+      <g fill="var(--fill)" stroke="var(--stroke)" stroke-width="1.2">
+        <rect x="20"  y="88"  width="120" height="50" rx="2"/>
+        <rect x="192" y="88"  width="112" height="50" rx="2"/>
+        <rect x="356" y="82"  width="132" height="62" rx="2"/>
+        <rect x="540" y="82"  width="140" height="62" rx="2"/>
+        <rect x="356" y="196" width="132" height="46" rx="2"/>
+      </g>
+      <g font-size="11" fill="var(--ink)" text-anchor="middle">
+        <text x="80"  y="109">START detect</text>
+        <text x="248" y="109">RUN latch</text>
+        <text x="422" y="108">8-bit counter</text>
+        <text x="610" y="108">Time decode</text>
+        <text x="422" y="216">100 Hz osc</text>
+      </g>
+      <g font-size="9" fill="var(--muted)" text-anchor="middle">
+        <text x="80"  y="124">gate 조합 또는 R + comp</text>
+        <text x="248" y="124">D flip-flop</text>
+        <text x="422" y="124">binary counter</text>
+        <text x="610" y="124">3-to-8 decoder ×2 + NOR</text>
+        <text x="422" y="231">Schmitt inverter + RC</text>
+      </g>
+
+      <g stroke="var(--stroke)" stroke-width="1.15" fill="none" marker-end="url(#k)">
+        <path d="M 140 106 L 188 106"/>
+        <path d="M 304 100 L 352 100"/>
+        <path d="M 422 196 L 422 148"/>
+        <path d="M 506 113 L 536 113"/>
+      </g>
+      <path d="M 304 124 L 330 124 L 330 132 L 352 132" stroke="var(--stroke)"
+            stroke-width="1.15" fill="none" marker-end="url(#k)"/>
+      <line x1="488" y1="113" x2="506" y2="113" stroke="var(--stroke)" stroke-width="2.6"/>
+      <line x1="493" y1="105" x2="501" y2="121" stroke="var(--stroke)" stroke-width="1"/>
+      <g class="m" font-size="9.5" fill="var(--muted)">
+        <text x="166" y="100" text-anchor="middle">→ CLK</text>
+        <text x="328" y="94"  text-anchor="middle">CE</text>
+        <text x="340" y="150" text-anchor="middle">/RUN → MR</text>
+        <text x="497" y="99"  text-anchor="middle">8</text>
+        <text x="430" y="188" text-anchor="start">CLK</text>
+      </g>
+
+      <!-- 디코드 출력 -->
+      <path d="M 680 100 L 706 100 L 706 272 L -8 272 L -8 316 L 86 316"
+            stroke="var(--stroke)" stroke-width="1.15" fill="none" marker-end="url(#k)"/>
+      <text x="686" y="94" font-size="9.5" fill="var(--ink)" class="m">DECODE S₁–S₄</text>
+
+      <!-- 하단 열 -->
+      <g fill="var(--fill)" stroke="var(--stroke)" stroke-width="1.2">
+        <rect x="90"  y="292" width="130" height="48" rx="2"/>
+        <rect x="270" y="292" width="140" height="48" rx="2"/>
+        <rect x="460" y="292" width="112" height="48" rx="2"/>
+        <rect x="270" y="394" width="140" height="48" rx="2"/>
+      </g>
+      <g font-size="11" fill="var(--ink)" text-anchor="middle">
+        <text x="155" y="312">SAMPLE gate</text>
+        <text x="340" y="312">PASS F/F ×4</text>
+        <text x="516" y="312">Final AND</text>
+        <text x="340" y="414">Template match</text>
+      </g>
+      <g font-size="9" fill="var(--muted)" text-anchor="middle">
+        <text x="155" y="327">DECODE · /CLK</text>
+        <text x="340" y="327">D flip-flop ×4</text>
+        <text x="516" y="327">2-input AND ×3</text>
+        <text x="340" y="429">R network + comparator ×4</text>
+      </g>
+      <g stroke="var(--stroke)" stroke-width="1.15" fill="none" marker-end="url(#k)">
+        <path d="M 220 316 L 266 316"/>
+        <path d="M 410 316 L 456 316"/>
+        <path d="M 572 316 L 630 316"/>
+        <path d="M 340 394 L 340 344"/>
+      </g>
+      <g class="m" font-size="9.5" fill="var(--muted)">
+        <text x="243" y="310" text-anchor="middle">→ CLK</text>
+        <text x="433" y="310" text-anchor="middle">PASS₁₋₄</text>
+        <text x="332" y="368" text-anchor="end">MATCH₁₋₄ → D</text>
+      </g>
+      <text x="638" y="320" font-size="12" fill="var(--ink)" class="m">WAKE</text>
+
+      <!-- 타임아웃 -->
+      <path d="M 680 130 L 748 130 L 748 458 L -152 458 L -152 170 L 248 170 L 248 142"
+            stroke="var(--hot)" stroke-width="1.15" fill="none" stroke-dasharray="4 3"
+            marker-end="url(#r)"/>
+      <path d="M 440 458 L 440 358 L 396 358 L 396 344" stroke="var(--hot)"
+            stroke-width="1.15" fill="none" stroke-dasharray="4 3" marker-end="url(#r)"/>
+      <circle cx="440" cy="458" r="2.8" fill="var(--hot)"/>
+      <text x="686" y="146" font-size="9.5" fill="var(--hot)" class="m">DECODE_TO</text>
+      <text x="256" y="164" font-size="9" fill="var(--hot)" text-anchor="start" class="m">CLR</text>
+      <text x="404" y="356" font-size="9" fill="var(--hot)" text-anchor="start" class="m">CLR</text>
+      <text x="110" y="452" font-size="9.5" fill="var(--hot)" text-anchor="middle" class="m">
+        timeout → clear RUN and PASS</text>
+    </svg>
+    </div>
+    <figcaption>실선은 신호, 붉은 점선은 타임아웃의 클리어 경로.
+    채널 버스가 <b>START detect</b> 와 <b>Template match</b> 로 갈라지고,
+    <code>PASS F/F</code> 에서 다시 만난다.</figcaption>
+  </figure>
+
+  <div class="note">
+    <b>앞선 그림에서 고친 것.</b> START 검출을 블록으로 그려 넣었고, 채널 버스가
+    거기로도 간다는 것을 표시했다. 이전 그림은 <code>START cond</code> 를 그냥 입력
+    라벨로 두어, 그 조건이 <b>같은 채널 신호에서 만들어진다</b>는 사실이 보이지 않았다.
+    또 <code>PASS 래치</code> 를 <code>PASS F/F</code> 로 고쳤다 — 쓰는 부품은
+    래치가 아니라 <b>edge-triggered flip-flop</b> 이다. 부품 품번은 확정 전이라 뺐다.
+  </div>
+</section>
+
+<!-- ═══════════════════ 2 ═══════════════════ -->
+<section>
+  <div class="kicker">2</div>
+  <h2>블록별 역할과 원리</h2>
+
+  <h4>START detect</h4>
+  <p><b>역할</b> — 발화가 시작됐다고 보고 시간의 원점을 찍는다.
+  <b>원리</b> — 채널 몇 개의 조합이 조건을 만족하는지 보는 순수 조합논리다.
+  구현은 두 갈래다: 특정 채널 조합이면 AND 게이트와 인버터, “N개 중 j개 이상”이면
+  저항 합산과 비교기 하나. 후자는 형판 정합과 같은 회로라 부품이 새로 늘지 않는다.</p>
+  <p><b>설계 원칙</b> — 놓친 START는 그 발화를 영영 못 잡지만, 헛 START는 카운터 한
+  사이클만 쓰고 끝난다(WAKE는 형판 넷이 다 맞아야 나온다). 그래서 <b>느슨하게</b> 잡는다.</p>
+
+  <h4>RUN latch</h4>
+  <p><b>역할</b> — “지금 세는 중”이라는 상태 한 비트.
+  <b>원리</b> — <code>D</code>를 전원에 묶고 START 조건을 <code>CLK</code>에 넣은
+  D 플립플롭. 첫 상승 에지에서 <code>Q</code>가 1이 되고, 조건이 떨어도
+  <code>D</code>가 여전히 1이라 값이 안 변한다. <b>채터링에 구조적으로 면역</b>이다.</p>
+
+  <h4>100 Hz osc</h4>
+  <p><b>역할</b> — 10 ms라는 시간 눈금을 만든다.
+  <b>원리</b> — 슈미트 트리거 인버터는 문턱이 둘이라(히스테리시스), 커패시터가 두 문턱
+  사이를 충·방전하며 왕복한다. 그 왕복이 곧 발진이다. 문턱이 하나면 성립하지 않는다.</p>
+  <div class="eq">T ≈ 1.69 · R · C
+    <span class="sm">100 Hz(10 ms)를 얻으려면 RC ≈ 5.9 ms — 예: R 1.06 MΩ, C 5.6 nF</span></div>
+
+  <h4>8-bit counter</h4>
+  <p><b>역할</b> — START 이후 몇 번째 10 ms인지 <b>기억</b>한다.
+  <b>원리</b> — 4비트 동기 카운터 두 개를 이어 8비트. <code>RUN</code>이
+  <code>CE</code>로 세는 것을 허가하고, <code>/RUN</code>이 <code>MR</code>로
+  대기 중에는 0에 묶어둔다. 그래서 START 이후 반드시 0부터 시작한다.</p>
+  <p>범위는 256칸 × 10 ms = <b>2.55 s</b>. 한 단어는 1초 이내라 넉넉하다.
+  <b>해상도는 발진기가, 범위는 카운터가</b> 정하므로 발진기는 하나면 된다.</p>
+
+  <h4>Time decode</h4>
+  <p><b>역할</b> — “카운트가 지금 그 숫자다”를 한 가닥으로 만든다.
+  <b>원리</b> — 8비트를 그대로 AND하면 8입력 게이트가 다섯 개 필요하다. 대신 하위
+  3비트와 중간 3비트를 각각 3-to-8 디코더에 넣는다. 디코더 출력이 active LOW이므로
+  “둘 다 LOW”는 NOR 하나로 잡힌다.</p>
+  <div class="eq">count 25 = <b>011001</b> → 중간 3비트 = 3, 하위 3비트 = 1
+    <span class="sm">YH[3] 와 YL[1] 이 동시에 LOW → NOR → DECODE₂₅</span></div>
+
+  <h4>SAMPLE gate</h4>
+  <p><b>역할</b> — 읽어도 되는 순간을 만든다.
+  <b>원리</b> — 카운터 비트들이 정확히 같은 순간에 안 바뀌므로 전환 직후 디코더가
+  <b>존재하지 않는 카운트</b>를 수 ns 본다. 카운터는 클럭 상승에서 바뀌니
+  <b>클럭 LOW 구간은 반드시 안정</b>이다. 그래서 <code>DECODE · /CLK</code>로
+  구간 중앙에서 펄스를 만든다.</p>
+
+  <h4>Template match</h4>
+  <p><b>역할</b> — 지금 채널 패턴이 형판과 몇 개나 맞는지 판정한다.
+  <b>원리</b> — 일치 신호를 <b>같은 값 저항</b>으로 한 점에 모으면 전압이 일치 개수에
+  비례한다. 비교기 하나로 “몇 개 이상”이 된다. 형판 네 벌이 <b>병렬로</b> 있고,
+  네 개의 <code>MATCH</code>가 늘 계산되고 있다.</p>
+  <div class="eq">V<sub>score</sub> = V<sub>DD</sub> × (일치 개수) / (연결한 저항 수)
+    <span class="sm">분모가 상태마다 다르므로 기준전압도 상태마다 따로 둔다</span></div>
+
+  <h4>PASS F/F ×4</h4>
+  <p><b>역할</b> — 네 순간의 판정을 각각 붙잡아 둔다.
+  <b>원리</b> — <code>D</code>에 <code>MATCH</code>(무엇), <code>CLK</code>에
+  <code>SAMPLE</code>(언제). 두 갈래가 여기서 만난다. 다음 클럭이 안 오는 동안
+  값이 그대로 있으므로 <b>저장은 “클럭이 없는 것”일 뿐</b>이다.</p>
+
+  <h4>Final AND</h4>
+  <p><b>역할</b> — 넷이 모두 통과했는지 본다.
+  <b>원리</b> — 순수 조합논리. 2입력 AND 세 개를 두 단으로 쌓는다.
+  <code>PASS₄</code>가 써지는 순간 <code>WAKE</code>가 올라가고
+  <code>CLR</code>까지 유지된다.</p>
+</section>
+
+<!-- ═══════════════════ 3 ═══════════════════ -->
+<section>
+  <div class="kicker">3</div>
+  <h2>신호 사전</h2>
+
+  <table>
+    <tr><th>신호</th><th>성격</th><th>어디서 → 어디로</th><th>뜻</th></tr>
+    <tr><td class="mono">CH0…CHn</td><td>레벨 · N가닥</td>
+        <td>비교기 → START detect, Template match</td>
+        <td>지금 각 대역에 소리가 있는가</td></tr>
+    <tr><td class="mono">START</td><td>레벨</td><td>START detect → RUN <code>CLK</code></td>
+        <td>말이 시작된 것 같다</td></tr>
+    <tr><td class="mono">RUN</td><td>레벨</td><td>F/F Q → 카운터 <code>CE</code>·<code>MR</code></td>
+        <td>지금 시간을 세는 중</td></tr>
+    <tr><td class="mono">CLK</td><td>클럭 100 Hz</td><td>발진기 → 카운터, SAMPLE gate</td>
+        <td>10 ms 눈금</td></tr>
+    <tr><td class="mono">count[7:0]</td><td>이진수 · 8가닥</td><td>카운터 → 디코더</td>
+        <td>START 이후 몇 번째 10 ms</td></tr>
+    <tr><td class="mono">DECODE S₁₋₄</td><td>레벨</td><td>디코더 → SAMPLE gate</td>
+        <td>지금이 그 시각이다</td></tr>
+    <tr><td class="mono">DECODE_TO</td><td>레벨</td><td>디코더 → RUN·PASS <code>CLR</code></td>
+        <td>판정 시간이 끝났다 (TimeOut)</td></tr>
+    <tr><td class="mono">SAMPLE₁₋₄</td><td><b>펄스</b> 5 ms</td><td>AND → PASS <code>CLK</code></td>
+        <td>지금 읽어라</td></tr>
+    <tr><td class="mono">MATCH₁₋₄</td><td><b>레벨</b></td><td>비교기 → PASS <code>D</code></td>
+        <td>지금 형판과 맞는가</td></tr>
+    <tr><td class="mono">PASS₁₋₄</td><td>레벨 (저장됨)</td><td>F/F Q → Final AND</td>
+        <td>그 시각에 맞았다</td></tr>
+    <tr><td class="mono">WAKE</td><td>레벨</td><td>AND → 출력</td>
+        <td>대상 단어를 검출했다</td></tr>
+  </table>
+
+  <div class="note">
+    <b>레벨과 펄스를 구분하는 것이 이 회로를 읽는 열쇠다.</b>
+    <code>MATCH</code>는 아무 때나 읽어도 뜻이 있는 <b>레벨</b>이고,
+    <code>SAMPLE</code>은 오는 순간만 뜻이 있는 <b>펄스</b>다.
+    D 플립플롭이 정확히 이 둘을 합치도록 만들어진 부품이다 —
+    <code>D</code>는 레벨을, <code>CLK</code>는 에지를 받는다.
+  </div>
+</section>
+
+<!-- ═══════════════════ 4 ═══════════════════ -->
+<section>
+  <div class="kicker">4</div>
+  <h2>학습한 값을 회로에 심기</h2>
+
+  <p>학습이 정하는 값은 전부 <b>이산적이고 개수가 적다.</b> 그리고 하나하나가
+  회로의 특정 부품으로 곧장 간다.</p>
+
+  <table>
+    <tr><th>학습이 정하는 것</th><th>개수</th><th>회로에서</th><th>바꾸려면</th></tr>
+    <tr><td>채널 임계값 <code>θ_c</code></td><td>N</td>
+        <td>비교기 기준전압 <code>R7/R8</code></td><td>저항 두 개</td></tr>
+    <tr><td>START 조건</td><td>≤ N</td><td>AND·인버터 결선 또는 저항+비교기</td>
+        <td>배선</td></tr>
+    <tr><td>샘플 시각 <code>τ_s</code></td><td>4</td><td>디코더 결선</td><td>배선</td></tr>
+    <tr><td>형판 <code>M[s,c]</code></td><td>4 × N</td>
+        <td>4.7 MΩ 저항의 연결 여부와 극성</td><td>배선</td></tr>
+    <tr><td>허용 개수 <code>k_s</code></td><td>4</td><td>비교기 기준전압 분압</td>
+        <td>저항 두 개 × 4</td></tr>
+    <tr><td>타임아웃</td><td>1</td><td>디코더 결선</td><td>배선</td></tr>
+  </table>
+
+  <p>합쳐서 <b>약 50개의 이산 값</b>이다. 기존 FPGA용 신경망이 가중치 106,240개였던
+  것과 비교하면 세 자릿수 작다. <b>소프트웨어가 하나도 남지 않는다</b>는 것이 이
+  설계의 요점이다.</p>
+
+  <h3>제약 — 학습이 자유롭게 고를 수 없는 것들</h3>
+  <table>
+    <tr><th>제약</th><th>이유</th></tr>
+    <tr><td><code>τ_s</code> 는 10 ms 배수</td><td>100 Hz 발진</td></tr>
+    <tr><td>실제 시각 = <code>τ_s</code>×10 ms + 5 ms</td><td>구간 중앙 샘플링</td></tr>
+    <tr><td><code>τ_1 ≥ 1</code></td>
+        <td>대기 중 카운터가 0에 묶여 있어 <code>DECODE₀</code>가 계속 HIGH</td></tr>
+    <tr><td>타임아웃 &gt; <code>τ_4</code></td><td>PASS₄가 써진 뒤에 지워야 한다</td></tr>
+    <tr><td>상태 4개</td><td>비교기 4채널짜리 패키지 하나에 맞춘 값</td></tr>
+    <tr><td><b>채널 가중치 불가</b></td><td>저항이 전부 같은 값 → 단순 일치 개수</td></tr>
+    <tr><td>START 정렬에 ±1칸 흔들림</td><td>START가 100 Hz 클럭과 비동기</td></tr>
+  </table>
+
+  <div class="note warn">
+    마지막 두 줄이 학습에 실제로 영향을 준다. <b>채널마다 중요도를 다르게 줄 수 없으므로</b>
+    가중합을 배우는 모델은 회로로 못 옮긴다. 그리고 <b>정렬이 한 칸 흔들릴 수 있으므로</b>
+    형판은 그 흔들림을 견뎌야 한다 — 시뮬에서만 잘 되는 해를 배우지 않도록
+    학습 중에 이 흔들림을 넣어줘야 한다.
+  </div>
+</section>
+
+<!-- ═══════════════════ 5 ═══════════════════ -->
+<section>
+  <div class="kicker">5</div>
+  <h2>학습 모델</h2>
+
+  <p>기존 프로젝트에서 하던 것을 <b>앞은 그대로 두고 뒤만 갈아끼운다.</b>
+  아날로그 전단 시뮬과 임계값 학습(STE)은 그대로 쓰고,
+  106,240개짜리 이진 신경망 자리에 <b>50개짜리 형판 헤드</b>를 놓는다.</p>
+
+  <table>
+    <tr><th></th><th>기존 (FPGA/BNN)</th><th>대회 (고정 회로)</th></tr>
+    <tr><td>전단</td><td colspan="2" style="text-align:center">
+        <b>동일</b> — STFT → 필터뱅크 → 엔벨로프 → 임계 → 이진화</td></tr>
+    <tr><td>분류기</td><td>BinaryMatchboxNet 106,240 param</td>
+        <td>형판 헤드 ~50개</td></tr>
+    <tr><td>출력</td><td>12-class</td><td>WAKE 0/1</td></tr>
+    <tr><td>손실</td><td>cross-entropy</td><td>이진 검출 (BCE)</td></tr>
+    <tr><td>지표</td><td>accuracy</td><td>검출률 · 시간당 오검출</td></tr>
+  </table>
+
+  <figure>
+    <div class="stage">
+    <svg viewBox="0 0 780 700" width="760" role="img"
+         aria-label="Training model: binary feature in, template head, BCE loss">
+      <defs>
+        <marker id="up2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5"
+                markerHeight="5.5" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--stroke)"/></marker>
+      </defs>
+      <style>
+        .bx2 { fill: var(--fill);    stroke: var(--stroke); stroke-width: 1.2; }
+        .tr2 { fill: var(--hot-bg);  stroke: var(--hot);    stroke-width: 1.4; }
+        .ls2 { fill: var(--cool-bg); stroke: var(--cool);   stroke-width: 1.4; }
+        .nm2 { font-size: 12.5px; fill: var(--ink);   text-anchor: middle; }
+        .pr2 { font-size: 10px;   fill: var(--muted); text-anchor: middle;
+               font-family: "IBM Plex Mono", monospace; }
+        .ar2 { stroke: var(--stroke); stroke-width: 1.4; fill: none; }
+      </style>
+
+      <g class="ar2" marker-end="url(#up2)">
+        <path d="M 175 536 L 175 508"/>
+        <path d="M 175 450 L 175 418"/>
+        <path d="M 175 340 L 175 312"/>
+        <path d="M 175 250 L 175 222"/>
+      </g>
+
+      <!-- binary feature raster -->
+      <g>
+        <g fill="var(--stroke)">
+          <rect x="70"  y="546" width="13" height="8"/><rect x="96" y="546" width="13" height="8"/>
+          <rect x="148" y="546" width="26" height="8"/><rect x="200" y="546" width="13" height="8"/>
+          <rect x="83"  y="558" width="26" height="8"/><rect x="135" y="558" width="39" height="8"/>
+          <rect x="213" y="558" width="26" height="8"/>
+          <rect x="109" y="570" width="39" height="8"/><rect x="174" y="570" width="26" height="8"/>
+          <rect x="226" y="570" width="13" height="8"/>
+          <rect x="70"  y="582" width="13" height="8"/><rect x="122" y="582" width="52" height="8"/>
+          <rect x="200" y="582" width="39" height="8"/>
+          <rect x="96"  y="594" width="26" height="8"/><rect x="161" y="594" width="39" height="8"/>
+          <rect x="239" y="594" width="26" height="8"/>
+          <rect x="135" y="606" width="26" height="8"/><rect x="187" y="606" width="52" height="8"/>
+        </g>
+        <rect x="70" y="542" width="210" height="76" fill="none" stroke="var(--stroke)"
+              stroke-width="1.2"/>
+        <text x="175" y="638" class="nm2">Binary feature</text>
+        <text x="175" y="654" class="pr2">X[c,t] in {0,1}, 10 ms grid</text>
+        <text x="175" y="672" font-size="10" fill="var(--faint)" text-anchor="middle">
+          아날로그 전단 출력 — 학습 대상 아님</text>
+      </g>
+
+      <rect x="70" y="450" width="210" height="58" rx="3" class="tr2"/>
+      <text x="175" y="474" class="nm2">START detect + Align</text>
+      <text x="175" y="490" class="pr2">exhaustive search</text>
+      <text x="175" y="503" class="pr2">jitter +/- 1 frame</text>
+
+      <rect x="70" y="340" width="210" height="78" rx="5" class="tr2"/>
+      <text x="175" y="368" class="nm2">Template Head</text>
+      <text x="175" y="385" class="pr2">M[s,c], k[s], tau[s]</text>
+      <text x="175" y="402" class="pr2">x 4 states</text>
+
+      <rect x="70" y="250" width="210" height="58" rx="3" class="bx2"/>
+      <text x="175" y="274" class="nm2">AND over states</text>
+      <text x="175" y="292" class="pr2">WAKE score</text>
+
+      <rect x="70" y="160" width="210" height="58" rx="3" class="ls2"/>
+      <text x="175" y="184" class="nm2">Binary Cross Entropy</text>
+      <text x="175" y="202" class="pr2">target word vs rest</text>
+
+      <g font-size="10" fill="var(--faint)" text-anchor="start"
+         font-family="IBM Plex Mono, monospace">
+        <text x="288" y="528">aligned</text>
+        <text x="288" y="332">PASS[s]</text>
+      </g>
+      <g font-size="11" fill="var(--muted)" text-anchor="end">
+        <text x="60" y="476">Search</text>
+        <text x="60" y="378">Trainable</text>
+      </g>
+
+      <!-- expansion -->
+      <g stroke="var(--stroke)" stroke-width="0.8" fill="none" stroke-dasharray="4 3">
+        <path d="M 280 344 L 396 150"/>
+        <path d="M 280 414 L 396 646"/>
+        <rect x="396" y="150" width="360" height="496" rx="8"/>
+      </g>
+      <text x="576" y="172" font-size="11" fill="var(--muted)">one state, expanded</text>
+
+      <g class="ar2" marker-end="url(#up2)">
+        <path d="M 552 570 L 552 546"/>
+        <path d="M 552 496 L 552 468"/>
+        <path d="M 552 420 L 552 396"/>
+        <path d="M 552 348 L 552 324"/>
+        <path d="M 552 274 L 552 244"/>
+      </g>
+
+      <rect x="447" y="570" width="210" height="50" class="bx2"/>
+      <text x="552" y="592" class="nm2">Gather at tau[s]</text>
+      <text x="552" y="608" class="pr2">pick one frame</text>
+
+      <rect x="447" y="496" width="210" height="50" class="tr2"/>
+      <text x="552" y="514" class="nm2">Ternary template</text>
+      <text x="552" y="529" class="pr2">M = g * sign(w), STE</text>
+      <text x="552" y="541" class="pr2">g = use / ignore</text>
+
+      <rect x="447" y="420" width="210" height="50" class="bx2"/>
+      <text x="552" y="442" class="nm2">Match count</text>
+      <text x="552" y="458" class="pr2">sum over used channels</text>
+
+      <rect x="447" y="348" width="210" height="50" class="tr2"/>
+      <text x="552" y="370" class="nm2">Tolerance k[s]</text>
+      <text x="552" y="386" class="pr2">count &gt;= k</text>
+
+      <rect x="447" y="274" width="210" height="50" class="bx2"/>
+      <text x="552" y="296" class="nm2">PASS[s]</text>
+      <text x="552" y="312" class="pr2">0 .. 1</text>
+
+      <text x="552" y="228" font-size="12" fill="var(--ink)" text-anchor="middle">
+        Repeat for s = 1..4</text>
+      <g fill="var(--stroke)">
+        <circle cx="552" cy="252" r="2.6"/><circle cx="552" cy="262" r="2.6"/>
+      </g>
+
+      <g stroke="var(--hot)" stroke-width="1.2" fill="none" stroke-dasharray="4 3">
+        <path d="M 657 521 L 706 521 L 706 244"/>
+      </g>
+      <rect x="640" y="192" width="104" height="50" fill="var(--hot-bg)"
+            stroke="var(--hot)" stroke-width="1.2" rx="3"/>
+      <text x="692" y="214" font-size="11.5" fill="var(--ink)" text-anchor="middle">L1 on g</text>
+      <text x="692" y="230" class="pr2">more X</text>
+      <text x="722" y="400" font-size="10" fill="var(--hot)" text-anchor="middle"
+            transform="rotate(-90 722 400)">fewer resistors</text>
+    </svg>
+    </div>
+    <figcaption>아래에서 위로 흐른다. 입력은 아날로그 전단이 이미 만들어 준
+    이진 특징이다. 색이 들어간 블록이 <b>학습 대상</b>이고 그 값들이 그대로 저항과
+    배선이 된다. 오른쪽은 Template Head 한 상태를 펼친 것이다.</figcaption>
+  </figure>
+
+  <h3>블록별 의미</h3>
+  <table>
+    <tr><th>블록</th><th>하는 일</th><th>회로에서</th></tr>
+    <tr><td class="mono">Binary feature</td>
+        <td>아날로그 전단이 만든 <code>X[c,t] ∈ {0,1}</code>. 채널 × 10 ms 격자의
+            이진 시공간 패턴이다. <b>학습 대상이 아니다</b> — 전단 모델이 그대로 뱉는다</td>
+        <td>Comparator 출력</td></tr>
+    <tr><td class="mono">START detect<br>+ Align</td>
+        <td>어느 채널 조합을 START로 볼지 <b>전수 탐색</b>하고, 그 시점을 0으로 잡아
+            모든 발화를 재색인한다. 경사가 안 흐르는 유일한 자리다</td>
+        <td>AND/NOR 배선</td></tr>
+    <tr><td class="mono">Template Head</td>
+        <td>네 시각에서 각각 형판과 대조해 <code>PASS[s]</code>를 낸다.
+            아래 우측 패널이 한 상태의 내부다</td>
+        <td>저항망 + 비교기 + F/F</td></tr>
+    <tr><td class="mono">AND over states</td>
+        <td>네 <code>PASS</code>의 곱. 학습에서는 미분되도록 곱으로 두고,
+            회로에서는 AND 게이트가 된다</td>
+        <td>2입력 AND ×3</td></tr>
+    <tr><td class="mono">BCE</td>
+        <td>대상 단어인가 아닌가의 이진 손실. 12-class cross-entropy 가 아니다</td>
+        <td>—</td></tr>
+    <tr><td class="mono">Gather at tau[s]</td>
+        <td>정렬된 패턴에서 <b>한 프레임만</b> 꺼낸다. <code>tau</code>는 정수라
+            경사가 안 흐르고, 바깥 루프에서 탐색으로 정한다</td>
+        <td>디코더 카운트</td></tr>
+    <tr><td class="mono">Ternary template</td>
+        <td>삼진 <code>{1,0,X}</code>를 <code>M = g·sign(w)</code>로 쪼개 미분
+            가능하게 만든다. 순전파는 하드, 역전파는 STE</td>
+        <td>저항 연결 여부와 극성</td></tr>
+    <tr><td class="mono">Match count</td>
+        <td>쓰는 채널 중 몇 개가 맞았는지 <b>단순 합</b>. 저항이 전부 같은 값이라
+            <b>가중합은 못 쓴다</b></td>
+        <td>저항 평균 노드 전압</td></tr>
+    <tr><td class="mono">Tolerance k[s]</td>
+        <td>“몇 개 이상”의 문턱. 정수라 스윕으로 정한다</td>
+        <td>상태별 기준전압 분압</td></tr>
+    <tr><td class="mono">L1 on g</td>
+        <td>게이트에 벌점을 주어 <b>don’t-care 를 늘린다</b>.
+            정확도와 부품 수를 동시에 미는 항</td>
+        <td>저항 개수 감소</td></tr>
+  </table>
+
+  <h3>어디에 경사가 흐르고 어디에 안 흐르는가</h3>
+  <p>파라미터가 종류별로 성질이 달라, <b>한 가지 방법으로 전부 학습할 수 없다.</b>
+  섞어 쓰는 편이 맞다.</p>
+
+  <table>
+    <tr><th>파라미터</th><th>성질</th><th>방법</th></tr>
+    <tr><td><code>θ_c</code> 임계값</td><td>연속</td>
+        <td><b>경사하강 + STE</b> — 기존 프로젝트에서 쓰던 그대로</td></tr>
+    <tr><td><code>M[s,c]</code> 형판</td><td>삼진 {1,0,X}</td>
+        <td><b>경사하강 + STE</b>, 또는 확률 차이로 직접 집계</td></tr>
+    <tr><td><code>k_s</code> 허용</td><td>정수 (몇 개 안 됨)</td><td>스윕</td></tr>
+    <tr><td><code>τ_s</code> 시각</td><td>정수 · 이산</td>
+        <td><b>경사가 안 흐른다</b> — 탐욕적 탐색</td></tr>
+    <tr><td>START 조건</td><td>이산 조합</td><td>전수 탐색 (후보가 적다)</td></tr>
+  </table>
+
+  <div class="note">
+    <b>권하는 조합.</b> <code>τ_s</code> 와 START는 <b>탐색으로 고정</b>하고,
+    그 위에서 <code>θ_c</code> 와 <code>M</code> 을 <b>경사하강으로 함께</b> 학습한다.
+    임계값과 형판은 서로 얽혀 있어 따로 정하면 손해인데, 시각은 이산이라 어차피
+    경사를 못 쓴다. 바깥 루프에서 시각을 바꿔가며 안쪽 학습을 반복하면 된다.
+  </div>
+
+  <h3>형판을 미분 가능하게 만드는 법</h3>
+  <p>형판은 <code>{1, 0, X}</code> 삼진이라 그대로는 학습이 안 된다.
+  <b>두 개의 연속 파라미터로 쪼개면</b> 된다.</p>
+  <div class="eq">
+    M[s,c] = g[s,c] · sign(w[s,c])
+    <span class="sm">g = 이 채널을 쓸 것인가 (0~1, 게이트) · w = 1을 원하나 0을 원하나</span>
+  </div>
+  <p>순전파에서는 <code>g</code>를 0/1로, <code>sign</code>을 ±1로 하드하게 만들고
+  역전파에서는 STE로 통과시킨다. <code>g</code>에 L1 벌점을 주면
+  <b>don’t-care가 저절로 늘어</b> 저항이 줄어든다. 기존 프로젝트의 이진 가중치 학습과
+  같은 수법이다.</p>
+
+  <h3>정렬 흔들림을 학습에 넣기</h3>
+  <p>START가 100 Hz 클럭과 비동기이므로 실제 카운트 0은 START보다 <b>0~10 ms 늦다.</b>
+  학습할 때 정렬 위치를 <b>±1칸 무작위로 흔들면</b>, 그 흔들림에 견디는 형판이 나온다.
+  넣지 않으면 시뮬에서만 맞는 해를 배운다.</p>
+
+  <h3>손실과 지표는 다르다</h3>
+  <p>학습은 미분 가능한 <b>BCE</b>로 하되, 모델 선택은 <b>검출률과 시간당 오검출</b>로
+  한다. always-on 기기에서는 “말 안 했는데 깨어남”이 훨씬 크게 체감되므로,
+  허용 오검출을 먼저 정하고 그 지점의 검출률을 본다.</p>
+  <p>시간당 횟수는 1초 클립으로는 못 잰다. 비대상 단어를 무작위 간격으로 이어붙여
+  <b>연속 오디오를 합성</b>하고, 그 위에서 <b>회로와 같은 상태기계</b>를 돌려 센다.
+  그 상태기계 코드가 곧 회로의 명세이기도 하므로 <b>가장 먼저 만들 것</b>을 권한다.</p>
+</section>
+
+<footer>
+  IT창의챌린지 · 디지털 판별부 설계 명세 · 채널 수(8/16) 미확정 · 개념 설명은 개념설명.html
+</footer>
+</div>
+</html>

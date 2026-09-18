@@ -1,0 +1,154 @@
+"""설정. 하드웨어로 넘어가는 값과 학습만의 값을 한 곳에 모아 둔다.
+
+회로가 거는 제약(10 ms 격자, 상태 수, timeout)은 전부 여기서 강제한다.
+실장할 수 없는 해가 학습에서 나오지 않게 하려면 제약이 모델보다 앞에 있어야 한다.
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field, asdict
+from typing import List, Optional
+
+
+@dataclass
+class FrontendConfig:
+    """아날로그 전단의 소프트웨어 대응물. 학습 대상은 채널 문턱뿐이다."""
+
+    sample_rate: int = 16000
+    clip_ms: float = 1000.0
+
+    # STFT — 아날로그 필터뱅크를 흉내내는 공통 프론트엔드
+    stft_win_ms: float = 25.0
+    stft_hop_ms: float = 10.0
+    n_fft: int = 512
+
+    # 대역 분해
+    n_channels: int = 8            # 실장 채널 수. 8/16 미확정이라 config 로 둔다
+    f_min: float = 125.0           # 동료 보드 실측 대역
+    f_max: float = 5000.0
+    # "mel" = 소프트웨어 근사, "spice" = 동료 SPICE 행렬 CSV
+    filterbank: str = "mel"
+    spice_matrix_path: str = ""    # [C, n_fft//2+1] CSV
+
+    # 포락선
+    # log 는 단조라서 "정규화 로그값 >= theta" 와 "전압 >= V_th" 가 동치다.
+    # 즉 고정 문턱(R7/R8 분압)을 그대로 표현한다.
+    compression: str = "log"       # log | sqrt
+    envelope_win_ms: float = 10.0  # = 회로의 100 Hz 격자
+    envelope_reduce: str = "max"   # 2.8 의 "한 번이라도 1이면 1"
+
+    # 정규화 — fixed 만 허용한다. 클립마다 스케일이 변하면 저항비로 못 만든다.
+    normalize: str = "fixed"
+    fixed_scale_quantile: float = 0.75
+
+    # 문턱 이진화. 이 값이 문턱이 실제로 학습되는지를 좌우한다 -- |env-theta| 가
+    # clip 안에 있을 때만 기울기가 흐르므로, 너무 좁으면 문턱이 초기값에 묶이고
+    # 너무 넓으면 특징이 빽빽해진다. 합성 과제에서 재어 본 값:
+    #   0.003 -> acc 0.855 (문턱 거의 안 움직임)
+    #   0.03  -> acc 0.918  <- 채택
+    #   0.1   -> acc 0.680 (켜짐률 21% -> 43%)
+    # 실제 음성으로 옮길 때 다시 재야 한다.
+    ste_clip: float = 0.03
+
+    @property
+    def native_T(self) -> int:
+        return int(round(self.clip_ms / self.envelope_win_ms))
+
+
+@dataclass
+class HeadConfig:
+    """형판 정합부. 여기서 나오는 값이 그대로 저항과 배선이 된다."""
+
+    n_states: int = 4              # 상태 하나 = 비교기 1 + 플립플롭 1 + 저항 한 벌
+    tau: List[int] = field(default_factory=lambda: [8, 16, 24, 32])
+    timeout: int = 48              # > tau[-1], 그리고 <= 63 (디코더 6비트 별칭)
+
+    # 판정 급경사도. 작을수록 계단에 가깝다(추론과 일치), 크면 기울기가 산다.
+    temperature: float = 0.5
+    # AND 의 부드럽기. WAKE 는 가장 약한 상태가 정하므로 min 의 완화형을 쓴다.
+    and_temperature: float = 0.5
+
+    # 형판 게이트 g: 0 이면 X(미연결). 학습 초기에는 전부 사용으로 시작한다.
+    # clip 경계(1.0)에 두면 한 번 밖으로 밀린 게이트가 영영 기울기를 못 받는다.
+    gate_init: float = 0.5
+    gate_ste_clip: float = 1.0
+    weight_ste_clip: float = 1.0
+
+    l1_gate: float = 0.02          # X 를 늘리는 압력 -> 저항 수 감소
+    # k 는 정수 판정 문턱이라 경사하강이 아니라 탐색으로 맞춘다. 몇 스텝마다
+    # 좌표상승으로 다시 맞출지 (0 이면 끄고 순수 경사하강).
+    refit_k_every: int = 50
+    # k 탐색은 "FPR 을 이 값 이하로 묶고 그 안에서 TPR 최대화". 가중합을 쓰면
+    # 전부 거부하는 해가 최적이 되어 버린다(head.fit_k 주석 참고).
+    k_max_fpr: float = 0.05
+    min_channels: int = 3          # 상태당 최소 사용 채널. 너무 줄면 잡음에 뜬다
+    min_channels_weight: float = 1.0
+
+    def validate(self, front: FrontendConfig) -> None:
+        if len(self.tau) != self.n_states:
+            raise ValueError(
+                f"tau 가 {len(self.tau)}개인데 n_states 는 {self.n_states}다.")
+        if sorted(self.tau) != list(self.tau):
+            raise ValueError(f"tau 는 오름차순이어야 한다: {self.tau}")
+        if self.tau[0] < 1:
+            raise ValueError(
+                "tau[0] >= 1 이어야 한다. IDLE 에서 카운터가 0 에 묶여 있어 "
+                "0 은 디코드해도 뜨지 않는다.")
+        if self.timeout <= self.tau[-1]:
+            raise ValueError(
+                f"timeout({self.timeout}) > tau[-1]({self.tau[-1]}) 이어야 한다. "
+                "마지막 채점 전에 CLR 되면 WAKE 가 나올 수 없다.")
+        if self.timeout > 63:
+            raise ValueError(
+                f"timeout({self.timeout}) > 63. 디코더를 3개 쓰지 않으면 상위 "
+                "2비트가 판정에 안 들어가 64 카운트마다 같은 신호가 또 뜬다. "
+                "디코더 3개 구성이면 이 검사를 풀어도 된다.")
+        if self.tau[-1] >= front.native_T:
+            raise ValueError(
+                f"tau[-1]({self.tau[-1]}) 가 클립 길이({front.native_T} 프레임) "
+                "밖이다.")
+
+
+@dataclass
+class StartConfig:
+    """시간 원점. 학습이 아니라 탐색으로 정한다."""
+
+    # sum_c x[c,t] >= k 인 첫 프레임을 START 로 본다
+    k: int = 2
+    # START 는 100 Hz 클럭과 비동기다 -> 학습 중 프레임 지터를 넣는다
+    jitter: int = 1
+
+
+@dataclass
+class TrainConfig:
+    target_word: str = "on"
+    batch_size: int = 128
+    epochs: int = 30
+    lr: float = 3e-3
+    lr_threshold: float = 1e-3     # 문턱은 스케일이 달라 따로 준다
+    weight_decay: float = 0.0
+    seed: int = 0
+    # 비대상(N)이 압도적이라 양성에 가중을 준다. 0 이면 자동(N/P 비)
+    pos_weight: float = 0.0
+    num_workers: int = 4
+    device: str = "cuda"
+
+
+@dataclass
+class Config:
+    frontend: FrontendConfig = field(default_factory=FrontendConfig)
+    head: HeadConfig = field(default_factory=HeadConfig)
+    start: StartConfig = field(default_factory=StartConfig)
+    train: TrainConfig = field(default_factory=TrainConfig)
+    data_root: str = "~/datasets/speech_commands_v2"
+    out_dir: str = "runs"
+    tag: str = "wk_base"
+
+    def validate(self) -> None:
+        if self.frontend.normalize != "fixed":
+            raise ValueError(
+                "normalize 는 fixed 여야 한다. 클립마다 스케일이 바뀌면 "
+                "비교기 기준전압을 저항 분압으로 고정할 수 없다.")
+        self.head.validate(self.frontend)
+
+    def to_dict(self) -> dict:
+        return asdict(self)
