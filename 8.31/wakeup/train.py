@@ -411,7 +411,6 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         return {"sweep_only": True}
 
     model.init_from_data(w0, y0)
-    model.balance_k(w0, y0)          # 학습은 균형점에서 시작한다
 
     # 2) 타이밍 탐색 — 미분되지 않는 값들
     print("타이밍 탐색:")
@@ -440,14 +439,24 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         return {"diagnose_only": True, "search": r}
 
     # 3) 경사하강
+    if not cfg.frontend.train_threshold:
+        model.frontend.threshold.requires_grad_(False)
+        print("채널 문턱 theta 고정 (START 를 지키기 위해 -- config 주석 참고)")
+    # 학습용 k 는 여기서 한 번 잡고 학습 내내 고정한다. 에폭마다 다시 잡으면
+    # 동작점이 계속 흔들려 손실이 에폭 경계마다 튄다.
+    k_train = model.balance_k(w0, y0).clone()
+    print(f"학습용 k (균형점) = {[int(v) for v in k_train]}")
+
     pw = cfg.train.pos_weight or max(
         1.0, float((y0 <= 0.5).sum() / max(int(y0.sum()), 1)))
     print(f"양성 가중 {pw:.2f}"
           + ("  (손실과 fit_k 가 반대로 밀 수 있다)" if pw > 1.5 else ""))
-    opt = torch.optim.Adam([
-        {"params": model.head.parameters(), "lr": cfg.train.lr},
-        {"params": model.frontend.parameters(), "lr": cfg.train.lr_threshold},
-    ], weight_decay=cfg.train.weight_decay)
+    groups = [{"params": model.head.parameters(), "lr": cfg.train.lr}]
+    if cfg.frontend.train_threshold:
+        groups.append({"params": [p for p in model.frontend.parameters()
+                                  if p.requires_grad],
+                       "lr": cfg.train.lr_threshold})
+    opt = torch.optim.Adam(groups, weight_decay=cfg.train.weight_decay)
 
     l1_target = cfg.head.l1_gate
     warm = int(cfg.train.epochs * cfg.head.l1_warmup_frac)
@@ -489,7 +498,8 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
                        out_dir / "best.pt")
             line += "  *"
         print(line)
-        model.balance_k(w0, y0)          # 학습은 균형점에서 이어간다
+        with torch.no_grad():            # 학습은 고정된 균형점에서 이어간다
+            model.head.k.copy_(k_train)
 
     # 4) 시험 분할
     ck = torch.load(out_dir / "best.pt", map_location=dev, weights_only=False)
@@ -530,6 +540,8 @@ def main(argv=None) -> None:
     p.add_argument("--min-recall", type=float, default=0.90,
                    help="START 검출률 하한. 이 값이 TPR 상한이 된다")
     p.add_argument("--l1-warmup", type=float, default=0.35)
+    p.add_argument("--train-threshold", action="store_true",
+                   help="채널 문턱도 학습한다 (기본은 고정 — START 가 무너진다)")
     p.add_argument("--ste-clip", type=float, default=0.03)
     p.add_argument("--filterbank", default="mel", choices=("mel", "spice"))
     p.add_argument("--spice-matrix", default="")
@@ -558,6 +570,7 @@ def main(argv=None) -> None:
     cfg.frontend.n_channels = a.channels
     cfg.frontend.ste_clip = a.ste_clip
     cfg.frontend.init_on_rate = a.on_rate
+    cfg.frontend.train_threshold = a.train_threshold
     cfg.frontend.compression = a.compression
     cfg.frontend.filterbank = a.filterbank
     cfg.frontend.spice_matrix_path = a.spice_matrix

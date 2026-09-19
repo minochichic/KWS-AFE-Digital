@@ -354,3 +354,44 @@ def test_balance_k_gives_every_state_something_to_do():
     assert (k > 1).all(), f"아직 무료 통과인 상태가 있다: {k.tolist()}"
     assert (per_neg < 0.9).all(), (
         f"노는 상태가 있다: 음성 통과율 {[round(v,3) for v in per_neg.tolist()]}")
+
+
+def test_start_recall_survives_training_when_theta_is_frozen():
+    """theta 를 학습하면 START 가 무너진다는 것을 못 박아 둔다.
+
+    theta 는 이진 특징과 START 를 동시에 정하는데, 손실은 앞쪽에만 기울기가
+    있다(START 를 놓친 클립은 상수 -20). 그래서 theta 가 특징을 선명하게 하는
+    쪽으로만 표류하고 START 가 죽는다 -- 실측 0.873 -> 0.343.
+    """
+    from wakeup.synthetic import make_batch
+    from wakeup.model import detect_start
+
+    def run(train_theta: bool) -> float:
+        torch.manual_seed(0)
+        cfg = Config()
+        cfg.frontend.n_channels = 8
+        cfg.frontend.init_on_rate = 0.15
+        cfg.frontend.train_threshold = train_theta
+        cfg.head.l1_gate = 0.0
+        m = WakeupModel(cfg)
+        x, y, _ = make_batch(256, cfg.head.tau, seed=0)
+        m.frontend.init_fixed_scale(x)
+        m.frontend.init_thresholds(x, on_rate=0.15)
+        if not train_theta:
+            m.frontend.threshold.requires_grad_(False)
+        ps = [p for p in m.parameters() if p.requires_grad]
+        opt = torch.optim.Adam(ps, lr=5e-2)      # 일부러 세게 민다
+        m.train()
+        for _ in range(60):
+            out = m.loss(x[:64], y[:64])
+            opt.zero_grad(); out["loss"].backward(); opt.step()
+        m.eval()
+        feat = m.features(x)
+        _, found = detect_start(feat, cfg.start.k, cfg.start.min_frames)
+        return found[y > 0.5].float().mean().item()
+
+    frozen = run(False)
+    assert frozen > 0.95, f"고정했는데도 START 가 흔들린다 ({frozen:.3f})"
+    # 문턱이 학습 대상이면 requires_grad 가 살아 있어야 한다
+    cfg = Config(); cfg.frontend.train_threshold = True
+    assert WakeupModel(cfg).frontend.threshold.requires_grad

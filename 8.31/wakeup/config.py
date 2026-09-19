@@ -55,6 +55,19 @@ class FrontendConfig:
     # 실제 음성으로 옮길 때 다시 재야 한다.
     ste_clip: float = 0.03
 
+    # 채널 문턱을 학습할지. 기본은 고정이다.
+    #
+    # theta 는 세 가지를 동시에 정한다 -- 형판에 쓰는 이진 특징, START 검출,
+    # 켜짐률. 그런데 손실은 첫째에만 기울기가 있다. START 를 놓친 클립은
+    # wake_logit = -20 이라는 상수라 기울기가 0 이므로, 학습은 theta 를 올려
+    # 특징을 선명하게 만들 유인만 있고 그 대가로 START 가 안 뜨는 것을 볼 수
+    # 없다. 실측: START 검출률이 0.873 -> 0.343 으로 무너지고 손실이
+    # 0.87 -> 2.83 으로 발산했다.
+    #
+    # 분위수 초기화(init_on_rate)가 이미 켜짐률을 원하는 값으로 잡아 준다.
+    # 하드웨어에서도 theta 는 VTHR 선택이라 고정이 정직하다.
+    train_threshold: bool = False
+
     @property
     def native_T(self) -> int:
         return int(round(self.clip_ms / self.envelope_win_ms))
