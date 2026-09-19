@@ -28,22 +28,36 @@ def _auc(score: torch.Tensor, y: torch.Tensor) -> float:
 
 @torch.no_grad()
 def offset_scores(x: torch.Tensor, start: torch.Tensor, y: torch.Tensor,
-                  max_offset: int) -> Tuple[torch.Tensor, torch.Tensor]:
+                  max_offset: int, window: int = 0
+                  ) -> Tuple[torch.Tensor, torch.Tensor]:
     """START 이후 각 오프셋의 단독 분리도.
 
     오프셋 d 마다 양성의 다수결 패턴을 형판으로 삼아 일치 개수를 세고, 그
     개수가 양성과 음성을 얼마나 가르는지를 AUC 로 잰다.
 
+    window > 0 이면 d ± window 안의 최대 일치 개수를 쓴다 -- 회로의 채점 창과
+    같다(창 안에서 한 번이라도 맞으면 통과). 정렬 오차가 START 에서 멀어질수록
+    쌓이므로, 늦은 시각일수록 창이 커야 정보가 살아날 수 있다.
+
     반환 (auc [max_offset+1], proto [max_offset+1, C])
     """
-    T = x.shape[2]
-    aucs, protos = [], []
+    T, C = x.shape[2], x.shape[1]
     pos = y > 0.5
+    aucs, protos = [], []
     for d in range(max_offset + 1):
         idx = (start + d).clamp(0, T - 1)
-        col = x.gather(2, idx.view(-1, 1, 1).expand(-1, x.shape[1], 1)).squeeze(2)
-        p = (col[pos].mean(0) > 0.5).float() if pos.any() else torch.zeros(x.shape[1])
-        cnt = (col == p.unsqueeze(0)).float().sum(1)
+        col = x.gather(2, idx.view(-1, 1, 1).expand(-1, C, 1)).squeeze(2)
+        p = (col[pos].mean(0) > 0.5).float() if pos.any() else torch.zeros(C)
+        if window == 0:
+            cnt = (col == p.unsqueeze(0)).float().sum(1)
+        else:
+            best = None
+            for o in range(-window, window + 1):
+                j = (start + d + o).clamp(0, T - 1)
+                c2 = x.gather(2, j.view(-1, 1, 1).expand(-1, C, 1)).squeeze(2)
+                n = (c2 == p.unsqueeze(0)).float().sum(1)
+                best = n if best is None else torch.maximum(best, n)
+            cnt = best
         aucs.append(_auc(cnt, y))
         protos.append(p)
     return torch.tensor(aucs), torch.stack(protos)

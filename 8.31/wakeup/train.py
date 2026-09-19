@@ -384,11 +384,51 @@ def sweep_structure(cfg: Config, *, n_clips: int = 12000,
     print("=" * 76 + "\n")
 
 
+# ------------------------------------------------------------- 채점 창 스윕
+@torch.no_grad()
+def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
+                 windows=(0, 2, 4, 6, 8), min_gap: int = 8) -> None:
+    """창 크기별로 시각마다 분리도가 어떻게 변하는지 잰다.
+
+    늦은 시각에 정보가 없는 것이 (a) 원래 없어서인지 (b) 정렬 오차에 묻혀서인지
+    가른다. (b) 라면 창을 키울수록 늦은 시각의 AUC 가 살아난다. 회로에서는
+    디코더 출력을 더 OR 하는 것뿐이라 부품이 거의 안 는다.
+    """
+    from .model import WakeupModel
+    from .search import pick_offsets
+    m = WakeupModel(copy.deepcopy(cfg)).to(wave.device)
+    m.frontend.init_fixed_scale(wave)
+    m.frontend.init_thresholds(wave, on_rate=cfg.frontend.init_on_rate or 0.15)
+    x = m.features(wave)
+    st, fo = detect_start(x, cfg.start.k, cfg.start.min_frames)
+    keep = fo
+    xa, sa, ya = x[keep], st[keep], y[keep]
+    hi = min(x.shape[2] - 1, 60)
+
+    print("\n" + "=" * 76)
+    print(f"  채점 창 스윕 — '{cfg.train.target_word}', START k{cfg.start.k} "
+          f"x{cfg.start.min_frames}, 켜짐률 {cfg.frontend.init_on_rate*100:.0f}%")
+    print("=" * 76)
+    print(f"  {'창':>4} {'최고AUC':>8} {'평균4':>7} {'선택된 tau':>22} "
+          f"{'각 tau 의 AUC':>28}")
+    for w in windows:
+        auc, _ = offset_scores(xa, sa, ya, hi, window=w)
+        sel = pick_offsets(auc, cfg.head.n_states, min_gap=min_gap, min_tau=1)
+        a = auc[sel]
+        print(f"  ±{w:<3} {float(auc.max()):8.3f} {float(a.mean()):7.3f} "
+              f"{str(sel):>22}  "
+              + " ".join(f"{float(v):.3f}" for v in a))
+    print("-" * 76)
+    print("  * 창을 키울 때 늦은 tau 의 AUC 가 오르면 정렬 오차에 묻혀 있던 것이다.")
+    print("    안 오르면 그 시각에는 원래 정보가 없다 -> 상태 수를 줄이는 게 맞다.")
+    print("=" * 76 + "\n")
+
+
 # --------------------------------------------------------------------- 학습
 def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           diag: bool = False, allow_infeasible: bool = False,
           sweep: bool = False, min_gap: int = 3,
-          min_recall: float = 0.90) -> Dict:
+          min_recall: float = 0.90, sweep_win: bool = False) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -396,6 +436,11 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
     if dev == "cuda" and not torch.cuda.is_available():
         print("! CUDA 가 없다. CPU 로 돌린다 (느리다).")
         dev = "cpu"
+
+    def model_probe(c, w, yy):
+        mm = WakeupModel(copy.deepcopy(c)).to(w.device)
+        mm.init_from_data(w, yy)
+        return mm
 
     ld = D.loaders(cfg.data_root, cfg.train.target_word, cfg.train.batch_size,
                    seed=cfg.train.seed, num_workers=cfg.train.num_workers)
@@ -409,6 +454,13 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
     if sweep:
         sweep_frontend(cfg, w0, y0)
         return {"sweep_only": True}
+    if sweep_win:
+        r = search_timing(model_probe(cfg, w0, y0), w0, y0,
+                          min_frames_cands=(1, 2, 3), min_gap=min_gap,
+                          min_recall=min_recall)
+        cfg.start.k, cfg.start.min_frames = r["k"], r["min_frames"]
+        sweep_window(cfg, w0, y0, min_gap=min_gap)
+        return {"sweep_window_only": True}
 
     model.init_from_data(w0, y0)
 
@@ -556,6 +608,8 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--sweep-window", action="store_true",
+                   help="채점 창 크기별로 시각마다 분리도를 잰다")
     p.add_argument("--sweep-structure", action="store_true",
                    help="상태 수와 시각 간격을 훑는다 (= 보드 크기)")
     p.add_argument("--sweep-words", default="",
@@ -612,7 +666,7 @@ def main(argv=None) -> None:
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
     train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible,
           sweep=a.sweep_frontend, min_gap=a.min_gap,
-          min_recall=a.min_recall)
+          min_recall=a.min_recall, sweep_win=a.sweep_window)
 
 
 if __name__ == "__main__":
