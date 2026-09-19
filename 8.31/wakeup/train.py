@@ -17,7 +17,7 @@ import json
 import time
 from dataclasses import asdict
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, Sequence
 
 import torch
 
@@ -143,23 +143,30 @@ def sweep_frontend(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
     """
     from .model import WakeupModel
     from .search import pick_offsets
-    pos = y > 0.5
-    C = cfg.frontend.n_channels
-    print("\n" + "=" * 78)
-    print("  프론트엔드 스윕 — 어느 켜짐률에서 네 시각이 갈리는가")
-    print("=" * 78)
-    print(f"  {'켜짐률':>6} {'START조건':>11} {'검출률':>7} {'음성무시':>8} "
-          f"{'평균AUC':>8} {'최고AUC':>8} {'선택된 tau':>20}")
-    best = None
-    for r in on_rates:
-        c = copy.deepcopy(cfg)
-        c.frontend.init_on_rate = r
-        m = WakeupModel(c).to(wave.device)
-        m.frontend.init_fixed_scale(wave)
-        m.frontend.init_thresholds(wave, on_rate=r)
-        x = m.features(wave)
-        rate = x.mean().item()
+    m = WakeupModel(copy.deepcopy(cfg)).to(wave.device)
+    m.frontend.init_fixed_scale(wave)
+    env = m.frontend.envelopes(wave)
+    rows = _sweep_rates(cfg, env, y, on_rates, min_recall)
+    _print_sweep(cfg, rows)
 
+
+@torch.no_grad()
+def _sweep_rates(cfg: Config, env: torch.Tensor, y: torch.Tensor,
+                 on_rates, min_recall: float) -> list:
+    """정규화된 포락선 위에서 켜짐률과 START 조건을 훑는다.
+
+    포락선은 대상 단어와 무관하므로 한 번만 계산해 여러 단어에 돌려 쓴다.
+    """
+    from .search import pick_offsets
+    from .ste import step_ste
+    pos = y > 0.5
+    C = env.shape[1]
+    flat = env.transpose(0, 1).reshape(C, -1)
+    out = []
+    for r in on_rates:
+        th = torch.quantile(flat, 1.0 - r, dim=1).view(1, -1, 1)
+        x = (env >= th).float()
+        rate = x.mean().item()
         row = None
         for mf in (1, 2, 3, 4):
             for k in range(1, min(C, 9) + 1):
@@ -167,22 +174,33 @@ def sweep_frontend(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
                 rec = fo[pos].float().mean().item()
                 if rec < min_recall:
                     continue
-                # START 가 뜬 클립만 남긴다 -- 안 뜬 음성은 회로에서도 그냥
-                # 통과 못 하므로 공짜 정답이고, 여기 섞으면 측정이 오염된다
                 keep = fo
                 if keep.sum() < 32 or (y[keep] > 0.5).sum() < 8:
                     continue
                 auc, _ = offset_scores(x[keep], st[keep], y[keep],
                                        min(x.shape[2] - 1, 60))
-                sel = pick_offsets(auc, c.head.n_states, min_gap=3, min_tau=1)
-                mean_auc = float(auc[sel].mean())
-                if row is None or mean_auc > row[0]:
+                sel = pick_offsets(auc, cfg.head.n_states, min_gap=3, min_tau=1)
+                ma = float(auc[sel].mean())
+                if row is None or ma > row[0]:
                     free = 1.0 - fo[~pos].float().mean().item()
-                    row = (mean_auc, float(auc.max()), k, mf, rec, free, sel)
+                    row = (ma, float(auc.max()), k, mf, rec, free, sel, rate, r)
+        out.append(row)
+    return out
+
+
+def _print_sweep(cfg: Config, rows: list) -> None:
+    C = cfg.frontend.n_channels
+    print("\n" + "=" * 78)
+    print("  프론트엔드 스윕 — 어느 켜짐률에서 네 시각이 갈리는가")
+    print("=" * 78)
+    print(f"  {'켜짐률':>6} {'START조건':>11} {'검출률':>7} {'음성무시':>8} "
+          f"{'평균AUC':>8} {'최고AUC':>8} {'선택된 tau':>20}")
+    best = None
+    for row in rows:
         if row is None:
-            print(f"  {rate*100:5.1f}% {'—':>11} {'검출률 미달로 후보 없음':>30}")
+            print(f"  {'—':>6} {'—':>11}   검출률 미달로 후보 없음")
             continue
-        ma, mx, k, mf, rec, free, sel = row
+        ma, mx, k, mf, rec, free, sel, rate, r = row
         print(f"  {rate*100:5.1f}% {f'k{k} x{mf}프레임':>11} {rec*100:6.1f}% "
               f"{free*100:7.1f}% {ma:8.3f} {mx:8.3f} {str(sel):>20}")
         if best is None or ma > best[0]:
@@ -199,6 +217,87 @@ def sweep_frontend(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
     print("  * 검출률은 TPR 상한이다. START 를 놓친 발화는 되살릴 수 없다.")
     print("  * 음성무시 = START 가 안 뜬 음성 비율. 회로에서 공짜 정답이므로 높을수록 좋다.")
     print("=" * 78 + "\n")
+
+
+# ------------------------------------------------------------- 단어 비교
+# 시간 구조가 뚜렷한 쪽이 이 방식(네 시각의 스냅숏 비교)에 유리하다.
+# marvin/sheila 는 Speech Commands 에 웨이크워드 용도로 들어간 다음절 단어다.
+# 실제 제품의 웨이크워드가 길고 음소가 특이한 것도 같은 이유다.
+WORD_CANDIDATES = ("marvin", "sheila", "backward", "forward", "follow",
+                   "visual", "learn", "stop", "six", "seven", "happy",
+                   "house", "on", "go")
+
+
+@torch.no_grad()
+def sweep_words(cfg: Config, words: Sequence[str], *, n_clips: int = 12000,
+                on_rates=(0.15, 0.20, 0.30), min_recall: float = 0.95) -> None:
+    """여러 대상 단어를 같은 클립 묶음으로 비교한다.
+
+    포락선은 단어와 무관하므로 한 번만 계산하고 라벨만 바꿔 단다. 단어마다
+    파일을 다시 읽지 않아 빠르고, 같은 데이터를 쓰므로 비교가 공정하다.
+    """
+    from . import data as D
+    from .model import WakeupModel
+
+    dev = cfg.train.device
+    if dev == "cuda" and not torch.cuda.is_available():
+        dev = "cpu"
+    t0 = time.time()
+    wave, labels = D.raw_batch(cfg.data_root, "train", n_clips,
+                               seed=cfg.train.seed)
+    print(f"클립 {len(labels)}개 읽음, {time.time()-t0:.0f}s")
+
+    m = WakeupModel(copy.deepcopy(cfg)).to(dev)
+    env_parts = []
+    for i in range(0, wave.shape[0], 1024):
+        w = wave[i:i + 1024].to(dev)
+        if i == 0:
+            m.frontend.init_fixed_scale(w)
+        env_parts.append(m.frontend.envelopes(w).cpu())
+    env = torch.cat(env_parts)
+    del wave, env_parts
+    print(f"포락선 계산 완료 {tuple(env.shape)}, {time.time()-t0:.0f}s\n")
+
+    print("=" * 84)
+    print(f"  대상 단어 비교 — {cfg.frontend.n_channels}채널, "
+          f"상태 {cfg.head.n_states}개, 클립 {len(labels)}개")
+    print("=" * 84)
+    print(f"  {'단어':>9} {'양성':>6} {'켜짐률':>6} {'START':>11} {'검출률':>7} "
+          f"{'음성무시':>8} {'평균AUC':>8} {'tau 범위':>10} {'선택된 tau':>20}")
+    results = []
+    for w in words:
+        y = torch.tensor([1.0 if l == w else 0.0 for l in labels])
+        n_pos = int(y.sum())
+        if n_pos < 40:
+            print(f"  {w:>9} {n_pos:>6}   양성이 너무 적어 건너뜀")
+            continue
+        rows = [r for r in _sweep_rates(cfg, env, y, on_rates, min_recall)
+                if r is not None]
+        if not rows:
+            print(f"  {w:>9} {n_pos:>6}   어느 켜짐률에서도 검출률 미달")
+            continue
+        b = max(rows, key=lambda r: r[0])
+        ma, mx, k, mf, rec, free, sel, rate, r = b
+        span = sel[-1] - sel[0]
+        print(f"  {w:>9} {n_pos:>6} {rate*100:5.1f}% "
+              f"{f'k{k} x{mf}':>11} {rec*100:6.1f}% {free*100:7.1f}% "
+              f"{ma:8.3f} {span:9d}f {str(sel):>20}")
+        results.append((ma, w, r, k, mf, rec, sel, span))
+
+    print("-" * 84)
+    if results:
+        results.sort(reverse=True)
+        print("  좋은 순:")
+        for ma, w, r, k, mf, rec, sel, span in results[:5]:
+            print(f"    {w:>9}  평균 AUC {ma:.3f}  검출률 {rec*100:.1f}%  "
+                  f"tau 범위 {span}프레임 ({span*10} ms)")
+        ma, w, r, k, mf, rec, sel, span = results[0]
+        print(f"\n  python -m wakeup.train --target {w} "
+              f"--channels {cfg.frontend.n_channels} --on-rate {r} "
+              f"--epochs 30 --tag {w}_{cfg.frontend.n_channels}ch")
+    print("\n  * tau 범위가 좁으면 네 상태가 사실상 같은 구간을 보는 것이다.")
+    print("    START 에서 멀어질수록 정렬이 흐트러진다는 뜻이기도 하다.")
+    print("=" * 84 + "\n")
 
 
 # --------------------------------------------------------------------- 학습
@@ -331,6 +430,8 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--sweep-words", default="",
+                   help="대상 단어 비교. 쉼표로 나열하거나 auto")
     p.add_argument("--sweep-frontend", action="store_true",
                    help="켜짐률·압축을 바꿔가며 분리도만 재고 끝낸다")
     p.add_argument("--on-rate", type=float, default=0.0,
@@ -369,6 +470,11 @@ def main(argv=None) -> None:
     cfg.tag = a.tag or f"{a.target}_{a.channels}ch_s{a.states}"
     cfg.validate()
 
+    if a.sweep_words:
+        words = (WORD_CANDIDATES if a.sweep_words == "auto"
+                 else tuple(w.strip() for w in a.sweep_words.split(",")))
+        sweep_words(cfg, words)
+        return
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
     train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible,
           sweep=a.sweep_frontend)

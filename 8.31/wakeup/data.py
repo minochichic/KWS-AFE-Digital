@@ -162,3 +162,28 @@ def loaders(root: str, target: str, batch_size: int, *, seed: int = 0,
                              num_workers=num_workers, drop_last=(sp == "train"),
                              pin_memory=True)
     return out
+
+
+def raw_batch(root: str, split: str, n: int, *, seed: int = 0,
+              clip_ms: float = 1000.0):
+    """(wave [n, L], words [n]) — 단어 라벨을 그대로 돌려준다.
+
+    여러 대상 단어를 비교할 때 쓴다. 단어마다 파일을 다시 읽지 않고 같은
+    클립 묶음에 라벨만 바꿔 달면 되므로 훨씬 빠르고, 비교도 공정해진다.
+    """
+    import random as _r
+    import torchaudio
+    root = os.path.expanduser(root)
+    base = torchaudio.datasets.SPEECHCOMMANDS(
+        root=root, url="speech_commands_v0.02", download=True,
+        subset=_SPLIT[split])
+    idx = list(range(len(base)))
+    _r.Random(seed).shuffle(idx)
+    idx = idx[:n]
+    L = int(round(SR * clip_ms / 1000.0))
+    waves, words = [], []
+    for i in idx:
+        it = base[i]
+        waves.append(_fix_length(it[0], L))
+        words.append(it[2])
+    return torch.stack(waves), words
