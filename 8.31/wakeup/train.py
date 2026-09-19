@@ -127,55 +127,78 @@ def diagnose(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor) -> None:
 # ----------------------------------------------------------------- 스윕
 @torch.no_grad()
 def sweep_frontend(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
-                   on_rates=(0.05, 0.10, 0.15, 0.20, 0.30, 0.50),
-                   compressions=("log",)) -> None:
-    """켜짐률과 압축을 바꿔가며 분리도를 잰다. 학습 없이 답이 나온다.
+                   on_rates=(0.05, 0.10, 0.15, 0.20, 0.30),
+                   min_recall: float = 0.95) -> None:
+    """켜짐률을 바꿔가며 도달 가능한 분리도를 잰다. 학습 없이 답이 나온다.
 
-    최대 AUC 가 이 특징으로 도달 가능한 상한이다. 그게 낮으면 tau 나 START 를
-    아무리 잘 골라도 소용없다 -- 고쳐야 할 곳이 프론트엔드라는 뜻이다.
+    켜짐률마다 START 조건 (k, min_frames) 도 함께 훑는다. 둘은 독립이 아니다 --
+    특징이 성기어지면 START 가 잘 안 뜨고, 그러면 그 발화는 판정 자체가
+    불가능해져 TPR 상한이 된다.
 
-    압축은 기본으로 log 하나만 훑는다. 문턱을 분위수로 잡으면 단조 변환이
-    이진 출력을 바꾸지 못하므로 log 와 sqrt 의 초기 AUC 가 정확히 같다.
-    둘의 차이는 학습 중에만 나타난다(ste_clip 이 도는 스케일이 달라진다).
+    재는 것은 단일 오프셋의 최대 AUC 가 아니라 **간격을 둔 네 시각의 평균**이다.
+    우리에게 필요한 것은 상태 4개이지 제일 좋은 한 순간이 아니다.
+
+    START 가 안 뜬 클립은 양쪽 모두 AUC 에서 뺀다. 음성만 남기면 "START 가
+    떴는가"를 재게 되어 오프셋 0 이 늘 이겨 버린다(실측: 최적 d 가 0).
     """
     from .model import WakeupModel
+    from .search import pick_offsets
     pos = y > 0.5
-    print("\n" + "=" * 74)
-    print("  프론트엔드 스윕 — 어떤 켜짐률에서 특징이 갈리는가")
-    print("=" * 74)
-    print(f"  {'압축':>5} {'목표':>5} {'실제켜짐':>8} {'최대AUC':>8} {'최적d':>6} "
-          f"{'START중앙':>9} {'START σ':>8} {'검출률':>7}")
+    C = cfg.frontend.n_channels
+    print("\n" + "=" * 78)
+    print("  프론트엔드 스윕 — 어느 켜짐률에서 네 시각이 갈리는가")
+    print("=" * 78)
+    print(f"  {'켜짐률':>6} {'START조건':>11} {'검출률':>7} {'음성무시':>8} "
+          f"{'평균AUC':>8} {'최고AUC':>8} {'선택된 tau':>20}")
     best = None
-    for comp in compressions:
-        for r in on_rates:
-            c = copy.deepcopy(cfg)
-            c.frontend.compression = comp
-            c.frontend.init_on_rate = r
-            m = WakeupModel(c).to(wave.device)
-            m.frontend.init_fixed_scale(wave)
-            m.frontend.init_thresholds(wave, on_rate=r)
-            x = m.features(wave)
-            rate = x.mean().item()
+    for r in on_rates:
+        c = copy.deepcopy(cfg)
+        c.frontend.init_on_rate = r
+        m = WakeupModel(c).to(wave.device)
+        m.frontend.init_fixed_scale(wave)
+        m.frontend.init_thresholds(wave, on_rate=r)
+        x = m.features(wave)
+        rate = x.mean().item()
 
-            # START 는 켜짐률에 맞춰 채널의 절반 정도를 요구하는 지점으로 본다
-            kk = max(2, int(round(c.frontend.n_channels * min(0.6, 2 * r))))
-            st, fo = detect_start(x, kk, 2)
-            sp = st[pos & fo].float()
-            keep = fo | (~pos)
-            auc, _ = offset_scores(x[keep], st[keep], y[keep],
-                                   min(x.shape[2] - 1, 60))
-            amax, dbest = float(auc.max()), int(auc.argmax())
-            print(f"  {comp:>5} {r*100:4.0f}% {rate*100:7.1f}% {amax:8.3f} "
-                  f"{dbest:6d} {sp.median():9.1f} {sp.std():8.1f} "
-                  f"{fo[pos].float().mean()*100:6.1f}%")
-            if best is None or amax > best[0]:
-                best = (amax, comp, r, rate, dbest)
-    print("-" * 74)
-    print(f"  최고: {best[1]} 압축, 목표 켜짐률 {best[2]*100:.0f}% "
-          f"(실제 {best[3]*100:.1f}%) -> AUC {best[0]:.3f} at d={best[4]}")
-    print("  * AUC 0.7 이상이면 쓸 만하다. 0.6 아래면 채널 수·대역을 다시 봐야 한다.")
-    print("  * 문턱을 분위수로 잡으므로 log/sqrt 는 초기 이진 출력이 동일하다.")
-    print("=" * 74 + "\n")
+        row = None
+        for mf in (1, 2, 3, 4):
+            for k in range(1, min(C, 9) + 1):
+                st, fo = detect_start(x, k, mf)
+                rec = fo[pos].float().mean().item()
+                if rec < min_recall:
+                    continue
+                # START 가 뜬 클립만 남긴다 -- 안 뜬 음성은 회로에서도 그냥
+                # 통과 못 하므로 공짜 정답이고, 여기 섞으면 측정이 오염된다
+                keep = fo
+                if keep.sum() < 32 or (y[keep] > 0.5).sum() < 8:
+                    continue
+                auc, _ = offset_scores(x[keep], st[keep], y[keep],
+                                       min(x.shape[2] - 1, 60))
+                sel = pick_offsets(auc, c.head.n_states, min_gap=3, min_tau=1)
+                mean_auc = float(auc[sel].mean())
+                if row is None or mean_auc > row[0]:
+                    free = 1.0 - fo[~pos].float().mean().item()
+                    row = (mean_auc, float(auc.max()), k, mf, rec, free, sel)
+        if row is None:
+            print(f"  {rate*100:5.1f}% {'—':>11} {'검출률 미달로 후보 없음':>30}")
+            continue
+        ma, mx, k, mf, rec, free, sel = row
+        print(f"  {rate*100:5.1f}% {f'k{k} x{mf}프레임':>11} {rec*100:6.1f}% "
+              f"{free*100:7.1f}% {ma:8.3f} {mx:8.3f} {str(sel):>20}")
+        if best is None or ma > best[0]:
+            best = (ma, r, k, mf, rec, sel)
+    print("-" * 78)
+    if best:
+        print(f"  최고: 켜짐률 {best[1]*100:.0f}%, START k={best[2]} x{best[3]}프레임, "
+              f"검출률 {best[4]*100:.1f}%")
+        print(f"        tau {best[5]}, 네 시각 평균 AUC {best[0]:.3f}")
+        print(f"\n  python -m wakeup.train --target {cfg.train.target_word} "
+              f"--channels {C} --on-rate {best[1]} --epochs 30 "
+              f"--tag {cfg.train.target_word}_{C}ch_r{int(best[1]*100)}")
+    print("\n  * 평균 AUC 0.7 이상이면 쓸 만하다. 0.6 아래면 채널 수·대역·대상 단어를 다시 본다.")
+    print("  * 검출률은 TPR 상한이다. START 를 놓친 발화는 되살릴 수 없다.")
+    print("  * 음성무시 = START 가 안 뜬 음성 비율. 회로에서 공짜 정답이므로 높을수록 좋다.")
+    print("=" * 78 + "\n")
 
 
 # --------------------------------------------------------------------- 학습
