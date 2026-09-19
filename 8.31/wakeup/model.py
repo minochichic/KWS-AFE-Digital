@@ -110,6 +110,20 @@ class WakeupModel(nn.Module):
         self.refit_k(wave, y)
         self.train(was)
 
+    @torch.no_grad()
+    def balance_k(self, wave: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
+        """학습용 k 를 균형점에 묶는다 (head.balance_k 주석 참고)."""
+        was = self.training
+        self.eval()
+        x = self.features(wave)
+        start, found = self.align(x, jitter=False)
+        xs = gather_states(x, start, self.tau, self.cfg.head.match_window)
+        count = self.head(xs)["count"]
+        keep = found | (y <= 0.5)
+        k = self.head.balance_k(count[keep], y[keep], self.cfg.head.k_max_fpr)
+        self.train(was)
+        return k
+
     # ------------------------------------------------------------- k 재적합
     @torch.no_grad()
     def refit_k(self, wave: torch.Tensor, y: torch.Tensor,

@@ -411,6 +411,7 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         return {"sweep_only": True}
 
     model.init_from_data(w0, y0)
+    model.balance_k(w0, y0)          # 학습은 균형점에서 시작한다
 
     # 2) 타이밍 탐색 — 미분되지 않는 값들
     print("타이밍 탐색:")
@@ -470,7 +471,9 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
             if cfg.head.refit_k_every and step % cfg.head.refit_k_every == 0:
                 model.refit_k(w0, y0)
 
-        model.refit_k(w0, y0)                      # 에폭 끝에 한 번
+        # 평가·체크포인트는 fit_k 가 고른 동작점에서 보되, 학습은 균형점으로
+        # 되돌려 이어간다. 그래야 모든 상태가 계속 기울기를 받는다.
+        model.refit_k(w0, y0)
         va = evaluate(model, ld["val"], dev)
         # FPR 상한을 지킨 것 중 TPR 최대
         sel = (1.0 + va["tpr"]) if va["fpr"] <= cfg.head.k_max_fpr else -va["fpr"]
@@ -486,6 +489,7 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
                        out_dir / "best.pt")
             line += "  *"
         print(line)
+        model.balance_k(w0, y0)          # 학습은 균형점에서 이어간다
 
     # 4) 시험 분할
     ck = torch.load(out_dir / "best.pt", map_location=dev, weights_only=False)

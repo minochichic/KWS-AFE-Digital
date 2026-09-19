@@ -289,3 +289,68 @@ def test_timeout_leaves_room_for_a_usable_wake_pulse():
     assert slack >= cfg.head.min_wake_frames, (
         f"WAKE 폭이 {slack}프레임뿐이다 (최소 {cfg.head.min_wake_frames})")
     assert cfg.head.timeout <= 63
+
+
+def test_fit_k_beats_a_degenerate_starting_point():
+    """퇴화 지점에서 출발해도 더 나은 동작점을 찾아야 한다.
+
+    좌표상승은 한 번에 한 상태만 움직이므로 "강한 상태 하나 + 나머지 무료
+    통과"에서 못 빠져나온다. 균형 시드에서도 출발해 보고 더 나은 쪽을 택한다.
+
+    주의: 모든 상태를 쓰는 것이 목표가 아니다. 한 상태가 FPR 상한을 혼자
+    맞출 수 있으면 나머지를 쓰는 것은 TPR 만 깎는다 -- 그때 k=1 로 두는 것이
+    옳다. 문제는 그 상태들의 형판이 학습되지 않는 것이고, 그건 balance_k 가
+    맡는다.
+    """
+    torch.manual_seed(0)
+    S, C, N = 4, 8, 4000
+    cfg = HeadConfig(n_states=S, tau=[2, 6, 10, 14], timeout=20,
+                     l1_gate=0.0, min_channels=0)
+    h = TemplateHead(cfg, C)
+    with torch.no_grad():
+        h.gate_logit.fill_(1.0)
+
+    y = (torch.arange(N) % 2).float()
+    pos, neg = y > 0.5, y <= 0.5
+    count = torch.empty(N, S)
+    count[pos] = torch.randn(int(pos.sum()), S) + 6.5
+    count[neg] = torch.randn(int(neg.sum()), S) + 3.5
+    count = count.round().clamp(0, C)
+
+    degenerate = torch.tensor([float(C), 1.0, 1.0, 1.0])
+    ok0 = (count >= degenerate.unsqueeze(0)).all(dim=1)
+    tpr0 = ok0[pos].float().mean().item()
+
+    with torch.no_grad():
+        h.k.copy_(degenerate)
+    k = h.fit_k(count, y, max_fpr=0.05)
+    ok = (count >= k.unsqueeze(0)).all(dim=1)
+    tpr, fpr = ok[pos].float().mean().item(), ok[neg].float().mean().item()
+
+    assert fpr <= 0.05 + 1e-6, f"FPR 상한을 못 지켰다 ({fpr:.3f})"
+    assert tpr > tpr0 + 0.2, (
+        f"퇴화 지점({tpr0:.3f})에서 못 빠져나왔다 (TPR {tpr:.3f}, k={k.tolist()})")
+
+
+def test_balance_k_gives_every_state_something_to_do():
+    """학습용 k 는 모든 상태가 기울기를 받도록 고르게 둔다."""
+    torch.manual_seed(0)
+    S, C, N = 4, 8, 4000
+    cfg = HeadConfig(n_states=S, tau=[2, 6, 10, 14], timeout=20,
+                     l1_gate=0.0, min_channels=0)
+    h = TemplateHead(cfg, C)
+    with torch.no_grad():
+        h.gate_logit.fill_(1.0)
+        h.k.copy_(torch.tensor([float(C), 1.0, 1.0, 1.0]))   # 퇴화 상태
+
+    y = (torch.arange(N) % 2).float()
+    count = torch.empty(N, S)
+    count[y > 0.5] = torch.randn(int((y > 0.5).sum()), S) + 6.5
+    count[y <= 0.5] = torch.randn(int((y <= 0.5).sum()), S) + 3.5
+    count = count.round().clamp(0, C)
+
+    k = h.balance_k(count, y, max_fpr=0.05)
+    per_neg = (count >= k.unsqueeze(0)).float()[y <= 0.5].mean(0)
+    assert (k > 1).all(), f"아직 무료 통과인 상태가 있다: {k.tolist()}"
+    assert (per_neg < 0.9).all(), (
+        f"노는 상태가 있다: 음성 통과율 {[round(v,3) for v in per_neg.tolist()]}")

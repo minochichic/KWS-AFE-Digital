@@ -122,6 +122,34 @@ class TemplateHead(nn.Module):
         self.weight.copy_((proto - 0.5) * 2.0 * scale)
         self.gate_logit.fill_(self.cfg.gate_init)
 
+    @torch.no_grad()
+    def balance_k(self, count: torch.Tensor, y: torch.Tensor,
+                  max_fpr: float = 0.05) -> torch.Tensor:
+        """학습용 k — 상태들이 고르게 거르도록 맞춘다.
+
+        fit_k 를 학습 중에 쓰면 되먹임이 생긴다. fit_k 가 어떤 상태를 k=1 로
+        두면 그 상태의 여유 z 가 크게 양수가 되고, soft-min AND 는 가장 약한
+        상태에만 기울기를 보내므로 그 상태는 영영 기울기를 못 받는다. 못 배우니
+        계속 쓸모없고, 쓸모없으니 계속 k=1 이다. 실측에서 s3/s4 의 형판이 끝까지
+        전부 0(아무것도 못 배움)이었다.
+
+        그래서 학습 중에는 "상태들이 독립이라면 각자 max_fpr^(1/S)" 지점에
+        묶어 둔다. 동작점으로 좋아서가 아니라, 모든 상태가 기울기를 받게 하기
+        위해서다. 진짜 동작점은 학습이 끝난 뒤 fit_k 가 고른다.
+        """
+        neg = y <= 0.5
+        if neg.sum() < 8:
+            return self.k.detach().clone()
+        m = self.used_channels()
+        S = count.shape[1]
+        per = max(1e-6, max_fpr) ** (1.0 / max(S, 1))
+        cn = count[neg].float()
+        bal = torch.stack([
+            cn[:, s].quantile(1.0 - per).ceil().clamp(1, max(1, int(m[s].item())))
+            for s in range(S)]).to(self.k.dtype)
+        self.k.copy_(bal)
+        return bal
+
     # ------------------------------------------------------------- k 재적합
     @torch.no_grad()
     def fit_k(self, count: torch.Tensor, y: torch.Tensor,
@@ -133,14 +161,22 @@ class TemplateHead(nn.Module):
         양성이 여유롭게 통과해 버려 다시 올릴 기울기가 사라진다(실측 확인).
         회로에서도 k 는 결국 반올림된 정수이므로 탐색이 정직하다.
 
+        좌표상승은 한 번에 한 상태만 움직이므로 시작점에서 못 빠져나온다.
+        "강한 상태 하나 + 나머지 무료 통과"와 "네 상태가 고르게 거름"은 둘 다
+        FPR 상한을 만족하는데, 전자에서 후자로 가려면 여러 상태를 **동시에**
+        움직여야 한다. 실측에서 계속 전자에 갇혔다(상태별 음성 통과율
+        1.000 / 0.044 / 0.998 / 0.998).
+
+        그래서 균형 잡힌 시드에서도 출발해 보고 더 나은 쪽을 택한다.
+
         count [N, S], y [N] -> 갱신된 k [S]
         """
         m = self.used_channels()
         S = count.shape[1]
-        k = self.k.detach().clone().round().clamp(min=1)
         pos, neg = (y > 0.5), (y <= 0.5)
+        cur = self.k.detach().clone().round().clamp(min=1)
         if pos.sum() == 0 or neg.sum() == 0:
-            return k
+            return cur
 
         def score(kv: torch.Tensor) -> float:
             """FPR 을 상한 아래로 묶고 그 안에서 TPR 을 최대화한다.
@@ -156,24 +192,44 @@ class TemplateHead(nn.Module):
                 return 1.0 + tpr            # 가능 영역: TPR 최대화
             return -fpr                     # 불가능 영역: 일단 FPR 을 낮추는 쪽으로
 
-        best = score(k)
-        for _ in range(sweeps):
-            moved = False
-            for s in range(S):
-                hi = int(m[s].item())
-                # k=0 은 "0개 이상 일치"라 무조건 통과다. 회로에서는 비교기와
-                # 플립플롭을 그대로 먹으면서 판정에 기여하지 않고, V_TH 가
-                # 음수(= 만들 수 없는 전압)가 된다. 후보에서 뺀다.
-                for cand in range(1, hi + 1):
-                    if cand == int(k[s].item()):
-                        continue
-                    trial = k.clone()
-                    trial[s] = cand
-                    sc = score(trial)
-                    if sc > best + 1e-9:
-                        best, k, moved = sc, trial, True
-            if not moved:
-                break
+        def climb(seed: torch.Tensor):
+            kk = seed.clone()
+            bb = score(kk)
+            for _ in range(sweeps):
+                moved = False
+                for s in range(S):
+                    hi = int(m[s].item())
+                    # k=0 은 "0개 이상 일치"라 무조건 통과다. 회로에서는 비교기와
+                    # 플립플롭을 그대로 먹으면서 판정에 기여하지 않고, V_TH 가
+                    # 음수(= 만들 수 없는 전압)가 된다. 후보에서 뺀다.
+                    for cand in range(1, hi + 1):
+                        if cand == int(kk[s].item()):
+                            continue
+                        trial = kk.clone()
+                        trial[s] = cand
+                        sc = score(trial)
+                        if sc > bb + 1e-9:
+                            bb, kk, moved = sc, trial, True
+                if not moved:
+                    break
+            return bb, kk
+
+        # 균형 시드. 상태들이 독립이라면 각자 max_fpr^(1/S) 를 내면 곱해서
+        # 상한에 맞는다. 그 지점의 k 를 음성 count 분포에서 바로 읽는다.
+        # 이게 없으면 "강한 상태 하나 + 나머지 무료 통과"에서 못 빠져나온다.
+        per = max(1e-6, max_fpr) ** (1.0 / max(S, 1))
+        cn = count[neg].float()
+        bal = torch.stack([
+            cn[:, s].quantile(1.0 - per).ceil().clamp(1, max(1, int(m[s].item())))
+            for s in range(S)]).to(cur.dtype)
+
+        # 양성을 거의 다 통과시키는 느슨한 시드도 하나
+        cp = count[pos].float()
+        loose = torch.stack([cp[:, s].quantile(0.10).floor()
+                             for s in range(S)]).clamp(min=1).to(cur.dtype)
+
+        best, k = max((climb(sd) for sd in (cur, bal, loose)),
+                      key=lambda t: t[0])
         self.k.copy_(k.to(self.k.dtype))
         return k
 
