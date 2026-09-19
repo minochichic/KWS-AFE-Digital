@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import time
 from dataclasses import asdict
@@ -123,9 +124,64 @@ def diagnose(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor) -> None:
     print("=" * 62 + "\n")
 
 
+# ----------------------------------------------------------------- 스윕
+@torch.no_grad()
+def sweep_frontend(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
+                   on_rates=(0.05, 0.10, 0.15, 0.20, 0.30, 0.50),
+                   compressions=("log",)) -> None:
+    """켜짐률과 압축을 바꿔가며 분리도를 잰다. 학습 없이 답이 나온다.
+
+    최대 AUC 가 이 특징으로 도달 가능한 상한이다. 그게 낮으면 tau 나 START 를
+    아무리 잘 골라도 소용없다 -- 고쳐야 할 곳이 프론트엔드라는 뜻이다.
+
+    압축은 기본으로 log 하나만 훑는다. 문턱을 분위수로 잡으면 단조 변환이
+    이진 출력을 바꾸지 못하므로 log 와 sqrt 의 초기 AUC 가 정확히 같다.
+    둘의 차이는 학습 중에만 나타난다(ste_clip 이 도는 스케일이 달라진다).
+    """
+    from .model import WakeupModel
+    pos = y > 0.5
+    print("\n" + "=" * 74)
+    print("  프론트엔드 스윕 — 어떤 켜짐률에서 특징이 갈리는가")
+    print("=" * 74)
+    print(f"  {'압축':>5} {'목표':>5} {'실제켜짐':>8} {'최대AUC':>8} {'최적d':>6} "
+          f"{'START중앙':>9} {'START σ':>8} {'검출률':>7}")
+    best = None
+    for comp in compressions:
+        for r in on_rates:
+            c = copy.deepcopy(cfg)
+            c.frontend.compression = comp
+            c.frontend.init_on_rate = r
+            m = WakeupModel(c).to(wave.device)
+            m.frontend.init_fixed_scale(wave)
+            m.frontend.init_thresholds(wave, on_rate=r)
+            x = m.features(wave)
+            rate = x.mean().item()
+
+            # START 는 켜짐률에 맞춰 채널의 절반 정도를 요구하는 지점으로 본다
+            kk = max(2, int(round(c.frontend.n_channels * min(0.6, 2 * r))))
+            st, fo = detect_start(x, kk, 2)
+            sp = st[pos & fo].float()
+            keep = fo | (~pos)
+            auc, _ = offset_scores(x[keep], st[keep], y[keep],
+                                   min(x.shape[2] - 1, 60))
+            amax, dbest = float(auc.max()), int(auc.argmax())
+            print(f"  {comp:>5} {r*100:4.0f}% {rate*100:7.1f}% {amax:8.3f} "
+                  f"{dbest:6d} {sp.median():9.1f} {sp.std():8.1f} "
+                  f"{fo[pos].float().mean()*100:6.1f}%")
+            if best is None or amax > best[0]:
+                best = (amax, comp, r, rate, dbest)
+    print("-" * 74)
+    print(f"  최고: {best[1]} 압축, 목표 켜짐률 {best[2]*100:.0f}% "
+          f"(실제 {best[3]*100:.1f}%) -> AUC {best[0]:.3f} at d={best[4]}")
+    print("  * AUC 0.7 이상이면 쓸 만하다. 0.6 아래면 채널 수·대역을 다시 봐야 한다.")
+    print("  * 문턱을 분위수로 잡으므로 log/sqrt 는 초기 이진 출력이 동일하다.")
+    print("=" * 74 + "\n")
+
+
 # --------------------------------------------------------------------- 학습
 def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
-          diag: bool = False, allow_infeasible: bool = False) -> Dict:
+          diag: bool = False, allow_infeasible: bool = False,
+          sweep: bool = False) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -143,6 +199,10 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
     w0, y0 = _gather_init_batch(ld["train"], init_n, dev)
     print(f"초기화 배치 {w0.shape[0]}개 (양성 {int(y0.sum())}개), "
           f"{time.time()-t0:.1f}s")
+    if sweep:
+        sweep_frontend(cfg, w0, y0)
+        return {"sweep_only": True}
+
     model.init_from_data(w0, y0)
 
     # 2) 타이밍 탐색 — 미분되지 않는 값들
@@ -248,6 +308,11 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--sweep-frontend", action="store_true",
+                   help="켜짐률·압축을 바꿔가며 분리도만 재고 끝낸다")
+    p.add_argument("--on-rate", type=float, default=0.0,
+                   help="문턱 초기화의 목표 켜짐률 (0 = 채널 평균)")
+    p.add_argument("--compression", default="log", choices=("log", "sqrt"))
     p.add_argument("--diagnose", action="store_true",
                    help="초기화와 타이밍 탐색까지만 하고 진단을 찍는다")
     p.add_argument("--allow-infeasible", action="store_true",
@@ -257,6 +322,8 @@ def main(argv=None) -> None:
     cfg = Config()
     cfg.frontend.n_channels = a.channels
     cfg.frontend.ste_clip = a.ste_clip
+    cfg.frontend.init_on_rate = a.on_rate
+    cfg.frontend.compression = a.compression
     cfg.frontend.filterbank = a.filterbank
     cfg.frontend.spice_matrix_path = a.spice_matrix
     cfg.head.n_states = a.states
@@ -280,7 +347,8 @@ def main(argv=None) -> None:
     cfg.validate()
 
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
-    train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible)
+    train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible,
+          sweep=a.sweep_frontend)
 
 
 if __name__ == "__main__":

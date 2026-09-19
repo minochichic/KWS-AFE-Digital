@@ -130,7 +130,22 @@ class Frontend(nn.Module):
         self.scale_ready.fill_(True)
 
     @torch.no_grad()
-    def init_thresholds(self, waves: torch.Tensor) -> None:
-        """채널별 정규화 포락선의 평균으로 초기화 (Cerutti IV-A)."""
+    def init_thresholds(self, waves: torch.Tensor,
+                        on_rate: Optional[float] = None) -> None:
+        """문턱 초기화.
+
+        on_rate 가 주어지면 채널마다 그 비율만큼만 켜지는 분위수로 둔다.
+        없으면 채널 평균 (Cerutti IV-A).
+
+        평균은 로그 압축 뒤 분포 한가운데라 켜짐률이 절반이 된다. 실제 음성에서
+        그러면 이진 이미지가 무작위에 가까워져 형판이 아무것도 못 가른다
+        (실측: 켜짐률 57%, 최대 AUC 0.559).
+        """
         env = self.envelopes(waves)                      # [N, C, T]
-        self.threshold.copy_(env.mean(dim=(0, 2)))
+        if on_rate is None:
+            on_rate = self.cfg.init_on_rate
+        if on_rate and 0.0 < on_rate < 1.0:
+            flat = env.transpose(0, 1).reshape(env.shape[1], -1)
+            self.threshold.copy_(torch.quantile(flat, 1.0 - on_rate, dim=1))
+        else:
+            self.threshold.copy_(env.mean(dim=(0, 2)))

@@ -96,7 +96,7 @@ class WakeupModel(nn.Module):
         was = self.training
         self.eval()
         self.frontend.init_fixed_scale(wave)
-        self.frontend.init_thresholds(wave)
+        self.frontend.init_thresholds(wave)   # cfg.init_on_rate 를 따른다
         x = self.features(wave)
         start, found = self.align(x, jitter=False)
         xs = gather_states(x, start, self.tau)
