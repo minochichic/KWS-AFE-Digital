@@ -83,7 +83,7 @@ class TemplateHead(nn.Module):
         g, s = self.ternary()
         agree = g.unsqueeze(0) * (0.5 + s.unsqueeze(0) * (x - 0.5))
         count = agree.sum(dim=2)
-        k = self.k.round().clamp(min=0)
+        k = self.k.round().clamp(min=1)
         pass_s = (count >= k.unsqueeze(0)).float()              # [B, S]
         return {"wake": pass_s.prod(dim=1), "pass_s": pass_s, "count": count}
 
@@ -122,7 +122,7 @@ class TemplateHead(nn.Module):
         """
         m = self.used_channels()
         S = count.shape[1]
-        k = self.k.detach().clone().round().clamp(min=0)
+        k = self.k.detach().clone().round().clamp(min=1)
         pos, neg = (y > 0.5), (y <= 0.5)
         if pos.sum() == 0 or neg.sum() == 0:
             return k
@@ -146,7 +146,10 @@ class TemplateHead(nn.Module):
             moved = False
             for s in range(S):
                 hi = int(m[s].item())
-                for cand in range(0, hi + 1):
+                # k=0 은 "0개 이상 일치"라 무조건 통과다. 회로에서는 비교기와
+                # 플립플롭을 그대로 먹으면서 판정에 기여하지 않고, V_TH 가
+                # 음수(= 만들 수 없는 전압)가 된다. 후보에서 뺀다.
+                for cand in range(1, hi + 1):
                     if cand == int(k[s].item()):
                         continue
                     trial = k.clone()
@@ -176,7 +179,7 @@ class TemplateHead(nn.Module):
         g, s = self.ternary()
         M = (g * s).round().to(torch.int8)          # +1 / -1 / 0(=X)
         m = g.sum(dim=1)
-        k = self.k.round().clamp(min=0)
+        k = self.k.round().clamp(min=1)
         # V_TH(s) = VDD * (k - 0.5) / m(s). m 이 상태마다 달라 공유할 수 없다.
         vth = torch.where(m > 0, vdd * (k - 0.5) / m.clamp(min=1),
                           torch.zeros_like(m))

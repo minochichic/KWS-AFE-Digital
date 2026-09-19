@@ -153,7 +153,7 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
 def search_timing(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor,
                   candidates: Optional[Sequence[int]] = None,
                   min_frames_cands: Optional[Sequence[int]] = None,
-                  min_recall: float = 0.98, min_gap: int = 3,
+                  min_recall: float = 0.95, min_gap: int = 3,
                   verbose: bool = False) -> Dict[str, object]:
     """START 문턱 k 와 tau(s) 를 함께 고른다.
 
@@ -167,6 +167,10 @@ def search_timing(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor,
 
     검출률은 하드 필터로 쓴다. START 를 놓치면 그 발화는 판정 자체가 불가능해
     아무리 형판이 좋아도 되살릴 수 없기 때문이다.
+
+    min_recall 기본값은 스윕(train.sweep_words)과 반드시 같아야 한다. 0.98 로
+    두었다가 스윕이 95.6% 로 통과시킨 sheila 를 학습기가 전부 탈락시키고 fallback
+    으로 가 START 조건이 k=1 이 된 적이 있다.
     """
     C = model.cfg.frontend.n_channels
     cands = list(candidates) if candidates else list(range(1, C + 1))
