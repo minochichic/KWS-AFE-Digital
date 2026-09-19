@@ -270,3 +270,22 @@ def test_checkpoint_round_trip():
     b.load_state_dict(a.state_dict())          # strict=True
     assert bool(b.frontend.scale_ready), "스케일 준비 상태가 안 넘어왔다"
     assert torch.equal(a.hard(wave)["wake"], b.hard(wave)["wake"])
+
+
+def test_timeout_leaves_room_for_a_usable_wake_pulse():
+    """WAKE 폭 = (timeout - tau[-1]) x 10 ms. 한 프레임이면 tau 가 조금만
+    밀려도 펄스가 사라진다. 실측에서 timeout=44, tau4=43 으로 10 ms 가 나왔다."""
+    from wakeup.search import search_tau
+    from wakeup.synthetic import make_batch
+    torch.manual_seed(0)
+    cfg = Config()
+    cfg.frontend.n_channels = 8
+    m = WakeupModel(cfg)
+    x, y, _ = make_batch(256, cfg.head.tau, seed=0)
+    m.frontend.init_fixed_scale(x)
+    m.frontend.init_thresholds(x)
+    search_tau(m, x, y)
+    slack = cfg.head.timeout - cfg.head.tau[-1]
+    assert slack >= cfg.head.min_wake_frames, (
+        f"WAKE 폭이 {slack}프레임뿐이다 (최소 {cfg.head.min_wake_frames})")
+    assert cfg.head.timeout <= 63

@@ -32,6 +32,7 @@ from .model import detect_start, gather_states
 def evaluate(model: WakeupModel, loader, device: str, limit: int = 0) -> Dict[str, float]:
     model.eval()
     tp = fp = n_pos = n_neg = n_found_pos = 0
+    ps_pos = ps_neg = None
     for i, (w, y) in enumerate(loader):
         if limit and i * loader.batch_size >= limit:
             break
@@ -42,11 +43,18 @@ def evaluate(model: WakeupModel, loader, device: str, limit: int = 0) -> Dict[st
         tp += wake[p].sum().item(); n_pos += p.sum().item()
         fp += wake[q].sum().item(); n_neg += q.sum().item()
         n_found_pos += found[p].sum().item()
+        sp = out["pass_s"]
+        a, b = sp[p].sum(0), sp[q].sum(0)
+        ps_pos = a if ps_pos is None else ps_pos + a
+        ps_neg = b if ps_neg is None else ps_neg + b
     return {
         "tpr": tp / max(n_pos, 1),
         "fpr": fp / max(n_neg, 1),
         "start_recall": n_found_pos / max(n_pos, 1),
         "n_pos": n_pos, "n_neg": n_neg,
+        # 상태별 통과율. 음성 통과율이 1.0 에 가까우면 그 상태는 놀고 있다.
+        "pass_pos": (ps_pos / max(n_pos, 1)).tolist() if ps_pos is not None else [],
+        "pass_neg": (ps_neg / max(n_neg, 1)).tolist() if ps_neg is not None else [],
     }
 
 
@@ -379,7 +387,8 @@ def sweep_structure(cfg: Config, *, n_clips: int = 12000,
 # --------------------------------------------------------------------- 학습
 def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           diag: bool = False, allow_infeasible: bool = False,
-          sweep: bool = False, min_gap: int = 3) -> Dict:
+          sweep: bool = False, min_gap: int = 3,
+          min_recall: float = 0.90) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -406,7 +415,7 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
     # 2) 타이밍 탐색 — 미분되지 않는 값들
     print("타이밍 탐색:")
     r = search_timing(model, w0, y0, min_frames_cands=(1, 2, 3),
-                      min_gap=min_gap, verbose=True)
+                      min_gap=min_gap, min_recall=min_recall, verbose=True)
     print(f"  -> start_k {r['k']} x{r['min_frames']}프레임, tau {r['tau']}, "
           f"timeout {cfg.head.timeout}")
 
@@ -439,11 +448,16 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         {"params": model.frontend.parameters(), "lr": cfg.train.lr_threshold},
     ], weight_decay=cfg.train.weight_decay)
 
+    l1_target = cfg.head.l1_gate
+    warm = int(cfg.train.epochs * cfg.head.l1_warmup_frac)
+    print(f"L1 {l1_target} — 처음 {warm}에폭은 끈다 (형판이 자리잡기 전에 "
+          f"채널을 뜯지 않도록)")
     best, hist, step = -1.0, [], 0
     out_dir = Path(cfg.out_dir) / cfg.tag
     out_dir.mkdir(parents=True, exist_ok=True)
 
     for ep in range(cfg.train.epochs):
+        model.head.cfg.l1_gate = 0.0 if ep < warm else l1_target
         model.train()
         agg = {"loss": 0.0, "bce": 0.0, "n": 0}
         for w, y in ld["train"]:
@@ -480,6 +494,11 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
     print(f"\n시험 분할: TPR {te['tpr']:.3f}  FPR {te['fpr']:.3f}  "
           f"START 재현율 {te['start_recall']:.3f}  "
           f"(양성 {te['n_pos']}, 음성 {te['n_neg']})")
+    if te["pass_neg"]:
+        print("  상태별 통과율 (양성 / 음성) — 음성이 1.0 에 가까우면 그 상태는 논다")
+        for i, (a, b) in enumerate(zip(te["pass_pos"], te["pass_neg"]), 1):
+            flag = "   <- 기여 없음" if b > 0.9 else ""
+            print(f"    s{i}: {a:.3f} / {b:.3f}{flag}")
 
     from .export import write_report
     rep = write_report(model, out_dir, test=te, history=hist)
@@ -504,6 +523,9 @@ def main(argv=None) -> None:
     p.add_argument("--min-gap", type=int, default=3,
                    help="상태 간 최소 시각 간격. 좁으면 상태가 상관된다")
     p.add_argument("--max-fpr", type=float, default=0.05)
+    p.add_argument("--min-recall", type=float, default=0.90,
+                   help="START 검출률 하한. 이 값이 TPR 상한이 된다")
+    p.add_argument("--l1-warmup", type=float, default=0.35)
     p.add_argument("--ste-clip", type=float, default=0.03)
     p.add_argument("--filterbank", default="mel", choices=("mel", "spice"))
     p.add_argument("--spice-matrix", default="")
@@ -542,6 +564,7 @@ def main(argv=None) -> None:
     cfg.head.l1_gate = a.l1
     cfg.head.min_channels = a.min_channels
     cfg.head.match_window = a.match_window
+    cfg.head.l1_warmup_frac = a.l1_warmup
     cfg.head.k_max_fpr = a.max_fpr
     cfg.train.target_word = a.target
     cfg.train.epochs = a.epochs
@@ -566,7 +589,8 @@ def main(argv=None) -> None:
         return
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
     train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible,
-          sweep=a.sweep_frontend, min_gap=a.min_gap)
+          sweep=a.sweep_frontend, min_gap=a.min_gap,
+          min_recall=a.min_recall)
 
 
 if __name__ == "__main__":

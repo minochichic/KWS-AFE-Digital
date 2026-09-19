@@ -94,7 +94,10 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
     x, start, y_ = x[keep], start[keep], y[keep]
 
     # START 이후 남는 길이. timeout 은 tau[-1] 보다 커야 하므로 그만큼 여유를 둔다
-    max_off = min(T - 1 - int(start.float().median().item()), cfg.head.timeout - 1)
+    # timeout 이 63 을 넘을 수 없고 WAKE 폭도 확보해야 하므로 tau 상한을 줄인다
+    mw = cfg.head.min_wake_frames
+    max_off = min(T - 1 - int(start.float().median().item()),
+                  cfg.head.timeout - mw, 63 - mw)
     auc, _ = offset_scores(x, start, y_, max_off)
     tau = pick_offsets(auc, S, min_gap=min_gap, min_tau=1, max_tau=max_off)
 
@@ -130,7 +133,8 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
 
     # 확정. timeout 도 함께 맞춘다 (tau[-1] 보다 크고 63 이하)
     cfg.head.tau = list(tau)
-    cfg.head.timeout = min(63, max(tau[-1] + 1, cfg.head.timeout))
+    cfg.head.timeout = min(63, max(tau[-1] + cfg.head.min_wake_frames,
+                                   cfg.head.timeout))
     model.tau = torch.tensor(tau, dtype=torch.long, device=x.device)
     cfg.head.validate(cfg.frontend)
 
@@ -153,7 +157,7 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
 def search_timing(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor,
                   candidates: Optional[Sequence[int]] = None,
                   min_frames_cands: Optional[Sequence[int]] = None,
-                  min_recall: float = 0.95, min_gap: int = 3,
+                  min_recall: float = 0.90, min_gap: int = 3,
                   verbose: bool = False) -> Dict[str, object]:
     """START 문턱 k 와 tau(s) 를 함께 고른다.
 
