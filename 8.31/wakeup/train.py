@@ -300,6 +300,82 @@ def sweep_words(cfg: Config, words: Sequence[str], *, n_clips: int = 12000,
     print("=" * 84 + "\n")
 
 
+# ------------------------------------------------------- 구조(상태 수) 스윕
+@torch.no_grad()
+def sweep_structure(cfg: Config, *, n_clips: int = 12000,
+                    states=(2, 3, 4, 6), gaps=(3, 6, 10),
+                    min_recall: float = 0.95) -> None:
+    """상태 수와 시각 간격을 훑는다. 이건 곧 보드 크기다.
+
+    상태 하나가 비교기 1개 + 플립플롭 1개 + 저항 한 벌이다. 네 시각이 모두
+    START 직후에 몰린다면 상태들이 사실상 같은 구간을 보는 것이므로, 더 적은
+    상태로 같은 성능이 나올 수 있다.
+
+    평균 AUC 만 보면 안 된다. WAKE 는 AND 라 가장 약한 상태가 결과를 정하므로
+    **최소 AUC** 가 더 정직한 예측이다.
+    """
+    from . import data as D
+    from .model import WakeupModel
+    from .search import pick_offsets
+    from .ste import step_ste
+
+    dev = cfg.train.device
+    if dev == "cuda" and not torch.cuda.is_available():
+        dev = "cpu"
+    t0 = time.time()
+    wave, labels = D.raw_batch(cfg.data_root, "train", n_clips,
+                               seed=cfg.train.seed)
+    m = WakeupModel(copy.deepcopy(cfg)).to(dev)
+    parts = []
+    for i in range(0, wave.shape[0], 1024):
+        w = wave[i:i + 1024].to(dev)
+        if i == 0:
+            m.frontend.init_fixed_scale(w)
+        parts.append(m.frontend.envelopes(w).cpu())
+    env = torch.cat(parts)
+    del wave, parts
+    y = torch.tensor([1.0 if l == cfg.train.target_word else 0.0 for l in labels])
+    print(f"클립 {len(labels)}개, 양성 {int(y.sum())}개, {time.time()-t0:.0f}s\n")
+
+    # 켜짐률과 START 는 cfg 에 정해진 것으로 고정하고 구조만 본다
+    C = env.shape[1]
+    flat = env.transpose(0, 1).reshape(C, -1)
+    r = cfg.frontend.init_on_rate or 0.15
+    th = torch.quantile(flat, 1.0 - r, dim=1).view(1, -1, 1)
+    x = (env >= th).float()
+
+    best_start = None
+    for mf in (1, 2, 3, 4):
+        for k in range(1, min(C, 9) + 1):
+            st, fo = detect_start(x, k, mf)
+            rec = fo[y > 0.5].float().mean().item()
+            if rec >= min_recall and (best_start is None or rec > best_start[2]):
+                best_start = (k, mf, rec, st, fo)
+    if best_start is None:
+        print("검출률을 맞추는 START 조건이 없다."); return
+    k, mf, rec, st, fo = best_start
+    auc, _ = offset_scores(x[fo], st[fo], y[fo], min(x.shape[2] - 1, 60))
+
+    print("=" * 76)
+    print(f"  구조 스윕 — '{cfg.train.target_word}', {C}채널, 켜짐률 {r*100:.0f}%, "
+          f"START k{k} x{mf} (검출률 {rec*100:.1f}%)")
+    print("=" * 76)
+    print(f"  {'상태':>4} {'간격':>4} {'평균AUC':>8} {'최소AUC':>8} {'범위':>6} "
+          f"{'비교기':>6} {'F/F':>4} {'선택된 tau':>26}")
+    for ns in states:
+        for g in gaps:
+            sel = pick_offsets(auc, ns, min_gap=g, min_tau=1)
+            if len(sel) < ns:
+                continue
+            a = auc[sel]
+            print(f"  {ns:>4} {g:>4} {float(a.mean()):8.3f} {float(a.min()):8.3f} "
+                  f"{sel[-1]-sel[0]:5d}f {ns:>6} {ns:>4} {str(sel):>26}")
+    print("-" * 76)
+    print("  * WAKE 는 AND 다. 가장 약한 상태가 결과를 정하므로 최소 AUC 를 보라.")
+    print("  * 상태 하나 = 비교기 1 + 플립플롭 1 + 저항 한 벌. 이게 보드 크기다.")
+    print("=" * 76 + "\n")
+
+
 # --------------------------------------------------------------------- 학습
 def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           diag: bool = False, allow_infeasible: bool = False,
@@ -430,6 +506,8 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--sweep-structure", action="store_true",
+                   help="상태 수와 시각 간격을 훑는다 (= 보드 크기)")
     p.add_argument("--sweep-words", default="",
                    help="대상 단어 비교. 쉼표로 나열하거나 auto")
     p.add_argument("--sweep-frontend", action="store_true",
@@ -470,6 +548,9 @@ def main(argv=None) -> None:
     cfg.tag = a.tag or f"{a.target}_{a.channels}ch_s{a.states}"
     cfg.validate()
 
+    if a.sweep_structure:
+        sweep_structure(cfg)
+        return
     if a.sweep_words:
         words = (WORD_CANDIDATES if a.sweep_words == "auto"
                  else tuple(w.strip() for w in a.sweep_words.split(",")))
