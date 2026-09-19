@@ -332,8 +332,13 @@ def test_fit_k_beats_a_degenerate_starting_point():
         f"퇴화 지점({tpr0:.3f})에서 못 빠져나왔다 (TPR {tpr:.3f}, k={k.tolist()})")
 
 
-def test_balance_k_gives_every_state_something_to_do():
-    """학습용 k 는 모든 상태가 기울기를 받도록 고르게 둔다."""
+def test_balance_k_keeps_both_classes_on_both_sides():
+    """학습용 k 는 양성도 음성도 양쪽에 질량이 남는 지점이어야 한다.
+
+    음성 분포만 보고 잡으면 k 가 채널 수까지 올라가고(실측 [9,12,16,16]),
+    k=16 은 16채널 전부 일치라 양성도 거의 못 넘는다. 그러면 기울기에 정보가
+    없어 손실이 평평해진다(실측: 30에폭 내내 1.83~1.84).
+    """
     torch.manual_seed(0)
     S, C, N = 4, 8, 4000
     cfg = HeadConfig(n_states=S, tau=[2, 6, 10, 14], timeout=20,
@@ -350,10 +355,34 @@ def test_balance_k_gives_every_state_something_to_do():
     count = count.round().clamp(0, C)
 
     k = h.balance_k(count, y, max_fpr=0.05)
-    per_neg = (count >= k.unsqueeze(0)).float()[y <= 0.5].mean(0)
+    ok = (count >= k.unsqueeze(0)).float()
+    tp, fp = ok[y > 0.5].mean(0), ok[y <= 0.5].mean(0)
     assert (k > 1).all(), f"아직 무료 통과인 상태가 있다: {k.tolist()}"
-    assert (per_neg < 0.9).all(), (
-        f"노는 상태가 있다: 음성 통과율 {[round(v,3) for v in per_neg.tolist()]}")
+    assert (tp > 0.5).all(), (
+        f"양성이 못 넘는 상태가 있다: TPR {[round(v,3) for v in tp.tolist()]}, "
+        f"k={k.tolist()}")
+    assert (fp < 0.5).all(), (
+        f"음성을 못 거르는 상태가 있다: FPR {[round(v,3) for v in fp.tolist()]}")
+
+
+def test_balance_k_survives_a_skewed_negative_distribution():
+    """음성 count 가 높은 쪽에 몰려도 k 가 채널 수까지 올라가면 안 된다."""
+    torch.manual_seed(1)
+    S, C, N = 2, 16, 2000
+    cfg = HeadConfig(n_states=S, tau=[2, 8], timeout=16, l1_gate=0.0,
+                     min_channels=0)
+    h = TemplateHead(cfg, C)
+    with torch.no_grad():
+        h.gate_logit.fill_(1.0)
+    y = (torch.arange(N) % 5 == 0).float()             # 양성 20%
+    count = torch.empty(N, S)
+    count[y > 0.5] = torch.randn(int((y > 0.5).sum()), S) * 0.8 + 15.0
+    count[y <= 0.5] = torch.randn(int((y <= 0.5).sum()), S) * 0.8 + 13.8
+    count = count.round().clamp(0, C)
+    k = h.balance_k(count, y, max_fpr=0.05)
+    tp = (count >= k.unsqueeze(0)).float()[y > 0.5].mean(0)
+    assert (k < C).all(), f"k 가 채널 수까지 올라갔다: {k.tolist()}"
+    assert (tp > 0.4).all(), f"양성 통과율이 너무 낮다: {tp.tolist()}"
 
 
 def test_start_recall_survives_training_when_theta_is_frozen():

@@ -125,30 +125,44 @@ class TemplateHead(nn.Module):
     @torch.no_grad()
     def balance_k(self, count: torch.Tensor, y: torch.Tensor,
                   max_fpr: float = 0.05) -> torch.Tensor:
-        """학습용 k — 상태들이 고르게 거르도록 맞춘다.
+        """학습용 k — 상태마다 양성과 음성을 가장 잘 가르는 지점.
 
         fit_k 를 학습 중에 쓰면 되먹임이 생긴다. fit_k 가 어떤 상태를 k=1 로
         두면 그 상태의 여유 z 가 크게 양수가 되고, soft-min AND 는 가장 약한
-        상태에만 기울기를 보내므로 그 상태는 영영 기울기를 못 받는다. 못 배우니
-        계속 쓸모없고, 쓸모없으니 계속 k=1 이다. 실측에서 s3/s4 의 형판이 끝까지
-        전부 0(아무것도 못 배움)이었다.
+        상태에만 기울기를 보내므로 그 상태는 영영 기울기를 못 받는다.
 
-        그래서 학습 중에는 "상태들이 독립이라면 각자 max_fpr^(1/S)" 지점에
-        묶어 둔다. 동작점으로 좋아서가 아니라, 모든 상태가 기울기를 받게 하기
-        위해서다. 진짜 동작점은 학습이 끝난 뒤 fit_k 가 고른다.
+        그렇다고 음성 분포만 보고 "각자 max_fpr^(1/S)" 로 잡아도 안 된다.
+        음성 count 가 높은 쪽에 몰려 있으면 k 가 채널 수까지 올라가고
+        (실측: [9, 12, 16, 16]), k=16 은 16채널 전부 일치라 양성도 거의 못
+        넘는다. 그러면 양성마다 손실이 9 쯤 되어 전체가 1.84 에서 평평해진다.
+
+        그래서 상태별로 TPR_s - FPR_s (Youden J) 를 최대화하는 정수를 고른다.
+        양쪽 분포에 모두 질량이 남는 지점이라 기울기에 정보가 실린다. 동작점
+        으로 좋아서가 아니다 -- 진짜 동작점은 학습이 끝난 뒤 fit_k 가 고른다.
         """
-        neg = y <= 0.5
-        if neg.sum() < 8:
+        pos, neg = y > 0.5, y <= 0.5
+        if pos.sum() < 4 or neg.sum() < 4:
             return self.k.detach().clone()
         m = self.used_channels()
         S = count.shape[1]
-        per = max(1e-6, max_fpr) ** (1.0 / max(S, 1))
-        cn = count[neg].float()
-        bal = torch.stack([
-            cn[:, s].quantile(1.0 - per).ceil().clamp(1, max(1, int(m[s].item())))
-            for s in range(S)]).to(self.k.dtype)
-        self.k.copy_(bal)
-        return bal
+        cp, cn = count[pos].float(), count[neg].float()
+        out = torch.empty(S, dtype=self.k.dtype, device=self.k.device)
+        for s in range(S):
+            hi = max(1, int(m[s].item()))
+            cands = torch.arange(1, hi + 1, device=count.device).float()
+            tpr = (cp[:, s].unsqueeze(1) >= cands.unsqueeze(0)).float().mean(0)
+            fpr = (cn[:, s].unsqueeze(1) >= cands.unsqueeze(0)).float().mean(0)
+            out[s] = cands[int(torch.argmax(tpr - fpr))]
+        self.k.copy_(out)
+        return out
+
+    @torch.no_grad()
+    def state_rates(self, count: torch.Tensor, y: torch.Tensor):
+        """현재 k 에서 상태별 (TPR_s, FPR_s). 학습 기준점이 쓸 만한지 본다."""
+        k = self.k.detach().round().clamp(min=1).unsqueeze(0)
+        ok = (count >= k).float()
+        pos, neg = y > 0.5, y <= 0.5
+        return ok[pos].mean(0), ok[neg].mean(0)
 
     # ------------------------------------------------------------- k 재적합
     @torch.no_grad()

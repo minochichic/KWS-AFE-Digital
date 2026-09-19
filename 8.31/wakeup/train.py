@@ -445,7 +445,12 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
     # 학습용 k 는 여기서 한 번 잡고 학습 내내 고정한다. 에폭마다 다시 잡으면
     # 동작점이 계속 흔들려 손실이 에폭 경계마다 튄다.
     k_train = model.balance_k(w0, y0).clone()
-    print(f"학습용 k (균형점) = {[int(v) for v in k_train]}")
+    tp_s, fp_s = model._last_rates
+    print(f"학습용 k = {[int(v) for v in k_train]}  "
+          f"(상태별 TPR/FPR: "
+          + ", ".join(f"{a:.2f}/{b:.2f}" for a, b in zip(tp_s, fp_s)) + ")")
+    if (tp_s < 0.3).any():
+        print("  ! 어떤 상태는 양성도 거의 못 넘는다 — 그 상태의 기울기는 쓸모없다.")
 
     pw = cfg.train.pos_weight or max(
         1.0, float((y0 <= 0.5).sum() / max(int(y0.sum()), 1)))

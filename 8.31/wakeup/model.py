@@ -121,6 +121,7 @@ class WakeupModel(nn.Module):
         count = self.head(xs)["count"]
         keep = found | (y <= 0.5)
         k = self.head.balance_k(count[keep], y[keep], self.cfg.head.k_max_fpr)
+        self._last_rates = self.head.state_rates(count[keep], y[keep])
         self.train(was)
         return k
 
