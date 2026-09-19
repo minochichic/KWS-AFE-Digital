@@ -379,7 +379,7 @@ def sweep_structure(cfg: Config, *, n_clips: int = 12000,
 # --------------------------------------------------------------------- 학습
 def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           diag: bool = False, allow_infeasible: bool = False,
-          sweep: bool = False) -> Dict:
+          sweep: bool = False, min_gap: int = 3) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -405,7 +405,8 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
 
     # 2) 타이밍 탐색 — 미분되지 않는 값들
     print("타이밍 탐색:")
-    r = search_timing(model, w0, y0, min_frames_cands=(1, 2, 3), verbose=True)
+    r = search_timing(model, w0, y0, min_frames_cands=(1, 2, 3),
+                      min_gap=min_gap, verbose=True)
     print(f"  -> start_k {r['k']} x{r['min_frames']}프레임, tau {r['tau']}, "
           f"timeout {cfg.head.timeout}")
 
@@ -429,8 +430,10 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         return {"diagnose_only": True, "search": r}
 
     # 3) 경사하강
-    pw = cfg.train.pos_weight or max(1.0, float((y0 <= 0.5).sum() / max(int(y0.sum()), 1)))
-    print(f"양성 가중 {pw:.2f}")
+    pw = cfg.train.pos_weight or max(
+        1.0, float((y0 <= 0.5).sum() / max(int(y0.sum()), 1)))
+    print(f"양성 가중 {pw:.2f}"
+          + ("  (손실과 fit_k 가 반대로 밀 수 있다)" if pw > 1.5 else ""))
     opt = torch.optim.Adam([
         {"params": model.head.parameters(), "lr": cfg.train.lr},
         {"params": model.frontend.parameters(), "lr": cfg.train.lr_threshold},
@@ -453,7 +456,7 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
             if cfg.head.refit_k_every and step % cfg.head.refit_k_every == 0:
                 model.refit_k(w0, y0)
 
-        model.refit_k(w0, y0)                      # 에폭 끝에 한 번 더
+        model.refit_k(w0, y0)                      # 에폭 끝에 한 번
         va = evaluate(model, ld["val"], dev)
         # FPR 상한을 지킨 것 중 TPR 최대
         sel = (1.0 + va["tpr"]) if va["fpr"] <= cfg.head.k_max_fpr else -va["fpr"]
@@ -496,6 +499,10 @@ def main(argv=None) -> None:
     p.add_argument("--lr-threshold", type=float, default=1e-3)
     p.add_argument("--l1", type=float, default=0.02, help="X 를 늘리는 압력")
     p.add_argument("--min-channels", type=int, default=3)
+    p.add_argument("--match-window", type=int, default=0,
+                   help="채점 창 tau±w. 회로에서 PASS 가 셋 우세 래치가 된다")
+    p.add_argument("--min-gap", type=int, default=3,
+                   help="상태 간 최소 시각 간격. 좁으면 상태가 상관된다")
     p.add_argument("--max-fpr", type=float, default=0.05)
     p.add_argument("--ste-clip", type=float, default=0.03)
     p.add_argument("--filterbank", default="mel", choices=("mel", "spice"))
@@ -534,6 +541,7 @@ def main(argv=None) -> None:
     cfg.head.timeout = min(63, cfg.head.tau[-1] + 12)
     cfg.head.l1_gate = a.l1
     cfg.head.min_channels = a.min_channels
+    cfg.head.match_window = a.match_window
     cfg.head.k_max_fpr = a.max_fpr
     cfg.train.target_word = a.target
     cfg.train.epochs = a.epochs
@@ -558,7 +566,7 @@ def main(argv=None) -> None:
         return
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
     train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible,
-          sweep=a.sweep_frontend)
+          sweep=a.sweep_frontend, min_gap=a.min_gap)
 
 
 if __name__ == "__main__":

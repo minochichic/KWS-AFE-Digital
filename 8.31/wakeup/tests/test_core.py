@@ -59,16 +59,45 @@ def test_gather_states_picks_the_right_columns():
     x = torch.arange(B * C * T, dtype=torch.float32).reshape(B, C, T)
     start = torch.tensor([0, 5])
     tau = torch.tensor([1, 4])
-    got = gather_states(x, start, tau)                 # [B, S, C]
-    assert got.shape == (2, 2, 3)
-    assert torch.equal(got[0, 0], x[0, :, 1])
-    assert torch.equal(got[1, 1], x[1, :, 9])          # start 5 + tau 4
+    got = gather_states(x, start, tau)                 # [B, S, W, C], W=1
+    assert got.shape == (2, 2, 1, 3)
+    assert torch.equal(got[0, 0, 0], x[0, :, 1])
+    assert torch.equal(got[1, 1, 0], x[1, :, 9])       # start 5 + tau 4
 
 
 def test_gather_clamps_past_the_end():
     x = torch.zeros(1, 2, 10)
     got = gather_states(x, torch.tensor([9]), torch.tensor([5]))
-    assert got.shape == (1, 1, 2)          # 예외 없이 마지막 프레임으로 물린다
+    assert got.shape == (1, 1, 1, 2)       # 예외 없이 마지막 프레임으로 물린다
+
+
+def test_gather_window_spans_both_sides():
+    B, C, T = 1, 2, 20
+    x = torch.arange(B * C * T, dtype=torch.float32).reshape(B, C, T)
+    got = gather_states(x, torch.tensor([5]), torch.tensor([4]), window=1)
+    assert got.shape == (1, 1, 3, 2)
+    for j, t in enumerate((8, 9, 10)):                 # start 5 + tau 4 ± 1
+        assert torch.equal(got[0, 0, j], x[0, :, t])
+
+
+def test_match_window_is_an_or_over_time():
+    """창 안에서 한 번이라도 맞으면 통과. 정렬 오차를 흡수하는 장치다."""
+    M = torch.tensor([[1, 1]], dtype=torch.float32)
+    h = _head_with(M, k=[2.0])
+    # 창의 한가운데는 틀리고, 한쪽 끝에서만 맞는다
+    xs = torch.tensor([[[[1.0, 0.0], [0.0, 0.0], [1.0, 1.0]]]])   # [1,1,3,2]
+    assert h.hard(xs)["wake"].item() == 1.0
+    # 창 어디에서도 안 맞으면 탈락
+    ng = torch.tensor([[[[1.0, 0.0], [0.0, 0.0], [0.0, 1.0]]]])
+    assert h.hard(ng)["wake"].item() == 0.0
+
+
+def test_window_of_one_matches_the_no_window_path():
+    M = torch.tensor([[1, -1, 0, 1]], dtype=torch.float32)
+    h = _head_with(M, k=[3.0])
+    flat = torch.tensor([[[1.0, 0.0, 1.0, 1.0]]])          # [1,1,4]
+    win = flat.unsqueeze(2)                                 # [1,1,1,4]
+    assert h(flat)["count"].item() == h(win)["count"].item()
 
 
 # ------------------------------------------------------------------- 형판

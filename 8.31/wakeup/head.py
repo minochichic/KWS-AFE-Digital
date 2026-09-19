@@ -46,26 +46,40 @@ class TemplateHead(nn.Module):
         return g.sum(dim=1)
 
     # ------------------------------------------------------------------ 정합
+    @staticmethod
+    def _as_window(x: torch.Tensor) -> torch.Tensor:
+        """[B,S,C] 를 [B,S,1,C] 로 올려 창 없는 호출도 같은 경로를 타게 한다."""
+        return x.unsqueeze(2) if x.dim() == 3 else x
+
+    def _counts(self, x: torch.Tensor):
+        """x: [B, S, W, C] -> (count [B,S,W], m [S])."""
+        g, sg = self.ternary()                                  # [S, C]
+        # 채널별 일치도. sg=+1 이면 x, sg=-1 이면 1-x. g=0 이면 세지 않는다.
+        #   0.5 + sg*(x - 0.5)  ==  x        (sg=+1)
+        #                       ==  1 - x    (sg=-1)
+        gv = g.view(1, -1, 1, self.C)
+        sv = sg.view(1, -1, 1, self.C)
+        agree = gv * (0.5 + sv * (x - 0.5))
+        return agree.sum(dim=3), g.sum(dim=1)
+
     def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
-        """x: [B, S, C] in {0,1} — 각 상태의 tau 에서 뽑힌 채널 한 줄.
+        """x: [B, S, C] 또는 [B, S, W, C] in {0,1}.
+
+        W > 1 이면 창 안에서 **한 번이라도** 맞으면 통과다(OR). 회로에서는
+        PASS 를 셋 우세 래치로 두고 디코더 출력 여러 개를 OR 해 만든다.
 
         반환
           wake_logit [B]     WAKE 로짓 — 상태별 여유의 soft-min
-          count      [B, S]  상태별 일치 개수
+          count      [B, S]  상태별 일치 개수 (창 안 최대)
           m          [S]     상태별 사용 채널 수
         """
-        if x.dim() != 3 or x.shape[1] != self.cfg.n_states or x.shape[2] != self.C:
+        x = self._as_window(x)
+        if x.dim() != 4 or x.shape[1] != self.cfg.n_states or x.shape[3] != self.C:
             raise ValueError(
-                f"x 는 [B, {self.cfg.n_states}, {self.C}] 여야 하는데 "
+                f"x 는 [B, {self.cfg.n_states}, W, {self.C}] 여야 하는데 "
                 f"{tuple(x.shape)} 다.")
-        g, s = self.ternary()                                   # [S, C]
-
-        # 채널별 일치도. s=+1 이면 x, s=-1 이면 1-x. g=0 이면 세지 않는다.
-        #   0.5 + s*(x - 0.5)  ==  x        (s=+1)
-        #                      ==  1 - x    (s=-1)
-        agree = g.unsqueeze(0) * (0.5 + s.unsqueeze(0) * (x - 0.5))
-        count = agree.sum(dim=2)                                # [B, S]
-        m = g.sum(dim=1)                                        # [S]
+        cw, m = self._counts(x)                                 # [B,S,W], [S]
+        count = cw.amax(dim=2)                                  # OR = 창 안 최대
 
         # count >= k 를 부드럽게. k-0.5 는 회로의 V_TH 와 같은 위치다.
         z = (count - (self.k.unsqueeze(0) - 0.5)) / self.cfg.temperature
@@ -80,9 +94,8 @@ class TemplateHead(nn.Module):
     @torch.no_grad()
     def hard(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
         """반올림한 정수 상수로 회로와 똑같이 판정한다."""
-        g, s = self.ternary()
-        agree = g.unsqueeze(0) * (0.5 + s.unsqueeze(0) * (x - 0.5))
-        count = agree.sum(dim=2)
+        cw, _ = self._counts(self._as_window(x))
+        count = cw.amax(dim=2)
         k = self.k.round().clamp(min=1)
         pass_s = (count >= k.unsqueeze(0)).float()              # [B, S]
         return {"wake": pass_s.prod(dim=1), "pass_s": pass_s, "count": count}
@@ -99,10 +112,12 @@ class TemplateHead(nn.Module):
         무작위 초기화는 시드에 따라 학습이 무너진다(실측: acc 0.795±0.187,
         최저 0.574). 원형 초기화는 그 분산을 없앤다.
 
-        xs_pos: [N, S, C] — 양성 클립만 모은 상태별 채널 패턴
+        xs_pos: [N, S, C] 또는 [N, S, W, C] — 양성 클립만 모은 패턴
         """
         if xs_pos.numel() == 0:
             return
+        if xs_pos.dim() == 4:                       # 창의 중앙을 원형으로 쓴다
+            xs_pos = xs_pos[:, :, xs_pos.shape[2] // 2, :]
         proto = xs_pos.mean(dim=0)                  # [S, C] in [0,1]
         self.weight.copy_((proto - 0.5) * 2.0 * scale)
         self.gate_logit.fill_(self.cfg.gate_init)

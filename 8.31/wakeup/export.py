@@ -67,6 +67,7 @@ def build_report(model: WakeupModel, vdd: float = 1.8) -> Dict:
         "vdd": vdd,
         "n_resistors_template": int(e["n_resistors"]),
         "n_active_states": int(e["n_active_states"]),
+        "match_window": int(cfg.head.match_window),
         "channel_thresholds": [round(float(v), 4) for v in e["theta"]],
         "states": states,
     }
@@ -89,6 +90,9 @@ def format_report(rep: Dict, test: Optional[Dict] = None) -> str:
     a(f"  START 조건    채널 {rep['start_k']}개 이상 동시 ON")
     for s in rep["states"]:
         a(f"  tau({s['state']})        {s['tau_frames']:3d} 프레임 = {s['tau_ms']:.0f} ms")
+    w = rep.get("match_window", 0)
+    a(f"  채점 창       tau ± {w} 프레임"
+      + ("  (PASS 는 셋 우세 래치)" if w else "  (PASS 는 에지 트리거 D F/F)"))
     a(f"  timeout       {rep['timeout_frames']:3d} 프레임 = {rep['timeout_ms']:.0f} ms")
     a(f"  WAKE 폭       {rep['wake_width_ms']:.0f} ms")
 

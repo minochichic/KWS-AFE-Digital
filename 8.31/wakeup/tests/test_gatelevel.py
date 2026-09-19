@@ -169,3 +169,44 @@ def test_wake_frame_is_the_last_sample_time():
     if hit.any():
         want = start[hit] + board.tau[-1]
         assert torch.equal(r["wake_frame"][hit], want)
+
+
+def test_gate_level_matches_with_a_match_window():
+    """채점 창을 켜도 회로와 모델이 같은 함수를 계산해야 한다.
+
+    창을 켜면 PASS 가 에지 트리거 D 플립플롭이 아니라 셋 우세 래치가 된다.
+    회로가 바뀌는 변경이므로 골든 벡터를 다시 확인한다.
+    """
+    torch.manual_seed(3)
+    cfg = Config()
+    cfg.head.temperature = cfg.head.and_temperature = 0.7
+    cfg.head.match_window = 2
+    cfg.head.l1_gate, cfg.head.min_channels = 0.05, 3
+    m = WakeupModel(cfg)
+    xtr, ytr, _ = make_batch(384, cfg.head.tau, seed=3)
+    m.frontend.init_fixed_scale(xtr[:256])
+    m.frontend.init_thresholds(xtr[:256])
+    search_timing(m, xtr, ytr)
+    m.eval()
+
+    board = board_from_model(m, n_decoders=3)
+    assert board.match_window == 2
+    xte, _, _ = make_batch(192, cfg.head.tau, seed=3003)
+    with torch.no_grad():
+        feat = m.features(xte)
+        want = m.hard(xte)["wake"]
+    got = board.run(feat)["wake"]
+    agree = (got == want).float().mean().item()
+    print(f"\n  창 2프레임: {agree*100:.2f}% 일치")
+    assert agree == 1.0
+
+
+def test_window_admits_a_shifted_pattern_that_the_point_sample_misses():
+    """창이 정렬 오차를 흡수하는지 — 이 변경의 존재 이유."""
+    tmpl = torch.tensor([[1, 1]])
+    common = dict(template=tmpl, k=[2], tau=[10], timeout=30, start_k=1)
+    x = torch.zeros(1, 2, 40)
+    x[0, :, 2] = 1.0            # START (프레임 2, 카운터 0)
+    x[0, :, 2 + 10 + 2] = 1.0   # 패턴이 2프레임 늦다
+    assert DigitalBoard(**common, match_window=0).run(x)["wake"].item() == 0.0
+    assert DigitalBoard(**common, match_window=2).run(x)["wake"].item() == 1.0

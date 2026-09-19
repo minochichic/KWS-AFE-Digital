@@ -100,7 +100,7 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
 
     def score(tv: Sequence[int]) -> float:
         t = torch.tensor(sorted(tv), dtype=torch.long, device=x.device)
-        xs = gather_states(x, start, t)
+        xs = gather_states(x, start, t, cfg.head.match_window)
         model.head.init_templates(xs[y_ > 0.5])
         k = model.head.fit_k(model.head(xs)["count"], y_,
                              max_fpr=cfg.head.k_max_fpr)
@@ -134,7 +134,7 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
     model.tau = torch.tensor(tau, dtype=torch.long, device=x.device)
     cfg.head.validate(cfg.frontend)
 
-    xs = gather_states(x, start, model.tau)
+    xs = gather_states(x, start, model.tau, cfg.head.match_window)
     model.head.init_templates(xs[y_ > 0.5])
     model.head.fit_k(model.head(xs)["count"], y_, max_fpr=cfg.head.k_max_fpr)
     model.train(was)

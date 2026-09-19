@@ -39,16 +39,21 @@ def detect_start(x: torch.Tensor, k: int,
     return start.long(), found
 
 
-def gather_states(x: torch.Tensor, start: torch.Tensor,
-                  tau: torch.Tensor) -> torch.Tensor:
-    """각 상태의 시각에서 채널 한 줄씩 뽑는다.
+def gather_states(x: torch.Tensor, start: torch.Tensor, tau: torch.Tensor,
+                  window: int = 0) -> torch.Tensor:
+    """각 상태의 채점 창에서 채널 줄을 뽑는다.
 
-    x: [B, C, T], start: [B], tau: [S]  ->  [B, S, C]
+    x: [B, C, T], start: [B], tau: [S]  ->  [B, S, W, C],  W = 2*window+1
+    window=0 이면 W=1 이고 예전과 같다.
     """
     B, C, T = x.shape
-    idx = (start.unsqueeze(1) + tau.unsqueeze(0)).clamp(0, T - 1)   # [B, S]
-    idx = idx.unsqueeze(1).expand(B, C, idx.shape[1])               # [B, C, S]
-    return x.gather(2, idx).transpose(1, 2).contiguous()            # [B, S, C]
+    S = tau.shape[0]
+    off = torch.arange(-window, window + 1, device=x.device)        # [W]
+    W = off.shape[0]
+    idx = (start.view(-1, 1, 1) + tau.view(1, -1, 1) + off.view(1, 1, -1))
+    idx = idx.clamp(0, T - 1).reshape(B, S * W)                     # [B, S*W]
+    g = x.gather(2, idx.unsqueeze(1).expand(B, C, S * W))           # [B, C, S*W]
+    return g.transpose(1, 2).reshape(B, S, W, C).contiguous()
 
 
 class WakeupModel(nn.Module):
@@ -76,7 +81,8 @@ class WakeupModel(nn.Module):
     def forward(self, wave: torch.Tensor, jitter: bool = False) -> Dict[str, torch.Tensor]:
         x = self.features(wave)                              # [B, C, T]
         start, found = self.align(x, jitter)
-        xs = gather_states(x, start, self.tau)               # [B, S, C]
+        xs = gather_states(x, start, self.tau,
+                           self.cfg.head.match_window)     # [B, S, W, C]
         out = self.head(xs)
         # START 를 못 잡으면 그 발화는 판정 자체가 불가능하다. 회로도 같다.
         out["wake_logit"] = torch.where(
@@ -99,7 +105,7 @@ class WakeupModel(nn.Module):
         self.frontend.init_thresholds(wave)   # cfg.init_on_rate 를 따른다
         x = self.features(wave)
         start, found = self.align(x, jitter=False)
-        xs = gather_states(x, start, self.tau)
+        xs = gather_states(x, start, self.tau, self.cfg.head.match_window)
         self.head.init_templates(xs[(y > 0.5) & found])
         self.refit_k(wave, y)
         self.train(was)
@@ -114,7 +120,7 @@ class WakeupModel(nn.Module):
         self.eval()
         x = self.features(wave)
         start, found = self.align(x, jitter=False)
-        xs = gather_states(x, start, self.tau)
+        xs = gather_states(x, start, self.tau, self.cfg.head.match_window)
         count = self.head(xs)["count"]
         # START 를 못 잡은 클립은 어차피 탈락이므로 양성에서 빼고 맞춘다
         keep = found | (y <= 0.5)
@@ -127,7 +133,7 @@ class WakeupModel(nn.Module):
         """반올림 상수로 회로와 동일하게 판정한다."""
         x = self.features(wave)
         start, found = self.align(x, jitter=False)
-        xs = gather_states(x, start, self.tau)
+        xs = gather_states(x, start, self.tau, self.cfg.head.match_window)
         out = self.head.hard(xs)
         out["wake"] = out["wake"] * found.float()
         out["found"] = found
@@ -153,6 +159,7 @@ class WakeupModel(nn.Module):
         d["tau"] = list(self.cfg.head.tau)
         d["timeout"] = self.cfg.head.timeout
         d["start_k"] = self.cfg.start.k
+        d["match_window"] = self.cfg.head.match_window
         d["theta"] = self.frontend.threshold.detach().cpu()
         d["wake_width_ms"] = (self.cfg.head.timeout - self.cfg.head.tau[-1]) * \
             self.cfg.frontend.envelope_win_ms

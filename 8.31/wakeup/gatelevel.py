@@ -38,6 +38,10 @@ class DigitalBoard:
     counter_bits: int = 8
     # 3-to-8 디코더 개수. 2 면 하위 6비트만 디코드되어 64 카운트마다 별칭이 생긴다.
     n_decoders: int = 3
+    # 채점 창. tau(s) ± match_window 안에서 한 번이라도 맞으면 통과.
+    # 회로에서는 PASS 를 에지 트리거 D 플립플롭이 아니라 **셋 우세 래치**로 두고,
+    # 디코더 출력 2w+1 개를 OR 해 창을 만든다. 래치는 한 번 서면 CLR 까지 유지된다.
+    match_window: int = 0
 
     def __post_init__(self) -> None:
         self.template = torch.as_tensor(self.template)
@@ -132,15 +136,23 @@ class DigitalBoard:
 
             # ── 위상 1 (/CLK = 1) : 카운터가 안정된 뒤에만 채점한다
             active = run_ff > 0.5
+            w = self.match_window
             dec = torch.stack(
-                [((cnt & self.decode_mask) == (int(t) & self.decode_mask)) & active
-                 for t in tau_t], dim=1).float()        # [B, S]
+                [torch.stack([((cnt & self.decode_mask) ==
+                               ((int(t) + o) & self.decode_mask))
+                              for o in range(-w, w + 1)], 0).any(0) & active
+                 for t in tau_t], dim=1).float()        # [B, S] -- 창 OR
             dec_to = (((cnt & self.decode_mask) ==
                        (self.timeout & self.decode_mask)) & active).float()
 
             match = self._match(col)                    # [B, S] 레벨, 상시 유효
-            # SAMPLE 상승 에지에서 D 를 붙잡는다
-            pass_ff = torch.where(dec > 0.5, match, pass_ff)
+            if self.match_window == 0:
+                # SAMPLE 상승 에지에서 D 를 붙잡는다 (에지 트리거 D 플립플롭)
+                pass_ff = torch.where(dec > 0.5, match, pass_ff)
+            else:
+                # 창 안에서 한 번이라도 맞으면 선다 (셋 우세 래치).
+                # 한 번 선 PASS 는 CLR 까지 내려오지 않는다.
+                pass_ff = torch.maximum(pass_ff, dec * match)
 
             w = pass_ff.prod(dim=1) * active.float()
             first = (w > 0.5) & (wake_frame < 0)
@@ -177,6 +189,7 @@ def board_from_export(rep: Dict, n_decoders: int = 3) -> DigitalBoard:
         timeout=rep["timeout_frames"],
         start_k=rep["start_k"],
         n_decoders=n_decoders,
+        match_window=int(rep.get("match_window", 0)),
     )
 
 
@@ -189,4 +202,5 @@ def board_from_model(model, n_decoders: int = 3) -> DigitalBoard:
         timeout=int(e["timeout"]),
         start_k=int(e["start_k"]),
         n_decoders=n_decoders,
+        match_window=int(model.cfg.head.match_window),
     )
