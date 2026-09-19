@@ -16,16 +16,23 @@ from .frontend import Frontend
 from .head import TemplateHead
 
 
-def detect_start(x: torch.Tensor, k: int) -> Tuple[torch.Tensor, torch.Tensor]:
-    """sum_c x[c,t] >= k 인 첫 프레임.
+def detect_start(x: torch.Tensor, k: int,
+                 min_frames: int = 1) -> Tuple[torch.Tensor, torch.Tensor]:
+    """sum_c x[c,t] >= k 가 min_frames 연속으로 성립하는 첫 프레임.
 
     x: [B, C, T] in {0,1}
-    반환 (start [B] long, found [B] bool)
+    반환 (start [B] long, found [B] bool) -- start 는 그 구간의 첫 프레임
 
-    회로에서는 채널 버스를 게이트로 묶거나 저항으로 합산해 비교기에 넣는 것에
-    해당한다. 미분 대상이 아니므로 인덱스로만 쓴다.
+    회로에서는 채널 버스를 저항으로 합산해 비교기에 넣고(k), 그 출력을 RC 나
+    시프트레지스터로 지속 확인하는 것(min_frames)에 해당한다. 미분 대상이
+    아니므로 인덱스로만 쓴다.
     """
     active = (x.sum(dim=1) >= k)                    # [B, T] bool
+    if min_frames > 1:
+        # 연속 구간의 첫 프레임을 찾는다
+        w = torch.ones(1, 1, min_frames, device=x.device)
+        run = F.conv1d(active.float().unsqueeze(1), w).squeeze(1)   # [B, T-m+1]
+        active = run >= min_frames
     found = active.any(dim=1)
     # argmax 는 최초 최댓값 위치를 준다 = 첫 True
     start = active.float().argmax(dim=1)
@@ -58,7 +65,8 @@ class WakeupModel(nn.Module):
         return self.frontend(wave)
 
     def align(self, x: torch.Tensor, jitter: bool) -> Tuple[torch.Tensor, torch.Tensor]:
-        start, found = detect_start(x, self.cfg.start.k)
+        start, found = detect_start(x, self.cfg.start.k,
+                                    self.cfg.start.min_frames)
         if jitter and self.cfg.start.jitter > 0:
             j = self.cfg.start.jitter
             noise = torch.randint(-j, j + 1, start.shape, device=start.device)

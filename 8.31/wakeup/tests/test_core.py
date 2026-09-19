@@ -225,3 +225,19 @@ def test_frontend_refuses_before_scale_init():
     m = WakeupModel(Config())
     with pytest.raises(RuntimeError, match="init_fixed_scale"):
         m.features(torch.randn(2, 16000))
+
+
+def test_checkpoint_round_trip():
+    """체크포인트 저장/로딩. 30에폭을 돌린 뒤 여기서 터진 적이 있다 --
+    Frontend.state_dict() 를 재정의해 키를 접두사 없이 끼워 넣었더니 부모의
+    공유 dict 에 박혀 "Unexpected key(s): _scale_ready" 가 났다."""
+    cfg = Config()
+    a = WakeupModel(cfg)
+    wave = torch.randn(4, 16000) * 0.1
+    a.frontend.init_fixed_scale(wave)
+    a.frontend.init_thresholds(wave)
+
+    b = WakeupModel(Config())
+    b.load_state_dict(a.state_dict())          # strict=True
+    assert bool(b.frontend.scale_ready), "스케일 준비 상태가 안 넘어왔다"
+    assert torch.equal(a.hard(wave)["wake"], b.hard(wave)["wake"])

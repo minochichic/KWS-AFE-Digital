@@ -22,7 +22,8 @@ import torch
 
 from .config import Config
 from .model import WakeupModel
-from .search import search_timing
+from .search import search_timing, offset_scores
+from .model import detect_start, gather_states
 
 
 # --------------------------------------------------------------------- 평가
@@ -58,8 +59,73 @@ def _gather_init_batch(loader, n: int, device: str):
     return torch.cat(ws)[:n].to(device), torch.cat(ys)[:n].to(device)
 
 
+# --------------------------------------------------------------------- 진단
+@torch.no_grad()
+def diagnose(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor) -> None:
+    """왜 안 되는지 재서 보여 준다. 30에폭 돌려 놓고 추측하지 않기 위한 것."""
+    cfg = model.cfg
+    model.eval()
+    env = model.frontend.envelopes(wave)
+    x = model.features(wave)
+    pos = y > 0.5
+    C, T = x.shape[1], x.shape[2]
+
+    print("\n" + "=" * 62)
+    print("  진단")
+    print("=" * 62)
+
+    print(f"\n[1] 정규화 포락선 분포 (문턱이 여기 어디쯤 있어야 한다)")
+    q = torch.tensor([0.01, 0.25, 0.5, 0.75, 0.99])
+    v = torch.quantile(env.flatten().float(), q.to(env.device))
+    print("    분위수 " + "  ".join(f"{int(a*100)}%:{b:.3f}" for a, b in zip(q, v)))
+    th = model.frontend.threshold
+    print(f"    문턱 theta  최소 {th.min():.3f}  중앙 {th.median():.3f}  최대 {th.max():.3f}")
+
+    print(f"\n[2] 채널 켜짐률 — 너무 높으면 형판이 무의미해진다")
+    on = x.mean(dim=(0, 2))
+    print("    " + "  ".join(f"ch{i}:{v*100:.0f}%" for i, v in enumerate(on)))
+    print(f"    전체 {x.mean()*100:.1f}%,  프레임당 켜진 채널 {x.sum(1).mean():.2f}/{C}")
+
+    print(f"\n[3] START 가 어디서 뜨는가 (양성만)")
+    ks = sorted({2, max(2, C // 4), max(3, C // 2), max(4, 3 * C // 4)})
+    for mf in (1, 2, 3):
+        for k in ks:
+            st, fo = detect_start(x, k, mf)
+            sp = st[pos & fo].float()
+            if sp.numel() < 2:
+                continue
+            print(f"    k={k:2d} x{mf}프레임: 검출 {fo[pos].float().mean()*100:5.1f}%  "
+                  f"중앙 {sp.median():5.1f}  10%~90% [{sp.quantile(.1):.0f}, "
+                  f"{sp.quantile(.9):.0f}]  산포 σ {sp.std():.1f}")
+    print("    * 중앙이 0 근처이고 산포가 작으면 잡음에 걸려 즉시 뜨는 것이다.")
+    print("      그러면 tau 가 상대 시각이 아니라 절대 시각이 된다.")
+
+    print(f"\n[4] START 이후 오프셋별 분리도 (AUC, 1.0 이 완전 분리)")
+    st, fo = detect_start(x, cfg.start.k, cfg.start.min_frames)
+    keep = fo | (~pos)
+    auc, _ = offset_scores(x[keep], st[keep], y[keep], min(T - 1, 60))
+    top = torch.topk(auc, 8)
+    print("    상위: " + "  ".join(f"d={int(i)}:{float(v):.3f}"
+                                  for v, i in zip(*top)))
+    print(f"    최대 {auc.max():.3f}  중앙 {auc.median():.3f}")
+    print("    * 최대가 0.6 아래면 이 특징으로는 어느 시각을 봐도 못 가른다.")
+
+    print(f"\n[5] 현재 tau 에서의 일치 개수 분포")
+    xs = gather_states(x[keep], st[keep], model.tau)
+    cnt = model.head(xs)["count"]
+    yk = y[keep]
+    for s_ in range(cnt.shape[1]):
+        cp, cn = cnt[yk > 0.5, s_], cnt[yk <= 0.5, s_]
+        print(f"    s{s_+1} (tau={int(model.tau[s_])}): 양성 {cp.mean():5.2f}±{cp.std():.2f}"
+              f"   음성 {cn.mean():5.2f}±{cn.std():.2f}"
+              f"   차이 {abs(cp.mean()-cn.mean()):.2f}")
+    print("    * 차이가 1 미만이면 형판이 양성과 음성을 구분하지 못한다.")
+    print("=" * 62 + "\n")
+
+
 # --------------------------------------------------------------------- 학습
-def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50) -> Dict:
+def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
+          diag: bool = False, allow_infeasible: bool = False) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -81,8 +147,28 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50) -> Dict:
 
     # 2) 타이밍 탐색 — 미분되지 않는 값들
     print("타이밍 탐색:")
-    r = search_timing(model, w0, y0, verbose=True)
-    print(f"  -> start_k {r['k']}, tau {r['tau']}, timeout {cfg.head.timeout}")
+    r = search_timing(model, w0, y0, min_frames_cands=(1, 2, 3), verbose=True)
+    print(f"  -> start_k {r['k']} x{r['min_frames']}프레임, tau {r['tau']}, "
+          f"timeout {cfg.head.timeout}")
+
+    if diag:
+        diagnose(model, w0, y0)
+
+    # 탐색이 실행 가능한 점을 못 찾았다 = 어떤 tau 로도 FPR 상한을 못 지킨다.
+    # 그대로 두면 학습이 "전부 통과"로 무너진다(실측: TPR 0.978 / FPR 0.981).
+    # 30에폭을 태우기 전에 여기서 멈춘다.
+    if not r.get("feasible", True) and not allow_infeasible:
+        print(f"\n! 타이밍 탐색이 FPR {cfg.head.k_max_fpr:.0%} 이하인 점을 못 찾았다 "
+              f"(최고 점수 {r['score']:.3f}, 음수 = 실행 불가).")
+        print("  이대로 학습하면 '전부 통과'로 무너진다. --diagnose 로 원인을 먼저 보라.")
+        print("  그래도 돌리려면 --allow-infeasible.")
+        if not diag:
+            diagnose(model, w0, y0)
+        return {"infeasible": True, "search": r}
+
+    if diag:
+        print("--diagnose: 학습은 건너뛴다.")
+        return {"diagnose_only": True, "search": r}
 
     # 3) 경사하강
     pw = cfg.train.pos_weight or max(1.0, float((y0 <= 0.5).sum() / max(int(y0.sum()), 1)))
@@ -162,6 +248,10 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--diagnose", action="store_true",
+                   help="초기화와 타이밍 탐색까지만 하고 진단을 찍는다")
+    p.add_argument("--allow-infeasible", action="store_true",
+                   help="탐색이 실행 가능한 점을 못 찾아도 학습을 강행한다")
     a = p.parse_args(argv)
 
     cfg = Config()
@@ -190,7 +280,7 @@ def main(argv=None) -> None:
     cfg.validate()
 
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
-    train(cfg)
+    train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible)
 
 
 if __name__ == "__main__":

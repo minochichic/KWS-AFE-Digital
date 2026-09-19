@@ -89,7 +89,7 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
     was = model.training
     model.eval()
     x = model.features(wave)
-    start, found = detect_start(x, cfg.start.k)
+    start, found = detect_start(x, cfg.start.k, cfg.start.min_frames)
     keep = found | (y <= 0.5)
     x, start, y_ = x[keep], start[keep], y[keep]
 
@@ -152,6 +152,7 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
 @torch.no_grad()
 def search_timing(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor,
                   candidates: Optional[Sequence[int]] = None,
+                  min_frames_cands: Optional[Sequence[int]] = None,
                   min_recall: float = 0.98, min_gap: int = 3,
                   verbose: bool = False) -> Dict[str, object]:
     """START 문턱 k 와 tau(s) 를 함께 고른다.
@@ -169,42 +170,42 @@ def search_timing(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor,
     """
     C = model.cfg.frontend.n_channels
     cands = list(candidates) if candidates else list(range(1, C + 1))
+    mins = list(min_frames_cands) if min_frames_cands else [1]
     was = model.training
     model.eval()
     x = model.features(wave)
     pos = y > 0.5
 
     rows, best = [], None
-    for k in cands:
-        _, found = detect_start(x, k)
-        rec = found[pos].float().mean().item()
-        if rec < min_recall:
-            rows.append((k, rec, None, None))
-            continue
-        model.cfg.start.k = k
-        r = search_tau(model, wave, y, min_gap=min_gap, refine_sweeps=1)
-        rows.append((k, rec, r["tau"], r["score"]))
-        if best is None or r["score"] > best[3]:
-            best = (k, rec, r["tau"], r["score"])
+    for mf in mins:
+        for k in cands:
+            _, found = detect_start(x, k, mf)
+            rec = found[pos].float().mean().item()
+            if rec < min_recall:
+                rows.append((k, mf, rec, None, None))
+                continue
+            model.cfg.start.k, model.cfg.start.min_frames = k, mf
+            r = search_tau(model, wave, y, min_gap=min_gap, refine_sweeps=1)
+            rows.append((k, mf, rec, r["tau"], r["score"]))
+            if best is None or r["score"] > best[4]:
+                best = (k, mf, rec, r["tau"], r["score"])
 
-    if best is None:      # 어느 k 도 검출률을 못 맞추면 검출률 최대인 것
-        k = max(rows, key=lambda r: r[1])[0]
-        model.cfg.start.k = k
+    if best is None:      # 어느 조합도 검출률을 못 맞추면 검출률 최대인 것
+        k, mf, rec = max(rows, key=lambda r: r[2])[:3]
+        model.cfg.start.k, model.cfg.start.min_frames = k, mf
         r = search_tau(model, wave, y, min_gap=min_gap)
-        best = (k, dict(rows and [(x[0], x[1]) for x in rows]).get(k, 0.0),
-                r["tau"], r["score"])
+        best = (k, mf, rec, r["tau"], r["score"])
 
-    model.cfg.start.k = best[0]
-    search_tau(model, wave, y, min_gap=min_gap)      # 확정 k 로 다시 맞춘다
+    model.cfg.start.k, model.cfg.start.min_frames = best[0], best[1]
+    search_tau(model, wave, y, min_gap=min_gap)      # 확정 조건으로 다시 맞춘다
     model.train(was)
 
     if verbose:
-        for k, rec, tau, sc in rows:
-            mark = " <-" if k == best[0] else ""
-            if tau is None:
-                print(f"  start_k {k:2d}: 검출률 {rec*100:5.1f}%  (검출률 미달, 건너뜀)")
-            else:
-                print(f"  start_k {k:2d}: 검출률 {rec*100:5.1f}%  tau {tau}  "
-                      f"점수 {sc:.3f}{mark}")
-    return {"k": best[0], "recall": best[1], "tau": best[2], "score": best[3],
-            "rows": rows}
+        for k, mf, rec, tau, sc in rows:
+            mark = " <-" if (k, mf) == (best[0], best[1]) else ""
+            head = f"  start_k {k:2d} x{mf}프레임: 검출률 {rec*100:5.1f}%"
+            print(f"{head}  (검출률 미달, 건너뜀)" if tau is None
+                  else f"{head}  tau {tau}  점수 {sc:.3f}{mark}")
+    return {"k": best[0], "min_frames": best[1], "recall": best[2],
+            "tau": best[3], "score": best[4], "rows": rows,
+            "feasible": best[4] > 0}

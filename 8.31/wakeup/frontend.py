@@ -59,7 +59,10 @@ class Frontend(nn.Module):
         # 데이터셋 전역 상수. 클립마다 바뀌지 않는다 = 절대 문턱.
         self.register_buffer("fixed_lo", torch.zeros(cfg.n_channels, 1))
         self.register_buffer("fixed_hi", torch.ones(cfg.n_channels, 1))
-        self._scale_ready = False
+        # 버퍼로 둔다. state_dict() 를 재정의해 키를 끼워 넣으면 부모가 넘겨준
+        # 공유 dict 에 접두사 없이 박혀 "Unexpected key(s): _scale_ready" 로
+        # 체크포인트 로딩이 깨진다 (실제로 30에폭 뒤에 터졌다).
+        self.register_buffer("scale_ready", torch.zeros((), dtype=torch.bool))
 
     # ------------------------------------------------------------------ 대역
     def _bands(self, wave: torch.Tensor) -> torch.Tensor:
@@ -98,7 +101,7 @@ class Frontend(nn.Module):
 
         if raw:
             return env
-        if not self._scale_ready:
+        if not bool(self.scale_ready):
             raise RuntimeError(
                 "init_fixed_scale() 을 먼저 부르라. lo/hi 가 데이터셋 상수여야 "
                 "'env >= theta' 가 절대 문턱이 된다.")
@@ -124,24 +127,10 @@ class Frontend(nn.Module):
         flat = env.transpose(0, 1).reshape(env.shape[1], -1)   # [C, N*T]
         self.fixed_lo.copy_(flat.amin(dim=1, keepdim=True))
         self.fixed_hi.copy_(torch.quantile(flat, q, dim=1, keepdim=True))
-        self._scale_ready = True
+        self.scale_ready.fill_(True)
 
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:
         """채널별 정규화 포락선의 평균으로 초기화 (Cerutti IV-A)."""
         env = self.envelopes(waves)                      # [N, C, T]
         self.threshold.copy_(env.mean(dim=(0, 2)))
-
-    # state_dict 에 스케일 준비 여부를 실어 보내야 재로딩이 맞는다
-    def state_dict(self, *a, **kw):                      # type: ignore[override]
-        sd = super().state_dict(*a, **kw)
-        sd["_scale_ready"] = torch.tensor(bool(self._scale_ready))
-        return sd
-
-    def load_state_dict(self, sd, strict: bool = True):  # type: ignore[override]
-        sd = dict(sd)
-        ready = sd.pop("_scale_ready", None)
-        out = super().load_state_dict(sd, strict=strict)
-        if ready is not None:
-            self._scale_ready = bool(ready.item())
-        return out
