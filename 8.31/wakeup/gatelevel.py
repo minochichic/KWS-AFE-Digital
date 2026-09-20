@@ -116,6 +116,7 @@ class DigitalBoard:
         pass_ff = torch.zeros(B, S, device=dev)         # PASS F/F
         wake = torch.zeros(B, device=dev)
         wake_frame = torch.full((B,), -1, dtype=torch.long, device=dev)
+        wake_seq = torch.zeros(B, T, device=dev)   # 연속 평가용 WAKE 시계열
         started = torch.zeros(B, device=dev)            # START 를 한 번이라도 봤나
 
         tau_t = torch.tensor(list(self.tau), device=dev)
@@ -158,6 +159,7 @@ class DigitalBoard:
             first = (w > 0.5) & (wake_frame < 0)
             wake_frame = torch.where(first, torch.full_like(wake_frame, f), wake_frame)
             wake = torch.maximum(wake, w)
+            wake_seq[:, f] = w
 
             # ── timeout : 비동기 CLR 로 RUN 과 PASS 를 동시에 되돌린다
             clr = dec_to > 0.5
@@ -173,7 +175,7 @@ class DigitalBoard:
                 })
 
         out: Dict[str, object] = {"wake": wake, "wake_frame": wake_frame,
-                                  "found": started}
+                                  "found": started, "wake_seq": wake_seq}
         if trace:
             out["trace"] = rows
         return out

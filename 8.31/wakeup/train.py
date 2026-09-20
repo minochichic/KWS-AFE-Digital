@@ -424,6 +424,83 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
     print("=" * 76 + "\n")
 
 
+# ------------------------------------------------------- 연속 오디오 평가
+@torch.no_grad()
+def fa_eval(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
+            targets_per_min: float = 6.0, with_noise: bool = True,
+            seeds: int = 3) -> None:
+    """학습된 회로를 연속 오디오에서 돌려 검출률과 FA/h 를 함께 잰다."""
+    from . import data as D
+    from .model import WakeupModel
+    from .gatelevel import board_from_model
+    from .continuous import build_stream, stream_features, evaluate_stream
+    import statistics
+
+    ck_path = Path(cfg.out_dir) / cfg.tag / "best.pt"
+    if not ck_path.is_file():
+        print(f"체크포인트가 없다: {ck_path}")
+        return
+    ck = torch.load(ck_path, map_location="cpu", weights_only=False)
+    saved = ck["cfg"]
+    c = copy.deepcopy(cfg)
+    c.frontend.n_channels = saved["frontend"]["n_channels"]
+    c.frontend.init_on_rate = saved["frontend"]["init_on_rate"]
+    c.head.n_states = saved["head"]["n_states"]
+    c.head.tau = list(saved["head"]["tau"])
+    c.head.timeout = saved["head"]["timeout"]
+    c.head.match_window = saved["head"]["match_window"]
+    c.start.k = saved["start"]["k"]
+    c.start.min_frames = saved["start"]["min_frames"]
+    c.train.target_word = saved["train"]["target_word"]
+
+    model = WakeupModel(c)
+    model.load_state_dict(ck["model"])
+    model.eval()
+    board = board_from_model(model, n_decoders=3)
+    print(f"체크포인트 {ck_path}")
+    print(f"  '{c.train.target_word}', {c.frontend.n_channels}채널, "
+          f"상태 {c.head.n_states}, tau {list(c.head.tau)}, "
+          f"창 ±{c.head.match_window}, timeout {c.head.timeout}")
+
+    waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
+    noise = None
+    if with_noise:
+        import torchaudio, os
+        base = torchaudio.datasets.SPEECHCOMMANDS(
+            root=os.path.expanduser(c.data_root),
+            url="speech_commands_v0.02", download=False, subset="testing")
+        noise = D._noise_waves(base)
+        print(f"  배경 소음 {len(noise)}종")
+
+    rows = []
+    for sd in range(seeds):
+        st, on = build_stream(waves, words, c.train.target_word,
+                              minutes=minutes, targets_per_min=targets_per_min,
+                              noise=noise, seed=sd)
+        f = stream_features(model, st)
+        r = evaluate_stream(board, f, on)
+        rows.append(r)
+        print(f"  스트림 {sd}: {r['hours']*60:.1f}분, 대상 {r['n_targets']}회, "
+              f"WAKE {r['n_wakes']}회 -> 검출 {r['tpr']*100:.1f}%, "
+              f"오검출 {r['n_false']}회 ({r['fa_per_hour']:.1f}/h)")
+
+    t = [r["tpr"] for r in rows]
+    f_ = [r["fa_per_hour"] for r in rows]
+    sd_t = statistics.stdev(t) if len(t) > 1 else 0.0
+    sd_f = statistics.stdev(f_) if len(f_) > 1 else 0.0
+    print("\n" + "=" * 62)
+    print(f"  연속 오디오 평가 — '{c.train.target_word}'")
+    print("=" * 62)
+    print(f"  검출률        {statistics.mean(t)*100:.1f} ± {sd_t*100:.1f} %")
+    print(f"  오검출        {statistics.mean(f_):.1f} ± {sd_f:.1f} 회/시간")
+    print(f"  스트림        {sum(r['hours'] for r in rows)*60:.0f}분 "
+          f"({len(rows)}개), 대상 {sum(r['n_targets'] for r in rows)}회")
+    print("\n  * 상용 웨이크워드의 목표치는 대략 검출률 95~99%, 오검출 0.5~1회/시간이다.")
+    print("    다만 그쪽은 2단계 구조(저전력 1차 + 무거운 2차 검증)에 파라미터가")
+    print("    수십만~수백만 개다. 여기는 MCU 없이 약 40개다.")
+    print("=" * 62 + "\n")
+
+
 # --------------------------------------------------------------------- 학습
 def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           diag: bool = False, allow_infeasible: bool = False,
@@ -657,6 +734,9 @@ def main(argv=None) -> None:
                    help="시드 0..N-1 로 반복해 편차를 본다")
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--fa-eval", action="store_true",
+                   help="학습된 회로를 연속 오디오에서 돌려 검출률과 FA/h 를 잰다")
+    p.add_argument("--minutes", type=float, default=20.0)
     p.add_argument("--sweep-window", action="store_true",
                    help="채점 창 크기별로 시각마다 분리도를 잰다")
     p.add_argument("--sweep-structure", action="store_true",
@@ -704,6 +784,9 @@ def main(argv=None) -> None:
     cfg.tag = a.tag or f"{a.target}_{a.channels}ch_s{a.states}"
     cfg.validate()
 
+    if a.fa_eval:
+        fa_eval(cfg, minutes=a.minutes)
+        return
     if a.sweep_structure:
         sweep_structure(cfg)
         return
