@@ -81,6 +81,14 @@ class DigitalBoard:
         return out
 
     # ---------------------------------------------------------------- 조합논리
+    def _match_counts(self, col: torch.Tensor) -> torch.Tensor:
+        """일치 개수 [B, S] — 비교기에 들어가기 전의 저항 평균 전압에 해당."""
+        t = self.template.to(col.device)
+        g = (t != 0).float()
+        sgn = torch.sign(t).float()
+        agree = g.unsqueeze(0) * (0.5 + sgn.unsqueeze(0) * (col.unsqueeze(1) - 0.5))
+        return agree.sum(dim=2)
+
     def _match(self, col: torch.Tensor) -> torch.Tensor:
         """MATCH(s) — 저항 평균 + 비교기. col: [B, C] in {0,1} -> [B, S]."""
         t = self.template.to(col.device)
@@ -179,6 +187,51 @@ class DigitalBoard:
         if trace:
             out["trace"] = rows
         return out
+
+
+@torch.no_grad()
+def scan_segments(board: "DigitalBoard", x: torch.Tensor):
+    """상태기계를 한 번 돌려 계측 구간마다 상태별 최대 일치 개수를 기록한다.
+
+    CLR 은 timeout 만 보고 k 와 무관하므로, 구간 분할과 채점 시각은 k 가 바뀌어도
+    똑같다. 따라서 구간마다 "각 상태가 채점 시각들에서 본 최대 count" 만 알면
+    어떤 k 에 대해서도 PASS = (maxcount >= k) 로 답이 나온다. 창을 쓰는 설정에서
+    PASS 는 셋 우세 래치이므로 창 안 최대가 곧 통과 여부다.
+
+    반환 (starts [n_seg], maxcount [n_seg, S]) -- starts 는 각 구간의 START 프레임.
+    """
+    if x.dim() == 2:
+        x = x.unsqueeze(0)
+    if x.shape[0] != 1:
+        raise ValueError("연속 스캔은 스트림 하나만 받는다.")
+    B, C, T = x.shape
+    S, w = board.n_states, board.match_window
+    tau = list(board.tau)
+
+    run_ff, cnt = 0.0, 0
+    seg_start, seg_max = None, None
+    starts, maxes = [], []
+    for f in range(T):
+        col = x[:, :, f]
+        cnt = cnt + 1 if run_ff > 0.5 else 0
+        st = float(board._start(col)[0])
+        if st > 0.5 and run_ff < 0.5:
+            run_ff, cnt = 1.0, 0
+            seg_start = f
+            seg_max = torch.zeros(S)
+        if run_ff > 0.5:
+            m = board._match_counts(col)[0]                 # [S]
+            for si, t in enumerate(tau):
+                if any(board.decode_hits(cnt, t + o) for o in range(-w, w + 1)):
+                    seg_max[si] = max(float(seg_max[si]), float(m[si]))
+            if board.decode_hits(cnt, board.timeout):
+                starts.append(seg_start); maxes.append(seg_max)
+                run_ff, cnt, seg_start, seg_max = 0.0, 0, None, None
+    if seg_start is not None:
+        starts.append(seg_start); maxes.append(seg_max)
+    if not starts:
+        return torch.zeros(0, dtype=torch.long), torch.zeros(0, S)
+    return torch.tensor(starts), torch.stack(maxes)
 
 
 def board_from_export(rep: Dict, n_decoders: int = 3) -> DigitalBoard:

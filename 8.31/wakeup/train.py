@@ -424,65 +424,68 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
     print("=" * 76 + "\n")
 
 
-# ----------------------------------------------------- 동작점 곡선
+# ----------------------------------------------------- 동작점 선택
 @torch.no_grad()
 def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
-             fprs=(0.002, 0.005, 0.01, 0.02, 0.05),
-             timeouts=(28, 45, 60)) -> None:
-    """검출률 대 FA/h 의 맞바꿈 곡선. 재학습 없이 뽑는다.
+             timeouts=(28, 45, 60), top: int = 12) -> None:
+    """연속 지표로 동작점(k)을 고른다. 재학습 없음.
 
-    동작점은 k 가 정한다. 학습된 형판은 그대로 두고 fit_k 만 다른 FPR 상한에서
-    다시 돌리면 다른 동작점이 나온다. timeout 은 디코더 결선이라 학습과 무관하다.
+    클립 단위 fit_k 로 고르면 안 된다 -- 엄격한 k 는 정렬 오차에 약한데 연속
+    오디오는 클립보다 START 가 덜 정확하다. 실측에서 클립 기준 재적합이 연속
+    검출률을 60% 에서 18% 로 떨어뜨렸다.
 
-    시연에서는 검출률보다 오검출이 중요하다 -- 심사위원이 말하는 중에 LED 가
-    켜지는 것이 "sheila" 를 세 번 말하는 것보다 나쁘다.
+    CLR 은 timeout 만 보고 k 와 무관하므로 구간 분할과 채점 시각은 k 가 바뀌어도
+    같다. 상태기계를 한 번만 돌려 구간별 최대 count 를 기록하면 모든 k 조합을
+    표 계산으로 평가할 수 있다.
     """
     from . import data as D
-    from .model import WakeupModel
-    from .gatelevel import board_from_model
-    from .continuous import build_stream, stream_features, evaluate_stream
+    from .gatelevel import board_from_model, scan_segments
+    from .continuous import build_stream, stream_features, sweep_k, pareto
 
     model, c = _load_trained(cfg)
     if model is None:
         return
+    e = model.export()
+    m_used = [int(v) for v in e["m"]]
+    saved_k = [int(v) for v in e["k"]]
     print(f"  '{c.train.target_word}', {c.frontend.n_channels}채널, "
-          f"상태 {c.head.n_states}, tau {list(c.head.tau)}, 창 ±{c.head.match_window}")
-
-    # 동작점을 다시 맞출 검증 배치
-    ld = D.loaders(c.data_root, c.train.target_word, 256, seed=0, num_workers=2)
-    w0, y0 = _gather_init_batch(ld["val"], 3000, "cpu")
+          f"상태 {c.head.n_states}, tau {list(c.head.tau)}, "
+          f"창 ±{c.head.match_window}, m={m_used}, 저장 k={saved_k}")
 
     waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
-    noise = _noise_pool(c)
     st, on = build_stream(waves, words, c.train.target_word, minutes=minutes,
-                          noise=noise, seed=0)
-    feats = stream_features(model, st)      # 한 번만 계산해 돌려 쓴다
+                          noise=_noise_pool(c), seed=0)
+    feats = stream_features(model, st)
     print(f"  스트림 {feats.shape[2]/6000:.1f}분, 대상 {len(on)}회\n")
 
-    print("=" * 74)
-    print("  동작점 곡선 — 검출률 대 시간당 오검출")
-    print("=" * 74)
-    print(f"  {'FPR상한':>8} {'timeout':>8} {'k':>10} {'검출률':>8} "
-          f"{'FA/h':>8} {'WAKE':>6}")
-    rows = []
-    for mf in fprs:
-        model.refit_k(w0, y0, max_fpr=mf)
-        k = [int(v) for v in model.head.k.round()]
-        for to in timeouts:
-            if to <= c.head.tau[-1] + c.head.min_wake_frames or to > 63:
-                continue
-            c.head.timeout = to
-            b = board_from_model(model, n_decoders=3)
-            r = evaluate_stream(b, feats, on)
-            rows.append((mf, to, k, r["tpr"], r["fa_per_hour"], r["n_wakes"]))
-            print(f"  {mf:8.3f} {to:8d} {str(k):>10} {r['tpr']*100:7.1f}% "
+    print("=" * 78)
+    print("  동작점 선택 — 연속 오디오 기준")
+    print("=" * 78)
+    for to in timeouts:
+        if not (c.head.tau[-1] + c.head.min_wake_frames < to <= 63):
+            continue
+        c.head.timeout = to
+        board = board_from_model(model, n_decoders=3)
+        starts, mx = scan_segments(board, feats)
+        rows = sweep_k(starts, mx, on, m_used, frames=feats.shape[2],
+                       tau_last=int(board.tau[-1]))
+        cur = [r for r in rows if r["k"] == saved_k]
+        front = pareto(rows)
+        print(f"\n  timeout {to} 프레임 ({to*10} ms), 계측 구간 {len(starts)}개")
+        if cur:
+            print(f"    저장값  k={saved_k}  검출 {cur[0]['tpr']*100:5.1f}%  "
+                  f"FA/h {cur[0]['fa_per_hour']:6.1f}")
+        print(f"    {'k':>10} {'검출률':>8} {'FA/h':>8} {'WAKE':>6}")
+        for r in front[-top:]:
+            print(f"    {str(r['k']):>10} {r['tpr']*100:7.1f}% "
                   f"{r['fa_per_hour']:8.1f} {r['n_wakes']:6d}")
-    print("-" * 74)
-    print("  * timeout 은 디코더 결선일 뿐 학습과 무관하다. 길게 잡으면 단어 하나가")
-    print("    여러 번 판정되는 것을 막아 FA/h 가 줄지만, 앞 단어가 회로를 붙잡고")
-    print("    있는 동안 온 대상 발화를 놓쳐 검출률이 떨어진다.")
-    print("  * 상용 목표는 검출률 95~99%, 오검출 0.5~1회/시간이다.")
-    print("=" * 74 + "\n")
+    print("-" * 78)
+    print("  * 파레토 앞면만 보여준다 (같은 FA/h 에서 검출률이 가장 높은 점).")
+    print("  * k 를 바꾸는 것은 분압 저항 두 개를 바꾸는 것이다:")
+    print("    V_TH(s) = VDD x (k - 0.5) / m(s).")
+    print("  * 시연에서는 검출률보다 FA/h 가 중요하다 -- 심사위원이 말하는 중에")
+    print("    LED 가 켜지는 것이 단어를 세 번 말하는 것보다 나쁘다.")
+    print("=" * 78 + "\n")
 
 
 def _noise_pool(c: Config):

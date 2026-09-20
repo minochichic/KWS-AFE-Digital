@@ -141,3 +141,52 @@ def evaluate_stream(board, feats: torch.Tensor, onsets: Sequence[int], *,
         "hours": hours,
         "frames": T,
     }
+
+
+# ----------------------------------------------------------- k 격자 탐색
+def sweep_k(starts: torch.Tensor, maxcount: torch.Tensor, onsets: Sequence[int],
+            m: Sequence[int], *, frames: int, frame_ms: float = 10.0,
+            tau_last: int = 0,
+            credit_window_s: Tuple[float, float] = (-0.1, 0.9)) -> List[Dict]:
+    """모든 k 조합을 연속 지표로 평가한다.
+
+    scan_segments 가 구간별 최대 count 를 주므로, PASS = (maxcount >= k) 이고
+    WAKE = 모든 상태 PASS 다. 상태기계를 다시 돌릴 필요가 없어 사실상 공짜다.
+
+    동작점을 클립 단위 fit_k 로 고르면 안 된다 -- 엄격한 k 는 정렬 오차에 약한데
+    연속 오디오는 클립보다 START 가 덜 정확해서, 클립에서 좋은 k 가 연속에서
+    무너진다(실측: 클립 기준 재적합이 검출률을 60% 에서 18% 로 떨어뜨렸다).
+    """
+    import itertools
+    fps = 1000.0 / frame_ms
+    lo, hi = credit_window_s
+    wins = [(o / SR + lo, o / SR + hi) for o in onsets]
+    hours = frames / fps / 3600.0
+    S = maxcount.shape[1]
+
+    out = []
+    for k in itertools.product(*[range(1, int(mi) + 1) for mi in m]):
+        kt = torch.tensor(k, dtype=maxcount.dtype)
+        fire = (maxcount >= kt.unsqueeze(0)).all(dim=1)
+        ev = ((starts[fire] + tau_last).float() / fps).tolist()
+        used, hit = set(), 0
+        for a, b in wins:
+            for j, t in enumerate(ev):
+                if j not in used and a <= t <= b:
+                    used.add(j); hit += 1
+                    break
+        fa = len(ev) - len(used)
+        out.append({"k": list(k), "tpr": hit / max(len(onsets), 1),
+                    "fa_per_hour": fa / max(hours, 1e-9),
+                    "n_wakes": len(ev), "n_false": fa})
+    return out
+
+
+def pareto(rows: List[Dict]) -> List[Dict]:
+    """FA/h 가 낮으면서 검출률이 높은 지점만 남긴다."""
+    best = sorted(rows, key=lambda r: (r["fa_per_hour"], -r["tpr"]))
+    out, top = [], -1.0
+    for r in best:
+        if r["tpr"] > top:
+            out.append(r); top = r["tpr"]
+    return out

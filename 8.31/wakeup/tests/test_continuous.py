@@ -72,3 +72,51 @@ def test_build_stream_records_real_target_positions():
     for o in on[:3]:
         seg = st[o:o + SR]
         assert seg.abs().max() > 0, "대상 위치가 무음이다"
+
+
+def test_grid_search_matches_a_full_state_machine_run():
+    """구간 스캔 + k 격자 계산이 상태기계를 끝까지 돌린 것과 같아야 한다.
+
+    CLR 은 timeout 만 보고 k 와 무관하므로 구간 분할이 k 에 의존하지 않는다는
+    것이 이 계산의 전제다. 그 전제가 깨지면 동작점 선택이 통째로 틀린다.
+    """
+    from wakeup.config import Config
+    from wakeup.model import WakeupModel
+    from wakeup.gatelevel import board_from_model, scan_segments
+    from wakeup.search import search_timing
+    from wakeup.synthetic import make_batch
+    from wakeup.continuous import stream_features, evaluate_stream, sweep_k
+
+    torch.manual_seed(0)
+    cfg = Config()
+    cfg.frontend.n_channels = 8
+    cfg.frontend.init_on_rate = 0.15
+    cfg.head.n_states = 2
+    cfg.head.tau = [8, 16]
+    cfg.head.timeout = 28
+    cfg.head.match_window = 2
+    m = WakeupModel(cfg)
+    x, y, _ = make_batch(256, [8, 16], seed=0)
+    m.frontend.init_fixed_scale(x)
+    m.frontend.init_thresholds(x, on_rate=0.15)
+    search_timing(m, x, y)
+    m.eval()
+
+    words = ["TGT" if v > 0.5 else "oth" for v in y]
+    st, on = build_stream(x, words, "TGT", minutes=1.5, targets_per_min=10.0,
+                          seed=0)
+    feats = stream_features(m, st)
+    board = board_from_model(m)
+    starts, mx = scan_segments(board, feats)
+    assert len(starts) > 5, "계측 구간이 너무 적어 비교가 무의미하다"
+
+    e = m.export()
+    k = [int(v) for v in e["k"]]
+    rows = sweep_k(starts, mx, on, [int(v) for v in e["m"]],
+                   frames=feats.shape[2], tau_last=int(board.tau[-1]))
+    grid = [r for r in rows if r["k"] == k][0]
+    full = evaluate_stream(board, feats, on)
+    assert grid["n_wakes"] == full["n_wakes"], (
+        f"WAKE 수가 다르다: 격자 {grid['n_wakes']} vs 전체 {full['n_wakes']}")
+    assert abs(grid["tpr"] - full["tpr"]) < 1e-9
+    assert abs(grid["fa_per_hour"] - full["fa_per_hour"]) < 1e-6
