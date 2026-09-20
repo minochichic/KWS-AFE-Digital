@@ -424,6 +424,105 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
     print("=" * 76 + "\n")
 
 
+# ----------------------------------------------------- 동작점 곡선
+@torch.no_grad()
+def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
+             fprs=(0.002, 0.005, 0.01, 0.02, 0.05),
+             timeouts=(28, 45, 60)) -> None:
+    """검출률 대 FA/h 의 맞바꿈 곡선. 재학습 없이 뽑는다.
+
+    동작점은 k 가 정한다. 학습된 형판은 그대로 두고 fit_k 만 다른 FPR 상한에서
+    다시 돌리면 다른 동작점이 나온다. timeout 은 디코더 결선이라 학습과 무관하다.
+
+    시연에서는 검출률보다 오검출이 중요하다 -- 심사위원이 말하는 중에 LED 가
+    켜지는 것이 "sheila" 를 세 번 말하는 것보다 나쁘다.
+    """
+    from . import data as D
+    from .model import WakeupModel
+    from .gatelevel import board_from_model
+    from .continuous import build_stream, stream_features, evaluate_stream
+
+    model, c = _load_trained(cfg)
+    if model is None:
+        return
+    print(f"  '{c.train.target_word}', {c.frontend.n_channels}채널, "
+          f"상태 {c.head.n_states}, tau {list(c.head.tau)}, 창 ±{c.head.match_window}")
+
+    # 동작점을 다시 맞출 검증 배치
+    ld = D.loaders(c.data_root, c.train.target_word, 256, seed=0, num_workers=2)
+    w0, y0 = _gather_init_batch(ld["val"], 3000, "cpu")
+
+    waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
+    noise = _noise_pool(c)
+    st, on = build_stream(waves, words, c.train.target_word, minutes=minutes,
+                          noise=noise, seed=0)
+    feats = stream_features(model, st)      # 한 번만 계산해 돌려 쓴다
+    print(f"  스트림 {feats.shape[2]/6000:.1f}분, 대상 {len(on)}회\n")
+
+    print("=" * 74)
+    print("  동작점 곡선 — 검출률 대 시간당 오검출")
+    print("=" * 74)
+    print(f"  {'FPR상한':>8} {'timeout':>8} {'k':>10} {'검출률':>8} "
+          f"{'FA/h':>8} {'WAKE':>6}")
+    rows = []
+    for mf in fprs:
+        model.refit_k(w0, y0, max_fpr=mf)
+        k = [int(v) for v in model.head.k.round()]
+        for to in timeouts:
+            if to <= c.head.tau[-1] + c.head.min_wake_frames or to > 63:
+                continue
+            c.head.timeout = to
+            b = board_from_model(model, n_decoders=3)
+            r = evaluate_stream(b, feats, on)
+            rows.append((mf, to, k, r["tpr"], r["fa_per_hour"], r["n_wakes"]))
+            print(f"  {mf:8.3f} {to:8d} {str(k):>10} {r['tpr']*100:7.1f}% "
+                  f"{r['fa_per_hour']:8.1f} {r['n_wakes']:6d}")
+    print("-" * 74)
+    print("  * timeout 은 디코더 결선일 뿐 학습과 무관하다. 길게 잡으면 단어 하나가")
+    print("    여러 번 판정되는 것을 막아 FA/h 가 줄지만, 앞 단어가 회로를 붙잡고")
+    print("    있는 동안 온 대상 발화를 놓쳐 검출률이 떨어진다.")
+    print("  * 상용 목표는 검출률 95~99%, 오검출 0.5~1회/시간이다.")
+    print("=" * 74 + "\n")
+
+
+def _noise_pool(c: Config):
+    import os
+    import torchaudio
+    from . import data as D
+    try:
+        base = torchaudio.datasets.SPEECHCOMMANDS(
+            root=os.path.expanduser(c.data_root),
+            url="speech_commands_v0.02", download=False, subset="testing")
+        return D._noise_waves(base)
+    except Exception as e:
+        print(f"  배경 소음을 못 읽었다 ({e}); 소음 없이 진행한다.")
+        return None
+
+
+def _load_trained(cfg: Config):
+    """runs/<tag>/best.pt 에서 모델과 확정 config 를 읽는다."""
+    from .model import WakeupModel
+    ck_path = Path(cfg.out_dir) / cfg.tag / "best.pt"
+    if not ck_path.is_file():
+        print(f"체크포인트가 없다: {ck_path}")
+        return None, None
+    ck = torch.load(ck_path, map_location="cpu", weights_only=False)
+    sv = ck["cfg"]
+    c = copy.deepcopy(cfg)
+    for k, v in sv["frontend"].items():
+        setattr(c.frontend, k, v)
+    for k, v in sv["head"].items():
+        setattr(c.head, k, v)
+    for k, v in sv["start"].items():
+        setattr(c.start, k, v)
+    c.train.target_word = sv["train"]["target_word"]
+    m = WakeupModel(c)
+    m.load_state_dict(ck["model"])
+    m.eval()
+    print(f"체크포인트 {ck_path}")
+    return m, c
+
+
 # ------------------------------------------------------- 연속 오디오 평가
 @torch.no_grad()
 def fa_eval(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
@@ -734,6 +833,8 @@ def main(argv=None) -> None:
                    help="시드 0..N-1 로 반복해 편차를 본다")
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--fa-curve", action="store_true",
+                   help="검출률 대 FA/h 맞바꿈 곡선 (재학습 없음)")
     p.add_argument("--fa-eval", action="store_true",
                    help="학습된 회로를 연속 오디오에서 돌려 검출률과 FA/h 를 잰다")
     p.add_argument("--minutes", type=float, default=20.0)
@@ -784,6 +885,9 @@ def main(argv=None) -> None:
     cfg.tag = a.tag or f"{a.target}_{a.channels}ch_s{a.states}"
     cfg.validate()
 
+    if a.fa_curve:
+        fa_curve(cfg, minutes=a.minutes)
+        return
     if a.fa_eval:
         fa_eval(cfg, minutes=a.minutes)
         return

@@ -52,13 +52,21 @@ def build_stream(waves: torch.Tensor, words: Sequence[str], target: str, *,
 
     stream = torch.cat(out)
     if noise:
-        nz = noise[int(torch.randint(len(noise), (1,), generator=g))]
-        rep = int(stream.numel() // nz.numel()) + 1
-        nz = nz.repeat(rep)[:stream.numel()]
-        snr = snr_db[0] + torch.rand(1, generator=g).item() * (snr_db[1] - snr_db[0])
-        ps = stream.pow(2).mean().clamp(min=1e-12)
-        pn = nz.pow(2).mean().clamp(min=1e-12)
-        stream = stream + nz * torch.sqrt(ps / (pn * 10 ** (snr / 10)))
+        # 소음과 SNR 을 스트림당 한 번만 뽑으면 그 스트림이 사실상 한 가지
+        # 조건만 시험하게 되어, 스트림 간 FA/h 편차가 3배씩 벌어진다(실측:
+        # 191 / 198 / 65). 30초 블록마다 다시 뽑아 한 스트림이 범위를 덮게 한다.
+        blk = int(30.0 * SR)
+        ps_all = stream.pow(2).mean().clamp(min=1e-12)
+        for a in range(0, stream.numel(), blk):
+            b = min(a + blk, stream.numel())
+            nz = noise[int(torch.randint(len(noise), (1,), generator=g))]
+            rep = int((b - a) // nz.numel()) + 1
+            off = int(torch.randint(max(1, nz.numel() - 1), (1,), generator=g))
+            nz = nz.roll(off).repeat(rep)[:b - a]
+            snr = snr_db[0] + torch.rand(1, generator=g).item() * (snr_db[1] - snr_db[0])
+            pn = nz.pow(2).mean().clamp(min=1e-12)
+            stream[a:b] = stream[a:b] + nz * torch.sqrt(
+                ps_all / (pn * 10 ** (snr / 10)))
     return stream, onsets
 
 
