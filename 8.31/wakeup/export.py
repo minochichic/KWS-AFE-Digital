@@ -67,6 +67,8 @@ def build_report(model: WakeupModel, vdd: float = 1.8) -> Dict:
         "vdd": vdd,
         "n_resistors_template": int(e["n_resistors"]),
         "n_active_states": int(e["n_active_states"]),
+        "n_unique_templates": len({(tuple(int(v) for v in M[i]),
+                                   int(e["k"][i])) for i in range(S)}),
         "match_window": int(cfg.head.match_window),
         "channel_thresholds": [round(float(v), 4) for v in e["theta"]],
         "states": states,
@@ -108,6 +110,23 @@ def format_report(rep: Dict, test: Optional[Dict] = None) -> str:
         r8 = "-" if s["R8_ohm"] is None else f"{s['R8_ohm']/1000:.1f}"
         a(f"  s{s['state']:<4} {s['m']:>3} {s['k']:>3} {s['V_TH']:>9.3f} "
           f"{s['margin_V']:>9.3f} {r7:>9} {r8:>9}")
+    # 형판과 k 가 같은 상태들은 비교기와 저항망을 공유할 수 있다. MATCH 는
+    # 레벨 신호라 상시 계산되므로, 같은 MATCH 를 서로 다른 시각에 래치하면 된다.
+    groups: Dict[str, list] = {}
+    for st in rep["states"]:
+        key = f"{st['template']}|{st['k']}"
+        groups.setdefault(key, []).append(st["state"])
+    shared = [g for g in groups.values() if len(g) > 1]
+    if shared:
+        a("\n  * 형판과 k 가 같은 상태: "
+          + ", ".join("s" + "=s".join(str(i) for i in g) for g in shared))
+        a("    MATCH 는 레벨이라 상시 계산된다 -> 저항망과 비교기를 공유하고")
+        a("    래치만 시각별로 따로 두면 된다.")
+        a(f"    비교기 {rep['n_states']} -> {len(groups)}개, "
+          f"형판 저항 {rep['n_resistors_template']} -> "
+          f"{sum(max(s['m'] for s in rep['states'] if s['state'] in g) for g in groups.values())}개, "
+          f"분압 저항 {2*rep['n_states']} -> {2*len(groups)}개")
+
     dead = [s["state"] for s in rep["states"] if not s.get("active", True)]
     if dead:
         a(f"\n  ! 상태 {dead} 는 k=0 또는 m=0 이라 항상 통과한다 -- 판정에 기여하지")

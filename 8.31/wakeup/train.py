@@ -578,6 +578,53 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
 
 
 # ----------------------------------------------------------------------- CLI
+def repeat_runs(cfg: Config, n: int, **kw) -> None:
+    """시드를 바꿔 여러 번 돌리고 편차를 본다.
+
+    한 번의 시험 성적이 운인지 실력인지 가른다. 회로 상수를 뽑기 전에
+    반드시 확인해야 한다 -- 저항값은 한 번 정하면 못 바꾼다.
+    """
+    import statistics
+    rows = []
+    for sd in range(n):
+        c = copy.deepcopy(cfg)
+        c.train.seed, c.tag = sd, f"{cfg.tag}_s{sd}"
+        print("\n" + "=" * 70)
+        print(f"  시드 {sd}")
+        print("=" * 70)
+        r = train(c, **kw)
+        if "test" not in r:
+            print(f"  시드 {sd}: 학습이 중단됐다"); continue
+        e = r["export"]
+        rows.append((sd, r["test"]["tpr"], r["test"]["fpr"],
+                     r["test"]["start_recall"], e["n_resistors_template"],
+                     e["n_unique_templates"],
+                     [st["template"] for st in e["states"]],
+                     [st["k"] for st in e["states"]]))
+    if not rows:
+        return
+    print("\n" + "=" * 70)
+    print(f"  시드 {len(rows)}회 요약 — '{cfg.train.target_word}', "
+          f"{cfg.frontend.n_channels}채널, 상태 {cfg.head.n_states}개")
+    print("=" * 70)
+    print(f"  {'시드':>4} {'TPR':>7} {'FPR':>7} {'START':>7} {'저항':>5} "
+          f"{'고유형판':>7} {'k':>12}")
+    for sd, tpr, fpr, sr, nr, nu, _, k in rows:
+        print(f"  {sd:>4} {tpr:7.3f} {fpr:7.3f} {sr:7.3f} {nr:5d} {nu:7d} "
+              f"{str(k):>12}")
+    t = [r[1] for r in rows]; f = [r[2] for r in rows]
+    sd_t = statistics.stdev(t) if len(t) > 1 else 0.0
+    sd_f = statistics.stdev(f) if len(f) > 1 else 0.0
+    print("-" * 70)
+    print(f"  TPR {statistics.mean(t):.3f} ± {sd_t:.3f}   "
+          f"FPR {statistics.mean(f):.3f} ± {sd_f:.3f}")
+    if all(r[5] == 1 for r in rows):
+        print("  * 모든 시드에서 상태들이 같은 형판을 쓴다 -> 비교기·저항망 공유 가능.")
+    elif any(r[5] == 1 for r in rows):
+        print("  ! 형판 공유가 시드마다 다르다 -- 우연일 수 있으니 공유 설계는 보류.")
+    print("=" * 70 + "\n")
+
+
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description="고정 회로 웨이크업 학습")
     p.add_argument("--target", default="on", help="대상 단어")
@@ -606,6 +653,8 @@ def main(argv=None) -> None:
     p.add_argument("--out", default="runs")
     p.add_argument("--tag", default="")
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--repeat", type=int, default=0,
+                   help="시드 0..N-1 로 반복해 편차를 본다")
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--sweep-window", action="store_true",
@@ -664,9 +713,13 @@ def main(argv=None) -> None:
         sweep_words(cfg, words)
         return
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
-    train(cfg, diag=a.diagnose, allow_infeasible=a.allow_infeasible,
-          sweep=a.sweep_frontend, min_gap=a.min_gap,
-          min_recall=a.min_recall, sweep_win=a.sweep_window)
+    kw = dict(diag=a.diagnose, allow_infeasible=a.allow_infeasible,
+              sweep=a.sweep_frontend, min_gap=a.min_gap,
+              min_recall=a.min_recall, sweep_win=a.sweep_window)
+    if a.repeat > 1:
+        repeat_runs(cfg, a.repeat, **kw)
+    else:
+        train(cfg, **kw)
 
 
 if __name__ == "__main__":
