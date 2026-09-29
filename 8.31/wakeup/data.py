@@ -187,3 +187,34 @@ def raw_batch(root: str, split: str, n: int, *, seed: int = 0,
         waves.append(_fix_length(it[0], L))
         words.append(it[2])
     return torch.stack(waves), words
+
+
+def word_clips(root: str, splits: Sequence[str], word: Optional[str] = None,
+               *, clip_ms: float = 1000.0, limit: int = 0):
+    """(wave [n, L], speakers [n], words [n]) — 화자 ID 를 같이 돌려준다.
+
+    화자별 검출률을 재려면 누가 말했는지 알아야 한다. torchaudio 의
+    SPEECHCOMMANDS 는 (wave, sr, label, speaker_id, utterance_number) 를 준다.
+    word 를 주면 그 단어만, 없으면 전부.
+    """
+    import torchaudio
+    root = os.path.expanduser(root)
+    L = int(round(SR * clip_ms / 1000.0))
+    waves, spk, wrd = [], [], []
+    for sp in splits:
+        base = torchaudio.datasets.SPEECHCOMMANDS(
+            root=root, url="speech_commands_v0.02", download=False,
+            subset=_SPLIT[sp])
+        for i in range(len(base)):
+            it = base[i]
+            if word is not None and it[2] != word:
+                continue
+            waves.append(_fix_length(it[0], L))
+            spk.append(it[3]); wrd.append(it[2])
+            if limit and len(waves) >= limit:
+                break
+        if limit and len(waves) >= limit:
+            break
+    if not waves:
+        raise ValueError(f"클립이 없다: {word!r} in {splits}")
+    return torch.stack(waves), spk, wrd

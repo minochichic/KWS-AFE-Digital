@@ -424,6 +424,113 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
     print("=" * 76 + "\n")
 
 
+# ------------------------------------------------------- 화자별 검출률
+@torch.no_grad()
+def speaker_eval(cfg: Config, *, max_fpr: float = 0.05,
+                 n_neg: int = 6000) -> None:
+    """화자마다 검출률이 얼마나 다른지, 그리고 화자별로 k 를 고르면 얼마나
+    좋아지는지 잰다.
+
+    상용 웨이크워드의 enrollment(설정할 때 문구를 몇 번 말하게 하는 것)에
+    해당하는 조정을 우리는 분압 저항으로 한다. 그 조정이 의미가 있으려면
+    화자별 편차가 커야 한다 -- 모두가 비슷하면 고정 저항으로 충분하다.
+    """
+    import itertools
+    import statistics
+    from collections import defaultdict
+    from . import data as D
+    from .model import detect_start, gather_states
+
+    model, c = _load_trained(cfg)
+    if model is None:
+        return
+    e = model.export()
+    m_used = [int(v) for v in e["m"]]
+    saved_k = [int(v) for v in e["k"]]
+    dev = next(model.parameters()).device
+
+    def counts_of(w):
+        out = []
+        for i in range(0, w.shape[0], 512):
+            b = w[i:i + 512].to(dev)
+            x = model.features(b)
+            st, fo = detect_start(x, c.start.k, c.start.min_frames)
+            xs = gather_states(x, st, model.tau, c.head.match_window)
+            out.append((model.head(xs)["count"].cpu(), fo.cpu()))
+        return (torch.cat([a for a, _ in out]),
+                torch.cat([b for _, b in out]))
+
+    # 대상 단어 — 화자별로 충분한 표본을 위해 val+test 를 함께 쓴다
+    wp, spk, _ = D.word_clips(c.data_root, ("val", "test"), c.train.target_word)
+    cp, fp = counts_of(wp)
+    # 비대상 — FPR 기준선
+    wn, _, wrds = D.word_clips(c.data_root, ("test",), None, limit=n_neg)
+    keep = torch.tensor([x != c.train.target_word for x in wrds])
+    cn, fn = counts_of(wn[keep])
+
+    by = defaultdict(list)
+    for i, s_ in enumerate(spk):
+        by[s_].append(i)
+    speakers = [s_ for s_, idx in by.items() if len(idx) >= 3]
+    print(f"  대상 클립 {len(spk)}개, 화자 {len(by)}명 "
+          f"(3개 이상 말한 화자 {len(speakers)}명), 비대상 {int(keep.sum())}개")
+
+    grid = list(itertools.product(*[range(1, mi + 1) for mi in m_used]))
+    feas = []
+    for k in grid:
+        kt = torch.tensor(k, dtype=cn.dtype)
+        fpr = (((cn >= kt.unsqueeze(0)).all(1)) & fn).float().mean().item()
+        if fpr <= max_fpr:
+            feas.append((k, fpr))
+    if not feas:
+        print("  FPR 상한을 지키는 k 가 없다."); return
+
+    def tpr_of(k, idx):
+        kt = torch.tensor(k, dtype=cp.dtype)
+        ok = ((cp[idx] >= kt.unsqueeze(0)).all(1)) & fp[idx]
+        return ok.float().mean().item()
+
+    all_idx = torch.arange(len(spk))
+    gk, gfpr = max(feas, key=lambda t: tpr_of(t[0], all_idx))
+    per_global = [tpr_of(gk, torch.tensor(by[s_])) for s_ in speakers]
+    best_per, per_oracle = [], []
+    for s_ in speakers:
+        idx = torch.tensor(by[s_])
+        k, _f = max(feas, key=lambda t: tpr_of(t[0], idx))
+        best_per.append(k); per_oracle.append(tpr_of(k, idx))
+
+    print("\n" + "=" * 68)
+    print(f"  화자별 검출률 — '{c.train.target_word}', FPR ≤ {max_fpr:.0%}")
+    print("=" * 68)
+    print(f"  전역 최적 k = {list(gk)}  (FPR {gfpr:.3f}), 저장값 {saved_k}")
+    print(f"\n  {'':16s} {'평균':>7} {'중앙':>7} {'표준편차':>8}")
+    print(f"  {'전역 k 하나':16s} {statistics.mean(per_global):7.3f} "
+          f"{statistics.median(per_global):7.3f} "
+          f"{statistics.pstdev(per_global):8.3f}")
+    print(f"  {'화자별 최적 k':16s} {statistics.mean(per_oracle):7.3f} "
+          f"{statistics.median(per_oracle):7.3f} "
+          f"{statistics.pstdev(per_oracle):8.3f}")
+    gain = statistics.mean(per_oracle) - statistics.mean(per_global)
+    print(f"\n  가변저항으로 얻을 수 있는 최대 이득: +{gain*100:.1f}%p")
+
+    print(f"\n  전역 k 에서의 화자 분포")
+    bins = [0.0, 0.2, 0.4, 0.6, 0.8, 1.01]
+    for a, b in zip(bins[:-1], bins[1:]):
+        n = sum(1 for v in per_global if a <= v < b)
+        bar = "#" * int(40 * n / max(len(per_global), 1))
+        print(f"    {a*100:3.0f}~{min(b,1.0)*100:3.0f}%  {bar} {n}명")
+    zero = sum(1 for v in per_global if v == 0.0)
+    full = sum(1 for v in per_global if v >= 0.999)
+    print(f"    한 번도 안 되는 화자 {zero}명 / 전부 되는 화자 {full}명 "
+          f"(총 {len(per_global)}명)")
+
+    uniq = len(set(best_per))
+    print(f"\n  화자별 최적 k 가 서로 다른 가짓수: {uniq}개")
+    print("  * 이득이 작거나 최적 k 가 대부분 같으면 고정 저항으로 충분하다.")
+    print("  * 이득이 크면 가변저항(다회전)으로 시연자에 맞춰 조정할 값이 있다.")
+    print("=" * 68 + "\n")
+
+
 # ----------------------------------------------------- 동작점 선택
 @torch.no_grad()
 def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
@@ -850,6 +957,8 @@ def main(argv=None) -> None:
                    help="시드 0..N-1 로 반복해 편차를 본다")
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--speaker-eval", action="store_true",
+                   help="화자별 검출률 분포와 가변저항의 이득을 잰다")
     p.add_argument("--fa-curve", action="store_true",
                    help="검출률 대 FA/h 맞바꿈 곡선 (재학습 없음)")
     p.add_argument("--fa-eval", action="store_true",
@@ -902,6 +1011,9 @@ def main(argv=None) -> None:
     cfg.tag = a.tag or f"{a.target}_{a.channels}ch_s{a.states}"
     cfg.validate()
 
+    if a.speaker_eval:
+        speaker_eval(cfg, max_fpr=a.max_fpr)
+        return
     if a.fa_curve:
         fa_curve(cfg, minutes=a.minutes)
         return
