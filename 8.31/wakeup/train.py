@@ -475,10 +475,24 @@ def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
         if cur:
             print(f"    저장값  k={saved_k}  검출 {cur[0]['tpr']*100:5.1f}%  "
                   f"FA/h {cur[0]['fa_per_hour']:6.1f}")
+        # pareto() 는 FA/h 오름차순이다. 앞쪽(저FA)이 결정 구간이므로 거기부터
+        # 보여준다. 뒤쪽 끝만 찍었더니 16채널에서 정작 필요한 구간이 잘렸다.
         print(f"    {'k':>10} {'검출률':>8} {'FA/h':>8} {'WAKE':>6}")
-        for r in front[-top:]:
+        for r in front[:top]:
             print(f"    {str(r['k']):>10} {r['tpr']*100:7.1f}% "
                   f"{r['fa_per_hour']:8.1f} {r['n_wakes']:6d}")
+        if len(front) > top:
+            hi = front[-1]
+            print(f"    ... 그 위로 {len(front)-top}점 더 (최대 "
+                  f"검출 {hi['tpr']*100:.1f}% @ FA/h {hi['fa_per_hour']:.0f})")
+        # 결정에 쓰는 요약 — 각 FA/h 예산에서 얻을 수 있는 최고 검출률
+        picks = []
+        for cap in (1.0, 3.0, 10.0, 30.0):
+            ok = [r for r in rows if r["fa_per_hour"] <= cap]
+            b = max(ok, key=lambda r: r["tpr"]) if ok else None
+            picks.append(f"≤{cap:g}: " + (f"{b['tpr']*100:.1f}% k={b['k']}"
+                                          if b else "없음"))
+        print("    FA/h 예산별 최고 검출률 — " + "  |  ".join(picks))
     print("-" * 78)
     print("  * 파레토 앞면만 보여준다 (같은 FA/h 에서 검출률이 가장 높은 점).")
     print("  * k 를 바꾸는 것은 분압 저항 두 개를 바꾸는 것이다:")
