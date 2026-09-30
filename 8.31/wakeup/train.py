@@ -424,6 +424,74 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
     print("=" * 76 + "\n")
 
 
+# ------------------------------------------------------- 내 목소리 시험
+@torch.no_grad()
+def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0)) -> None:
+    """직접 녹음한 파일을 학습된 회로에 넣어 본다.
+
+    화자별 편차가 쌍봉이므로(11/20 은 거의 항상, 5/20 은 한 번도 안 됨),
+    시연자의 목소리가 어느 쪽인지는 PCB 를 만들기 전에 알아야 한다.
+
+    입력 이득을 함께 훑는다. 정규화가 데이터셋 상수(normalize=fixed)라 녹음
+    레벨이 그대로 판정에 들어가기 때문이다. 회로에서 이 이득은 PreAMP 가 정한다.
+    """
+    import torchaudio
+    from .gatelevel import board_from_model, scan_segments
+    from .continuous import stream_features
+
+    model, c = _load_trained(cfg)
+    if model is None:
+        return
+    e = model.export()
+    m_used = [int(v) for v in e["m"]]
+    k = [int(v) for v in e["k"]]
+
+    files = sorted(Path(path).glob("*.wav")) if Path(path).is_dir() else [Path(path)]
+    if not files:
+        print(f"wav 파일이 없다: {path}  (m4a/mp3 는 wav 로 변환할 것)")
+        return
+    print(f"  형판 m={m_used}, k={k}  (이 개수 이상 맞아야 통과)\n")
+
+    for f in files:
+        try:
+            wav, sr = torchaudio.load(str(f))
+        except Exception:
+            # torchaudio 백엔드가 없거나 코덱을 못 읽는 환경 대비
+            import wave as _w
+            import numpy as _np
+            with _w.open(str(f), "rb") as h:
+                sr = h.getframerate()
+                raw = h.readframes(h.getnframes())
+                a = _np.frombuffer(raw, dtype=_np.int16).astype(_np.float32) / 32768
+                if h.getnchannels() > 1:
+                    a = a.reshape(-1, h.getnchannels()).mean(1)
+            wav = torch.from_numpy(a.copy()).unsqueeze(0)
+        wav = wav.mean(0)                                   # 모노
+        if sr != 16000:
+            wav = torchaudio.functional.resample(wav, sr, 16000)
+        wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25  # 기준 레벨로 정규화
+        print(f"  {f.name}  ({wav.numel()/16000:.1f}s)")
+        print(f"    {'이득':>6} {'구간':>5} {'WAKE':>5}   상태별 최대 일치 개수 상위")
+        for g in gains:
+            feats = stream_features(model, wav * g)
+            board = board_from_model(model, n_decoders=3)
+            starts, mx = scan_segments(board, feats)
+            if len(starts) == 0:
+                print(f"    {g:6.2f} {0:5d} {0:5d}   START 가 뜨지 않음")
+                continue
+            kt = torch.tensor(k, dtype=mx.dtype)
+            fire = (mx >= kt.unsqueeze(0)).all(dim=1)
+            best = [f"s{i+1}:{int(mx[:, i].max())}/{m_used[i]}"
+                    for i in range(mx.shape[1])]
+            print(f"    {g:6.2f} {len(starts):5d} {int(fire.sum()):5d}   "
+                  + "  ".join(best))
+        print()
+    print("  * WAKE 가 0 이면 상태별 최대 일치 개수를 보라. k 에 몇 개 모자라는지가")
+    print("    보인다. 전 이득에서 크게 모자라면 그 목소리는 이 형판과 안 맞는다.")
+    print("  * 이득은 회로에서 PreAMP 가 정한다. 특정 이득에서만 되면 그 값으로")
+    print("    맞추면 되고, 어느 이득에서도 안 되면 대상 단어를 바꿔야 한다.\n")
+
+
 # ------------------------------------------------------- 화자별 검출률
 @torch.no_grad()
 def speaker_eval(cfg: Config, *, max_fpr: float = 0.05,
@@ -957,6 +1025,8 @@ def main(argv=None) -> None:
                    help="시드 0..N-1 로 반복해 편차를 본다")
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--eval-wav", default="",
+                   help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
     p.add_argument("--speaker-eval", action="store_true",
                    help="화자별 검출률 분포와 가변저항의 이득을 잰다")
     p.add_argument("--fa-curve", action="store_true",
@@ -1011,6 +1081,9 @@ def main(argv=None) -> None:
     cfg.tag = a.tag or f"{a.target}_{a.channels}ch_s{a.states}"
     cfg.validate()
 
+    if a.eval_wav:
+        eval_wav(cfg, a.eval_wav)
+        return
     if a.speaker_eval:
         speaker_eval(cfg, max_fpr=a.max_fpr)
         return
