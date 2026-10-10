@@ -1,6 +1,14 @@
 # --- datasets (never commit; Colab re-downloads) ---
 datasets/
 *.wav
+# 개인 음성 녹음. *.wav 만 막아 두었더니 m4a 가 그대로 추적 대상이 됐다
+# (휴대폰 녹음은 보통 m4a 다). 이 저장소는 GitHub 에 올라간다.
+*.m4a
+*.mp3
+*.flac
+*.ogg
+*.aac
+8.31/voice/
 *.tar.gz
 *.zip
 
