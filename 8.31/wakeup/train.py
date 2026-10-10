@@ -471,7 +471,9 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0)) -> Non
             wav = torchaudio.functional.resample(wav, sr, 16000)
         wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25  # 기준 레벨로 정규화
         print(f"  {f.name}  ({wav.numel()/16000:.1f}s)")
-        print(f"    {'이득':>6} {'구간':>5} {'WAKE':>5}   상태별 최대 일치 개수 상위")
+        print(f"    {'이득':>6} {'구간':>5} {'WAKE':>5} {'s1통과':>7} {'s2통과':>7}"
+              f"  {'병목':>6}")
+        detail = {}
         for g in gains:
             feats = stream_features(model, wav * g)
             board = board_from_model(model, n_decoders=3)
@@ -480,16 +482,37 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0)) -> Non
                 print(f"    {g:6.2f} {0:5d} {0:5d}   START 가 뜨지 않음")
                 continue
             kt = torch.tensor(k, dtype=mx.dtype)
-            fire = (mx >= kt.unsqueeze(0)).all(dim=1)
-            best = [f"s{i+1}:{int(mx[:, i].max())}/{m_used[i]}"
-                    for i in range(mx.shape[1])]
-            print(f"    {g:6.2f} {len(starts):5d} {int(fire.sum()):5d}   "
-                  + "  ".join(best))
+            per = mx >= kt.unsqueeze(0)          # [n_seg, S] 상태별 통과
+            fire = per.all(dim=1)
+            n1, n2 = int(per[:, 0].sum()), int(per[:, 1].sum())
+            # 어느 상태가 더 자주 막는가
+            miss = [int((~per[:, i]).sum()) for i in range(per.shape[1])]
+            neck = f"s{miss.index(max(miss))+1}" if max(miss) > 0 else "—"
+            print(f"    {g:6.2f} {len(starts):5d} {int(fire.sum()):5d} "
+                  f"{n1:7d} {n2:7d}  {neck:>6}")
+            detail[g] = (starts, mx, fire)
+
+        # 기준 이득에서 구간을 하나씩 — 실제 발화와 맞춰 보라고
+        ref = min(detail, key=lambda g: abs(g - 1.0)) if detail else None
+        if ref is not None:
+            starts, mx, fire = detail[ref]
+            print(f"\n    이득 {ref:.2f} 의 구간별 (시각 / s1 / s2 / WAKE)")
+            line = []
+            for i in range(len(starts)):
+                t = float(starts[i]) / 100.0
+                line.append(f"{t:5.1f}s {int(mx[i,0])}/{m_used[0]}"
+                            f",{int(mx[i,1])}/{m_used[1]}"
+                            + ("*" if bool(fire[i]) else " "))
+            for i in range(0, len(line), 4):
+                print("      " + "   ".join(line[i:i + 4]))
+            print(f"      (* = WAKE. 필요한 값은 s1≥{k[0]}, s2≥{k[1]})")
         print()
-    print("  * WAKE 가 0 이면 상태별 최대 일치 개수를 보라. k 에 몇 개 모자라는지가")
-    print("    보인다. 전 이득에서 크게 모자라면 그 목소리는 이 형판과 안 맞는다.")
-    print("  * 이득은 회로에서 PreAMP 가 정한다. 특정 이득에서만 되면 그 값으로")
-    print("    맞추면 되고, 어느 이득에서도 안 되면 대상 단어를 바꿔야 한다.\n")
+    print("  * 구간 = START 가 뜬 횟수. 발화 횟수보다 많으면 잡음에서도 뜬 것이고,")
+    print("    그 구간의 WAKE 는 오검출이다. 이득을 올리면 둘 다 늘어난다.")
+    print("  * 병목 = 더 자주 막는 상태. 한쪽만 계속 막으면 그 상태의 k 를 낮추는")
+    print("    것만으로 크게 좋아질 수 있다(분압 저항 두 개).")
+    print("  * 이득은 회로에서 PreAMP 가 정한다. 여기 1.00 은 녹음을 피크 0.25 로")
+    print("    맞춘 상태다 -- 더 큰 이득에서 잘 되면 PreAMP 를 그만큼 키워야 한다.\n")
 
 
 # ------------------------------------------------------- 화자별 검출률
