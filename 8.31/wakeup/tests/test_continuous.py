@@ -120,3 +120,54 @@ def test_grid_search_matches_a_full_state_machine_run():
         f"WAKE 수가 다르다: 격자 {grid['n_wakes']} vs 전체 {full['n_wakes']}")
     assert abs(grid["tpr"] - full["tpr"]) < 1e-9
     assert abs(grid["fa_per_hour"] - full["fa_per_hour"]) < 1e-6
+
+
+def test_split_utterances_finds_one_clip_per_word():
+    """발화 사이 간격이 1.3초인 녹음에서 발화당 하나로 떨어져야 한다.
+
+    min_gap 이 짧으면 한 발화가 둘로 쪼개진다 -- "sheila" 는 /sh/ 와 뒤 모음
+    사이에 에너지 골짜기가 있어 0.4초로 두면 10발화가 20조각이 됐다.
+    """
+    from wakeup.continuous import split_utterances
+    torch.manual_seed(0)
+    sr, gap = SR, 1.3
+    w = torch.randn(int(sr * 14)) * 0.002
+    onsets = []
+    for i in range(10):
+        a = int(sr * (1.0 + i * gap))
+        onsets.append(a)
+        # 앞쪽 큰 소리 + 짧은 골짜기 + 뒤쪽 작은 소리 (sheila 모양)
+        w[a:a + int(sr * 0.15)] += torch.randn(int(sr * 0.15)) * 0.5
+        b = a + int(sr * 0.45)
+        w[b:b + int(sr * 0.2)] += torch.randn(int(sr * 0.2)) * 0.2
+
+    clips = split_utterances(w)
+    assert len(clips) == 10, f"발화당 하나가 아니다: {len(clips)}개"
+    assert all(c.numel() == sr for c in clips)
+    # 짧은 간격으로 두면 쪼개지는 것도 확인 (기본값이 왜 0.8 인지)
+    assert len(split_utterances(w, min_gap_s=0.3)) > 10
+
+
+def test_enrollment_clips_only_enter_the_train_split():
+    """시연자 녹음이 val/test 에 새면 자기 목소리로 자기를 평가하게 된다."""
+    import inspect
+    from wakeup import data as D
+    src = inspect.getsource(D.loaders)
+    assert 'extra_pos=(extra_pos if sp == "train" else None)' in src, (
+        "loaders 가 extra_pos 를 train 분할에만 넣는지 확인할 것")
+
+
+def test_enrollment_is_oversampled_to_the_requested_fraction():
+    from wakeup.data import TargetVsRest
+    items = [(torch.randn(SR) * 0.05, "sheila" if i < 100 else "no")
+             for i in range(600)]
+    extra = [torch.randn(SR) * 0.05 for _ in range(10)]
+    ds = TargetVsRest(items, [], "sheila", "train", extra_pos=extra,
+                      enroll_frac=0.3, silence_fraction=0.0)
+    total_pos = len(ds.pos) + ds.n_extra
+    frac = ds.n_extra / total_pos
+    assert abs(frac - 0.3) < 0.02, f"녹음 비율이 {frac:.3f} (목표 0.30)"
+    # 반복해서 꺼내도 10개 원본을 돌려 쓴다
+    i = len(ds.pos)
+    a, ya = ds[i]
+    assert float(ya) == 1.0 and a.numel() == SR

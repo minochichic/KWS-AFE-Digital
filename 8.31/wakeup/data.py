@@ -41,7 +41,9 @@ class TargetVsRest(Dataset):
                  silence_fraction: float = 0.15, seed: int = 0,
                  clip_ms: float = 1000.0, augment: bool = False,
                  noise_snr_db: Tuple[float, float] = (5.0, 20.0),
-                 shift_ms: float = 100.0) -> None:
+                 shift_ms: float = 100.0,
+                 extra_pos: Optional[Sequence[torch.Tensor]] = None,
+                 enroll_frac: float = 0.3) -> None:
         self.items = items
         self.noise = list(noise)
         self.n = int(round(SR * clip_ms / 1000.0))
@@ -61,6 +63,16 @@ class TargetVsRest(Dataset):
         rng.shuffle(neg)
         n_neg = min(len(neg), int(round(len(pos) * neg_per_pos)))
         self.pos, self.neg = pos, neg[:n_neg]
+
+        # 시연자 녹음(enrollment). 데이터셋 양성이 수천 개인데 녹음은 수십 개
+        # 뿐이라 그대로 섞으면 묻힌다. 양성의 enroll_frac 만큼을 차지하도록
+        # 반복해 넣는다. 증강(시간 이동·잡음)은 train 분할에서 그대로 걸린다.
+        self.extra = list(extra_pos or [])
+        self.n_extra = 0
+        if self.extra and enroll_frac > 0:
+            want = int(round(len(pos) * enroll_frac / (1.0 - enroll_frac)))
+            self.n_extra = max(len(self.extra), want)
+
         self.n_silence = int(round(len(pos) * silence_fraction))
         self.sil_seed = seed + 777
 
@@ -69,7 +81,7 @@ class TargetVsRest(Dataset):
         return [it[1] for it in items]
 
     def __len__(self) -> int:
-        return len(self.pos) + len(self.neg) + self.n_silence
+        return len(self.pos) + self.n_extra + len(self.neg) + self.n_silence
 
     def _aug(self, w: torch.Tensor, g: torch.Generator) -> torch.Tensor:
         # 시간 이동 — START 가 어디서 뜨든 견디게 한다
@@ -93,11 +105,18 @@ class TargetVsRest(Dataset):
         return w
 
     def __getitem__(self, i: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        n_real = len(self.pos) + len(self.neg)
+        n_pos, n_ex = len(self.pos), self.n_extra
+        n_real = n_pos + n_ex + len(self.neg)
         if i < n_real:
-            j = self.pos[i] if i < len(self.pos) else self.neg[i - len(self.pos)]
-            w = _fix_length(self.items[j][0], self.n)
-            y = 1.0 if i < len(self.pos) else 0.0
+            if i < n_pos:                      # 데이터셋 양성
+                w = _fix_length(self.items[self.pos[i]][0], self.n)
+                y = 1.0
+            elif i < n_pos + n_ex:             # 시연자 녹음 (반복)
+                w = _fix_length(self.extra[(i - n_pos) % len(self.extra)], self.n)
+                y = 1.0
+            else:                              # 음성
+                w = _fix_length(self.items[self.neg[i - n_pos - n_ex]][0], self.n)
+                y = 0.0
             if self.augment:
                 w = self._aug(w, torch.Generator().manual_seed(self.sil_seed + i))
         else:                                   # 무음/소음 = 음성
@@ -141,6 +160,36 @@ def _noise_waves(base) -> List[torch.Tensor]:
     return out
 
 
+def load_enroll(path: str, *, clip_ms: float = 1000.0) -> List[torch.Tensor]:
+    """녹음 폴더(또는 파일)를 발화 단위 1초 클립으로 만든다."""
+    from pathlib import Path as _P
+    from .continuous import split_utterances
+    p = _P(os.path.expanduser(path))
+    files = sorted(p.glob("*.wav")) if p.is_dir() else [p]
+    out: List[torch.Tensor] = []
+    for f in files:
+        try:
+            import torchaudio
+            wav, sr = torchaudio.load(str(f))
+            wav = wav.mean(0)
+        except Exception:
+            import wave as _w
+            import numpy as _np
+            with _w.open(str(f), "rb") as h:
+                sr = h.getframerate()
+                a = _np.frombuffer(h.readframes(h.getnframes()),
+                                   dtype=_np.int16).astype(_np.float32) / 32768
+                if h.getnchannels() > 1:
+                    a = a.reshape(-1, h.getnchannels()).mean(1)
+            wav = torch.from_numpy(a.copy())
+        if sr != SR:
+            import torchaudio
+            wav = torchaudio.functional.resample(wav, sr, SR)
+        wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25
+        out += split_utterances(wav, clip_s=clip_ms / 1000.0)
+    return out
+
+
 def build(root: str, target: str, split: str, *, seed: int = 0,
           augment: bool = False, **kw) -> TargetVsRest:
     import torchaudio
@@ -154,10 +203,16 @@ def build(root: str, target: str, split: str, *, seed: int = 0,
 
 
 def loaders(root: str, target: str, batch_size: int, *, seed: int = 0,
-            num_workers: int = 4, **kw):
+            num_workers: int = 4, extra_pos=None, **kw):
+    """extra_pos(시연자 녹음)는 **train 분할에만** 넣는다.
+
+    val/test 에 섞으면 자기 목소리로 자기를 평가하게 되어 숫자가 거짓이 된다.
+    시연자 성능은 따로 녹음한 파일을 --eval-wav 로 재야 한다.
+    """
     out = {}
     for sp in ("train", "val", "test"):
-        ds = build(root, target, sp, seed=seed, augment=(sp == "train"), **kw)
+        ds = build(root, target, sp, seed=seed, augment=(sp == "train"),
+                   extra_pos=(extra_pos if sp == "train" else None), **kw)
         out[sp] = DataLoader(ds, batch_size=batch_size, shuffle=(sp == "train"),
                              num_workers=num_workers, drop_last=(sp == "train"),
                              pin_memory=True)

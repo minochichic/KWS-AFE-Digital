@@ -819,7 +819,8 @@ def fa_eval(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
 def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           diag: bool = False, allow_infeasible: bool = False,
           sweep: bool = False, min_gap: int = 3,
-          min_recall: float = 0.90, sweep_win: bool = False) -> Dict:
+          min_recall: float = 0.90, sweep_win: bool = False,
+          enroll: str = "", enroll_frac: float = 0.3) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -833,8 +834,14 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         mm.init_from_data(w, yy)
         return mm
 
+    extra = None
+    if enroll:
+        extra = D.load_enroll(enroll)
+        print(f"enrollment: {enroll} 에서 발화 {len(extra)}개 "
+              f"(train 분할에만 넣는다 — val/test 에 섞으면 평가가 거짓이 된다)")
     ld = D.loaders(cfg.data_root, cfg.train.target_word, cfg.train.batch_size,
-                   seed=cfg.train.seed, num_workers=cfg.train.num_workers)
+                   seed=cfg.train.seed, num_workers=cfg.train.num_workers,
+                   extra_pos=extra, enroll_frac=enroll_frac)
     model = WakeupModel(cfg).to(dev)
 
     # 1) 데이터에서 초기화
@@ -1048,6 +1055,10 @@ def main(argv=None) -> None:
                    help="시드 0..N-1 로 반복해 편차를 본다")
     p.add_argument("--device", default="cuda")
     p.add_argument("--workers", type=int, default=4)
+    p.add_argument("--enroll", default="",
+                   help="시연자 녹음 폴더. train 분할의 양성에 섞는다")
+    p.add_argument("--enroll-frac", type=float, default=0.3,
+                   help="양성 중 녹음이 차지할 비율")
     p.add_argument("--eval-wav", default="",
                    help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
     p.add_argument("--speaker-eval", action="store_true",
@@ -1127,7 +1138,8 @@ def main(argv=None) -> None:
     print(json.dumps(cfg.to_dict(), ensure_ascii=False, indent=2)[:600] + " ...\n")
     kw = dict(diag=a.diagnose, allow_infeasible=a.allow_infeasible,
               sweep=a.sweep_frontend, min_gap=a.min_gap,
-              min_recall=a.min_recall, sweep_win=a.sweep_window)
+              min_recall=a.min_recall, sweep_win=a.sweep_window,
+              enroll=a.enroll, enroll_frac=a.enroll_frac)
     if a.repeat > 1:
         repeat_runs(cfg, a.repeat, **kw)
     else:

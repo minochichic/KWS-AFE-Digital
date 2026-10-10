@@ -190,3 +190,40 @@ def pareto(rows: List[Dict]) -> List[Dict]:
         if r["tpr"] > top:
             out.append(r); top = r["tpr"]
     return out
+
+
+# ------------------------------------------------- 녹음을 발화 단위로 자르기
+def split_utterances(wave: torch.Tensor, *, clip_s: float = 1.0,
+                     block_ms: float = 20.0, rel_thresh: float = 0.15,
+                     min_gap_s: float = 0.8, lead_s: float = 0.1
+                     ) -> List[torch.Tensor]:
+    """긴 녹음을 발화마다 1초 클립으로 자른다.
+
+    학습 데이터로 쓰려면 Speech Commands 와 같은 모양(1초, 단어 하나)이어야
+    한다. 에너지 기반이라 모델과 무관하게 돈다 -- 모델의 START 로 자르면
+    "지금 모델이 잡는 것만" 학습하게 되어 되먹임이 생긴다.
+    """
+    n = int(round(SR * block_ms / 1000.0))
+    nb = wave.numel() // n
+    if nb < 2:
+        return []
+    e = wave[:nb * n].reshape(nb, n).pow(2).mean(1).sqrt()
+    on = e > e.max() * rel_thresh
+    gap = max(1, int(round(min_gap_s * 1000.0 / block_ms)))
+
+    onsets, last = [], -10 ** 9
+    for i in range(nb):
+        if on[i] and (i - last) > gap:
+            onsets.append(i); last = i
+        elif on[i]:
+            last = i if not onsets else last
+    L = int(round(SR * clip_s))
+    lead = int(round(SR * lead_s))
+    out = []
+    for i in onsets:
+        a = max(0, i * n - lead)
+        seg = wave[a:a + L]
+        if seg.numel() < L:
+            seg = F.pad(seg, (0, L - seg.numel()))
+        out.append(seg)
+    return out
