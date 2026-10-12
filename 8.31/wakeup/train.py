@@ -427,7 +427,7 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
 # ------------------------------------------------------- 내 목소리 시험
 @torch.no_grad()
 def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
-             match_level: bool = True) -> None:
+             match_level: bool = True, utt_gap: float = 0.8) -> None:
     """직접 녹음한 파일을 학습된 회로에 넣어 본다.
 
     화자별 편차가 쌍봉이므로(11/20 은 거의 항상, 5/20 은 한 번도 안 됨),
@@ -482,7 +482,7 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
         wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25
         if ref_rms:
             from .continuous import split_utterances as _sp
-            cl = _sp(wav)
+            cl = _sp(wav, min_gap_s=utt_gap)
             if cl:
                 r = sorted(float(c.pow(2).mean().sqrt()) for c in cl)
                 wav = wav * (ref_rms / max(r[len(r) // 2], 1e-9))
@@ -527,8 +527,9 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
     print("    그 구간의 WAKE 는 오검출이다. 이득을 올리면 둘 다 늘어난다.")
     print("  * 병목 = 더 자주 막는 상태. 한쪽만 계속 막으면 그 상태의 k 를 낮추는")
     print("    것만으로 크게 좋아질 수 있다(분압 저항 두 개).")
-    print("  * 이득은 회로에서 PreAMP 가 정한다. 여기 1.00 은 녹음을 피크 0.25 로")
-    print("    맞춘 상태다 -- 더 큰 이득에서 잘 되면 PreAMP 를 그만큼 키워야 한다.\n")
+    print("  * 이득은 회로에서 PreAMP 가 정한다. 여기 1.00 은 녹음의 발화 RMS")
+    print("    중앙값을 학습 데이터에 맞춘 상태다 -- 더 큰 이득에서 잘 되면")
+    print("    PreAMP 를 그만큼 키워야 한다.\n")
 
 
 # ------------------------------------------------------- 화자별 검출률
@@ -1054,6 +1055,9 @@ def main(argv=None) -> None:
     p.add_argument("--min-channels", type=int, default=3)
     p.add_argument("--match-window", type=int, default=0,
                    help="채점 창 tau±w. 회로에서 PASS 가 셋 우세 래치가 된다")
+    p.add_argument("--utt-gap", type=float, default=0.8,
+                   help="녹음을 발화로 쪼갤 때의 최소 무음 간격(초). "
+                        "--min-gap 과 다른 값이다 -- 그쪽은 tau 오프셋 간격(프레임)")
     p.add_argument("--min-gap", type=int, default=3,
                    help="상태 간 최소 시각 간격. 좁으면 상태가 상관된다")
     p.add_argument("--max-fpr", type=float, default=0.05)
@@ -1134,7 +1138,7 @@ def main(argv=None) -> None:
     cfg.validate()
 
     if a.eval_wav:
-        eval_wav(cfg, a.eval_wav)
+        eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
         return
     if a.speaker_eval:
         speaker_eval(cfg, max_fpr=a.max_fpr)
