@@ -455,7 +455,12 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
             print(f"  레벨 기준: 데이터셋 대상 클립 RMS 중앙 {ref_rms:.4f}")
         except Exception as ex:
             print(f"  레벨 기준을 못 읽었다 ({ex}); 피크 정규화만 한다.")
-    files = sorted(Path(path).glob("*.wav")) if Path(path).is_dir() else [Path(path)]
+    pth = Path(path)
+    if not pth.exists():
+        print(f"경로가 없다: {path}  (8.31/ 기준 상대경로다)")
+        return
+    files = sorted(pth.glob("*.wav")) if pth.is_dir() else [pth]
+    files = [f for f in files if f.suffix.lower() == ".wav"]
     if not files:
         print(f"wav 파일이 없다: {path}  (m4a/mp3 는 wav 로 변환할 것)")
         return
