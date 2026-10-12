@@ -842,7 +842,8 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           diag: bool = False, allow_infeasible: bool = False,
           sweep: bool = False, min_gap: int = 3,
           min_recall: float = 0.90, sweep_win: bool = False,
-          enroll: str = "", enroll_frac: float = 0.3) -> Dict:
+          enroll: str = "", enroll_frac: float = 0.3,
+          enroll_only: bool = False) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -861,11 +862,13 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         rms = D.positive_clip_rms(cfg.data_root, cfg.train.target_word)
         print(f"enrollment: {enroll}  (데이터셋 대상 클립 RMS 중앙 {rms:.4f} 에 맞춘다)")
         extra = D.load_enroll(enroll, target_rms=rms)
-        print(f"    발화 {len(extra)}개 — train 분할에만 넣는다 "
-              f"(val/test 에 섞으면 평가가 거짓이 된다)")
+        print(f"    발화 {len(extra)}개")
+        if not enroll_only:
+            print("    train 분할에만 넣는다 (val/test 에 섞으면 평가가 거짓이 된다)")
     ld = D.loaders(cfg.data_root, cfg.train.target_word, cfg.train.batch_size,
                    seed=cfg.train.seed, num_workers=cfg.train.num_workers,
-                   extra_pos=extra, enroll_frac=enroll_frac)
+                   extra_pos=extra, enroll_frac=enroll_frac,
+                   enroll_only=enroll_only)
     model = WakeupModel(cfg).to(dev)
 
     # 1) 데이터에서 초기화
@@ -1084,6 +1087,9 @@ def main(argv=None) -> None:
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--enroll", default="",
                    help="시연자 녹음 폴더. train 분할의 양성에 섞는다")
+    p.add_argument("--enroll-only", action="store_true",
+                   help="화자 종속. 데이터셋 양성을 버리고 녹음만 양성으로 쓴다. "
+                        "--enroll-frac 은 무시된다")
     p.add_argument("--enroll-frac", type=float, default=0.3,
                    help="양성 중 녹음이 차지할 비율")
     p.add_argument("--eval-wav", default="",
@@ -1166,7 +1172,8 @@ def main(argv=None) -> None:
     kw = dict(diag=a.diagnose, allow_infeasible=a.allow_infeasible,
               sweep=a.sweep_frontend, min_gap=a.min_gap,
               min_recall=a.min_recall, sweep_win=a.sweep_window,
-              enroll=a.enroll, enroll_frac=a.enroll_frac)
+              enroll=a.enroll, enroll_frac=a.enroll_frac,
+              enroll_only=a.enroll_only)
     if a.repeat > 1:
         repeat_runs(cfg, a.repeat, **kw)
     else:

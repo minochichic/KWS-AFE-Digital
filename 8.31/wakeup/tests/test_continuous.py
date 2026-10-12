@@ -149,12 +149,38 @@ def test_split_utterances_finds_one_clip_per_word():
 
 
 def test_enrollment_clips_only_enter_the_train_split():
-    """시연자 녹음이 val/test 에 새면 자기 목소리로 자기를 평가하게 된다."""
-    import inspect
-    from wakeup import data as D
-    src = inspect.getsource(D.loaders)
-    assert 'extra_pos=(extra_pos if sp == "train" else None)' in src, (
-        "loaders 가 extra_pos 를 train 분할에만 넣는지 확인할 것")
+    """섞어 쓰는 모드에서 녹음이 val/test 에 새면 자기 목소리로 자기를 평가한다."""
+    from wakeup.data import split_extra
+    ex = [torch.zeros(4) + i for i in range(8)]
+    g = split_extra(ex, enroll_only=False)
+    assert len(g["train"]) == 8
+    assert g["val"] is None and g["test"] is None
+
+
+def test_speaker_dependent_mode_splits_the_recording_without_overlap():
+    """화자 종속 모드는 val 에도 양성이 있어야 체크포인트를 고를 수 있다.
+    단 train 과 겹치면 안 된다 -- 겹치면 val TPR 이 학습 정확도가 된다."""
+    from wakeup.data import split_extra
+    ex = [torch.zeros(4) + i for i in range(8)]
+    g = split_extra(ex, enroll_only=True, verbose=False)
+    tr = {float(w[0]) for w in g["train"]}
+    va = {float(w[0]) for w in g["val"]}
+    assert len(tr) == 6 and len(va) == 2
+    assert not (tr & va), "학습과 검증 발화가 겹친다"
+    assert tr | va == {float(i) for i in range(8)}, "버려진 발화가 있다"
+
+
+def test_speaker_dependent_mode_drops_the_dataset_positives():
+    from wakeup.data import TargetVsRest
+    items = [(torch.randn(SR) * 0.05, "sheila" if i < 100 else "no")
+             for i in range(600)]
+    extra = [torch.randn(SR) * 0.05 for _ in range(10)]
+    ds = TargetVsRest(items, [], "sheila", "train", extra_pos=extra,
+                      enroll_only=True, silence_fraction=0.0)
+    assert len(ds.pos) == 0, "데이터셋 양성이 남아 있다"
+    assert ds.n_extra == 100, "양성 개수는 종전과 같아야 배치 구성이 안 바뀐다"
+    w, y = ds[0]
+    assert float(y) == 1.0 and w.numel() == SR
 
 
 def test_enrollment_is_oversampled_to_the_requested_fraction():

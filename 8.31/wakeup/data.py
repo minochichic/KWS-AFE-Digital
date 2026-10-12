@@ -43,7 +43,8 @@ class TargetVsRest(Dataset):
                  noise_snr_db: Tuple[float, float] = (5.0, 20.0),
                  shift_ms: float = 100.0,
                  extra_pos: Optional[Sequence[torch.Tensor]] = None,
-                 enroll_frac: float = 0.3) -> None:
+                 enroll_frac: float = 0.3,
+                 enroll_only: bool = False) -> None:
         self.items = items
         self.noise = list(noise)
         self.n = int(round(SR * clip_ms / 1000.0))
@@ -69,7 +70,16 @@ class TargetVsRest(Dataset):
         # 반복해 넣는다. 증강(시간 이동·잡음)은 train 분할에서 그대로 걸린다.
         self.extra = list(extra_pos or [])
         self.n_extra = 0
-        if self.extra and enroll_frac > 0:
+        if self.extra and enroll_only:
+            # 화자 종속 모드: 데이터셋 양성을 **버리고** 시연자 녹음만 양성으로
+            # 쓴다. 섞어 쓰면(enroll_frac) 40개뿐인 파라미터가 "데이터셋 일반화"
+            # 와 "한 사람"을 동시에 못 맞추고 둘 다 놓친다(실측: 시험 TPR
+            # 0.575 -> 0.373, s2 가 음성의 58% 를 통과시키며 판별을 포기).
+            # 상용 기기의 enrollment 도 결국 사용자에게 맞추는 것이다.
+            # 양성 개수는 그대로 두어 배치 구성이 종전과 같게 한다.
+            self.n_extra = max(len(self.extra), len(pos))
+            self.pos = []
+        elif self.extra and enroll_frac > 0:
             want = int(round(len(pos) * enroll_frac / (1.0 - enroll_frac)))
             self.n_extra = max(len(self.extra), want)
 
@@ -234,17 +244,46 @@ def build(root: str, target: str, split: str, *, seed: int = 0,
                         seed=seed, augment=augment, **kw)
 
 
-def loaders(root: str, target: str, batch_size: int, *, seed: int = 0,
-            num_workers: int = 4, extra_pos=None, **kw):
-    """extra_pos(시연자 녹음)는 **train 분할에만** 넣는다.
+def split_extra(extra_pos, enroll_only: bool, *, verbose: bool = True) -> dict:
+    """시연자 녹음을 어느 분할에 넣을지 정한다. loaders 에서 떼어낸 이유는
+    데이터셋 없이도 이 규칙만 따로 시험하기 위해서다."""
+    if not extra_pos:
+        return {"train": None, "val": None, "test": None}
+    if not enroll_only:
+        return {"train": list(extra_pos), "val": None, "test": None}
+    cut = max(1, int(round(len(extra_pos) * 0.75)))
+    tr, va = list(extra_pos[:cut]), list(extra_pos[cut:])
+    if not va:                                 # 녹음이 너무 적으면 나눌 수 없다
+        tr = va = list(extra_pos)
+        if verbose:
+            print("  경고: 녹음이 적어 train/val 을 나누지 못했다. "
+                  "val TPR 은 낙관적으로 나온다.")
+    elif verbose:
+        print(f"  화자 종속: 학습 {len(tr)}발화 / 검증 {len(va)}발화 "
+              f"(겹치지 않음). 데이터셋 양성은 쓰지 않는다.")
+    return {"train": tr, "val": va, "test": va}
 
-    val/test 에 섞으면 자기 목소리로 자기를 평가하게 되어 숫자가 거짓이 된다.
-    시연자 성능은 따로 녹음한 파일을 --eval-wav 로 재야 한다.
+
+def loaders(root: str, target: str, batch_size: int, *, seed: int = 0,
+            num_workers: int = 4, extra_pos=None, enroll_only: bool = False,
+            **kw):
+    """extra_pos(시연자 녹음)를 어디에 넣을지는 모드에 따라 다르다.
+
+    섞어 쓰는 모드(enroll_frac)에서는 **train 분할에만** 넣는다. val/test 에
+    섞으면 자기 목소리로 자기를 평가하게 되어 숫자가 거짓이 된다.
+
+    화자 종속 모드(enroll_only)에서는 데이터셋 양성이 아예 빠지므로 val 에도
+    양성이 있어야 한다 -- 없으면 TPR 이 정의되지 않아 체크포인트를 고를 수가
+    없다. 그래서 녹음을 train 3 : val 1 로 **겹치지 않게** 쪼갠다. 진짜
+    시험은 따로 녹음한 voice/test 를 --eval-wav 로 재는 것이고, 그 파일은
+    여기 어디에도 들어가지 않는다.
     """
+    ex_by_split = split_extra(extra_pos, enroll_only)
     out = {}
     for sp in ("train", "val", "test"):
+        ex = ex_by_split[sp]
         ds = build(root, target, sp, seed=seed, augment=(sp == "train"),
-                   extra_pos=(extra_pos if sp == "train" else None), **kw)
+                   extra_pos=ex, enroll_only=enroll_only, **kw)
         out[sp] = DataLoader(ds, batch_size=batch_size, shuffle=(sp == "train"),
                              num_workers=num_workers, drop_last=(sp == "train"),
                              pin_memory=True)
