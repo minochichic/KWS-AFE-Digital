@@ -160,8 +160,31 @@ def _noise_waves(base) -> List[torch.Tensor]:
     return out
 
 
-def load_enroll(path: str, *, clip_ms: float = 1000.0) -> List[torch.Tensor]:
-    """녹음 폴더(또는 파일)를 발화 단위 1초 클립으로 만든다."""
+def positive_clip_rms(root: str, target: str, split: str = "train",
+                      n: int = 400) -> float:
+    """데이터셋 대상 클립의 RMS 중앙값. enrollment 레벨을 맞출 기준이다."""
+    ds = build(root, target, split)
+    vals = []
+    for i in range(min(n, len(ds.pos))):
+        w = _fix_length(ds.items[ds.pos[i]][0], ds.n)
+        vals.append(float(w.pow(2).mean().sqrt()))
+    vals.sort()
+    return vals[len(vals) // 2] if vals else 0.05
+
+
+def load_enroll(path: str, *, clip_ms: float = 1000.0,
+                target_rms: Optional[float] = None,
+                verbose: bool = True) -> List[torch.Tensor]:
+    """녹음 폴더(또는 파일)를 발화 단위 1초 클립으로 만든다.
+
+    target_rms 가 주어지면 녹음 전체에 **하나의 이득**을 걸어 발화 RMS 의
+    중앙값을 그 값에 맞춘다. 발화마다 따로 정규화하지 않는 이유: 실제 회로는
+    PreAMP 이득이 고정이라 발화 간 크기 차이를 그대로 받는다. 그 변동은
+    남겨 두고 체계적인 레벨 차이만 없앤다.
+
+    이걸 안 하면 enrollment 클립이 데이터셋보다 조용해 START 를 못 만들고,
+    학습에서 양성의 30% 가 통째로 버려진다(실측: START 검출률 94% -> 73.8%).
+    """
     from pathlib import Path as _P
     from .continuous import split_utterances
     p = _P(os.path.expanduser(path))
@@ -186,7 +209,16 @@ def load_enroll(path: str, *, clip_ms: float = 1000.0) -> List[torch.Tensor]:
             import torchaudio
             wav = torchaudio.functional.resample(wav, sr, SR)
         wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25
-        out += split_utterances(wav, clip_s=clip_ms / 1000.0)
+        clips = split_utterances(wav, clip_s=clip_ms / 1000.0)
+        if target_rms and clips:
+            r = sorted(float(c.pow(2).mean().sqrt()) for c in clips)
+            med = r[len(r) // 2]
+            g = target_rms / max(med, 1e-9)
+            clips = [c * g for c in clips]
+            if verbose:
+                print(f"    {f.name}: 발화 {len(clips)}개, RMS 중앙 "
+                      f"{med:.4f} -> {target_rms:.4f} (이득 {g:.2f}배)")
+        out += clips
     return out
 
 

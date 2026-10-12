@@ -426,7 +426,8 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
 
 # ------------------------------------------------------- 내 목소리 시험
 @torch.no_grad()
-def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0)) -> None:
+def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
+             match_level: bool = True) -> None:
     """직접 녹음한 파일을 학습된 회로에 넣어 본다.
 
     화자별 편차가 쌍봉이므로(11/20 은 거의 항상, 5/20 은 한 번도 안 됨),
@@ -446,6 +447,14 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0)) -> Non
     m_used = [int(v) for v in e["m"]]
     k = [int(v) for v in e["k"]]
 
+    ref_rms = None
+    if match_level:
+        from . import data as D
+        try:
+            ref_rms = D.positive_clip_rms(c.data_root, c.train.target_word)
+            print(f"  레벨 기준: 데이터셋 대상 클립 RMS 중앙 {ref_rms:.4f}")
+        except Exception as ex:
+            print(f"  레벨 기준을 못 읽었다 ({ex}); 피크 정규화만 한다.")
     files = sorted(Path(path).glob("*.wav")) if Path(path).is_dir() else [Path(path)]
     if not files:
         print(f"wav 파일이 없다: {path}  (m4a/mp3 는 wav 로 변환할 것)")
@@ -469,7 +478,14 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0)) -> Non
         wav = wav.mean(0)                                   # 모노
         if sr != 16000:
             wav = torchaudio.functional.resample(wav, sr, 16000)
-        wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25  # 기준 레벨로 정규화
+        # 학습 데이터와 같은 레벨 기준으로 맞춘다 -> 이득 1.00 이 "맞춘 상태"
+        wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25
+        if ref_rms:
+            from .continuous import split_utterances as _sp
+            cl = _sp(wav)
+            if cl:
+                r = sorted(float(c.pow(2).mean().sqrt()) for c in cl)
+                wav = wav * (ref_rms / max(r[len(r) // 2], 1e-9))
         print(f"  {f.name}  ({wav.numel()/16000:.1f}s)")
         print(f"    {'이득':>6} {'구간':>5} {'WAKE':>5} {'s1통과':>7} {'s2통과':>7}"
               f"  {'병목':>6}")
@@ -836,9 +852,11 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
 
     extra = None
     if enroll:
-        extra = D.load_enroll(enroll)
-        print(f"enrollment: {enroll} 에서 발화 {len(extra)}개 "
-              f"(train 분할에만 넣는다 — val/test 에 섞으면 평가가 거짓이 된다)")
+        rms = D.positive_clip_rms(cfg.data_root, cfg.train.target_word)
+        print(f"enrollment: {enroll}  (데이터셋 대상 클립 RMS 중앙 {rms:.4f} 에 맞춘다)")
+        extra = D.load_enroll(enroll, target_rms=rms)
+        print(f"    발화 {len(extra)}개 — train 분할에만 넣는다 "
+              f"(val/test 에 섞으면 평가가 거짓이 된다)")
     ld = D.loaders(cfg.data_root, cfg.train.target_word, cfg.train.batch_size,
                    seed=cfg.train.seed, num_workers=cfg.train.num_workers,
                    extra_pos=extra, enroll_frac=enroll_frac)
