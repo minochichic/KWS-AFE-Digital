@@ -33,7 +33,7 @@ class FrontendConfig:
     # log 는 단조라서 "정규화 로그값 >= theta" 와 "전압 >= V_th" 가 동치다.
     # 즉 고정 문턱(R7/R8 분압)을 그대로 표현한다.
     compression: str = "log"       # log | sqrt
-    envelope_win_ms: float = 10.0  # = 회로의 100 Hz 격자
+    envelope_win_ms: float = 10.0  # = 회로의 프레임 클럭 주기
     envelope_reduce: str = "max"   # 2.8 의 "한 번이라도 1이면 1"
 
     # 정규화 — fixed 만 허용한다. 클립마다 스케일이 변하면 저항비로 못 만든다.
@@ -144,6 +144,16 @@ class HeadConfig:
                 f"timeout({self.timeout}) > 63. 디코더를 3개 쓰지 않으면 상위 "
                 "2비트가 판정에 안 들어가 64 카운트마다 같은 신호가 또 뜬다. "
                 "디코더 3개 구성이면 이 검사를 풀어도 된다.")
+        # 프레임 격자는 STFT hop 의 정수배여야 한다. 연속 오디오 경로
+        # (continuous.stream_features)가 ratio = round(win/hop) 으로 max-pool
+        # 하는데, 비정수면 조용히 엉뚱한 격자로 재게 된다 -- 예컨대 7.8125/10
+        # 은 round 가 1 이라 그냥 10 ms 격자가 되어 버린다.
+        r = front.envelope_win_ms / front.stft_hop_ms
+        if abs(r - round(r)) > 1e-6 or round(r) < 1:
+            raise ValueError(
+                f"envelope_win_ms({front.envelope_win_ms})가 "
+                f"stft_hop_ms({front.stft_hop_ms})의 정수배가 아니다. "
+                "--frame-ms 로 프레임을 바꿀 때는 hop 도 같이 바꿔야 한다.")
         if self.tau[-1] >= front.native_T:
             raise ValueError(
                 f"tau[-1]({self.tau[-1]}) 가 클립 길이({front.native_T} 프레임) "

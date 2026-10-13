@@ -1287,6 +1287,9 @@ def main(argv=None) -> None:
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--enroll", default="",
                    help="시연자 녹음 폴더. train 분할의 양성에 섞는다")
+    p.add_argument("--frame-ms", type=float, default=0.0,
+                   help="프레임 클럭 주기(ms). 회로의 분주비가 정한다. "
+                        "0 = config 기본값(10.0). STFT hop 도 같이 맞춘다")
     p.add_argument("--vdd", type=float, default=3.3,
                    help="논리 공급전압. 학습에는 전혀 안 쓰이고 export 에서 "
                         "비율을 전압·저항값으로 옮길 때만 쓴다")
@@ -1338,6 +1341,15 @@ def main(argv=None) -> None:
     cfg.frontend.compression = a.compression
     cfg.frontend.filterbank = a.filterbank
     cfg.frontend.spice_matrix_path = a.spice_matrix
+    if a.frame_ms > 0:
+        # 프레임 주기는 물리가 아니라 분주비가 정하는 값이다. hop 을 같이
+        # 맞춰 두 경로(클립·연속)가 같은 격자를 쓰게 한다. 분석창(25 ms)은
+        # 그대로 둔다 -- 그건 주파수 분해능이지 시간 격자가 아니다.
+        cfg.frontend.envelope_win_ms = a.frame_ms
+        cfg.frontend.stft_hop_ms = a.frame_ms
+        print(f"프레임 {a.frame_ms} ms (= {1000.0/a.frame_ms:.1f} Hz), "
+              f"1초 = {int(round(1000.0/a.frame_ms))}프레임, "
+              f"timeout 상한 63프레임 = {63*a.frame_ms:.0f} ms")
     cfg.head.n_states = a.states
     # tau 는 어차피 탐색으로 다시 정해진다. 여기서는 검증만 통과하면 된다.
     cfg.head.tau = [8 + 8 * i for i in range(a.states)]

@@ -217,3 +217,16 @@ def test_recorded_negatives_reach_the_requested_fraction():
     w, y = ds[len(ds) - 1]
     assert float(y) == 0.0 and w.numel() == SR
     assert len(ds) == ds.n_extra + len(ds.neg) + ds.n_extra_neg
+
+
+def test_frame_grid_must_be_an_integer_multiple_of_the_stft_hop():
+    """stream_features 가 ratio = round(win/hop) 으로 max-pool 한다. 비정수면
+    조용히 엉뚱한 격자가 된다 -- 7.8125/10 은 round 가 1 이라 10 ms 격자."""
+    import pytest
+    from wakeup.config import Config
+    c = Config()
+    c.frontend.envelope_win_ms = 7.8125      # hop 은 10.0 그대로
+    with pytest.raises(ValueError, match="정수배"):
+        c.validate()
+    c.frontend.stft_hop_ms = 7.8125          # 같이 맞추면 통과
+    c.validate()
