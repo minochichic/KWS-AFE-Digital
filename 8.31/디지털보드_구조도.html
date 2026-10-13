@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>디지털 보드 구조도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#F7F8FA; --card:#FFFFFF; --sunk:#EDF0F4;
+    --ink:#10161F; --muted:#59636F; --faint:#8A95A2;
+    --rule:#D3D9E0; --rule-soft:#E6EAEF;
+    --hot:#A9571F; --hot-bg:#F7EDE4;
+    --cool:#25646F; --cool-bg:#E4EEF0;
+    --stroke:#10161F; --fill:#F0F2F5;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0D1218; --card:#141B23; --sunk:#111820;
+      --ink:#E8EDF3; --muted:#9CA8B5; --faint:#6E7B89;
+      --rule:#28323D; --rule-soft:#1C242D;
+      --hot:#E09456; --hot-bg:#2A1D12;
+      --cool:#6FBECC; --cool-bg:#0F2429;
+      --stroke:#D8DEE6; --fill:#1B232C;
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0D1218; --card:#141B23; --sunk:#111820;
+    --ink:#E8EDF3; --muted:#9CA8B5; --faint:#6E7B89;
+    --rule:#28323D; --rule-soft:#1C242D;
+    --hot:#E09456; --hot-bg:#2A1D12;
+    --cool:#6FBECC; --cool-bg:#0F2429;
+    --stroke:#D8DEE6; --fill:#1B232C;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:"IBM Plex Sans KR",system-ui,-apple-system,sans-serif;
+    font-weight:300; font-size:15.5px; line-height:1.8;
+  }
+  .wrap{max-width:1040px; margin:0 auto; padding:56px 16px 96px}
+  h1{font-family:"Gowun Batang",serif; font-weight:700; font-size:2.1rem;
+     line-height:1.35; margin:0 0 .3em; letter-spacing:-.01em}
+  h2{font-family:"Gowun Batang",serif; font-weight:700; font-size:1.42rem;
+     margin:3em 0 .6em; padding-top:1.1em; border-top:1px solid var(--rule-soft)}
+  h3{font-size:1.06rem; font-weight:600; margin:2em 0 .4em; color:var(--cool)}
+  .lede{color:var(--muted); font-size:1.04rem; margin:0 0 .4em}
+  .meta{color:var(--faint); font-size:.86rem; font-family:"IBM Plex Mono",monospace}
+  p{margin:0 0 1.05em}
+  code,.mono{font-family:"IBM Plex Mono",monospace; font-size:.9em}
+  code{background:var(--sunk); padding:.1em .38em; border-radius:4px}
+  figure{margin:2em 0; padding:22px 18px; background:var(--card);
+         border:1px solid var(--rule); border-radius:12px; overflow-x:auto}
+  figure svg{display:block; width:100%; height:auto; min-width:720px}
+  figcaption{color:var(--muted); font-size:.88rem; margin-top:14px;
+             padding-top:12px; border-top:1px solid var(--rule-soft)}
+  table{width:100%; border-collapse:collapse; margin:1.4em 0; font-size:.93rem}
+  th,td{padding:.52em .7em; text-align:left; border-bottom:1px solid var(--rule-soft);
+        vertical-align:top}
+  th{font-weight:600; color:var(--muted); font-size:.84rem; letter-spacing:.02em;
+     border-bottom:1px solid var(--rule)}
+  td.n,th.n{text-align:right; font-family:"IBM Plex Mono",monospace}
+  .note{background:var(--cool-bg); border-left:3px solid var(--cool);
+        padding:14px 18px; border-radius:0 8px 8px 0; margin:1.6em 0}
+  .warn{background:var(--hot-bg); border-left:3px solid var(--hot);
+        padding:14px 18px; border-radius:0 8px 8px 0; margin:1.6em 0}
+  .note p:last-child,.warn p:last-child{margin-bottom:0}
+  .tag{display:inline-block; font-size:.74rem; font-family:"IBM Plex Mono",monospace;
+       padding:.15em .5em; border-radius:4px; background:var(--sunk);
+       color:var(--muted); vertical-align:middle}
+  ul{margin:0 0 1.05em; padding-left:1.3em}
+  li{margin-bottom:.35em}
+  strong{font-weight:600}
+</style>
+<div class="wrap">
+
+<h1>디지털 보드 구조도</h1>
+<p class="lede">아날로그 보드가 만든 8가닥 이진 신호를 받아 WAKE 한 줄을 내보내는
+회로. MCU·FPGA·ADC·메모리를 쓰지 않는다.</p>
+<p class="meta">2026-10-13 · 학습 결과 <code>runs/final8_s1</code> 기준 · 상태 2, 8채널</p>
+
+<h2>1. 경계 — 무엇이 우리 몫인가</h2>
+
+<p>아날로그 보드와 디지털 보드를 따로 만들고 <strong>50핀 커넥터</strong>로 잇는다.
+한 장에 다 넣으면 면적과 층수가 올라가 단가가 비싸지기 때문이다. 아날로그는
+동료가, 디지털은 우리가 맡는다.</p>
+
+<p>경계를 넘는 것은 <strong>이진 신호 8가닥과 전원뿐</strong>이다. 필터 중심주파수,
+포락선 시상수, 채널 문턱 전압 같은 아날로그 파라미터는 전부 비교기 <em>왼쪽</em>에
+있으므로 디지털 보드는 그 값들을 알 필요가 없다. 아날로그가 바뀌면 바뀌는 것은
+<strong>형판 저항값</strong>이지 회로 구조가 아니다.</p>
+
+<h2>2. 블록도</h2>
+
+<figure>
+<svg viewBox="0 0 1000 660" xmlns="http://www.w3.org/2000/svg"
+     font-family="IBM Plex Sans KR, sans-serif" font-size="12">
+  <defs>
+    <marker id="ar" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="var(--stroke)"/>
+    </marker>
+    <marker id="arh" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+      <polygon points="0 0, 9 3.5, 0 7" fill="var(--hot)"/>
+    </marker>
+  </defs>
+
+  <!-- 아날로그 보드 -->
+  <rect x="14" y="40" width="130" height="580" rx="10"
+        fill="var(--sunk)" stroke="var(--rule)" stroke-dasharray="5 4"/>
+  <text x="79" y="66" text-anchor="middle" fill="var(--muted)" font-size="11.5"
+        font-weight="600">아날로그 보드</text>
+  <text x="79" y="82" text-anchor="middle" fill="var(--faint)" font-size="10.5">
+    (동료 담당)</text>
+  <text x="79" y="118" text-anchor="middle" fill="var(--ink)" font-size="11">마이크</text>
+  <text x="79" y="140" text-anchor="middle" fill="var(--faint)" font-size="13">↓</text>
+  <text x="79" y="160" text-anchor="middle" fill="var(--ink)" font-size="11">PreAMP</text>
+  <text x="79" y="182" text-anchor="middle" fill="var(--faint)" font-size="13">↓</text>
+  <text x="79" y="202" text-anchor="middle" fill="var(--ink)" font-size="11">대역필터 ×8</text>
+  <text x="79" y="224" text-anchor="middle" fill="var(--faint)" font-size="13">↓</text>
+  <text x="79" y="244" text-anchor="middle" fill="var(--ink)" font-size="11">포락선 검출 ×8</text>
+  <text x="79" y="266" text-anchor="middle" fill="var(--faint)" font-size="13">↓</text>
+  <text x="79" y="286" text-anchor="middle" fill="var(--ink)" font-size="11">비교기 ×8</text>
+  <text x="79" y="310" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    문턱 θc</text>
+
+  <!-- 50핀 경계 -->
+  <line x1="172" y1="30" x2="172" y2="640" stroke="var(--hot)"
+        stroke-width="1.6" stroke-dasharray="7 5"/>
+  <text x="172" y="24" text-anchor="middle" fill="var(--hot)" font-size="11"
+        font-weight="600">50핀 커넥터</text>
+  <text x="172" y="636" text-anchor="middle" fill="var(--hot)" font-size="10">
+    CH0‥CH7 · VDD 3.3V · GND</text>
+
+  <!-- 8가닥 -->
+  <path d="M144 200 H 210" stroke="var(--hot)" stroke-width="2" fill="none"
+        marker-end="url(#arh)"/>
+  <text x="178" y="194" text-anchor="middle" fill="var(--hot)" font-size="10.5">8</text>
+
+  <!-- 디지털 보드 외곽 -->
+  <rect x="196" y="40" width="790" height="580" rx="10"
+        fill="none" stroke="var(--rule)"/>
+  <text x="975" y="60" text-anchor="end" fill="var(--muted)" font-size="11.5"
+        font-weight="600">디지털 보드 — 우리 담당</text>
+
+  <!-- 버스 수직선 -->
+  <line x1="222" y1="200" x2="222" y2="560" stroke="var(--hot)" stroke-width="2"/>
+
+  <!-- A. 형판 정합 s1 -->
+  <rect x="250" y="96" width="196" height="76" rx="7"
+        fill="var(--fill)" stroke="var(--stroke)"/>
+  <text x="348" y="118" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">형판 정합 s1</text>
+  <text x="348" y="136" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    저항 가중합 → 비교기</text>
+  <text x="348" y="154" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    V_score ≷ V_TH(1)</text>
+  <path d="M222 134 H 250" stroke="var(--hot)" stroke-width="2" marker-end="url(#arh)"/>
+  <path d="M446 134 H 700" stroke="var(--stroke)" stroke-width="1.4"
+        marker-end="url(#ar)"/>
+  <text x="560" y="128" text-anchor="middle" fill="var(--ink)" font-size="10.5">MATCH1</text>
+
+  <!-- B. 형판 정합 s2 -->
+  <rect x="250" y="196" width="196" height="76" rx="7"
+        fill="var(--fill)" stroke="var(--stroke)"/>
+  <text x="348" y="218" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">형판 정합 s2</text>
+  <text x="348" y="236" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    저항 가중합 → 비교기</text>
+  <text x="348" y="254" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    V_score ≷ V_TH(2)</text>
+  <path d="M222 234 H 250" stroke="var(--hot)" stroke-width="2" marker-end="url(#arh)"/>
+  <path d="M446 234 H 700" stroke="var(--stroke)" stroke-width="1.4"
+        marker-end="url(#ar)"/>
+  <text x="560" y="228" text-anchor="middle" fill="var(--ink)" font-size="10.5">MATCH2</text>
+
+  <!-- C. START 검출 -->
+  <rect x="250" y="320" width="196" height="84" rx="7"
+        fill="var(--fill)" stroke="var(--stroke)"/>
+  <text x="348" y="342" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">START 검출</text>
+  <text x="348" y="360" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    켜진 채널 ≥ 1 이</text>
+  <text x="348" y="377" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    3프레임 연속일 때</text>
+  <text x="348" y="396" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    = 시간 원점</text>
+  <path d="M222 362 H 250" stroke="var(--hot)" stroke-width="2" marker-end="url(#arh)"/>
+  <path d="M446 362 H 520 V 452 H 560" stroke="var(--stroke)" stroke-width="1.4"
+        fill="none" marker-end="url(#ar)"/>
+  <text x="484" y="356" text-anchor="middle" fill="var(--ink)" font-size="10.5">START</text>
+
+  <!-- D. 클럭 -->
+  <rect x="250" y="470" width="196" height="84" rx="7"
+        fill="var(--fill)" stroke="var(--stroke)"/>
+  <text x="348" y="492" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">프레임 클럭</text>
+  <text x="348" y="510" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    32.768 kHz 수정</text>
+  <text x="348" y="527" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    → 74HC4060 ÷N</text>
+  <text x="348" y="546" text-anchor="middle" fill="var(--hot)" font-size="10.5">
+    N 미정 (§5)</text>
+  <path d="M446 512 H 520 V 486 H 560" stroke="var(--stroke)" stroke-width="1.4"
+        fill="none" marker-end="url(#ar)"/>
+  <text x="492" y="506" text-anchor="middle" fill="var(--ink)" font-size="10.5">FRAME</text>
+
+  <!-- E. 카운터 -->
+  <rect x="560" y="420" width="128" height="98" rx="7"
+        fill="var(--fill)" stroke="var(--stroke)"/>
+  <text x="624" y="444" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">프레임 카운터</text>
+  <text x="624" y="462" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    6비트 (74HC393)</text>
+  <text x="624" y="480" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    START 가 0 으로</text>
+  <text x="624" y="500" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    0‥63 만 센다</text>
+
+  <!-- F. 디코더 -->
+  <rect x="724" y="420" width="128" height="98" rx="7"
+        fill="var(--fill)" stroke="var(--stroke)"/>
+  <text x="788" y="444" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">시각 디코더</text>
+  <text x="788" y="462" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    74HC138 ×2</text>
+  <text x="788" y="480" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    τ±2 를 OR 로</text>
+  <text x="788" y="500" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    창 1 · 창 2 · TO</text>
+  <path d="M688 468 H 724" stroke="var(--stroke)" stroke-width="1.4"
+        marker-end="url(#ar)"/>
+
+  <!-- 창 신호 위로 -->
+  <path d="M852 440 H 884 V 160 H 700" stroke="var(--stroke)" stroke-width="1.4"
+        fill="none" marker-end="url(#ar)"/>
+  <text x="900" y="300" text-anchor="middle" fill="var(--ink)" font-size="10.5"
+        transform="rotate(-90 900 300)">창1 / 창2</text>
+  <path d="M852 468 H 870 V 262 H 700" stroke="var(--stroke)" stroke-width="1.4"
+        fill="none" marker-end="url(#ar)"/>
+
+  <!-- G. 래치 1 -->
+  <rect x="700" y="96" width="150" height="90" rx="7"
+        fill="var(--cool-bg)" stroke="var(--cool)"/>
+  <text x="775" y="120" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">PASS 래치 1</text>
+  <text x="775" y="139" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    셋 우세 (SR)</text>
+  <text x="775" y="157" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    MATCH1 · 창1</text>
+  <text x="775" y="176" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    창 안에 한 번이면 SET</text>
+
+  <!-- H. 래치 2 -->
+  <rect x="700" y="222" width="150" height="90" rx="7"
+        fill="var(--cool-bg)" stroke="var(--cool)"/>
+  <text x="775" y="246" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">PASS 래치 2</text>
+  <text x="775" y="265" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    셋 우세 (SR)</text>
+  <text x="775" y="283" text-anchor="middle" fill="var(--muted)" font-size="10.5">
+    MATCH2 · 창2</text>
+  <text x="775" y="302" text-anchor="middle" fill="var(--cool)" font-size="10.5">
+    창 안에 한 번이면 SET</text>
+
+  <!-- I. AND -->
+  <path d="M884 150 H 912 V 250 H 884" stroke="none" fill="none"/>
+  <path d="M850 141 H 900" stroke="var(--stroke)" stroke-width="1.4"/>
+  <path d="M850 267 H 900" stroke="var(--stroke)" stroke-width="1.4"/>
+  <path d="M900 141 V 267" stroke="var(--stroke)" stroke-width="1.4"/>
+  <rect x="900" y="180" width="62" height="48" rx="6"
+        fill="var(--fill)" stroke="var(--stroke)"/>
+  <text x="931" y="210" text-anchor="middle" font-weight="600"
+        fill="var(--ink)">AND</text>
+  <path d="M900 204 H 900" stroke="var(--stroke)" stroke-width="1.4"/>
+  <path d="M931 228 V 300" stroke="var(--stroke)" stroke-width="2"
+        marker-end="url(#ar)"/>
+  <text x="931" y="322" text-anchor="middle" font-weight="600"
+        fill="var(--hot)" font-size="13">WAKE</text>
+  <text x="931" y="340" text-anchor="middle" fill="var(--muted)" font-size="10">
+    LED · 릴레이</text>
+
+  <!-- CLR 되돌림 -->
+  <path d="M788 518 V 578 H 300 V 554" stroke="var(--hot)" stroke-width="1.4"
+        fill="none" stroke-dasharray="4 3" marker-end="url(#arh)"/>
+  <text x="540" y="594" text-anchor="middle" fill="var(--hot)" font-size="10.5">
+    timeout → CLR (카운터 · 래치 둘 다 리셋)</text>
+  <path d="M884 578 V 200" stroke="var(--hot)" stroke-width="1.4"
+        fill="none" stroke-dasharray="4 3"/>
+  <path d="M884 578 H 788" stroke="var(--hot)" stroke-width="1.4"
+        fill="none" stroke-dasharray="4 3"/>
+</svg>
+<figcaption>
+굵은 주황 = 아날로그에서 오는 이진 8가닥. 점선 주황 = timeout 리셋 경로.
+형판 정합 두 갈래는 <strong>동시에</strong> 돈다 — 상태가 순서대로 켜지는 것이
+아니라, 각 상태가 자기 시각 창에서 한 번이라도 맞았는지를 래치가 기억한다.
+</figcaption>
+</figure>
+
+<h2>3. 블록별 역할</h2>
+
+<h3>형판 정합 (저항 가중합 + 비교기)</h3>
+<p>상태마다 8채널 중 어떤 채널이 켜져 있어야 하는지를 적은 <strong>형판</strong>
+<code>M(s,c) ∈ {1, 0, X}</code>가 있다. <code>1</code>은 켜져야 함, <code>0</code>은
+꺼져야 함, <code>X</code>는 상관없음(배선 안 함)이다. 맞는 채널 수 <code>n</code>을
+저항망이 전압으로 더해 만들고, 비교기가 기준전압과 비교한다.</p>
+<p class="mono" style="color:var(--cool)">
+V_score = VDD · n/m &nbsp;&nbsp;·&nbsp;&nbsp;
+V_TH(s) = VDD · (k−0.5)/m &nbsp;&nbsp;·&nbsp;&nbsp;
+여유 = VDD/(2m)</p>
+<p><code>m</code>은 그 상태가 실제로 쓰는 채널 수, <code>k</code>는 통과에 필요한
+일치 개수다. <strong>k를 바꾸는 것 = 분압 저항 두 개를 바꾸는 것</strong>이고, 이것이
+검출률과 오경보를 맞바꾸는 유일한 손잡이다.</p>
+
+<h3>START 검출 — 전원 스위치가 아니라 시간 원점</h3>
+<p>켜진 채널이 하나 이상인 상태가 3프레임 연속되면 START가 선다. 이것은 회로를
+깨우는 신호가 아니라 <strong>"지금을 0으로 삼는다"</strong>는 뜻이다. 사람마다
+말을 시작하는 시각이 다르므로, 절대 시각이 아니라 발화 시작 기준의 상대 시각으로
+형판을 맞춰야 한다.</p>
+
+<h3>카운터와 시각 디코더</h3>
+<p>START가 카운터를 0으로 되돌리고, 프레임 클럭이 센다. 디코더가 특정 카운트에서
+창 신호를 낸다. 창은 <code>τ±2</code>라서 디코더 출력 5개를 OR로 묶는다.</p>
+<div class="warn">
+<p><strong>카운터는 6비트까지만 쓴다.</strong> 3-to-8 디코더 두 개가 덮는 범위가
+<code>bits[5:0]</code> = 0‥63이기 때문이다. 그래서 <code>timeout ≤ 63</code>이
+하드 제약이고, config의 <code>validate()</code>가 이를 강제한다. 이 제약을 어기면
+디코더가 상위 비트를 못 봐서 <strong>엉뚱한 카운트에서 CLR이 터진다</strong> —
+예전에 timeout 80으로 두었더니 카운트 16에서 리셋됐다.</p>
+</div>
+
+<h3>PASS 래치 — 에지 트리거가 아니라 셋 우세 래치</h3>
+<p>창이 ±2프레임으로 넓어졌으므로, 그 5프레임 중 <strong>한 번이라도</strong>
+MATCH가 뜨면 통과로 쳐야 한다. D 플립플롭으로 창의 특정 순간만 샘플링하면 그
+직전·직후에 맞은 것을 놓친다. 그래서 <code>SET = MATCH · 창</code>인 셋 우세
+래치를 쓰고, CLR에서만 풀린다.</p>
+
+<h3>timeout과 CLR</h3>
+<p>카운터가 timeout에 닿으면 카운터와 래치 둘 다 리셋된다. 이것이 한 번의 판정
+구간을 끝내는 신호이고, WAKE 펄스의 폭도 여기서 정해진다
+(<code>WAKE 폭 = (timeout − τ_last) × 프레임 주기</code>).</p>
+
+<h2>4. 확정된 상수</h2>
+
+<table>
+<tr><th>항목</th><th class="n">값</th><th>회로에서의 모습</th></tr>
+<tr><td>채널 수</td><td class="n">8</td><td>50핀 중 8가닥</td></tr>
+<tr><td>상태 수</td><td class="n">2</td><td>비교기 2, 래치 2</td></tr>
+<tr><td>τ(1), τ(2)</td><td class="n">2, 10 프레임</td><td>디코더 결선</td></tr>
+<tr><td>채점 창</td><td class="n">±2 프레임</td><td>디코더 출력 5개 OR</td></tr>
+<tr><td>timeout</td><td class="n">60 프레임</td><td>디코더 결선 (≤63)</td></tr>
+<tr><td>START 조건</td><td class="n">1채널 × 3프레임</td><td>OR + 3단 시프트</td></tr>
+<tr><td>VDD</td><td class="n">3.3 V</td><td>판정 여유 = VDD/(2m)</td></tr>
+<tr><td>형판 저항</td><td class="n">16개</td><td>M(s,c) 가 1/0 인 자리</td></tr>
+<tr><td>분압 저항</td><td class="n">4개</td><td>V_TH(1), V_TH(2)</td></tr>
+</table>
+
+<div class="note">
+<p><strong>저항값 표는 아직 다시 뽑아야 한다.</strong> 기존 <code>runs/</code>의
+회로 상수는 VDD 1.8 V로 export된 것이다. 3.3 V로 올리면 V_TH와 R7·R8이 전부
+바뀐다(비율은 같고 배율만 바뀐다 — 재학습은 필요 없다).</p>
+</div>
+
+<h2>5. 미정 — 결정해야 넘어갈 수 있는 것</h2>
+
+<h3>분주비 N (프레임 주기)</h3>
+<p>32.768 kHz 수정은 2의 거듭제곱으로만 나뉘므로 100 Hz(10 ms)가 정확히 나오지
+않는다. 선택지는 셋이다.</p>
+<table>
+<tr><th>N</th><th class="n">프레임 클럭</th><th class="n">프레임 주기</th><th class="n">63프레임</th><th>비고</th></tr>
+<tr><td>÷256</td><td class="n">128 Hz</td><td class="n">7.81 ms</td><td class="n">492 ms</td><td>해상도 좋음, timeout 여유 빠듯</td></tr>
+<tr><td>÷512</td><td class="n">64 Hz</td><td class="n">15.6 ms</td><td class="n">984 ms</td><td>여유 넉넉, 해상도 거침</td></tr>
+<tr><td>—</td><td class="n">100 Hz</td><td class="n">10.0 ms</td><td class="n">630 ms</td><td>3.2768 MHz 수정 필요 (조달 위험)</td></tr>
+</table>
+<p>프레임 주기는 물리가 아니라 config 값(<code>envelope_win_ms</code>)이므로,
+÷256이나 ÷512로 <strong>재학습해서 정확도를 비교한 뒤</strong> 정하면 된다.
+현재 측정값은 전부 10 ms 기준이라 그대로 쓸 수 없다.</p>
+
+<h3>그 밖에</h3>
+<ul>
+<li><strong>θc의 10 mV 격자 양자화</strong> — 아날로그 비교기 기준전압이 되므로,
+동료의 VTHR 격자에 맞춘 뒤 정확도를 다시 재야 한다.</li>
+<li><strong>50핀 ICD</strong> — 핀 배치, 전기 사양, 전원 시퀀싱, 풀다운.</li>
+<li><strong>부품표</strong> — 게이트 수에서 패키지 수로.</li>
+<li><strong>공차 몬테카를로</strong> — 1% 저항과 비교기 입력 오프셋이 판정 여유
+0.206 V를 얼마나 깎는지.</li>
+</ul>
+
+<h2>6. 성능 — 숨기지 않고 적는다</h2>
+
+<table>
+<tr><th>지표</th><th class="n">값</th><th>조건</th></tr>
+<tr><td>클립 검출률 / FPR</td><td class="n">0.575 / 0.027</td><td>GSC 시험 분할, 시드 5회</td></tr>
+<tr><td>연속 검출률</td><td class="n">60.6 ± 4.6 %</td><td>GSC 화자 평균, FA/h 약 81</td></tr>
+<tr><td>시연자 검출률</td><td class="n">42.9 %</td><td>FA/h ≤ 30 조건, 21발화</td></tr>
+</table>
+
+<p>상용 웨이크워드(시리·알렉사)는 검출률 95‥99 %에 FA/h 0.5‥1 수준이다. 그쪽은
+다단 캐스케이드, 오디오 버퍼링, 10⁵‥10⁶개 파라미터, 화자 enrollment, 마이크
+어레이를 모두 쓴다. <strong>우리 것은 파라미터가 약 40개</strong>이고 MCU·FPGA·ADC·
+메모리가 없다. 같은 자로 재서는 안 되고, "저항과 배선만으로 키워드를 가려낸다"가
+우리가 주장할 수 있는 전부다.</p>
+
+<p>화자별 편차가 <strong>쌍봉</strong>이라는 점도 적어 둔다 — 20명 중 11명이
+80‥100 %, 5명이 0‥20 %이고 그 사이가 비어 있다. "평균 60 %"인 사람은 사실상
+없다. 시연자는 잘 맞는 쪽에서 골라야 한다.</p>
+
+</div>
+</html>
