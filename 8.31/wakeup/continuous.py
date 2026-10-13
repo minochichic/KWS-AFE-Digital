@@ -193,6 +193,30 @@ def pareto(rows: List[Dict]) -> List[Dict]:
 
 
 # ------------------------------------------------- 녹음을 발화 단위로 자르기
+def utterance_onsets(wave: torch.Tensor, *, block_ms: float = 20.0,
+                     rel_thresh: float = 0.15,
+                     min_gap_s: float = 0.8) -> List[int]:
+    """발화 시작 지점(표본 단위). split_utterances 와 같은 규칙을 쓴다.
+
+    따로 떼어낸 이유: 녹음의 검출률을 연속 지표로 재려면 "정답 시각"이
+    필요한데, 잘린 클립만 받으면 그 시각을 알 수 없다.
+    """
+    n = int(round(SR * block_ms / 1000.0))
+    nb = wave.numel() // n
+    if nb < 2:
+        return []
+    e = wave[:nb * n].reshape(nb, n).pow(2).mean(1).sqrt()
+    on = e > e.max() * rel_thresh
+    gap = max(1, int(round(min_gap_s * 1000.0 / block_ms)))
+    onsets, last = [], -10 ** 9
+    for i in range(nb):
+        if on[i] and (i - last) > gap:
+            onsets.append(i); last = i
+        elif on[i]:
+            last = i if not onsets else last
+    return [i * n for i in onsets]
+
+
 def split_utterances(wave: torch.Tensor, *, clip_s: float = 1.0,
                      block_ms: float = 20.0, rel_thresh: float = 0.15,
                      min_gap_s: float = 0.8, lead_s: float = 0.1

@@ -537,6 +537,141 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
     print("    PreAMP 를 그만큼 키워야 한다.\n")
 
 
+
+# ------------------------------------------- 이득 x k 곡선 (PreAMP 정하기)
+def _read_wave(path: str) -> Optional[torch.Tensor]:
+    """wav 한 개를 16 kHz 모노로 읽는다. torchaudio 백엔드가 없으면 wave 모듈."""
+    import torchaudio
+    f = Path(path)
+    if f.is_dir():
+        cand = sorted(f.glob("*.wav"))
+        if not cand:
+            return None
+        f = cand[0]
+    try:
+        wav, sr = torchaudio.load(str(f))
+    except Exception:
+        import wave as _w
+        import numpy as _np
+        with _w.open(str(f), "rb") as h:
+            sr = h.getframerate()
+            a = _np.frombuffer(h.readframes(h.getnframes()),
+                               dtype=_np.int16).astype(_np.float32) / 32768
+            if h.getnchannels() > 1:
+                a = a.reshape(-1, h.getnchannels()).mean(1)
+        wav = torch.from_numpy(a.copy()).unsqueeze(0)
+    wav = wav.mean(0)
+    if sr != 16000:
+        wav = torchaudio.functional.resample(wav, sr, 16000)
+    return wav
+
+
+@torch.no_grad()
+def gain_curve(cfg: Config, wav_path: str = "", *,
+               gains=(0.5, 0.71, 1.0, 1.41, 2.0, 2.83, 4.0),
+               minutes: float = 20.0, n_clips: int = 12000,
+               utt_gap: float = 0.8, top: int = 10) -> None:
+    """입력 이득과 k 를 **같이** 훑는다.
+
+    fa_curve 는 이득 1.0 에 고정이었다. 그런데 기준선에서 시연자 목소리의
+    검출이 이득 1.0 에서 8/21, 2.0 에서 16/21 로 갈렸다 -- 이득이 k 못지않은
+    동작점 변수라는 뜻이다. 회로에서 이 이득은 PreAMP 가 정하므로 저항비
+    하나이고, 형판을 재학습하는 것보다 훨씬 싸다.
+
+    검출률과 FA/h 를 **다른 출처**에서 잰다. 오경보를 만드는 것은 주변의
+    말소리이므로 FA/h 는 Speech Commands 로 만든 연속 스트림에서 재고,
+    검출률은 시연자가 실제로 말한 녹음에서 잰다. 둘을 같은 (이득, k) 에서
+    맞춰 보는 것이 시연 조건에 가장 가깝다.
+
+    녹음을 주지 않으면 검출률도 스트림에서 잰다(= 화자 독립 성능).
+    """
+    from . import data as D
+    from .gatelevel import board_from_model, scan_segments
+    from .continuous import (build_stream, stream_features, sweep_k,
+                             utterance_onsets)
+
+    model, c = _load_trained(cfg)
+    if model is None:
+        return
+    e = model.export()
+    m_used = [int(v) for v in e["m"]]
+    saved_k = [int(v) for v in e["k"]]
+
+    waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
+    st, on = build_stream(waves, words, c.train.target_word, minutes=minutes,
+                          noise=_noise_pool(c), seed=0)
+
+    wav, onsets = None, []
+    if wav_path:
+        wav = _read_wave(wav_path)
+        if wav is None:
+            print(f"wav 를 못 읽었다: {wav_path}")
+            return
+        wav = wav / wav.abs().max().clamp(min=1e-9) * 0.25
+        ref = D.positive_clip_rms(c.data_root, c.train.target_word)
+        from .continuous import split_utterances as _sp
+        cl = _sp(wav, min_gap_s=utt_gap)
+        if cl:
+            r = sorted(float(x.pow(2).mean().sqrt()) for x in cl)
+            wav = wav * (ref / max(r[len(r) // 2], 1e-9))
+        onsets = utterance_onsets(wav, min_gap_s=utt_gap)
+        print(f"  검출률 출처: {wav_path} — 발화 {len(onsets)}개 "
+              f"(레벨을 데이터셋 RMS {ref:.4f} 에 맞춤)")
+    else:
+        print("  검출률 출처: 연속 스트림 (화자 독립). 녹음을 주려면 "
+              "--eval-wav 를 같이 쓸 것")
+
+    print(f"  FA/h 출처: 스트림 {minutes:.0f}분, 대상 {len(on)}회")
+    print(f"  '{c.train.target_word}', {c.frontend.n_channels}채널, "
+          f"상태 {c.head.n_states}, m={m_used}, 저장 k={saved_k}, "
+          f"timeout {c.head.timeout}\n")
+
+    board = board_from_model(model, n_decoders=3)
+    rows: List[Dict] = []
+    for g in gains:
+        fs = stream_features(model, st * g)
+        s_st, m_st = scan_segments(board, fs)
+        fa_rows = sweep_k(s_st, m_st, on, m_used, frames=fs.shape[2],
+                          tau_last=int(board.tau[-1]))
+        fa_by_k = {tuple(r["k"]): r for r in fa_rows}
+
+        if wav is not None:
+            fw = stream_features(model, wav * g)
+            s_w, m_w = scan_segments(board, fw)
+            det_rows = sweep_k(s_w, m_w, onsets, m_used, frames=fw.shape[2],
+                               tau_last=int(board.tau[-1]))
+            det_by_k = {tuple(r["k"]): r["tpr"] for r in det_rows}
+        else:
+            det_by_k = {tuple(r["k"]): r["tpr"] for r in fa_rows}
+
+        for kk, fr in fa_by_k.items():
+            rows.append({"gain": g, "k": list(kk),
+                         "tpr": det_by_k.get(kk, 0.0),
+                         "fa_per_hour": fr["fa_per_hour"]})
+        best = max((r for r in rows if r["gain"] == g), key=lambda r: r["tpr"])
+        print(f"  이득 {g:4.2f}  계측 구간 {len(s_st)}개  "
+              f"최고 검출 {best['tpr']*100:5.1f}% (FA/h {best['fa_per_hour']:.0f})")
+
+    print("\n" + "=" * 74)
+    print("  FA/h 예산별 최고 검출률 — 이 표가 PreAMP 이득과 k 를 정한다")
+    print("=" * 74)
+    print(f"  {'FA/h 예산':>10} {'검출률':>8} {'이득':>6} {'k':>10} {'실제 FA/h':>10}")
+    for cap in (0.5, 1.0, 3.0, 10.0, 30.0, 100.0):
+        ok = [r for r in rows if r["fa_per_hour"] <= cap]
+        if not ok:
+            print(f"  {cap:10g} {'—':>8}")
+            continue
+        b = max(ok, key=lambda r: (r["tpr"], -r["fa_per_hour"]))
+        print(f"  {cap:10g} {b['tpr']*100:7.1f}% {b['gain']:6.2f} "
+              f"{str(b['k']):>10} {b['fa_per_hour']:10.1f}")
+    print("-" * 74)
+    print("  * 이득은 PreAMP 저항비, k 는 분압 저항 두 개다. 둘 다 재학습 없이")
+    print("    바꿀 수 있는 값이고, 그래서 시연 직전까지 조정이 가능하다.")
+    print("  * 검출률과 FA/h 의 출처가 다르다. 검출률은 시연자 녹음, FA/h 는")
+    print("    Speech Commands 스트림 -- 섞어서 하나의 '정확도'로 쓰지 말 것.")
+    print("=" * 74 + "\n")
+
+
 # ------------------------------------------------------- 화자별 검출률
 @torch.no_grad()
 def speaker_eval(cfg: Config, *, max_fpr: float = 0.05,
@@ -1096,6 +1231,9 @@ def main(argv=None) -> None:
                    help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
     p.add_argument("--speaker-eval", action="store_true",
                    help="화자별 검출률 분포와 가변저항의 이득을 잰다")
+    p.add_argument("--gain-curve", action="store_true",
+                   help="입력 이득 x k 를 같이 훑는다. --eval-wav 를 주면 "
+                        "검출률을 그 녹음에서 잰다")
     p.add_argument("--fa-curve", action="store_true",
                    help="검출률 대 FA/h 맞바꿈 곡선 (재학습 없음)")
     p.add_argument("--fa-eval", action="store_true",
@@ -1149,7 +1287,10 @@ def main(argv=None) -> None:
     cfg.validate()
 
     if a.eval_wav:
-        eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
+        if a.gain_curve:
+            gain_curve(cfg, a.eval_wav, minutes=a.minutes, utt_gap=a.utt_gap)
+        else:
+            eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
         return
     if a.speaker_eval:
         speaker_eval(cfg, max_fpr=a.max_fpr)
