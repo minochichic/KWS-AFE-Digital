@@ -1361,11 +1361,30 @@ def main(argv=None) -> None:
     cfg.tag = a.tag or f"{a.target}_{a.channels}ch_s{a.states}"
     cfg.validate()
 
+    # 분석용 플래그는 학습을 하지 않는다. 하나라도 켜졌는데 아래에서 아무
+    # 분기도 안 걸리면 **멈춘다** -- 종전에 --speaker-stats 의 분기 연결이
+    # 빠졌는데 조용히 기본 설정 학습이 돌아 30에폭을 버렸다.
+    _analysis = {
+        "eval_wav": bool(a.eval_wav), "gain_curve": a.gain_curve,
+        "speaker_stats": a.speaker_stats, "speaker_eval": a.speaker_eval,
+        "fa_curve": a.fa_curve, "fa_eval": a.fa_eval,
+        "sweep_window": a.sweep_window, "sweep_structure": a.sweep_structure,
+        "sweep_words": bool(a.sweep_words), "sweep_frontend": a.sweep_frontend,
+        "diagnose": a.diagnose,
+    }
+    _on = [k for k, v in _analysis.items() if v]
+
     if a.eval_wav:
         if a.gain_curve:
             gain_curve(cfg, a.eval_wav, minutes=a.minutes, utt_gap=a.utt_gap)
         else:
             eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
+        return
+    if a.speaker_stats:
+        speaker_stats(cfg)
+        return
+    if a.gain_curve:
+        gain_curve(cfg, "", minutes=a.minutes, utt_gap=a.utt_gap)
         return
     if a.speaker_eval:
         speaker_eval(cfg, max_fpr=a.max_fpr)
@@ -1373,6 +1392,12 @@ def main(argv=None) -> None:
     if a.fa_curve:
         fa_curve(cfg, minutes=a.minutes)
         return
+    if _on and not any(_analysis[k] for k in
+                       ("fa_eval", "sweep_window", "sweep_structure",
+                        "sweep_words", "sweep_frontend", "diagnose")):
+        raise SystemExit(
+            f"분석 플래그 {_on} 가 켜졌는데 처리할 분기가 없다. "
+            "학습으로 흘려보내지 않고 멈춘다 -- 분기 연결을 확인할 것.")
     if a.fa_eval:
         fa_eval(cfg, minutes=a.minutes)
         return
