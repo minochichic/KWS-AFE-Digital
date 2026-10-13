@@ -1036,7 +1036,8 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           sweep: bool = False, min_gap: int = 3,
           min_recall: float = 0.90, sweep_win: bool = False,
           enroll: str = "", enroll_frac: float = 0.3,
-          enroll_only: bool = False, enroll_neg: str = "") -> Dict:
+          enroll_only: bool = False, enroll_neg: str = "",
+          vdd: float = 3.3) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -1197,7 +1198,7 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
             print(f"    s{i}: {a:.3f} / {b:.3f}{flag}")
 
     from .export import write_report
-    rep = write_report(model, out_dir, test=te, history=hist)
+    rep = write_report(model, out_dir, test=te, history=hist, vdd=vdd)
     print(f"\n회로 상수 -> {out_dir}")
     return {"test": te, "history": hist, "export": rep}
 
@@ -1287,6 +1288,9 @@ def main(argv=None) -> None:
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--enroll", default="",
                    help="시연자 녹음 폴더. train 분할의 양성에 섞는다")
+    p.add_argument("--vdd", type=float, default=3.3,
+                   help="논리 공급전압. 학습에는 전혀 안 쓰이고 export 에서 "
+                        "비율을 전압·저항값으로 옮길 때만 쓴다")
     p.add_argument("--enroll-neg", default="",
                    help="시연자가 녹음한 **음성**(대상 단어가 아닌 말). 같은 "
                         "마이크·방이어야 의미가 있다")
@@ -1385,7 +1389,8 @@ def main(argv=None) -> None:
               sweep=a.sweep_frontend, min_gap=a.min_gap,
               min_recall=a.min_recall, sweep_win=a.sweep_window,
               enroll=a.enroll, enroll_frac=a.enroll_frac,
-              enroll_only=a.enroll_only, enroll_neg=a.enroll_neg)
+              enroll_only=a.enroll_only, enroll_neg=a.enroll_neg,
+              vdd=a.vdd)
     if a.repeat > 1:
         repeat_runs(cfg, a.repeat, **kw)
     else:

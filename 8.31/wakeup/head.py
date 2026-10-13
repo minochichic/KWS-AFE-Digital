@@ -259,7 +259,7 @@ class TemplateHead(nn.Module):
 
     # ------------------------------------------------------------------ 내보내기
     @torch.no_grad()
-    def export(self, vdd: float = 1.8) -> Dict[str, object]:
+    def export(self, vdd: float = 3.3) -> Dict[str, object]:
         """학습 결과 -> 회로 상수."""
         g, s = self.ternary()
         M = (g * s).round().to(torch.int8)          # +1 / -1 / 0(=X)

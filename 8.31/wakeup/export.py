@@ -26,15 +26,24 @@ def template_table(M: torch.Tensor) -> str:
     return "\n".join(rows)
 
 
-def divider(vth: float, vdd: float = 1.8, r_total: float = 1e6) -> Dict[str, float]:
-    """기준전압을 분압 저항 두 개로. V_TH = VDD * R8 / (R7 + R8)."""
+def divider(vth: float, vdd: float = 3.3, r_total: float = 1e6) -> Dict[str, float]:
+    """기준전압을 분압 저항 두 개로. V_TH = VDD * R8 / (R7 + R8).
+
+    VDD 는 **학습에 전혀 들어가지 않는다.** 형판 비교는 n/m 과 (k-0.5)/m 이라는
+    비율이고, VDD 는 그 비율을 전압으로 옮길 때만 곱해진다. 그래서 VDD 를
+    바꿔도 재학습이 필요 없고, 바뀌는 것은 V_TH·여유·R7·R8 뿐이다.
+
+    기본값을 1.8 에서 3.3 으로 올린다. 여유 = VDD/(2m) 라 1.8 V 에서는 8채널
+    기준 0.113 V 뿐인데, 비교기 입력 오프셋(수 mV)과 1% 저항 공차를 함께
+    생각하면 빠듯하다. 3.3 V 면 0.206 V 가 되고 74HC 계열을 그대로 쓸 수 있다.
+    """
     if vth <= 0 or vth >= vdd:
         return {"R7": float("nan"), "R8": float("nan")}
     r8 = r_total * vth / vdd
     return {"R7": r_total - r8, "R8": r8}
 
 
-def build_report(model: WakeupModel, vdd: float = 1.8) -> Dict:
+def build_report(model: WakeupModel, vdd: float = 3.3) -> Dict:
     e = model.export(vdd=vdd)
     cfg = model.cfg
     M = e["M"]
@@ -148,7 +157,7 @@ def format_report(rep: Dict, test: Optional[Dict] = None) -> str:
 
 def write_report(model: WakeupModel, out_dir: Path, *,
                  test: Optional[Dict] = None, history: Optional[list] = None,
-                 vdd: float = 1.8) -> Dict:
+                 vdd: float = 3.3) -> Dict:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     rep = build_report(model, vdd=vdd)

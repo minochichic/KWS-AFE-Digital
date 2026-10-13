@@ -169,7 +169,7 @@ class WakeupModel(nn.Module):
 
     # ------------------------------------------------------------------ 내보내기
     @torch.no_grad()
-    def export(self, vdd: float = 1.8) -> Dict[str, object]:
+    def export(self, vdd: float = 3.3) -> Dict[str, object]:
         d = self.head.export(vdd)
         d["tau"] = list(self.cfg.head.tau)
         d["timeout"] = self.cfg.head.timeout
