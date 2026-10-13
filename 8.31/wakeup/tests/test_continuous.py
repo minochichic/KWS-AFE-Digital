@@ -157,17 +157,19 @@ def test_enrollment_clips_only_enter_the_train_split():
     assert g["val"] is None and g["test"] is None
 
 
-def test_speaker_dependent_mode_splits_the_recording_without_overlap():
-    """화자 종속 모드는 val 에도 양성이 있어야 체크포인트를 고를 수 있다.
-    단 train 과 겹치면 안 된다 -- 겹치면 val TPR 이 학습 정확도가 된다."""
+def test_speaker_dependent_mode_splits_the_recording_three_ways():
+    """val 에 양성이 있어야 체크포인트를 고를 수 있고, test 는 그 val 과도
+    달라야 한다. 한때 test 에 val 을 그대로 넣어 체크포인트를 고른 데이터로
+    시험 점수를 매겼다 -- TPR 0.877 이 나왔지만 실제 녹음 검출은 21발화 중
+    1개였다."""
     from wakeup.data import split_extra
-    ex = [torch.zeros(4) + i for i in range(8)]
+    ex = [torch.zeros(4) + i for i in range(20)]
     g = split_extra(ex, enroll_only=True, verbose=False)
-    tr = {float(w[0]) for w in g["train"]}
-    va = {float(w[0]) for w in g["val"]}
-    assert len(tr) == 6 and len(va) == 2
-    assert not (tr & va), "학습과 검증 발화가 겹친다"
-    assert tr | va == {float(i) for i in range(8)}, "버려진 발화가 있다"
+    sets = {k: {float(w[0]) for w in g[k]} for k in ("train", "val", "test")}
+    assert all(len(v) > 0 for v in sets.values())
+    for a, b in (("train", "val"), ("train", "test"), ("val", "test")):
+        assert not (sets[a] & sets[b]), f"{a} 와 {b} 가 겹친다"
+    assert set().union(*sets.values()) == {float(i) for i in range(20)}
 
 
 def test_speaker_dependent_mode_drops_the_dataset_positives():

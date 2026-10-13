@@ -251,17 +251,23 @@ def split_extra(extra_pos, enroll_only: bool, *, verbose: bool = True) -> dict:
         return {"train": None, "val": None, "test": None}
     if not enroll_only:
         return {"train": list(extra_pos), "val": None, "test": None}
-    cut = max(1, int(round(len(extra_pos) * 0.75)))
-    tr, va = list(extra_pos[:cut]), list(extra_pos[cut:])
-    if not va:                                 # 녹음이 너무 적으면 나눌 수 없다
-        tr = va = list(extra_pos)
+    n = len(extra_pos)
+    if n < 6:                                  # 셋으로 못 나눈다
         if verbose:
-            print("  경고: 녹음이 적어 train/val 을 나누지 못했다. "
-                  "val TPR 은 낙관적으로 나온다.")
-    elif verbose:
-        print(f"  화자 종속: 학습 {len(tr)}발화 / 검증 {len(va)}발화 "
-              f"(겹치지 않음). 데이터셋 양성은 쓰지 않는다.")
-    return {"train": tr, "val": va, "test": va}
+            print(f"  경고: 녹음이 {n}발화뿐이라 train/val/test 를 나누지 못했다. "
+                  "val/test TPR 은 학습 정확도이지 일반화가 아니다.")
+        return {"train": list(extra_pos), "val": list(extra_pos),
+                "test": list(extra_pos)}
+    a, b = int(round(n * 0.6)), int(round(n * 0.8))
+    tr, va, te = (list(extra_pos[:a]), list(extra_pos[a:b]),
+                  list(extra_pos[b:]))
+    if verbose:
+        print(f"  화자 종속: 학습 {len(tr)} / 검증 {len(va)} / 시험 {len(te)}발화, "
+              f"셋 다 겹치지 않는다. 데이터셋 양성은 쓰지 않는다.")
+        print("  * 이 세 분할은 모두 **한 녹음**에서 나왔다. 마이크·방·날이 같아서"
+              " 시험 TPR 은 낙관적이다.")
+        print("  * 진짜 시험은 따로 녹음한 파일을 --eval-wav 로 재는 것뿐이다.")
+    return {"train": tr, "val": va, "test": te}
 
 
 def loaders(root: str, target: str, batch_size: int, *, seed: int = 0,
