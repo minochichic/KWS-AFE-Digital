@@ -1365,8 +1365,9 @@ def main(argv=None) -> None:
                    help="대상 단어 비교. 쉼표로 나열하거나 auto")
     p.add_argument("--sweep-frontend", action="store_true",
                    help="켜짐률·압축을 바꿔가며 분리도만 재고 끝낸다")
-    p.add_argument("--on-rate", type=float, default=0.0,
-                   help="문턱 초기화의 목표 켜짐률 (0 = 채널 평균)")
+    p.add_argument("--on-rate", type=float, default=-1.0,
+                   help="문턱 초기화의 목표 켜짐률. 음수면 config 기본값(0.15). "
+                        "0 = 채널 평균 (알려진 고장값, 쓰지 말 것)")
     p.add_argument("--compression", default="log", choices=("log", "sqrt"))
     p.add_argument("--diagnose", action="store_true",
                    help="초기화와 타이밍 탐색까지만 하고 진단을 찍는다")
@@ -1377,7 +1378,8 @@ def main(argv=None) -> None:
     cfg = Config()
     cfg.frontend.n_channels = a.channels
     cfg.frontend.ste_clip = a.ste_clip
-    cfg.frontend.init_on_rate = a.on_rate
+    if a.on_rate >= 0:
+        cfg.frontend.init_on_rate = a.on_rate
     cfg.frontend.train_threshold = a.train_threshold
     cfg.frontend.compression = a.compression
     cfg.frontend.filterbank = a.filterbank

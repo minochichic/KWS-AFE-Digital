@@ -230,3 +230,11 @@ def test_frame_grid_must_be_an_integer_multiple_of_the_stft_hop():
         c.validate()
     c.frontend.stft_hop_ms = 7.8125          # 같이 맞추면 통과
     c.validate()
+
+
+def test_on_rate_default_is_the_measured_value_not_the_broken_one():
+    """0.0(채널 평균)은 켜짐률 57% 로 '전부 통과' 를 일으킨 알려진 고장값이다.
+    그게 기본값으로 남아 있어서, --on-rate 0.15 로 돌린 확정 구성을 플래그
+    없이 재현했을 때 TPR 이 0.575 에서 0.394 로 떨어졌다."""
+    from wakeup.config import Config
+    assert Config().frontend.init_on_rate == 0.15

@@ -139,4 +139,11 @@ def test_tau_search_beats_a_guessed_tau():
 
     guessed, searched = fit(False), fit(True)
     print(f"\n  TPR: 고정 tau {guessed:.3f} -> 탐색 {searched:.3f}")
-    assert searched > guessed + 0.15
+    # 종전엔 searched > guessed + 0.15 를 요구했다. 그 격차는 문턱 초기화
+    # 기본값이 0.0(채널 평균, 켜짐률 57%)이던 시절의 것이다. 기본값을 측정값
+    # 0.15 로 고치자 합성 과제에서는 고정 tau 도 1.000 이 나온다 -- "tau 를
+    # 찍어도 된다" 가 아니라, 당시 붕괴의 상당 부분이 tau 가 아니라 문턱
+    # 탓이었다는 뜻이다(README 의 ste_clip 항목과 같은 결론). 실제 음성에서는
+    # tau 탐색이 여전히 결정적이므로 탐색을 지운 것은 아니다.
+    assert searched >= guessed - 1e-6, "탐색이 고정 tau 보다 나빠졌다"
+    assert searched > 0.9, f"탐색 TPR 이 {searched:.3f} 로 너무 낮다"
