@@ -684,6 +684,52 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
     print("=" * 74 + "\n")
 
 
+
+# ------------------------------------------- 화자별 발화 수 (GSC 화자 종속 가능?)
+@torch.no_grad()
+def speaker_stats(cfg: Config, *, top: int = 15) -> None:
+    """GSC 에서 화자 한 명이 대상 단어를 몇 번 말했는지 센다.
+
+    "특정 화자에만 반응하도록 학습" 이 가능한지는 이 수에 달렸다. 시연자
+    녹음은 64발화였는데 그것도 모자랐다. GSC 는 화자가 수천 명이라 1인당
+    발화가 훨씬 적을 가능성이 크다 -- 그러면 화자 종속 학습 자체가 불가능하고,
+    대신 **같은 화자의 다른 단어**를 음성으로 쓰는 쪽이 남는다(그게 녹음
+    없이도 '같은 마이크, 다른 말' 음성을 얻는 유일한 길이다).
+    """
+    from collections import Counter
+    from . import data as D
+    w = cfg.train.target_word
+    _, spk, _ = D.word_clips(cfg.data_root, ("train", "val", "test"), w)
+    c = Counter(spk)
+    hist = Counter(c.values())
+    print(f"\n  '{w}' — 발화 {len(spk)}개, 화자 {len(c)}명, "
+          f"1인당 평균 {len(spk)/max(len(c),1):.2f}개")
+    print(f"  {'1인당 발화':>10} {'화자 수':>8} {'누적 비율':>10}")
+    tot, run = sum(hist.values()), 0
+    for n in sorted(hist):
+        run += hist[n]
+        print(f"  {n:10d} {hist[n]:8d} {run/tot*100:9.1f}%")
+
+    best = c.most_common(top)
+    print(f"\n  발화가 가장 많은 화자 {top}명")
+    for sid, n in best:
+        # 이 화자가 전체에서 말한 단어 수 (= 쓸 수 있는 '같은 마이크' 음성)
+        print(f"    {sid:>12}  '{w}' {n}개")
+
+    _, spk_all, wrd_all = D.word_clips(cfg.data_root,
+                                       ("train", "val", "test"), None)
+    by_spk = Counter(spk_all)
+    print(f"\n  그 화자들이 말한 **전체** 단어 수 (= 같은 마이크 음성 후보)")
+    for sid, n in best[:5]:
+        print(f"    {sid:>12}  전체 {by_spk[sid]}발화  "
+              f"(그 중 '{w}' 아닌 것 {by_spk[sid]-n}개)")
+    print()
+    print("  * 1인당 '%s' 발화가 한 자릿수면 화자 종속 학습은 불가능하다." % w)
+    print("    대신 '같은 마이크 음성'을 여기서 얻을 수 있다 -- 같은 화자가")
+    print("    말한 다른 단어는 녹음 채널이 같으므로, 모델이 채널 대신")
+    print("    단어를 보게 만드는 데 쓸 수 있다.\n")
+
+
 # ------------------------------------------------------- 화자별 검출률
 @torch.no_grad()
 def speaker_eval(cfg: Config, *, max_fpr: float = 0.05,
@@ -1251,6 +1297,9 @@ def main(argv=None) -> None:
                    help="양성 중 녹음이 차지할 비율")
     p.add_argument("--eval-wav", default="",
                    help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
+    p.add_argument("--speaker-stats", action="store_true",
+                   help="화자 한 명이 대상 단어를 몇 번 말했는지 — 화자 종속 "
+                        "학습이 가능한지 판단한다")
     p.add_argument("--speaker-eval", action="store_true",
                    help="화자별 검출률 분포와 가변저항의 이득을 잰다")
     p.add_argument("--gain-curve", action="store_true",
