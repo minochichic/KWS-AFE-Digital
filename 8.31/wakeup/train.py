@@ -538,6 +538,44 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
 
 
 
+
+# ------------------------------------------- 저장된 config 비교 (재현 안 될 때)
+def diff_config(cfg: Config, other: str) -> None:
+    """두 실행의 **저장된** config 를 비교한다.
+
+    같은 설정이라고 믿고 재현했는데 숫자가 다르면, 거의 항상 명령줄 플래그가
+    기록에서 빠진 것이다. 체크포인트에는 확정 config 가 통째로 들어 있으므로
+    기억이나 문서가 아니라 이걸 봐야 한다.
+    """
+    def load(tag):
+        p = Path(cfg.out_dir) / tag / "best.pt"
+        if not p.is_file():
+            print(f"체크포인트가 없다: {p}")
+            return None
+        return torch.load(p, map_location="cpu", weights_only=False).get("cfg")
+
+    a, bb = load(cfg.tag), load(other)
+    if a is None or bb is None:
+        return
+    print(f"\n  {cfg.tag}  vs  {other}\n")
+    same = True
+    for sec in sorted(set(a) | set(bb)):
+        ka, kb = a.get(sec, {}), bb.get(sec, {})
+        if not isinstance(ka, dict) or not isinstance(kb, dict):
+            if ka != kb:
+                same = False
+                print(f"  {sec:<28} {ka!r:>22}  ->  {kb!r}")
+            continue
+        for k in sorted(set(ka) | set(kb)):
+            va, vb = ka.get(k, "<없음>"), kb.get(k, "<없음>")
+            if va != vb:
+                same = False
+                print(f"  {sec}.{k:<24} {va!r:>22}  ->  {vb!r}")
+    if same:
+        print("  차이 없음 — config 가 아니라 코드가 바뀐 것이다.")
+    print()
+
+
 # ------------------------------------------- 이득 x k 곡선 (PreAMP 정하기)
 def _read_wave(path: str) -> Optional[torch.Tensor]:
     """wav 한 개를 16 kHz 모노로 읽는다. torchaudio 백엔드가 없으면 wave 모듈."""
@@ -1303,6 +1341,9 @@ def main(argv=None) -> None:
                    help="양성 중 녹음이 차지할 비율")
     p.add_argument("--eval-wav", default="",
                    help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
+    p.add_argument("--diff-config", default="",
+                   help="--tag 의 저장된 config 를 이 tag 와 비교한다. "
+                        "재현이 안 될 때 플래그 차이를 찾는다")
     p.add_argument("--speaker-stats", action="store_true",
                    help="화자 한 명이 대상 단어를 몇 번 말했는지 — 화자 종속 "
                         "학습이 가능한지 판단한다")
@@ -1378,6 +1419,7 @@ def main(argv=None) -> None:
     _analysis = {
         "eval_wav": bool(a.eval_wav), "gain_curve": a.gain_curve,
         "speaker_stats": a.speaker_stats, "speaker_eval": a.speaker_eval,
+        "diff_config": bool(a.diff_config),
         "fa_curve": a.fa_curve, "fa_eval": a.fa_eval,
         "sweep_window": a.sweep_window, "sweep_structure": a.sweep_structure,
         "sweep_words": bool(a.sweep_words), "sweep_frontend": a.sweep_frontend,
@@ -1390,6 +1432,9 @@ def main(argv=None) -> None:
             gain_curve(cfg, a.eval_wav, minutes=a.minutes, utt_gap=a.utt_gap)
         else:
             eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
+        return
+    if a.diff_config:
+        diff_config(cfg, a.diff_config)
         return
     if a.speaker_stats:
         speaker_stats(cfg)
