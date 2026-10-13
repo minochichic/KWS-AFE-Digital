@@ -716,13 +716,12 @@ def speaker_stats(cfg: Config, *, top: int = 15) -> None:
         # 이 화자가 전체에서 말한 단어 수 (= 쓸 수 있는 '같은 마이크' 음성)
         print(f"    {sid:>12}  '{w}' {n}개")
 
-    _, spk_all, wrd_all = D.word_clips(cfg.data_root,
-                                       ("train", "val", "test"), None)
-    by_spk = Counter(spk_all)
-    print(f"\n  그 화자들이 말한 **전체** 단어 수 (= 같은 마이크 음성 후보)")
+    idx = D.speaker_counts(cfg.data_root, ("train", "val", "test"))
+    print(f"\n  그 화자들이 말한 **전체** 발화 수 (= 같은 마이크 음성 후보)")
     for sid, n in best[:5]:
-        print(f"    {sid:>12}  전체 {by_spk[sid]}발화  "
-              f"(그 중 '{w}' 아닌 것 {by_spk[sid]-n}개)")
+        tot = sum(idx.get(sid, {}).values())
+        print(f"    {sid:>12}  전체 {tot}발화, 단어 {len(idx.get(sid, {}))}종  "
+              f"(그 중 '{w}' 아닌 것 {tot-n}개)")
     print()
     print("  * 1인당 '%s' 발화가 한 자릿수면 화자 종속 학습은 불가능하다." % w)
     print("    대신 '같은 마이크 음성'을 여기서 얻을 수 있다 -- 같은 화자가")

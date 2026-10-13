@@ -344,6 +344,31 @@ def raw_batch(root: str, split: str, n: int, *, seed: int = 0,
     return torch.stack(waves), words
 
 
+def speaker_counts(root: str, splits: Sequence[str]) -> dict:
+    """{화자: {단어: 개수}} — **파형을 읽지 않는다.**
+
+    word_clips 로 전체를 세려다 105k 클립의 파형을 전부 메모리에 올려
+    OOM 으로 죽었다(약 7 GB). 라벨만 필요하면 파일 경로만 보면 된다.
+    Speech Commands 의 경로는 '<단어>/<화자>_nohash_<n>.wav' 형식이다.
+    """
+    import torchaudio
+    from collections import defaultdict
+    root = os.path.expanduser(root)
+    out: dict = defaultdict(lambda: defaultdict(int))
+    for sp in splits:
+        base = torchaudio.datasets.SPEECHCOMMANDS(
+            root=root, url="speech_commands_v0.02", download=False,
+            subset=_SPLIT[sp])
+        for rel in getattr(base, "_walker", []):
+            parts = str(rel).replace("\\", "/").split("/")
+            if len(parts) < 2:
+                continue
+            word, fn = parts[-2], parts[-1]
+            spk = fn.split("_nohash_")[0]
+            out[spk][word] += 1
+    return {k: dict(v) for k, v in out.items()}
+
+
 def word_clips(root: str, splits: Sequence[str], word: Optional[str] = None,
                *, clip_ms: float = 1000.0, limit: int = 0):
     """(wave [n, L], speakers [n], words [n]) — 화자 ID 를 같이 돌려준다.
