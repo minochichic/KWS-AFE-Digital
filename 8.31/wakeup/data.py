@@ -44,7 +44,9 @@ class TargetVsRest(Dataset):
                  shift_ms: float = 100.0,
                  extra_pos: Optional[Sequence[torch.Tensor]] = None,
                  enroll_frac: float = 0.3,
-                 enroll_only: bool = False) -> None:
+                 enroll_only: bool = False,
+                 extra_neg: Optional[Sequence[torch.Tensor]] = None,
+                 neg_frac: float = 0.5) -> None:
         self.items = items
         self.noise = list(noise)
         self.n = int(round(SR * clip_ms / 1000.0))
@@ -83,6 +85,17 @@ class TargetVsRest(Dataset):
             want = int(round(len(pos) * enroll_frac / (1.0 - enroll_frac)))
             self.n_extra = max(len(self.extra), want)
 
+        # 시연자가 직접 녹음한 **음성**. 이게 왜 중요한가: 양성이 시연자의
+        # 마이크·방에서 나오고 음성이 Speech Commands 에서만 나오면, 단어를
+        # 배우는 것보다 "이 녹음 채널"을 배우는 게 더 쉬워서 학습이 그쪽으로
+        # 샌다(실측: 형판이 전 채널 ON 으로 수렴, 스트림 FA/h 6000).
+        # 같은 마이크·같은 방의 음성을 섞으면 그 지름길이 막힌다.
+        self.extra_neg = list(extra_neg or [])
+        self.n_extra_neg = 0
+        if self.extra_neg and neg_frac > 0:
+            want = int(round(len(self.neg) * neg_frac / (1.0 - neg_frac)))
+            self.n_extra_neg = max(len(self.extra_neg), want)
+
         self.n_silence = int(round(len(pos) * silence_fraction))
         self.sil_seed = seed + 777
 
@@ -91,7 +104,8 @@ class TargetVsRest(Dataset):
         return [it[1] for it in items]
 
     def __len__(self) -> int:
-        return len(self.pos) + self.n_extra + len(self.neg) + self.n_silence
+        return (len(self.pos) + self.n_extra + len(self.neg)
+                + self.n_extra_neg + self.n_silence)
 
     def _aug(self, w: torch.Tensor, g: torch.Generator) -> torch.Tensor:
         # 시간 이동 — START 가 어디서 뜨든 견디게 한다
@@ -116,16 +130,21 @@ class TargetVsRest(Dataset):
 
     def __getitem__(self, i: int) -> Tuple[torch.Tensor, torch.Tensor]:
         n_pos, n_ex = len(self.pos), self.n_extra
-        n_real = n_pos + n_ex + len(self.neg)
+        n_neg, n_exn = len(self.neg), self.n_extra_neg
+        n_real = n_pos + n_ex + n_neg + n_exn
         if i < n_real:
             if i < n_pos:                      # 데이터셋 양성
                 w = _fix_length(self.items[self.pos[i]][0], self.n)
                 y = 1.0
-            elif i < n_pos + n_ex:             # 시연자 녹음 (반복)
+            elif i < n_pos + n_ex:             # 시연자 녹음 양성 (반복)
                 w = _fix_length(self.extra[(i - n_pos) % len(self.extra)], self.n)
                 y = 1.0
-            else:                              # 음성
+            elif i < n_pos + n_ex + n_neg:     # 데이터셋 음성
                 w = _fix_length(self.items[self.neg[i - n_pos - n_ex]][0], self.n)
+                y = 0.0
+            else:                              # 시연자 녹음 음성 (반복)
+                j = (i - n_pos - n_ex - n_neg) % len(self.extra_neg)
+                w = _fix_length(self.extra_neg[j], self.n)
                 y = 0.0
             if self.augment:
                 w = self._aug(w, torch.Generator().manual_seed(self.sil_seed + i))
@@ -272,7 +291,7 @@ def split_extra(extra_pos, enroll_only: bool, *, verbose: bool = True) -> dict:
 
 def loaders(root: str, target: str, batch_size: int, *, seed: int = 0,
             num_workers: int = 4, extra_pos=None, enroll_only: bool = False,
-            **kw):
+            extra_neg=None, **kw):
     """extra_pos(시연자 녹음)를 어디에 넣을지는 모드에 따라 다르다.
 
     섞어 쓰는 모드(enroll_frac)에서는 **train 분할에만** 넣는다. val/test 에
@@ -285,11 +304,15 @@ def loaders(root: str, target: str, batch_size: int, *, seed: int = 0,
     여기 어디에도 들어가지 않는다.
     """
     ex_by_split = split_extra(extra_pos, enroll_only)
+    # 시연자 음성은 모드와 무관하게 셋으로 나눈다. val/test 에도 있어야
+    # "내 목소리로 다른 말을 할 때 안 켜지는가" 를 잴 수 있다.
+    neg_by_split = split_extra(extra_neg, True, verbose=False)
     out = {}
     for sp in ("train", "val", "test"):
         ex = ex_by_split[sp]
         ds = build(root, target, sp, seed=seed, augment=(sp == "train"),
-                   extra_pos=ex, enroll_only=enroll_only, **kw)
+                   extra_pos=ex, enroll_only=enroll_only,
+                   extra_neg=neg_by_split[sp], **kw)
         out[sp] = DataLoader(ds, batch_size=batch_size, shuffle=(sp == "train"),
                              num_workers=num_workers, drop_last=(sp == "train"),
                              pin_memory=True)

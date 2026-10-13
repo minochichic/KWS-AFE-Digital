@@ -199,3 +199,21 @@ def test_enrollment_is_oversampled_to_the_requested_fraction():
     i = len(ds.pos)
     a, ya = ds[i]
     assert float(ya) == 1.0 and a.numel() == SR
+
+
+def test_recorded_negatives_reach_the_requested_fraction():
+    """양성만 시연자 녹음이고 음성이 전부 데이터셋이면, 단어가 아니라 녹음
+    채널을 배우는 게 더 쉽다. 같은 마이크의 음성을 섞어 그 길을 막는다."""
+    from wakeup.data import TargetVsRest
+    items = [(torch.randn(SR) * 0.05, "sheila" if i < 100 else "no")
+             for i in range(600)]
+    pos = [torch.randn(SR) * 0.05 for _ in range(10)]
+    neg = [torch.randn(SR) * 0.05 for _ in range(10)]
+    ds = TargetVsRest(items, [], "sheila", "train", extra_pos=pos,
+                      enroll_only=True, extra_neg=neg, neg_frac=0.5,
+                      silence_fraction=0.0)
+    assert ds.n_extra_neg == len(ds.neg), "녹음 음성이 절반이 아니다"
+    # 마지막 구간이 녹음 음성이고 라벨이 0 이다
+    w, y = ds[len(ds) - 1]
+    assert float(y) == 0.0 and w.numel() == SR
+    assert len(ds) == ds.n_extra + len(ds.neg) + ds.n_extra_neg

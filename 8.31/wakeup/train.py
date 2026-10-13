@@ -569,6 +569,7 @@ def _read_wave(path: str) -> Optional[torch.Tensor]:
 @torch.no_grad()
 def gain_curve(cfg: Config, wav_path: str = "", *,
                gains=(0.5, 0.71, 1.0, 1.41, 2.0, 2.83, 4.0),
+               timeouts=(28, 45, 60),
                minutes: float = 20.0, n_clips: int = 12000,
                utt_gap: float = 0.8, top: int = 10) -> None:
     """입력 이득과 k 를 **같이** 훑는다.
@@ -626,36 +627,47 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
           f"상태 {c.head.n_states}, m={m_used}, 저장 k={saved_k}, "
           f"timeout {c.head.timeout}\n")
 
-    board = board_from_model(model, n_decoders=3)
+    # timeout 도 같이 훑는다. 처음엔 체크포인트 값(보통 28)에 고정했는데,
+    # timeout 은 구간을 얼마나 잘게 쪼개느냐라서 FA/h 를 좌우한다 -- 종전
+    # 측정에서 28 대 60 이 FA/h 를 자릿수로 갈랐다. 고정해 두면 모델이
+    # 나쁜 것인지 구간이 잘게 쪼개진 것인지 구분할 수 없다.
+    tos = [t for t in timeouts
+           if c.head.tau[-1] + c.head.min_wake_frames < t <= 63]
     rows: List[Dict] = []
     for g in gains:
         fs = stream_features(model, st * g)
-        s_st, m_st = scan_segments(board, fs)
-        fa_rows = sweep_k(s_st, m_st, on, m_used, frames=fs.shape[2],
-                          tau_last=int(board.tau[-1]))
-        fa_by_k = {tuple(r["k"]): r for r in fa_rows}
-
-        if wav is not None:
-            fw = stream_features(model, wav * g)
-            s_w, m_w = scan_segments(board, fw)
-            det_rows = sweep_k(s_w, m_w, onsets, m_used, frames=fw.shape[2],
-                               tau_last=int(board.tau[-1]))
-            det_by_k = {tuple(r["k"]): r["tpr"] for r in det_rows}
-        else:
-            det_by_k = {tuple(r["k"]): r["tpr"] for r in fa_rows}
-
-        for kk, fr in fa_by_k.items():
-            rows.append({"gain": g, "k": list(kk),
-                         "tpr": det_by_k.get(kk, 0.0),
-                         "fa_per_hour": fr["fa_per_hour"]})
-        best = max((r for r in rows if r["gain"] == g), key=lambda r: r["tpr"])
-        print(f"  이득 {g:4.2f}  계측 구간 {len(s_st)}개  "
-              f"최고 검출 {best['tpr']*100:5.1f}% (FA/h {best['fa_per_hour']:.0f})")
+        fw = stream_features(model, wav * g) if wav is not None else None
+        line = []
+        for to in tos:
+            c.head.timeout = to
+            board = board_from_model(model, n_decoders=3)
+            s_st, m_st = scan_segments(board, fs)
+            fa_rows = sweep_k(s_st, m_st, on, m_used, frames=fs.shape[2],
+                              tau_last=int(board.tau[-1]))
+            if fw is not None:
+                s_w, m_w = scan_segments(board, fw)
+                det = {tuple(r["k"]): r["tpr"]
+                       for r in sweep_k(s_w, m_w, onsets, m_used,
+                                        frames=fw.shape[2],
+                                        tau_last=int(board.tau[-1]))}
+            else:
+                det = {tuple(r["k"]): r["tpr"] for r in fa_rows}
+            for fr in fa_rows:
+                rows.append({"gain": g, "timeout": to, "k": list(fr["k"]),
+                             "tpr": det.get(tuple(fr["k"]), 0.0),
+                             "fa_per_hour": fr["fa_per_hour"]})
+            ok = [r for r in rows
+                  if r["gain"] == g and r["timeout"] == to
+                  and r["fa_per_hour"] <= 30.0]
+            b = max(ok, key=lambda r: r["tpr"]) if ok else None
+            line.append(f"to{to}:" + (f"{b['tpr']*100:.0f}%" if b else "—"))
+        print(f"  이득 {g:4.2f}   FA/h≤30 에서 최고 검출  " + "  ".join(line))
 
     print("\n" + "=" * 74)
     print("  FA/h 예산별 최고 검출률 — 이 표가 PreAMP 이득과 k 를 정한다")
     print("=" * 74)
-    print(f"  {'FA/h 예산':>10} {'검출률':>8} {'이득':>6} {'k':>10} {'실제 FA/h':>10}")
+    print(f"  {'FA/h 예산':>10} {'검출률':>8} {'이득':>6} {'timeout':>8} "
+          f"{'k':>10} {'실제 FA/h':>10}")
     for cap in (0.5, 1.0, 3.0, 10.0, 30.0, 100.0):
         ok = [r for r in rows if r["fa_per_hour"] <= cap]
         if not ok:
@@ -663,10 +675,10 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
             continue
         b = max(ok, key=lambda r: (r["tpr"], -r["fa_per_hour"]))
         print(f"  {cap:10g} {b['tpr']*100:7.1f}% {b['gain']:6.2f} "
-              f"{str(b['k']):>10} {b['fa_per_hour']:10.1f}")
+              f"{b['timeout']:8d} {str(b['k']):>10} {b['fa_per_hour']:10.1f}")
     print("-" * 74)
-    print("  * 이득은 PreAMP 저항비, k 는 분압 저항 두 개다. 둘 다 재학습 없이")
-    print("    바꿀 수 있는 값이고, 그래서 시연 직전까지 조정이 가능하다.")
+    print("  * 이득은 PreAMP 저항비, k 는 분압 저항 두 개, timeout 은 디코더")
+    print("    결선이다. 셋 다 재학습 없이 바꿀 수 있다.")
     print("  * 검출률과 FA/h 의 출처가 다르다. 검출률은 시연자 녹음, FA/h 는")
     print("    Speech Commands 스트림 -- 섞어서 하나의 '정확도'로 쓰지 말 것.")
     print("=" * 74 + "\n")
@@ -978,7 +990,7 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           sweep: bool = False, min_gap: int = 3,
           min_recall: float = 0.90, sweep_win: bool = False,
           enroll: str = "", enroll_frac: float = 0.3,
-          enroll_only: bool = False) -> Dict:
+          enroll_only: bool = False, enroll_neg: str = "") -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -1000,10 +1012,17 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
         print(f"    발화 {len(extra)}개")
         if not enroll_only:
             print("    train 분할에만 넣는다 (val/test 에 섞으면 평가가 거짓이 된다)")
+    extra_neg = None
+    if enroll_neg:
+        rms = D.positive_clip_rms(cfg.data_root, cfg.train.target_word)
+        print(f"시연자 음성: {enroll_neg}  (같은 마이크·방의 '다른 말'. "
+              "채널로 구분하는 지름길을 막는다)")
+        extra_neg = D.load_enroll(enroll_neg, target_rms=rms)
+        print(f"    발화 {len(extra_neg)}개")
     ld = D.loaders(cfg.data_root, cfg.train.target_word, cfg.train.batch_size,
                    seed=cfg.train.seed, num_workers=cfg.train.num_workers,
                    extra_pos=extra, enroll_frac=enroll_frac,
-                   enroll_only=enroll_only)
+                   enroll_only=enroll_only, extra_neg=extra_neg)
     model = WakeupModel(cfg).to(dev)
 
     # 1) 데이터에서 초기화
@@ -1222,6 +1241,9 @@ def main(argv=None) -> None:
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--enroll", default="",
                    help="시연자 녹음 폴더. train 분할의 양성에 섞는다")
+    p.add_argument("--enroll-neg", default="",
+                   help="시연자가 녹음한 **음성**(대상 단어가 아닌 말). 같은 "
+                        "마이크·방이어야 의미가 있다")
     p.add_argument("--enroll-only", action="store_true",
                    help="화자 종속. 데이터셋 양성을 버리고 녹음만 양성으로 쓴다. "
                         "--enroll-frac 은 무시된다")
@@ -1314,7 +1336,7 @@ def main(argv=None) -> None:
               sweep=a.sweep_frontend, min_gap=a.min_gap,
               min_recall=a.min_recall, sweep_win=a.sweep_window,
               enroll=a.enroll, enroll_frac=a.enroll_frac,
-              enroll_only=a.enroll_only)
+              enroll_only=a.enroll_only, enroll_neg=a.enroll_neg)
     if a.repeat > 1:
         repeat_runs(cfg, a.repeat, **kw)
     else:
