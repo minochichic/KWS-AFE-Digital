@@ -604,6 +604,10 @@ def summarize(cfg: Config, prefixes: str) -> None:
 
 
 # ------------------------------------------- 저장된 config 비교 (재현 안 될 때)
+# FA/h 예산 눈금. 10 과 30 사이가 비어 있었는데 정작 결정이 거기서 난다.
+_CAPS = (1.0, 3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 50.0, 100.0)
+
+
 def _pair(txt: str) -> Tuple[float, float]:
     a, b = (float(x) for x in txt.split(","))
     return (a, b)
@@ -775,9 +779,15 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
             else:
                 det = {tuple(r["k"]): r["tpr"] for r in fa_rows}
             for fr in fa_rows:
+                # k=1 은 "8채널 중 1개만 맞아도 통과" 라 그 상태가 꺼진 것과
+                # 같다. 2상태로 설계해 놓고 1상태로 동작하는 지점을 고르면
+                # 비교기 하나가 장식이 된다.
+                if any(int(v) <= 1 for v in fr["k"]):
+                    continue
                 rows.append({"gain": g, "timeout": to, "k": list(fr["k"]),
                              "tpr": det.get(tuple(fr["k"]), 0.0),
-                             "fa_per_hour": fr["fa_per_hour"]})
+                             "fa_per_hour": fr["fa_per_hour"],
+                             "n_false": fr.get("n_false", 0)})
             ok = [r for r in rows
                   if r["gain"] == g and r["timeout"] == to
                   and r["fa_per_hour"] <= 30.0]
@@ -790,17 +800,18 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
     print("=" * 74)
     print(f"  {'FA/h 예산':>10} {'검출률':>8} {'이득':>6} {'timeout':>8} "
           f"{'k':>10} {'실제 FA/h':>10}")
-    for cap in (0.5, 1.0, 3.0, 10.0, 30.0, 100.0):
+    for cap in _CAPS:
         ok = [r for r in rows if r["fa_per_hour"] <= cap]
         if not ok:
             print(f"  {cap:10g} {'—':>8}")
             continue
         b = max(ok, key=lambda r: (r["tpr"], -r["fa_per_hour"]))
+        warn = "  ← 사건 %d개, 못 믿는다" % b["n_false"] if b["n_false"] < 10 else ""
         print(f"  {cap:10g} {b['tpr']*100:7.1f}% {b['gain']:6.2f} "
-              f"{b['timeout']:8d} {str(b['k']):>10} {b['fa_per_hour']:10.1f}")
+              f"{b['timeout']:8d} {str(b['k']):>10} {b['fa_per_hour']:10.1f}{warn}")
     # ── 고른 지점을 **새 스트림**에서 다시 잰다
     picks = []
-    for cap in (0.5, 1.0, 3.0, 10.0, 30.0, 100.0):
+    for cap in _CAPS:
         ok = [r for r in rows if r["fa_per_hour"] <= cap]
         if ok:
             picks.append((cap, max(ok, key=lambda r: (r["tpr"],
@@ -825,14 +836,18 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
             v = cache[key].get(tuple(bpick["k"]))
             if v is None:
                 continue
+            w = "  ← 사건 %d개" % v["n_false"] if v["n_false"] < 10 else ""
             print(f"  {cap:10g} {v['tpr']*100:7.1f}% {v['fa_per_hour']:8.1f}   "
-                  f"({bpick['tpr']*100:.1f}% / {bpick['fa_per_hour']:.1f})")
+                  f"({bpick['tpr']*100:.1f}% / {bpick['fa_per_hour']:.1f}){w}")
         print()
     print("-" * 74)
     print("  * 이득은 PreAMP 저항비, k 는 분압 저항 두 개, timeout 은 디코더")
     print("    결선이다. 셋 다 재학습 없이 바꿀 수 있다.")
-    print("  * 검출률과 FA/h 의 출처가 다르다. 검출률은 시연자 녹음, FA/h 는")
-    print("    Speech Commands 스트림 -- 섞어서 하나의 '정확도'로 쓰지 말 것.")
+    print("  * 어떤 상태든 k<=1 인 지점은 뺐다 -- 그 상태가 꺼진 것과 같아서,")
+    print("    2상태로 설계해 놓고 1상태로 동작하는 셈이 된다.")
+    print("  * 오경보 사건이 10개 미만이면 FA/h 를 믿지 말 것. 60분에 1건이면")
+    print("    '1.0 FA/h' 지만 다음 스트림에서 5건이 날 수도 있다(실측).")
+    print("  * 검출률과 FA/h 의 출처가 다르다. 섞어서 하나의 '정확도'로 쓰지 말 것.")
     print("=" * 74 + "\n")
 
 
