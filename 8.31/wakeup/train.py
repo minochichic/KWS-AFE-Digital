@@ -604,6 +604,11 @@ def summarize(cfg: Config, prefixes: str) -> None:
 
 
 # ------------------------------------------- 저장된 config 비교 (재현 안 될 때)
+def _pair(txt: str) -> Tuple[float, float]:
+    a, b = (float(x) for x in txt.split(","))
+    return (a, b)
+
+
 def diff_config(cfg: Config, other: str) -> None:
     """두 실행의 **저장된** config 를 비교한다.
 
@@ -673,7 +678,9 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
                gains=(0.5, 0.71, 1.0, 1.41, 2.0, 2.83, 4.0),
                timeouts=(28, 45, 60),
                minutes: float = 20.0, n_clips: int = 12000,
-               utt_gap: float = 0.8, top: int = 10) -> None:
+               utt_gap: float = 0.8, top: int = 10,
+               gap_s: Tuple[float, float] = (0.3, 1.5),
+               verify_seed: int = 1) -> None:
     """입력 이득과 k 를 **같이** 훑는다.
 
     fa_curve 는 이득 1.0 에 고정이었다. 그런데 기준선에서 시연자 목소리의
@@ -701,8 +708,16 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
     saved_k = [int(v) for v in e["k"]]
 
     waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
+    pool = _noise_pool(c)
     st, on = build_stream(waves, words, c.train.target_word, minutes=minutes,
-                          noise=_noise_pool(c), seed=0)
+                          noise=pool, seed=0, gap_s=gap_s)
+    # 검증용 스트림 — **다른 시드**. 동작점을 고른 데이터에서 점수를 매기면
+    # 이득 x timeout x k 약 1300개 조합 중 최고를 뽑는 셈이라 승자의 저주가
+    # 낀다(실측: 20분 62.3% 가 60분에서 46.5%). 고른 뒤 새 스트림에서 다시
+    # 잰 값이 보고할 숫자다.
+    st_v, on_v = build_stream(waves, words, c.train.target_word,
+                              minutes=minutes, noise=pool,
+                              seed=verify_seed, gap_s=gap_s)
 
     wav, onsets = None, []
     if wav_path:
@@ -724,7 +739,10 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
         print("  검출률 출처: 연속 스트림 (화자 독립). 녹음을 주려면 "
               "--eval-wav 를 같이 쓸 것")
 
-    print(f"  FA/h 출처: 스트림 {minutes:.0f}분, 대상 {len(on)}회")
+    speech = 1.0 / (1.0 + sum(gap_s) / 2)
+    print(f"  FA/h 출처: 스트림 {minutes:.0f}분, 대상 {len(on)}회, "
+          f"무음 간격 {gap_s[0]}~{gap_s[1]}s (말소리 비중 약 {speech*100:.0f}%)")
+    print(f"  검증 스트림: 같은 길이, 시드 {verify_seed} (동작점을 고른 뒤 여기서 다시 잰다)")
     print(f"  '{c.train.target_word}', {c.frontend.n_channels}채널, "
           f"상태 {c.head.n_states}, m={m_used}, 저장 k={saved_k}, "
           f"timeout {c.head.timeout}\n")
@@ -780,6 +798,36 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
         b = max(ok, key=lambda r: (r["tpr"], -r["fa_per_hour"]))
         print(f"  {cap:10g} {b['tpr']*100:7.1f}% {b['gain']:6.2f} "
               f"{b['timeout']:8d} {str(b['k']):>10} {b['fa_per_hour']:10.1f}")
+    # ── 고른 지점을 **새 스트림**에서 다시 잰다
+    picks = []
+    for cap in (0.5, 1.0, 3.0, 10.0, 30.0, 100.0):
+        ok = [r for r in rows if r["fa_per_hour"] <= cap]
+        if ok:
+            picks.append((cap, max(ok, key=lambda r: (r["tpr"],
+                                                      -r["fa_per_hour"]))))
+    if picks:
+        print("-" * 74)
+        print("  검증 스트림(시드 %d)에서 다시 잰 값 — **이쪽이 보고할 숫자**"
+              % verify_seed)
+        print(f"  {'FA/h 예산':>10} {'검출률':>8} {'FA/h':>8}   (고른 값 대비)")
+        cache = {}
+        for cap, bpick in picks:
+            key = (bpick["gain"], bpick["timeout"])
+            if key not in cache:
+                c.head.timeout = bpick["timeout"]
+                bd = board_from_model(model, n_decoders=3)
+                fv = stream_features(model, st_v * bpick["gain"])
+                sv, mv = scan_segments(bd, fv)
+                cache[key] = {tuple(r["k"]): r for r in
+                              sweep_k(sv, mv, on_v, m_used, frames=fv.shape[2],
+                                      frame_ms=c.frontend.envelope_win_ms,
+                                      tau_last=int(bd.tau[-1]))}
+            v = cache[key].get(tuple(bpick["k"]))
+            if v is None:
+                continue
+            print(f"  {cap:10g} {v['tpr']*100:7.1f}% {v['fa_per_hour']:8.1f}   "
+                  f"({bpick['tpr']*100:.1f}% / {bpick['fa_per_hour']:.1f})")
+        print()
     print("-" * 74)
     print("  * 이득은 PreAMP 저항비, k 는 분압 저항 두 개, timeout 은 디코더")
     print("    결선이다. 셋 다 재학습 없이 바꿀 수 있다.")
@@ -969,8 +1017,16 @@ def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
           f"창 ±{c.head.match_window}, m={m_used}, 저장 k={saved_k}")
 
     waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
+    pool = _noise_pool(c)
     st, on = build_stream(waves, words, c.train.target_word, minutes=minutes,
-                          noise=_noise_pool(c), seed=0)
+                          noise=pool, seed=0, gap_s=gap_s)
+    # 검증용 스트림 — **다른 시드**. 동작점을 고른 데이터에서 점수를 매기면
+    # 이득 x timeout x k 약 1300개 조합 중 최고를 뽑는 셈이라 승자의 저주가
+    # 낀다(실측: 20분 62.3% 가 60분에서 46.5%). 고른 뒤 새 스트림에서 다시
+    # 잰 값이 보고할 숫자다.
+    st_v, on_v = build_stream(waves, words, c.train.target_word,
+                              minutes=minutes, noise=pool,
+                              seed=verify_seed, gap_s=gap_s)
     feats = stream_features(model, st)
     print(f"  스트림 {feats.shape[2]/6000:.1f}분, 대상 {len(on)}회\n")
 
@@ -1419,6 +1475,9 @@ def main(argv=None) -> None:
                         "학습이 가능한지 판단한다")
     p.add_argument("--speaker-eval", action="store_true",
                    help="화자별 검출률 분포와 가변저항의 이득을 잰다")
+    p.add_argument("--gap-s", default="0.3,1.5",
+                   help="스트림의 발화 간 무음 간격(초) 'A,B'. 넓힐수록 조용한 "
+                        "방에 가깝다. 시연장은 기본값보다 조용하다")
     p.add_argument("--gain-curve", action="store_true",
                    help="입력 이득 x k 를 같이 훑는다. --eval-wav 를 주면 "
                         "검출률을 그 녹음에서 잰다")
@@ -1501,7 +1560,8 @@ def main(argv=None) -> None:
 
     if a.eval_wav:
         if a.gain_curve:
-            gain_curve(cfg, a.eval_wav, minutes=a.minutes, utt_gap=a.utt_gap)
+            gain_curve(cfg, a.eval_wav, minutes=a.minutes, utt_gap=a.utt_gap,
+                       gap_s=_pair(a.gap_s))
         else:
             eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
         return
@@ -1515,7 +1575,8 @@ def main(argv=None) -> None:
         speaker_stats(cfg)
         return
     if a.gain_curve:
-        gain_curve(cfg, "", minutes=a.minutes, utt_gap=a.utt_gap)
+        gain_curve(cfg, "", minutes=a.minutes, utt_gap=a.utt_gap,
+                   gap_s=_pair(a.gap_s))
         return
     if a.speaker_eval:
         speaker_eval(cfg, max_fpr=a.max_fpr)
