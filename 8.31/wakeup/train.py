@@ -540,6 +540,51 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
 
 
 
+
+# ------------------------------------------- 회로 상수 확정 (고른 동작점으로)
+@torch.no_grad()
+def emit_circuit(cfg: Config, set_k: str, set_timeout: int,
+                 vdd: float = 3.3, out: str = "") -> None:
+    """학습된 k 가 아니라 **우리가 고른 동작점**으로 회로 상수를 내보낸다.
+
+    k 와 timeout 은 학습이 아니라 연속 오디오 곡선(--gain-curve)에서 고른다.
+    export 는 학습 당시의 값을 쓰므로, 보드에 실을 숫자를 뽑으려면 여기서
+    덮어써야 한다. 형판 M 과 문턱 theta 는 학습된 그대로다 -- k 는 분압
+    저항 두 개, timeout 은 디코더 결선일 뿐이라 재학습이 필요 없다.
+    """
+    from .export import write_report
+
+    model, c = _load_trained(cfg)
+    if model is None:
+        return
+    ks = [int(x) for x in set_k.split(",")]
+    if len(ks) != c.head.n_states:
+        print(f"k 를 {c.head.n_states}개 줘야 한다 (받은 값 {ks})")
+        return
+    m_used = [int(v) for v in model.export()["m"]]
+    for i, (kv, mv) in enumerate(zip(ks, m_used)):
+        if kv <= 1:
+            print(f"  경고: s{i+1} 의 k={kv} 는 그 상태를 끄는 것과 같다.")
+        if kv > mv:
+            print(f"  s{i+1} 의 k={kv} 가 쓰는 채널 수 m={mv} 보다 크다 — 통과 불가")
+            return
+    if not (c.head.tau[-1] + c.head.min_wake_frames < set_timeout <= 63):
+        print(f"  timeout {set_timeout} 이 범위를 벗어난다 "
+              f"(tau[-1]={c.head.tau[-1]} 보다 크고 63 이하여야 한다)")
+        return
+
+    model.head.k.copy_(torch.tensor(ks, dtype=model.head.k.dtype))
+    c.head.timeout = set_timeout
+    model.cfg.head.timeout = set_timeout
+
+    d = Path(out or (Path(cfg.out_dir) / f"{cfg.tag}_final"))
+    print(f"\n  동작점: k={ks}, timeout={set_timeout} "
+          f"({set_timeout * c.frontend.envelope_win_ms:.0f} ms), VDD={vdd} V")
+    print(f"  형판과 문턱은 학습된 그대로다. k 와 timeout 만 덮어썼다.\n")
+    write_report(model, d, vdd=vdd)
+    print(f"회로 상수 -> {d}")
+
+
 # ------------------------------------------- 저장된 실행들 요약 (스크롤 복구)
 def summarize(cfg: Config, prefixes: str) -> None:
     """runs/<prefix>_s*/circuit.json 을 읽어 표로 다시 찍는다.
@@ -1479,6 +1524,12 @@ def main(argv=None) -> None:
                    help="양성 중 녹음이 차지할 비율")
     p.add_argument("--eval-wav", default="",
                    help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
+    p.add_argument("--emit-circuit", action="store_true",
+                   help="--set-k / --set-timeout 으로 고른 동작점의 회로 상수를 낸다")
+    p.add_argument("--set-k", default="",
+                   help="상태별 k, 쉼표로. 예: 6,5")
+    p.add_argument("--set-timeout", type=int, default=0,
+                   help="timeout 프레임 수 (<=63)")
     p.add_argument("--summarize", default="",
                    help="runs/<prefix>_s*/circuit.json 을 표로 다시 찍는다. "
                         "쉼표로 여러 prefix 를 주면 나란히 비교")
@@ -1566,6 +1617,7 @@ def main(argv=None) -> None:
         "eval_wav": bool(a.eval_wav), "gain_curve": a.gain_curve,
         "speaker_stats": a.speaker_stats, "speaker_eval": a.speaker_eval,
         "diff_config": bool(a.diff_config), "summarize": bool(a.summarize),
+        "emit_circuit": a.emit_circuit,
         "fa_curve": a.fa_curve, "fa_eval": a.fa_eval,
         "sweep_window": a.sweep_window, "sweep_structure": a.sweep_structure,
         "sweep_words": bool(a.sweep_words), "sweep_frontend": a.sweep_frontend,
@@ -1579,6 +1631,11 @@ def main(argv=None) -> None:
                        gap_s=_pair(a.gap_s))
         else:
             eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
+        return
+    if a.emit_circuit:
+        if not a.set_k or not a.set_timeout:
+            raise SystemExit("--emit-circuit 에는 --set-k 와 --set-timeout 이 필요하다")
+        emit_circuit(cfg, a.set_k, a.set_timeout, vdd=a.vdd)
         return
     if a.summarize:
         summarize(cfg, a.summarize)
