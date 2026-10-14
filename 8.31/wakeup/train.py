@@ -539,6 +539,70 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
 
 
 
+
+# ------------------------------------------- 저장된 실행들 요약 (스크롤 복구)
+def summarize(cfg: Config, prefixes: str) -> None:
+    """runs/<prefix>_s*/circuit.json 을 읽어 표로 다시 찍는다.
+
+    --repeat 요약은 터미널 스크롤에서 밀려 사라진다. 결과는 디스크에 남아
+    있으므로 다시 학습할 이유가 없다. 쉼표로 여러 prefix 를 주면 나란히
+    비교한다.
+    """
+    import json
+    import statistics as st
+    root = Path(cfg.out_dir)
+    print()
+    rows = []
+    for pre in [x.strip() for x in prefixes.split(",") if x.strip()]:
+        dirs = sorted(root.glob(f"{pre}_s*")) or sorted(root.glob(pre))
+        got = []
+        for d in dirs:
+            f = d / "circuit.json"
+            if not f.is_file():
+                continue
+            try:
+                r = json.loads(f.read_text())
+            except Exception as ex:
+                print(f"  {d.name}: 읽지 못했다 ({ex})")
+                continue
+            t = r.get("test") or {}
+            if "tpr" not in t:
+                print(f"  {d.name}: 시험 지표가 없다 (--repeat 없이 돈 실행?)")
+                continue
+            got.append((d.name, t, r))
+        if not got:
+            print(f"  '{pre}' 에 해당하는 실행이 없다")
+            continue
+        print(f"  {pre}  —  프레임 {got[0][2].get('frame_ms')} ms, "
+              f"{got[0][2].get('n_channels')}채널, 상태 {got[0][2].get('n_states')}")
+        print(f"    {'실행':<16} {'TPR':>7} {'FPR':>7} {'START':>7} "
+              f"{'저항':>5} {'k':>10}")
+        for name, t, r in got:
+            ks = [st_["k"] for st_ in r.get("states", [])]
+            print(f"    {name:<16} {t['tpr']:7.3f} {t['fpr']:7.3f} "
+                  f"{t.get('start_recall', float('nan')):7.3f} "
+                  f"{r.get('n_resistors_template', 0):5d} {str(ks):>10}")
+        tp = [t["tpr"] for _, t, _ in got]
+        fp = [t["fpr"] for _, t, _ in got]
+        sr = [t.get("start_recall", 0.0) for _, t, _ in got]
+        sd = (lambda v: st.stdev(v) if len(v) > 1 else 0.0)
+        print(f"    {'평균':<16} {st.mean(tp):7.3f} {st.mean(fp):7.3f} "
+              f"{st.mean(sr):7.3f}")
+        print(f"    {'표준편차':<14} {sd(tp):7.3f} {sd(fp):7.3f} {sd(sr):7.3f}\n")
+        rows.append((pre, st.mean(tp), sd(tp), st.mean(fp), sd(fp), st.mean(sr),
+                     got[0][2].get("frame_ms")))
+
+    if len(rows) > 1:
+        print("  " + "=" * 68)
+        print(f"  {'설정':<12} {'프레임':>8} {'TPR':>16} {'FPR':>16} {'START':>8}")
+        for pre, mt, sdt, mf, sdf, msr, fm in rows:
+            print(f"  {pre:<12} {fm:8} {mt:8.3f} ±{sdt:5.3f} "
+                  f"{mf:8.3f} ±{sdf:5.3f} {msr:8.3f}")
+        print("  " + "=" * 68)
+        print("  * 클립 지표다. 동작점(k)과 timeout 은 여기서 정하지 않는다 --")
+        print("    연속 오디오에서 --gain-curve 로 고른다.\n")
+
+
 # ------------------------------------------- 저장된 config 비교 (재현 안 될 때)
 def diff_config(cfg: Config, other: str) -> None:
     """두 실행의 **저장된** config 를 비교한다.
@@ -1341,6 +1405,9 @@ def main(argv=None) -> None:
                    help="양성 중 녹음이 차지할 비율")
     p.add_argument("--eval-wav", default="",
                    help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
+    p.add_argument("--summarize", default="",
+                   help="runs/<prefix>_s*/circuit.json 을 표로 다시 찍는다. "
+                        "쉼표로 여러 prefix 를 주면 나란히 비교")
     p.add_argument("--diff-config", default="",
                    help="--tag 의 저장된 config 를 이 tag 와 비교한다. "
                         "재현이 안 될 때 플래그 차이를 찾는다")
@@ -1421,7 +1488,7 @@ def main(argv=None) -> None:
     _analysis = {
         "eval_wav": bool(a.eval_wav), "gain_curve": a.gain_curve,
         "speaker_stats": a.speaker_stats, "speaker_eval": a.speaker_eval,
-        "diff_config": bool(a.diff_config),
+        "diff_config": bool(a.diff_config), "summarize": bool(a.summarize),
         "fa_curve": a.fa_curve, "fa_eval": a.fa_eval,
         "sweep_window": a.sweep_window, "sweep_structure": a.sweep_structure,
         "sweep_words": bool(a.sweep_words), "sweep_frontend": a.sweep_frontend,
@@ -1434,6 +1501,9 @@ def main(argv=None) -> None:
             gain_curve(cfg, a.eval_wav, minutes=a.minutes, utt_gap=a.utt_gap)
         else:
             eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
+        return
+    if a.summarize:
+        summarize(cfg, a.summarize)
         return
     if a.diff_config:
         diff_config(cfg, a.diff_config)
