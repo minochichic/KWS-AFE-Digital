@@ -105,10 +105,15 @@ def stream_features(model, stream: torch.Tensor, chunk_s: float = 60.0
 # --------------------------------------------------------------- 평가
 @torch.no_grad()
 def evaluate_stream(board, feats: torch.Tensor, onsets: Sequence[int], *,
-                    frame_ms: float = 10.0,
+                    frame_ms: float,
                     credit_window_s: Tuple[float, float] = (-0.1, 0.9)
                     ) -> Dict[str, float]:
     """WAKE 상승 에지를 사건으로 세고, 대상 발화에 귀속시킨다.
+
+    frame_ms 에 기본값을 두지 않는다. 10.0 으로 두었더니 gain_curve 가 그걸
+    안 넘겨서, 모델이 7.8125 ms 로 도는데 채점만 10 ms 격자로 했다. 이벤트
+    시각이 1.28배 늘어나 정답 창을 벗어났고 검출률이 55% 에서 4% 로 보였다.
+    10 ms 에서는 우연히 맞아 드러나지 않았다.
 
     대상 시작 전후 credit_window 안에서 뜬 WAKE 는 그 발화의 검출로 본다.
     나머지는 전부 오검출이다.
@@ -145,7 +150,7 @@ def evaluate_stream(board, feats: torch.Tensor, onsets: Sequence[int], *,
 
 # ----------------------------------------------------------- k 격자 탐색
 def sweep_k(starts: torch.Tensor, maxcount: torch.Tensor, onsets: Sequence[int],
-            m: Sequence[int], *, frames: int, frame_ms: float = 10.0,
+            m: Sequence[int], *, frames: int, frame_ms: float,
             tau_last: int = 0,
             credit_window_s: Tuple[float, float] = (-0.1, 0.9)) -> List[Dict]:
     """모든 k 조합을 연속 지표로 평가한다.

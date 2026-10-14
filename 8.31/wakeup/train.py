@@ -745,12 +745,14 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
             board = board_from_model(model, n_decoders=3)
             s_st, m_st = scan_segments(board, fs)
             fa_rows = sweep_k(s_st, m_st, on, m_used, frames=fs.shape[2],
+                              frame_ms=c.frontend.envelope_win_ms,
                               tau_last=int(board.tau[-1]))
             if fw is not None:
                 s_w, m_w = scan_segments(board, fw)
                 det = {tuple(r["k"]): r["tpr"]
                        for r in sweep_k(s_w, m_w, onsets, m_used,
                                         frames=fw.shape[2],
+                                        frame_ms=c.frontend.envelope_win_ms,
                                         tau_last=int(board.tau[-1]))}
             else:
                 det = {tuple(r["k"]): r["tpr"] for r in fa_rows}
@@ -982,6 +984,7 @@ def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
         board = board_from_model(model, n_decoders=3)
         starts, mx = scan_segments(board, feats)
         rows = sweep_k(starts, mx, on, m_used, frames=feats.shape[2],
+                       frame_ms=c.frontend.envelope_win_ms,
                        tau_last=int(board.tau[-1]))
         cur = [r for r in rows if r["k"] == saved_k]
         front = pareto(rows)
@@ -1108,7 +1111,7 @@ def fa_eval(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
                               minutes=minutes, targets_per_min=targets_per_min,
                               noise=noise, seed=sd)
         f = stream_features(model, st)
-        r = evaluate_stream(board, f, on)
+        r = evaluate_stream(board, f, on, frame_ms=c.frontend.envelope_win_ms)
         rows.append(r)
         print(f"  스트림 {sd}: {r['hours']*60:.1f}분, 대상 {r['n_targets']}회, "
               f"WAKE {r['n_wakes']}회 -> 검출 {r['tpr']*100:.1f}%, "

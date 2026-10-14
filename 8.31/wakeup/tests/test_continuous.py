@@ -36,28 +36,28 @@ def _feats(T):
 
 def test_wake_inside_the_window_counts_as_a_detection():
     onsets = [int(2.0 * SR)]                  # 2초 지점에 대상
-    r = evaluate_stream(_FakeBoard([210]), _feats(6000), onsets)   # 2.10 s
+    r = evaluate_stream(_FakeBoard([210]), _feats(6000), onsets, frame_ms=10.0)   # 2.10 s
     assert r["tpr"] == 1.0 and r["n_false"] == 0
 
 
 def test_wake_outside_the_window_is_a_false_alarm():
     onsets = [int(2.0 * SR)]
-    r = evaluate_stream(_FakeBoard([500]), _feats(6000), onsets)   # 5.00 s
+    r = evaluate_stream(_FakeBoard([500]), _feats(6000), onsets, frame_ms=10.0)   # 5.00 s
     assert r["tpr"] == 0.0 and r["n_false"] == 1
 
 
 def test_two_wakes_on_one_target_credit_once_and_the_rest_are_false():
     """한 발화가 WAKE 를 두 번 내면 하나만 검출로 치고 나머지는 오검출이다."""
     onsets = [int(2.0 * SR)]
-    r = evaluate_stream(_FakeBoard([205, 240]), _feats(6000), onsets)
+    r = evaluate_stream(_FakeBoard([205, 240]), _feats(6000), onsets, frame_ms=10.0)
     assert r["tpr"] == 1.0
     assert r["n_wakes"] == 2 and r["n_false"] == 1
 
 
 def test_fa_per_hour_scales_with_stream_length():
     """같은 오검출 수라도 스트림이 길면 시간당 값은 줄어야 한다."""
-    short = evaluate_stream(_FakeBoard([100]), _feats(6000), [])    # 60 s
-    long_ = evaluate_stream(_FakeBoard([100]), _feats(36000), [])   # 360 s
+    short = evaluate_stream(_FakeBoard([100]), _feats(6000), [], frame_ms=10.0)    # 60 s
+    long_ = evaluate_stream(_FakeBoard([100]), _feats(36000), [], frame_ms=10.0)   # 360 s
     assert short["fa_per_hour"] > long_["fa_per_hour"]
     assert abs(short["fa_per_hour"] - 60.0) < 1e-6      # 1회 / 60초 = 60/h
 
@@ -112,10 +112,10 @@ def test_grid_search_matches_a_full_state_machine_run():
 
     e = m.export()
     k = [int(v) for v in e["k"]]
-    rows = sweep_k(starts, mx, on, [int(v) for v in e["m"]],
+    rows = sweep_k(starts, mx, on, [int(v) for v in e["m"]], frame_ms=10.0,
                    frames=feats.shape[2], tau_last=int(board.tau[-1]))
     grid = [r for r in rows if r["k"] == k][0]
-    full = evaluate_stream(board, feats, on)
+    full = evaluate_stream(board, feats, on, frame_ms=10.0)
     assert grid["n_wakes"] == full["n_wakes"], (
         f"WAKE 수가 다르다: 격자 {grid['n_wakes']} vs 전체 {full['n_wakes']}")
     assert abs(grid["tpr"] - full["tpr"]) < 1e-9
@@ -238,3 +238,38 @@ def test_on_rate_default_is_the_measured_value_not_the_broken_one():
     없이 재현했을 때 TPR 이 0.575 에서 0.394 로 떨어졌다."""
     from wakeup.config import Config
     assert Config().frontend.init_on_rate == 0.15
+
+
+def test_continuous_scoring_requires_an_explicit_frame_ms():
+    """frame_ms 에 기본값(10.0)이 있던 동안 gain_curve 가 그걸 안 넘겨서,
+    모델이 7.8125 ms 로 도는데 채점만 10 ms 격자로 했다. 이벤트 시각이
+    1.28배 늘어나 정답 창을 벗어났고 검출률이 55% 에서 4% 로 보였다."""
+    import inspect
+    from wakeup.continuous import evaluate_stream, sweep_k
+    for fn in (evaluate_stream, sweep_k):
+        p = inspect.signature(fn).parameters["frame_ms"]
+        assert p.default is inspect.Parameter.empty, (
+            f"{fn.__name__} 의 frame_ms 에 기본값이 생겼다 — "
+            "호출자가 빠뜨려도 조용히 틀린 격자로 채점된다")
+
+
+def test_frame_rate_error_grows_with_elapsed_time():
+    """틀린 frame_ms 의 시각 오차는 **경과 시간에 비례**한다. 정답 창이
+    1초 폭이라 스트림 앞부분에서는 티가 안 나고(1초 지점의 오차는 0.28초),
+    20분 스트림 끝에서는 수십 초가 어긋나 전부 놓친다. 클립 지표는 멀쩡한데
+    연속 검출률만 55% 에서 4% 로 보였던 이유가 이것이다."""
+    from wakeup.continuous import sweep_k
+    maxcount = torch.ones(1, 1) * 8
+
+    # 1초 지점: 틀린 격자여도 1.28 s 라 창(0.9~1.9 s) 안 — 안 걸린다
+    early = sweep_k(torch.tensor([128]), maxcount, [int(1.0 * SR)], [8],
+                    frames=200000, frame_ms=10.0)
+    assert early[-1]["tpr"] == 1.0, "앞부분에서는 틀린 격자도 통과해야 한다"
+
+    # 100초 지점: 틀린 격자는 128 s 라 창(99.9~100.9 s) 밖
+    late_ok = sweep_k(torch.tensor([12800]), maxcount, [int(100.0 * SR)], [8],
+                      frames=200000, frame_ms=1000.0 / 128)
+    late_bad = sweep_k(torch.tensor([12800]), maxcount, [int(100.0 * SR)], [8],
+                       frames=200000, frame_ms=10.0)
+    assert late_ok[-1]["tpr"] == 1.0, "맞는 격자인데 귀속되지 않았다"
+    assert late_bad[-1]["tpr"] == 0.0, "틀린 격자인데 귀속됐다"
