@@ -181,4 +181,6 @@ def test_tau_search_rejects_offsets_that_kill_a_state():
     code = [l.split("#")[0] for l in
             inspect.getsource(search.search_tau).splitlines()]
     body = "\n".join(code)
-    assert "(k <= 1).any()" in body, "죽은 상태를 벌하는 규칙이 없다"
+    assert "neg_pass" in body, "죽은 상태를 벌하는 규칙이 없다"
+    assert "(k <= 1)" not in body, (
+        "k<=1 은 틀린 조건이다 -- 죽은 상태는 m=3, k=3 으로도 나온다")

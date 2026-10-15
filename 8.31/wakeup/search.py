@@ -63,6 +63,11 @@ def offset_scores(x: torch.Tensor, start: torch.Tensor, y: torch.Tensor,
     return torch.tensor(aucs), torch.stack(protos)
 
 
+# 상태 하나가 음성을 이 비율 넘게 통과시키면 "죽은 상태"로 본다. 살아 있는
+# 상태는 0.04~0.13, 죽은 상태는 0.90~0.94 로 측정돼 그 사이면 어디든 같다.
+DEAD_STATE_FPR = 0.5
+
+
 def pick_offsets(auc: torch.Tensor, n_states: int, *, min_gap: int = 3,
                  min_tau: int = 1, max_tau: Optional[int] = None) -> List[int]:
     """분리도가 높은 오프셋을 간격을 두고 고른다.
@@ -130,14 +135,19 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
         model.head.init_templates(xs[y_ > 0.5])
         k = model.head.fit_k(model.head(xs)["count"], y_,
                              max_fpr=cfg.head.k_max_fpr)
-        # k<=1 은 "8채널 중 1개만 맞아도 통과" 라 그 상태가 꺼진 것과 같다.
-        # 벌하지 않으면 탐색이 먼 tau 로 가서 한 상태를 죽이고 나머지 하나로
-        # 점수를 낸다(실측: tau2=445 ms 에서 s2 가 음성의 92% 를 통과시킴,
-        # 5시드 중 3회). 그러면 비교기 하나가 통째로 낭비다. gain_curve 는
-        # 이미 같은 규칙으로 동작점을 거르는데 tau 탐색에는 빠져 있었다.
-        if bool((k <= 1).any()):
+        # 상태 하나가 음성을 거의 다 통과시키면 그 비교기는 낭비다. 벌하지
+        # 않으면 탐색이 먼 tau 로 가서 한 상태를 죽이고 나머지 하나로 점수를
+        # 낸다(실측: tau2=445 ms 에서 s2 가 음성의 92% 를 통과, 5시드 중 3회).
+        #
+        # 처음엔 k<=1 을 봤는데 틀린 조건이었다. 죽은 상태의 k 는 1 이 아니라
+        # m=3, k=3 이었다 -- "세 채널이 꺼져 있어라" 를 전부 요구하는데도
+        # 음성의 92% 가 통과한다. k 가 작아서가 아니라 조건 자체가 거의 항상
+        # 참이라서다. 그래서 k 가 아니라 **그 상태의 음성 통과율**을 본다.
+        per = model.head(xs)["count"] >= k.unsqueeze(0)      # [B, S]
+        neg_pass = per[y_ <= 0.5].float().mean(dim=0)
+        if bool((neg_pass > DEAD_STATE_FPR).any()):
             return -2.0
-        ok = (model.head(xs)["count"] >= k.unsqueeze(0)).all(dim=1)
+        ok = per.all(dim=1)
         tpr = ok[y_ > 0.5].float().mean().item()
         fpr = ok[y_ <= 0.5].float().mean().item()
         return (1.0 + tpr) if fpr <= cfg.head.k_max_fpr else -fpr
