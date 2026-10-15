@@ -541,6 +541,62 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
 
 
 
+
+# ------------------------------------------- theta 양자화 (VTHR 격자에 맞추기)
+@torch.no_grad()
+def quantize_theta(cfg: Config, steps_txt: str = "", n_clips: int = 12000) -> None:
+    """채널 문턱 theta 를 격자에 맞춘 뒤 정확도가 얼마나 떨어지는지 잰다.
+
+    theta 는 아날로그 비교기의 기준전압이 된다. 동료 회로의 VTHR 는 연속값이
+    아니라 **격자**(예: 10 mV 간격)라, 학습된 값을 그대로 못 쓴다.
+
+    단위에 주의할 것. theta 는 정규화 스케일(log-mel 을 fixed_lo/hi 로 편
+    값)이고 격자는 볼트다. 둘을 잇는 배율은 **아날로그 전단이 정하므로 우리는
+    모른다.** 그래서 볼트를 가정하지 않고 정규화 단위의 step 을 훑어, 나중에
+    동료가 배율을 주면 해당하는 줄을 고르게 한다.
+
+      step(정규화) = VTHR_step(V) / (정규화 1.0 에 해당하는 전압)
+
+    예: 포락선 전범위가 1.0 V 에 대응하고 VTHR 격자가 10 mV 면 step = 0.01.
+    """
+    from . import data as D
+
+    model, c = _load_trained(cfg)
+    if model is None:
+        return
+    dev = c.train.device if torch.cuda.is_available() else "cpu"
+    model = model.to(dev)
+    th0 = model.frontend.threshold.detach().clone()
+
+    ld = D.loaders(c.data_root, c.train.target_word, c.train.batch_size,
+                   seed=c.train.seed, num_workers=c.train.num_workers)
+    base = evaluate(model, ld["test"], dev)
+    print(f"\n  학습값 theta: " + "  ".join(f"{v:.4f}" for v in th0.tolist()))
+    print(f"  범위 {th0.min():.4f}~{th0.max():.4f} "
+          f"(폭 {float(th0.max()-th0.min()):.4f})")
+    print(f"  양자화 전: TPR {base['tpr']:.3f}  FPR {base['fpr']:.3f}  "
+          f"START {base['start_recall']:.3f}\n")
+
+    steps = ([float(x) for x in steps_txt.split(",")] if steps_txt else
+             [0.001, 0.002, 0.005, 0.01, 0.02, 0.05])
+    print(f"  {'step':>8} {'고유값':>6} {'TPR':>8} {'FPR':>8} {'START':>8}"
+          f"  {'TPR 변화':>9}")
+    for st in steps:
+        q = torch.round(th0 / st) * st
+        model.frontend.threshold.copy_(q)
+        r = evaluate(model, ld["test"], dev)
+        d = r["tpr"] - base["tpr"]
+        print(f"  {st:8.4f} {len(set(q.tolist())):6d} {r['tpr']:8.3f} "
+              f"{r['fpr']:8.3f} {r['start_recall']:8.3f}  {d:+9.3f}")
+    model.frontend.threshold.copy_(th0)
+
+    print()
+    print("  * '고유값' 이 1 이면 8채널이 같은 문턱을 쓴다는 뜻이다 -- 그러면")
+    print("    채널별 분압 저항이 필요 없고 기준전압 하나를 나눠 쓰면 된다.")
+    print("  * theta 폭이 좁으면(위 '폭') 격자가 거칠어도 잘 버틴다.")
+    print("  * 동료의 VTHR 격자를 정규화 단위로 환산해 해당 줄을 볼 것.\n")
+
+
 # ------------------------------------------- 회로 상수 확정 (고른 동작점으로)
 @torch.no_grad()
 def emit_circuit(cfg: Config, set_k: str, set_timeout: int,
@@ -1527,6 +1583,10 @@ def main(argv=None) -> None:
                    help="양성 중 녹음이 차지할 비율")
     p.add_argument("--eval-wav", default="",
                    help="직접 녹음한 wav (파일 또는 폴더) 를 넣어 본다")
+    p.add_argument("--quantize-theta", action="store_true",
+                   help="채널 문턱을 격자에 맞춘 뒤 정확도 손실을 잰다")
+    p.add_argument("--theta-steps", default="",
+                   help="훑을 격자 간격(정규화 단위), 쉼표로. 비우면 기본 목록")
     p.add_argument("--emit-circuit", action="store_true",
                    help="--set-k / --set-timeout 으로 고른 동작점의 회로 상수를 낸다")
     p.add_argument("--set-k", default="",
@@ -1622,7 +1682,7 @@ def main(argv=None) -> None:
         "eval_wav": bool(a.eval_wav), "gain_curve": a.gain_curve,
         "speaker_stats": a.speaker_stats, "speaker_eval": a.speaker_eval,
         "diff_config": bool(a.diff_config), "summarize": bool(a.summarize),
-        "emit_circuit": a.emit_circuit,
+        "emit_circuit": a.emit_circuit, "quantize_theta": a.quantize_theta,
         "fa_curve": a.fa_curve, "fa_eval": a.fa_eval,
         "sweep_window": a.sweep_window, "sweep_structure": a.sweep_structure,
         "sweep_words": bool(a.sweep_words), "sweep_frontend": a.sweep_frontend,
@@ -1636,6 +1696,9 @@ def main(argv=None) -> None:
                        gap_s=_pair(a.gap_s))
         else:
             eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
+        return
+    if a.quantize_theta:
+        quantize_theta(cfg, a.theta_steps)
         return
     if a.emit_circuit:
         if not a.set_k or not a.set_timeout:
