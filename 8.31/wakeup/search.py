@@ -79,6 +79,10 @@ def pick_offsets(auc: torch.Tensor, n_states: int, *, min_gap: int = 3,
         if all(abs(d - c) >= min_gap for c in chosen):
             chosen.append(d)
     if len(chosen) < n_states:          # 간격을 못 지키면 조건을 풀어 채운다
+        # 조용히 풀면 안 된다. min_gap 20 을 줬는데 범위가 1..23 이라 지킬 수
+        # 없어 [6, 7] 이 나온 적이 있다 -- 플래그가 먹은 줄 알았다.
+        print(f"  경고: tau 간격 {min_gap} 을 지킬 수 없다 "
+              f"(범위 {min_tau}..{hi}, 상태 {n_states}개). 조건을 풀고 채운다.")
         for d in order:
             if len(chosen) == n_states:
                 break
@@ -107,11 +111,16 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
     keep = found | (y <= 0.5)
     x, start, y_ = x[keep], start[keep], y[keep]
 
-    # START 이후 남는 길이. timeout 은 tau[-1] 보다 커야 하므로 그만큼 여유를 둔다
-    # timeout 이 63 을 넘을 수 없고 WAKE 폭도 확보해야 하므로 tau 상한을 줄인다
+    # START 이후 남는 길이. 상한은 **디코더 제약**에서만 온다: timeout <= 63
+    # 이고 timeout >= tau[-1] + min_wake_frames 이므로 tau[-1] <= 63 - mw.
+    #
+    # 종전에는 여기에 `cfg.head.timeout - mw` 도 넣었다. 그런데 그 timeout 은
+    # 탐색 **전**의 잠정값(CLI 기본 28)이고 진짜 timeout 은 tau 가 정해진 뒤
+    # 아래에서 다시 계산된다. 그 잠정값이 tau 상한을 23 으로 묶어, 7.8125 ms
+    # 에서 180 ms -- 즉 단어의 뒷부분을 아예 볼 수 없었다. 두 상태가 맨 앞
+    # 마찰음에 몰린 것은 선호가 아니라 거기밖에 못 갔기 때문이다.
     mw = cfg.head.min_wake_frames
-    max_off = min(T - 1 - int(start.float().median().item()),
-                  cfg.head.timeout - mw, 63 - mw)
+    max_off = min(T - 1 - int(start.float().median().item()), 63 - mw)
     auc, _ = offset_scores(x, start, y_, max_off)
     tau = pick_offsets(auc, S, min_gap=min_gap, min_tau=1, max_tau=max_off)
 

@@ -147,3 +147,26 @@ def test_tau_search_beats_a_guessed_tau():
     # tau 탐색이 여전히 결정적이므로 탐색을 지운 것은 아니다.
     assert searched >= guessed - 1e-6, "탐색이 고정 tau 보다 나빠졌다"
     assert searched > 0.9, f"탐색 TPR 이 {searched:.3f} 로 너무 낮다"
+
+
+def test_tau_upper_bound_comes_from_the_decoder_not_the_current_timeout():
+    """tau 상한은 디코더 제약(63 - min_wake_frames)에서만 와야 한다.
+    탐색 전의 잠정 timeout(CLI 기본 28)을 함께 쓰면 상한이 23 으로 묶여,
+    7.8125 ms 에서 180 ms -- 단어의 뒷부분을 볼 수 없게 된다."""
+    import inspect
+    from wakeup import search
+    code = [l.split("#")[0] for l in
+            inspect.getsource(search.search_tau).splitlines()]
+    line = [l for l in code if "max_off = min(" in l][0]
+    assert "timeout" not in line, f"잠정 timeout 이 tau 상한을 묶고 있다: {line}"
+    assert "63 - mw" in line
+
+
+def test_pick_offsets_says_so_when_it_cannot_keep_the_gap(capsys):
+    from wakeup.search import pick_offsets
+    auc = torch.rand(24)
+    sel = pick_offsets(auc, 2, min_gap=20, min_tau=1, max_tau=23)
+    assert len(sel) == 2
+    out = capsys.readouterr().out
+    if abs(sel[0] - sel[1]) < 20:
+        assert "경고" in out, "간격을 못 지켰는데 조용히 넘어갔다"
