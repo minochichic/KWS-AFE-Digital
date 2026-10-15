@@ -148,34 +148,24 @@ MCU·FPGA·ADC·메모리가 없다. 비교기, 래치, 카운터, 디코더, �
   <text x="174" y="752" text-anchor="middle" fill="var(--hot)" font-size="10">
     CH0‥CH7 · VDD · GND</text>
 
-  <path d="M150 196 H 212" stroke="var(--hot)" stroke-width="2.4" marker-end="url(#ah)"/>
-  <text x="182" y="188" text-anchor="middle" fill="var(--hot)" font-size="10">8</text>
+  <path d="M150 187 H 212" stroke="var(--hot)" stroke-width="2.4" marker-end="url(#ah)"/>
+  <text x="182" y="179" text-anchor="middle" fill="var(--hot)" font-size="10">8</text>
 
   <!-- ══════════ 디지털 보드 ══════════ -->
   <rect x="198" y="48" width="852" height="680" rx="10" fill="none" stroke="var(--rule)"/>
   <text x="1040" y="68" text-anchor="end" fill="var(--muted)" font-size="11.5"
         font-weight="600">디지털 보드 — 우리 담당</text>
 
-  <!-- A. 프레임 래치 뱅크 (조건부) -->
-  <rect x="212" y="92" width="152" height="88" rx="7"
-        fill="none" stroke="var(--faint)" stroke-width="1.3" stroke-dasharray="6 4"/>
-  <text x="288" y="113" text-anchor="middle" font-weight="600" fill="var(--muted)"
-        font-size="11.5">프레임 래치 뱅크</text>
-  <text x="288" y="131" text-anchor="middle" fill="var(--faint)" font-size="10">74HC279×2 + 74HC273</text>
-  <text x="288" y="150" text-anchor="middle" fill="var(--faint)" font-size="10">"프레임 안에 한 번이라도"</text>
-  <text x="288" y="169" text-anchor="middle" fill="var(--hot)" font-size="10">조건부 — §4 참조</text>
-
-  <!-- B. 인버터 -->
-  <rect x="212" y="200" width="152" height="74" rx="7"
+  <!-- A. 인버터 -->
+  <rect x="212" y="150" width="152" height="74" rx="7"
         fill="var(--new-bg)" stroke="var(--new)" stroke-width="1.4"/>
-  <text x="288" y="222" text-anchor="middle" font-weight="600" fill="var(--ink)">인버터 ×7</text>
-  <text x="288" y="240" text-anchor="middle" fill="var(--muted)" font-size="10.5">74HC04 ×2</text>
-  <text x="288" y="259" text-anchor="middle" fill="var(--new)" font-size="10.5">형판의 "0" 자리용</text>
+  <text x="288" y="172" text-anchor="middle" font-weight="600" fill="var(--ink)">인버터 ×7</text>
+  <text x="288" y="190" text-anchor="middle" fill="var(--muted)" font-size="10.5">74HC04 ×2</text>
+  <text x="288" y="209" text-anchor="middle" fill="var(--new)" font-size="10.5">형판의 "0" 자리용</text>
 
-  <path d="M288 180 V 200" stroke="var(--stroke)" stroke-width="1.6" marker-end="url(#a)"/>
 
   <!-- 버스 분기 -->
-  <path d="M364 237 H 396" stroke="var(--stroke)" stroke-width="2"/>
+  <path d="M364 187 H 396" stroke="var(--stroke)" stroke-width="2"/>
   <path d="M396 120 V 420" stroke="var(--stroke)" stroke-width="2"/>
   <text x="408" y="112" fill="var(--muted)" font-size="10">CH + /CH</text>
 
@@ -247,10 +237,6 @@ MCU·FPGA·ADC·메모리가 없다. 비교기, 래치, 카운터, 디코더, �
   <text x="288" y="639" text-anchor="middle" fill="var(--cool)" font-size="10.5">128 Hz = 7.8125 ms</text>
   <path d="M364 600 H 424" stroke="var(--cool)" stroke-width="1.6" marker-end="url(#ac)"/>
   <text x="394" y="593" text-anchor="middle" fill="var(--cool)" font-size="10">CLK</text>
-  <path d="M288 560 V 530 H 196 V 136 H 212" stroke="var(--cool)" stroke-width="1.4"
-        fill="none" marker-end="url(#ac)"/>
-  <text x="208" y="350" text-anchor="middle" fill="var(--cool)" font-size="9.5"
-        transform="rotate(-90 208 350)">CLK → 래치 전송·클리어 (조건부)</text>
 
   <!-- J. 카운터 -->
   <rect x="424" y="520" width="156" height="110" rx="7" fill="var(--fill)" stroke="var(--stroke)"/>
@@ -294,7 +280,6 @@ MCU·FPGA·ADC·메모리가 없다. 비교기, 래치, 카운터, 디코더, �
   <span><i class="sw" style="background:var(--hot)"></i>아날로그에서 오는 이진 신호 / 리셋</span>
   <span><i class="sw" style="background:var(--cool)"></i>타이밍 신호</span>
   <span><i class="sw" style="background:var(--new)"></i>이번에 추가·변경된 블록</span>
-  <span><i class="sw" style="background:var(--faint)"></i>점선 = 조건부</span>
 </div>
 <figcaption>
 형판 정합 두 갈래는 <strong>동시에</strong> 돈다. 상태가 순서대로 켜지는 것이 아니라,
@@ -317,40 +302,43 @@ s2 = 0 0 0 0 0 X 1 X &nbsp;→ 0 이 5개<br>
 <strong>인버터 7개(74HC04 ×2)</strong>가 필요하다. 반전 신호는 두 상태가 공유하므로
 채널당 하나면 된다.</p>
 
-<h3>채널 문턱이 하나로 합쳐졌다</h3>
-<p>학습된 8채널 문턱을 격자에 맞춰 재평가한 결과, <strong>8채널이 같은 값 하나로
-뭉쳐도 성능이 유지</strong>된다.</p>
+<h3>채널 문턱 — 격자 양자화 여유가 크다 (구조는 기존 유지)</h3>
+<p>학습된 8채널 문턱을 격자에 맞춰 재평가하였다.</p>
 <table>
 <tr><th>격자 간격</th><th class="n">고유값 수</th><th class="n">검출률</th><th class="n">변화</th></tr>
 <tr><td>양자화 전</td><td class="n">8</td><td class="n">0.547</td><td class="n">—</td></tr>
 <tr><td>0.005</td><td class="n">6</td><td class="n">0.561</td><td class="n">+0.014</td></tr>
 <tr><td>0.010</td><td class="n">3</td><td class="n">0.524</td><td class="n">−0.024</td></tr>
-<tr><td><strong>0.050</strong></td><td class="n"><strong>1</strong></td><td class="n"><strong>0.524</strong></td><td class="n">−0.024</td></tr>
+<tr><td>0.050</td><td class="n">1</td><td class="n">0.524</td><td class="n">−0.024</td></tr>
 </table>
-<p>감소폭 0.024는 시드 편차(±0.065)의 절반도 안 된다. 학습된 문턱의 분포 폭이
-0.0252로 애초에 좁았기 때문이다.</p>
+<p>학습된 문턱의 분포 폭이 0.0252로 좁아, 격자가 거칠어도 손실이 작다. 8채널이
+값 하나로 뭉치는 극단에서도 감소폭 0.024는 시드 편차(±0.065)의 절반에 못 미친다.</p>
 <div class="new">
-<p><strong>아날로그 보드가 간단해진다.</strong> 계획서 4.4절의
-<code>5 kΩ 단계 저항 사다리 + 가변저항</code>을 제거하고
-<code>400 kΩ / 465 kΩ</code> 분압 하나만 남겨 버퍼로 받아 비교기 8개에 공통
-연결하면 된다.</p>
+<p><strong>구조는 계획서대로 유지한다.</strong> 기존 VTHR 생성부
+(<code>400 kΩ + 5 kΩ 사다리 + 465 kΩ</code>)를 그대로 쓴다. 위 측정은 그 격자가
+충분히 촘촘하다는 확인이며, 동시에 <strong>필요하면 단일 기준전압으로 단순화할
+여지</strong>가 있다는 기록이다.</p>
 <p class="mono">400k / 465k → 1.8 V × 465/865 = <strong>967.6 mV</strong>
 &nbsp;(계획서 그림 6의 "970 mV 기준선")<br>
 5 kΩ 한 단 = 1.8 V × 5/865 = <strong>10.4 mV</strong>
 &nbsp;(= VTHR094‥100 의 10 mV 격자)</p>
 </div>
 
-<h2>4. 프레임 래치 뱅크 — 아직 조건부</h2>
-<p>학습 모델이 보는 채널 값은 <strong>"그 프레임 안에서 한 번이라도 1이었나"</strong>이다.
-저항망에 비교기 출력을 직접 넣으면 <strong>동시에 높은 채널만</strong> 더해진다.</p>
-<p>이 차이가 문제가 되는지는 <strong>Envelope Detector의 평활 시상수</strong>에 달렸다.
-시상수가 길어 한 프레임(7.8 ms) 동안 출력이 유지되면 추가 회로가 필요 없다.
-포락선이 출렁여 짧은 펄스열로 나오면 채널마다 프레임 래치가 필요하고, 그 경우
-<strong>누적 SR 래치 8개(74HC279 ×2) + 전송 레지스터(74HC273)</strong>를 넣는다.</p>
-<div class="warn">
-<p><strong>동료 확인 대기.</strong> "LPV7215 출력이 한 번 1이 된 뒤 얼마나 유지되는가"
-— 이 한 가지로 칩 세 개의 포함 여부가 결정된다.</p>
+<h2>4. 프레임 래치는 필요 없다 (확인 완료)</h2>
+<p>학습 모델이 보는 채널 값은 <strong>"그 프레임 안에서 한 번이라도 1이었나"</strong>다.
+저항망에 비교기 출력을 직접 넣으면 <strong>동시에 높은 채널만</strong> 더해지므로,
+채널별 펄스 시각이 어긋나 있으면 판정이 성립하지 않는다. 이 때문에 채널마다
+프레임 단위 래치가 필요할 수 있다고 보고 구조에 올려 두었다.</p>
+<div class="note">
+<p><strong>아날로그 담당 확인 결과 불필요하다.</strong> LPV7215 출력이 한 번 1이 되면
+<strong>약 10 ms 유지</strong>된다. 프레임이 7.8125 ms이므로 출력이 한 프레임을
+넘겨 유지되고, 따라서 같은 프레임 안의 채널들이 서로 겹친다. 저항망에 직결해도
+"그 프레임에 켜졌는가"가 그대로 읽힌다.</p>
+<p><strong>74HC279 ×2와 74HC273 ×1, 칩 세 개를 뺀다.</strong></p>
 </div>
+<p>남는 영향은 <strong>한 프레임 번짐</strong>이다. 프레임 끝에 켜진 채널이 다음
+프레임까지 1로 남는다. 채점 창이 τ±2 프레임(±15.6 ms)이므로 한 프레임(7.8 ms)
+번짐은 창 안에 들어가 판정에 영향이 없다.</p>
 
 <h2>5. 확정 파라미터</h2>
 <table>
@@ -409,7 +397,6 @@ V_score = VDD × n/m &nbsp;·&nbsp; V_TH(s) = VDD × (k−0.5)/m &nbsp;·&nbsp; 
 <tr><td>시각 디코더</td><td>74HC138</td><td class="n">2</td></tr>
 <tr><td>창 OR · PASS 래치 · AND</td><td>74HC32 / 74HC279 / 74HC08</td><td class="n">3</td></tr>
 <tr><td>출력 표시</td><td>MMBT3904 + LED</td><td class="n">1</td></tr>
-<tr><td><em>(조건부)</em> 프레임 래치</td><td>74HC279 ×2 + 74HC273</td><td class="n">3</td></tr>
 </table>
 
 <h2>7. 결정이 필요한 것</h2>
