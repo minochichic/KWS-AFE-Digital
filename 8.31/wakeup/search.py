@@ -130,6 +130,13 @@ def search_tau(model: WakeupModel, wave: torch.Tensor, y: torch.Tensor, *,
         model.head.init_templates(xs[y_ > 0.5])
         k = model.head.fit_k(model.head(xs)["count"], y_,
                              max_fpr=cfg.head.k_max_fpr)
+        # k<=1 은 "8채널 중 1개만 맞아도 통과" 라 그 상태가 꺼진 것과 같다.
+        # 벌하지 않으면 탐색이 먼 tau 로 가서 한 상태를 죽이고 나머지 하나로
+        # 점수를 낸다(실측: tau2=445 ms 에서 s2 가 음성의 92% 를 통과시킴,
+        # 5시드 중 3회). 그러면 비교기 하나가 통째로 낭비다. gain_curve 는
+        # 이미 같은 규칙으로 동작점을 거르는데 tau 탐색에는 빠져 있었다.
+        if bool((k <= 1).any()):
+            return -2.0
         ok = (model.head(xs)["count"] >= k.unsqueeze(0)).all(dim=1)
         tpr = ok[y_ > 0.5].float().mean().item()
         fpr = ok[y_ <= 0.5].float().mean().item()

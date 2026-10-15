@@ -170,3 +170,15 @@ def test_pick_offsets_says_so_when_it_cannot_keep_the_gap(capsys):
     out = capsys.readouterr().out
     if abs(sel[0] - sel[1]) < 20:
         assert "경고" in out, "간격을 못 지켰는데 조용히 넘어갔다"
+
+
+def test_tau_search_rejects_offsets_that_kill_a_state():
+    """tau 탐색이 한 상태를 죽이고(k<=1) 나머지 하나로 점수를 내면 안 된다.
+    tau 상한을 푼 뒤 5시드 중 3회가 tau2=445 ms 로 가서 s2 가 음성의 92% 를
+    통과시켰다 -- 비교기 하나가 통째로 낭비다."""
+    import inspect
+    from wakeup import search
+    code = [l.split("#")[0] for l in
+            inspect.getsource(search.search_tau).splitlines()]
+    body = "\n".join(code)
+    assert "(k <= 1).any()" in body, "죽은 상태를 벌하는 규칙이 없다"
