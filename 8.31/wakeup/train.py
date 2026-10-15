@@ -577,7 +577,10 @@ def emit_circuit(cfg: Config, set_k: str, set_timeout: int,
     c.head.timeout = set_timeout
     model.cfg.head.timeout = set_timeout
 
-    d = Path(out or (Path(cfg.out_dir) / f"{cfg.tag}_final"))
+    # 이름에 동작점을 넣는다. 종전엔 "<tag>_final" 고정이라 k 를 바꿔 두 번
+    # 뽑으면 두 번째가 첫 번째를 조용히 덮어썼다.
+    name = f"{cfg.tag}_k{'-'.join(str(v) for v in ks)}_to{set_timeout}"
+    d = Path(out or (Path(cfg.out_dir) / name))
     print(f"\n  동작점: k={ks}, timeout={set_timeout} "
           f"({set_timeout * c.frontend.envelope_win_ms:.0f} ms), VDD={vdd} V")
     print(f"  형판과 문턱은 학습된 그대로다. k 와 timeout 만 덮어썼다.\n")
@@ -1530,6 +1533,8 @@ def main(argv=None) -> None:
                    help="상태별 k, 쉼표로. 예: 6,5")
     p.add_argument("--set-timeout", type=int, default=0,
                    help="timeout 프레임 수 (<=63)")
+    p.add_argument("--emit-out", default="",
+                   help="회로 상수를 쓸 경로. 비우면 runs/<tag>_k<..>_to<..>")
     p.add_argument("--summarize", default="",
                    help="runs/<prefix>_s*/circuit.json 을 표로 다시 찍는다. "
                         "쉼표로 여러 prefix 를 주면 나란히 비교")
@@ -1635,7 +1640,7 @@ def main(argv=None) -> None:
     if a.emit_circuit:
         if not a.set_k or not a.set_timeout:
             raise SystemExit("--emit-circuit 에는 --set-k 와 --set-timeout 이 필요하다")
-        emit_circuit(cfg, a.set_k, a.set_timeout, vdd=a.vdd)
+        emit_circuit(cfg, a.set_k, a.set_timeout, vdd=a.vdd, out=a.emit_out)
         return
     if a.summarize:
         summarize(cfg, a.summarize)
