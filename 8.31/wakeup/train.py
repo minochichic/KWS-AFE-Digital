@@ -1445,7 +1445,7 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
           min_recall: float = 0.90, sweep_win: bool = False,
           enroll: str = "", enroll_frac: float = 0.3,
           enroll_only: bool = False, enroll_neg: str = "",
-          vdd: float = 3.3) -> Dict:
+          vdd: float = 3.3, board_start_only: bool = False) -> Dict:
     from . import data as D
 
     torch.manual_seed(cfg.train.seed)
@@ -1505,7 +1505,13 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
 
     # 2) 타이밍 탐색 — 미분되지 않는 값들
     print("타이밍 탐색:")
-    r = search_timing(model, w0, y0, min_frames_cands=(1, 2, 3),
+    # 보드의 START 는 OR(채널 1개 이상) x 1프레임이다. 다른 조건으로 tau 를
+    # 고르면 원점이 달라져, 학습한 tau 가 보드에서 어긋난다.
+    if board_start_only:
+        print("  (보드 START 만: 채널 1개 이상 x 1프레임)")
+    r = search_timing(model, w0, y0,
+                      candidates=(1,) if board_start_only else None,
+                      min_frames_cands=(1,) if board_start_only else (1, 2, 3),
                       min_gap=min_gap, min_recall=min_recall, verbose=True)
     print(f"  -> start_k {r['k']} x{r['min_frames']}프레임, tau {r['tau']}, "
           f"timeout {cfg.head.timeout}")
@@ -1746,6 +1752,9 @@ def main(argv=None) -> None:
     p.add_argument("--gain-curve", action="store_true",
                    help="입력 이득 x k 를 같이 훑는다. --eval-wav 를 주면 "
                         "검출률을 그 녹음에서 잰다")
+    p.add_argument("--board-start-only", action="store_true",
+                   help="START 탐색을 보드 회로(채널 1개 이상 x 1프레임)로 묶는다. "
+                        "다른 조건으로 고른 tau 는 보드에서 원점이 어긋난다")
     p.add_argument("--burst-neg", type=float, default=0.0,
                    help="짧은 소리 + 무음 음성을 양성의 몇 배 넣을지 (0 = 끔). "
                         "k=[6,5] 가 클릭 하나에 켜진 문제를 학습에서 막는다")
@@ -1901,7 +1910,7 @@ def main(argv=None) -> None:
               min_recall=a.min_recall, sweep_win=a.sweep_window,
               enroll=a.enroll, enroll_frac=a.enroll_frac,
               enroll_only=a.enroll_only, enroll_neg=a.enroll_neg,
-              vdd=a.vdd)
+              vdd=a.vdd, board_start_only=a.board_start_only)
     if a.repeat > 1:
         repeat_runs(cfg, a.repeat, **kw)
     else:
