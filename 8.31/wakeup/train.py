@@ -986,10 +986,12 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
         c.head.timeout = int(set_timeout)
     e = model.export()
     m_used = [int(v) for v in e["m"]]
-    k_fix = ([int(v) for v in set_k.split(",")] if set_k
-             else [int(v) for v in e["k"]])
-    if len(k_fix) != len(m_used):
-        raise SystemExit(f"--set-k 개수({len(k_fix)})가 상태 수({len(m_used)})와 다르다.")
+    # --set-k "6,5;6,6;7,6" 처럼 여러 개를 한 번에 잰다 (스트림 특징 추출이 비싸다)
+    k_sets = ([[int(v) for v in grp.split(",")] for grp in set_k.split(";") if grp]
+              if set_k else [[int(v) for v in e["k"]]])
+    for k_fix in k_sets:
+        if len(k_fix) != len(m_used):
+            raise SystemExit(f"--set-k {k_fix} 개수가 상태 수({len(m_used)})와 다르다.")
 
     waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
     pool = _noise_pool(c)
@@ -1010,8 +1012,9 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
         print("  min_frames 가 1 이라 세 회로가 같다. 비교할 것이 없다.")
         return
 
-    print(f"  {'회로':>7} {'창 카운트':>22} {'TO':>4} | {'고정 k':>8} "
-          f"{'검출':>7} {'FA/h':>7} | {'FA/h<=%g 최고 k' % cap:>16} {'검출':>7} {'FA/h':>7}")
+    print(f"  {'회로':>7} {'창 카운트':>14} {'TO':>3} | {'고정 k':>8} "
+          f"{'검출':>7} {'FA/h':>7} {'클릭':>5} | {'FA/h<=%g 최고 k' % cap:>16} "
+          f"{'검출':>7} {'FA/h':>7}")
     for mode in START_CHOICES:
         try:
             bd = board_from_model(model, start=mode, n_decoders=3)
@@ -1026,7 +1029,6 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
             rows[name] = {tuple(r["k"]): r for r in
                           sweep_k(s0, m0, o_, m_used, frames=f_.shape[2],
                                   frame_ms=fms, tau_last=bd.wake_count)}
-        fx = rows["ver"][tuple(k_fix)]
         ok = [r for kk, r in rows["pick"].items()
               if all(v > 1 for v in kk) and r["fa_per_hour"] <= cap]
         if ok:
@@ -1036,11 +1038,34 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
                     f"{bv['fa_per_hour']:7.1f}")
         else:
             best = f"{'—':>16}"
-        print(f"  {mode:>7} {wins:>22} {bd.timeout_count:4d} | {str(k_fix):>8} "
-              f"{fx['tpr']*100:6.1f}% {fx['fa_per_hour']:7.1f} | {best}")
+        for i, k_fix in enumerate(k_sets):
+            fx = rows["ver"][tuple(k_fix)]
+            head = (f"  {mode:>7} {wins:>14} {bd.timeout_count:3d}" if i == 0
+                    else f"  {'':>7} {'':>14} {'':>3}")
+            print(f"{head} | {str(k_fix):>8} {fx['tpr']*100:6.1f}% "
+                  f"{fx['fa_per_hour']:7.1f} {_click_wakes(bd, k_fix):>5} | "
+                  + (best if i == 0 else ""))
     print("\n  * 검출·FA/h 는 모두 검증 스트림 값이다. '최고 k' 는 고르기 스트림에서")
     print("    고르고(k<=1 제외) 검증 스트림에서 다시 잰 것이다.")
-    print("  * single 의 고정 k 행이 종전 보고 수치(50.0% @ 25.0 FA/h)와 같아야 한다.")
+    print("  * 클릭: 한 프레임짜리 소리 뒤 무음이 WAKE 를 내는 채널 수 (8 중). 0 이어야")
+    print("    탁 소리·문 닫는 소리에 켜지지 않는다. 스트림에는 이런 소리가 거의 없다.")
+    print("  * timeout 직후 re-arm 을 반영했다(2026-10-16). 종전 single [6,5] 의")
+    print("    50.0% @ 25.0 은 re-arm 전 값이라 조금 다를 수 있다.")
+
+
+def _click_wakes(board, k: Sequence[int]) -> str:
+    """한 프레임 소리 + 무음 이 WAKE 를 내는 채널 수. 무음에서 Template 이
+    이미 k 를 넘으면 START 만 서면 WAKE 가 된다."""
+    import copy as _cp
+    b = _cp.copy(board)
+    b.k = list(k)
+    T = b.timeout_count + 20
+    n = 0
+    for ch in range(b.n_channels):
+        x = torch.zeros(1, b.n_channels, T)
+        x[0, ch, 3] = 1.0
+        n += int(b.run(x)["wake"].item() > 0.5)
+    return f"{n}/{b.n_channels}"
 
 
 # ------------------------------------------- 화자별 발화 수 (GSC 화자 종속 가능?)

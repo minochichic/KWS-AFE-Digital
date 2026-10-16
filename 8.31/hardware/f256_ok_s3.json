@@ -1,0 +1,12 @@
+{
+  "name": "f256_ok_s3",
+  "source": "runs/f256_ok_s3 (sheila, 8ch, 2 states, frame 7.8125 ms). README '확정 설정' 참고",
+  "template": [[-1, -1, -1, -1, -1, -1, 1, -1],
+               [-1, -1, -1, -1, -1,  0, 1,  0]],
+  "k": [6, 5],
+  "tau": [2, 8],
+  "match_window": 2,
+  "timeout": 60,
+  "start_k": 1,
+  "frame_ms": 7.8125
+}

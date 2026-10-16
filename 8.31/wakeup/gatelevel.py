@@ -264,6 +264,20 @@ class DigitalBoard:
             run_ff = torch.where(clr, torch.zeros_like(run_ff), run_ff)
             pass_ff = torch.where(clr.unsqueeze(1), torch.zeros_like(pass_ff), pass_ff)
             cnt = torch.where(clr, torch.zeros_like(cnt), cnt)
+            # ── re-arm : CLR 은 카운터를 0 으로 되돌려 스스로 꺼지는 짧은 펄스다.
+            # 그 순간 START 조건이 서 있으면 RUN latch 의 /SD 가 이기므로 RUN 은
+            # **같은 반주기 안에서** 다시 서고, 카운트 0 의 창도 이 프레임에 열린다.
+            # (다음 프레임까지 기다리는 회로는 RUN 을 클럭에 묶어야 해서 부품이 는다.)
+            rearm = clr & st
+            if rearm.any():
+                run_ff = torch.where(rearm, torch.ones_like(run_ff), run_ff)
+                dec0 = torch.stack(
+                    [torch.tensor([self._hits(0, s) for _ in range(B)], device=dev)
+                     for s in range(S)], dim=1).float() * rearm.unsqueeze(1).float()
+                if self.match_window == 0:
+                    pass_ff = torch.where(dec0 > 0.5, match, pass_ff)
+                else:
+                    pass_ff = torch.maximum(pass_ff, dec0 * match)
 
             if trace:
                 rows.append({
@@ -322,6 +336,13 @@ def scan_segments(board: "DigitalBoard", x: torch.Tensor):
             if board.decode_hits(cnt, to_c):
                 starts.append(seg_start); maxes.append(seg_max)
                 run_ff, cnt, seg_start, seg_max = 0.0, 0, None, None
+                # re-arm (DigitalBoard.run 참고): 같은 프레임에서 다시 시작한다
+                if all(h > 0.5 for h in hist):
+                    run_ff, cnt, seg_start = 1.0, 0, f
+                    seg_max = torch.zeros(S)
+                    for si in range(S):
+                        if board._hits(0, si):
+                            seg_max[si] = max(float(seg_max[si]), float(m[si]))
     if seg_start is not None:
         starts.append(seg_start); maxes.append(seg_max)
     if not starts:
