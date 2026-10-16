@@ -3,7 +3,7 @@
   "source": "runs/f256_ok_s3 (sheila, 8ch, 2 states, frame 7.8125 ms). README '확정 설정' 참고",
   "template": [[-1, -1, -1, -1, -1, -1, 1, -1],
                [-1, -1, -1, -1, -1,  0, 1,  0]],
-  "k": [6, 5],
+  "k": [7, 6],
   "tau": [2, 8],
   "match_window": 2,
   "timeout": 60,

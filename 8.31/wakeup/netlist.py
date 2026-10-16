@@ -126,7 +126,7 @@ LPV7215_VOS_MAX = 8e-3          # V, 1.8 V 온도 전 범위 (데이터시트 6.
 
 def e96_divider(ratio: float, total=(0.9e6, 1.1e6)) -> Tuple[float, float]:
     """R8/(R7+R8) = ratio 에 가장 가까운 E96 쌍 (합계 약 1 MΩ)."""
-    vals = [m * 1e3 for m in E96] + [m * 1e4 for m in E96 if m < 110]
+    vals = [m * 1e2 for m in E96] + [m * 1e3 for m in E96] + [m * 1e4 for m in E96 if m < 110]
     best = None
     for r7 in vals:
         for r8 in vals:

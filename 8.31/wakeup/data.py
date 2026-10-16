@@ -46,7 +46,9 @@ class TargetVsRest(Dataset):
                  enroll_frac: float = 0.3,
                  enroll_only: bool = False,
                  extra_neg: Optional[Sequence[torch.Tensor]] = None,
-                 neg_frac: float = 0.5) -> None:
+                 neg_frac: float = 0.5,
+                 burst_fraction: float = 0.0,
+                 burst_ms: Tuple[float, float] = (8.0, 100.0)) -> None:
         self.items = items
         self.noise = list(noise)
         self.n = int(round(SR * clip_ms / 1000.0))
@@ -98,6 +100,46 @@ class TargetVsRest(Dataset):
 
         self.n_silence = int(round(len(pos) * silence_fraction))
         self.sil_seed = seed + 777
+        # 짧은 소리 + 무음 (음성). TrainConfig.burst_neg 주석 참고.
+        self.n_burst = int(round(len(pos) * burst_fraction))
+        self.burst_len = (int(round(SR * burst_ms[0] / 1000.0)),
+                          int(round(SR * burst_ms[1] / 1000.0)))
+
+    def _burst(self, i: int) -> torch.Tensor:
+        """다른 단어(3/4)나 잡음(1/4)을 8~100 ms 잘라 약한 배경 위에 놓는다.
+
+        단어에서는 에너지가 가장 큰 구간을 자른다 -- 아무 데나 자르면 무음
+        조각이 나와 START 조차 안 서서 아무것도 가르치지 못한다. 잡음 조각은
+        같은 단어 조각의 RMS 에 맞춘다. 대상 단어는 쓰지 않는다(/ʃ/ 조각이
+        음성이 되면 양성과 정면으로 부딪힌다).
+        """
+        g = torch.Generator().manual_seed(self.sil_seed + 31337 + i)
+        n = self.n
+
+        def rnd() -> float:
+            return float(torch.rand(1, generator=g))
+
+        w = _fix_length(self.items[self.neg[int(torch.randint(
+            len(self.neg), (1,), generator=g))]][0], n)
+        L = self.burst_len[0] + int(rnd() * (self.burst_len[1] - self.burst_len[0]))
+        L = max(1, min(L, n // 2))
+        e = torch.nn.functional.avg_pool1d(w.pow(2).view(1, 1, -1), L, 1).view(-1)
+        c = int(e.argmax())
+        frag = w[c:c + L].clone()
+        if self.noise and rnd() < 0.25:
+            nz = self.noise[int(torch.randint(len(self.noise), (1,), generator=g))]
+            o = int(torch.randint(max(1, nz.numel() - L), (1,), generator=g))
+            nf = _fix_length(nz[o:o + L], L)
+            frag = nf * frag.pow(2).mean().sqrt() / nf.pow(2).mean().sqrt().clamp(min=1e-9)
+        frag = frag * (0.5 + 1.5 * rnd())               # 0.5~2 배
+        base = torch.zeros(n)
+        if self.noise and rnd() < 0.5:                   # 무음 클래스와 같은 약한 배경
+            nz = self.noise[int(torch.randint(len(self.noise), (1,), generator=g))]
+            o = int(torch.randint(max(1, nz.numel() - n), (1,), generator=g))
+            base = _fix_length(nz[o:o + n], n) * rnd() * 0.1
+        p = int(n * (0.1 + 0.6 * rnd()))
+        base[p:p + L] += frag[:max(0, min(L, n - p))]
+        return base
 
     @staticmethod
     def _words(items) -> List[str]:
@@ -105,7 +147,7 @@ class TargetVsRest(Dataset):
 
     def __len__(self) -> int:
         return (len(self.pos) + self.n_extra + len(self.neg)
-                + self.n_extra_neg + self.n_silence)
+                + self.n_extra_neg + self.n_burst + self.n_silence)
 
     def _aug(self, w: torch.Tensor, g: torch.Generator) -> torch.Tensor:
         # 시간 이동 — START 가 어디서 뜨든 견디게 한다
@@ -148,6 +190,9 @@ class TargetVsRest(Dataset):
                 y = 0.0
             if self.augment:
                 w = self._aug(w, torch.Generator().manual_seed(self.sil_seed + i))
+        elif i < n_real + self.n_burst:         # 짧은 소리 + 무음 = 음성
+            w = self._burst(i)
+            y = 0.0
         else:                                   # 무음/소음 = 음성
             g = torch.Generator().manual_seed(self.sil_seed + i)
             if self.noise:

@@ -174,8 +174,8 @@ MCU·FPGA·ADC·메모리가 없다. 비교기, 래치, 카운터, 디코더, �
         fill="var(--fill)" stroke="var(--stroke)"/>
   <text x="510" y="118" text-anchor="middle" font-weight="600" fill="var(--ink)">형판 정합 s1</text>
   <text x="510" y="136" text-anchor="middle" fill="var(--muted)" font-size="10.5">동일 저항 합산 → 비교기</text>
-  <text x="510" y="154" text-anchor="middle" fill="var(--cool)" font-size="10.5">m=8, k=6</text>
-  <text x="510" y="172" text-anchor="middle" fill="var(--cool)" font-size="10.5">309k / 681k → 1.238 V</text>
+  <text x="510" y="154" text-anchor="middle" fill="var(--cool)" font-size="10.5">m=8, k=7</text>
+  <text x="510" y="172" text-anchor="middle" fill="var(--cool)" font-size="10.5">169k / 732k → 1.462 V</text>
   <path d="M396 140 H 420" stroke="var(--stroke)" stroke-width="2" marker-end="url(#a)"/>
 
   <!-- D. 형판 정합 s2 -->
@@ -183,8 +183,8 @@ MCU·FPGA·ADC·메모리가 없다. 비교기, 래치, 카운터, 디코더, �
         fill="var(--fill)" stroke="var(--stroke)"/>
   <text x="510" y="236" text-anchor="middle" font-weight="600" fill="var(--ink)">형판 정합 s2</text>
   <text x="510" y="254" text-anchor="middle" fill="var(--muted)" font-size="10.5">동일 저항 합산 → 비교기</text>
-  <text x="510" y="272" text-anchor="middle" fill="var(--cool)" font-size="10.5">m=6, k=5</text>
-  <text x="510" y="290" text-anchor="middle" fill="var(--cool)" font-size="10.5">232k / 698k → 1.351 V</text>
+  <text x="510" y="272" text-anchor="middle" fill="var(--cool)" font-size="10.5">m=6, k=6</text>
+  <text x="510" y="290" text-anchor="middle" fill="var(--cool)" font-size="10.5">75k / 825k → 1.650 V</text>
   <path d="M396 258 H 420" stroke="var(--stroke)" stroke-width="2" marker-end="url(#a)"/>
 
   <path d="M600 140 H 646" stroke="var(--stroke)" stroke-width="1.4" marker-end="url(#a)"/>
@@ -352,7 +352,7 @@ Schmitt 입력이라 POR 의 느린 RC 를 그대로 받는다.</p>
 <tr><td>τ(1), τ(2)</td><td class="n">2, 8 프레임 (16, 62 ms)</td><td>디코더 결선</td></tr>
 <tr><td>채점 창</td><td class="n">±2 프레임</td><td>디코더 출력 5개 OR</td></tr>
 <tr><td>timeout</td><td class="n">60 프레임 (469 ms)</td><td>디코더 결선 (≤63 제약)</td></tr>
-<tr><td>k(1), k(2)</td><td class="n">6, 5</td><td>분압 저항 4개</td></tr>
+<tr><td>k(1), k(2)</td><td class="n">7, 6</td><td>분압 저항 4개 (종전 6, 5 — 짧은 소리 문제로 변경)</td></tr>
 <tr><td>VDD</td><td class="n">1.8 V (확정)</td><td>74LVC / 74LV 계열 (74HC 는 2.0 V 미만 정격 밖)</td></tr>
 </table>
 
@@ -363,10 +363,10 @@ Schmitt 입력이라 POR 의 느린 RC 를 그대로 받는다.</p>
     <th class="n">m</th><th class="n">k</th></tr>
 <tr><td>s1</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td>
     <td class="n">0</td><td class="n">0</td><td class="n">1</td><td class="n">0</td>
-    <td class="n">8</td><td class="n">6</td></tr>
+    <td class="n">8</td><td class="n">7</td></tr>
 <tr><td>s2</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td class="n">0</td>
     <td class="n">0</td><td class="n">X</td><td class="n">1</td><td class="n">X</td>
-    <td class="n">6</td><td class="n">5</td></tr>
+    <td class="n">6</td><td class="n">6</td></tr>
 </table>
 <p>요구 조건은 "고역 한 대역(ch6)에만 에너지가 있고 저역은 비어 있다"이다.
 "sheila"의 어두 마찰음 /ʃ/와 일치하며, τ가 16 ms·62 ms로 모두 발화 초반인 것도
@@ -378,13 +378,13 @@ V_score = VDD × n/m &nbsp;·&nbsp; V_TH(s) = VDD × (k−0.5)/m &nbsp;·&nbsp; 
 <table>
 <tr><th>상태</th><th class="n">목표 V_TH</th><th class="n">E96 1% (R7 / R8)</th>
     <th class="n">실제 V_TH</th><th class="n">margin</th><th class="n">오프셋·공차 예산</th></tr>
-<tr><td>s1</td><td class="n">1.2375 V</td><td class="n"><strong>309k / 681k</strong></td>
-    <td class="n">1.2382 V</td><td class="n">111.8 mV</td><td class="n">18.0 mV</td></tr>
-<tr><td>s2</td><td class="n">1.3500 V</td><td class="n"><strong>232k / 698k</strong></td>
-    <td class="n">1.3510 V</td><td class="n">149.0 mV</td><td class="n">17.7 mV</td></tr>
+<tr><td>s1</td><td class="n">1.4625 V</td><td class="n"><strong>169k / 732k</strong></td>
+    <td class="n">1.4624 V</td><td class="n">112.4 mV</td><td class="n">15.7 mV</td></tr>
+<tr><td>s2</td><td class="n">1.6500 V</td><td class="n"><strong>75k / 825k</strong></td>
+    <td class="n">1.6500 V</td><td class="n">150.0 mV</td><td class="n">13.8 mV</td></tr>
 </table>
 <p>예산 = LPV7215 오프셋 최대 8 mV(온도 전 범위) + 1% 저항 최악. margin 의 1/6 수준이다.
-s2 는 종전 249k/750k 대신 비율이 더 가까운 232k/698k 를 E96 전수 탐색으로 골랐다.
+E96 전 범위(10 kΩ~1.07 MΩ)를 탐색해 비율이 가장 가까운 쌍을 골랐다.
 값은 <code>hardware/netlist_f256_ok_s3.md</code> 가 원본이다.</p>
 
 <h2>6. 부품</h2>
@@ -406,12 +406,17 @@ s2 는 종전 249k/750k 대신 비율이 더 가까운 232k/698k 를 E96 전수 
 <tr><td>출력 표시</td><td>MMBT3904 + LED</td><td class="n">1</td></tr>
 </table>
 
+<h3>k = [7, 6] 으로 바꾼 이유 — 짧은 소리 오경보</h3>
+<p>종전 k=[6,5] 에서는 <strong>짧은 소리 뒤 무음</strong>이 어느 채널이든 WAKE 를 냈다.
+무음에서 s1 은 7/8, s2 는 5/6 이 맞아 이미 k 를 넘으므로 START 만 서면 두 상태가
+통과한다. 탁 소리·박수에 LED 가 켜진다는 뜻이고, 연속 스트림에는 이런 소리가 거의
+없어 FA/h 에 잡히지 않았다. 3프레임 START 는 16 ms 미만의 소리만 걸러 해법이 아니다.
+s2 를 k=6 으로 올리면 창2 에서 ch6 이 실제로 켜져 있어야 하므로, 남는 것은
+ch6 에만 55 ms 넘게 이어지는 소리(/ʃ/ 같은 마찰음)뿐이다.</p>
+
 <h2>7. 남은 결정</h2>
 <table>
 <tr><th>항목</th><th>내용</th></tr>
-<tr><td><strong>클릭 오경보</strong></td><td>k=[6,5] 에서는 <strong>한 프레임짜리 소리 뒤 무음</strong>이
-  어느 채널이든 WAKE 를 낸다. 무음에서 s1 이 7/8, s2 가 5/6 으로 이미 k 를 넘기 때문이다.
-  s2 를 k=6 으로 올리면(ch6 이 창2 에서 켜져야 함) 사라진다. 검출률 대가를 재는 중.</td></tr>
 <tr><td>LED 전원</td><td>1.8 V 로는 LED 순방향 전압을 못 넘는다. VLED(3.3 V 등) 별도 필요</td></tr>
 <tr><td>50핀 핀 번호</td><td>ICD 확정 후</td></tr>
 <tr><td>32.768 kHz 발진</td><td>1.8 V 동작은 데이터시트 보증 밖. 시제품 확인, 안 되면 외부 발진기</td></tr>
@@ -420,13 +425,12 @@ s2 는 종전 249k/750k 대신 비율이 더 가까운 232k/698k 를 E96 전수 
 <h2>8. 성능</h2>
 <table>
 <tr><th>조건</th><th class="n">검출률</th><th class="n">FA/h</th></tr>
-<tr><td>조용한 실내 (주변 말소리 1%)</td><td class="n"><strong>50.0 %</strong></td><td class="n">25.0</td></tr>
-<tr><td>조용한 실내 (저오검출 설정)</td><td class="n">43.5 %</td><td class="n">18.5</td></tr>
-<tr><td>주변 대화 있음 (말소리 13%)</td><td class="n">38.6 %</td><td class="n">92.9</td></tr>
+<tr><td><strong>k=[7,6]</strong>, 조용한 실내 (주변 말소리 1%)</td><td class="n"><strong>32.6 %</strong></td><td class="n">6.5</td></tr>
+<tr><td>k=[6,5] (종전), 같은 조건 — 짧은 소리에 WAKE</td><td class="n">50.0 %</td><td class="n">25.5</td></tr>
 </table>
 <p>동작점을 고르는 데 쓰지 않은 별도 검증 스트림에서 다시 잰 값이다.
-START 는 1프레임 회로로 잰 값이며(×3 회로는 이득이 없었다), timeout 직후의 re-arm 을
-반영하기 전 값이다.
+START 1프레임 회로, timeout 직후 re-arm 반영. 검출률은 짧은 소리 + 무음을 음성으로
+넣은 재학습으로 되찾는 중이다.
 오경보는 환경 잡음이 아니라 <strong>주변의 다른 말소리</strong>에서 나온다.</p>
 <p>화자별 편차는 <strong>쌍봉</strong>이다 — 20명 중 11명이 80~100%, 5명이 0~20%,
 그 사이는 비어 있다. "평균 50%"인 사람은 사실상 없으므로 시연자는 사전 측정으로

@@ -863,6 +863,7 @@ def gain_curve(cfg: Config, wav_path: str = "", *, board_start: str,
     tos = [t for t in timeouts
            if c.head.tau[-1] + c.head.min_wake_frames < t <= 63]
     rows: List[Dict] = []
+    click_cache: Dict = {}
     for g in gains:
         fs = stream_features(model, st * g)
         fw = stream_features(model, wav * g) if wav is not None else None
@@ -889,6 +890,11 @@ def gain_curve(cfg: Config, wav_path: str = "", *, board_start: str,
                 # 비교기 하나가 장식이 된다.
                 if any(int(v) <= 1 for v in fr["k"]):
                     continue
+                ck = (to, tuple(fr["k"]))
+                if ck not in click_cache:
+                    click_cache[ck] = _click_count(board, fr["k"])
+                if click_cache[ck]:
+                    continue        # 짧은 소리 + 무음에 켜지는 k 는 고르지 않는다
                 rows.append({"gain": g, "timeout": to, "k": list(fr["k"]),
                              "tpr": det.get(tuple(fr["k"]), 0.0),
                              "fa_per_hour": fr["fa_per_hour"],
@@ -950,6 +956,7 @@ def gain_curve(cfg: Config, wav_path: str = "", *, board_start: str,
     print("    결선이다. 셋 다 재학습 없이 바꿀 수 있다.")
     print("  * 어떤 상태든 k<=1 인 지점은 뺐다 -- 그 상태가 꺼진 것과 같아서,")
     print("    2상태로 설계해 놓고 1상태로 동작하는 셈이 된다.")
+    print("  * 짧은 소리(1~6프레임) 뒤 무음에 WAKE 가 나는 k 는 뺐다 (_click_count).")
     print("  * 오경보 사건이 10개 미만이면 FA/h 를 믿지 말 것. 60분에 1건이면")
     print("    '1.0 FA/h' 지만 다음 스트림에서 5건이 날 수도 있다(실측).")
     print("  * 검출률과 FA/h 의 출처가 다르다. 섞어서 하나의 '정확도'로 쓰지 말 것.")
@@ -1030,7 +1037,8 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
                           sweep_k(s0, m0, o_, m_used, frames=f_.shape[2],
                                   frame_ms=fms, tau_last=bd.wake_count)}
         ok = [r for kk, r in rows["pick"].items()
-              if all(v > 1 for v in kk) and r["fa_per_hour"] <= cap]
+              if all(v > 1 for v in kk) and r["fa_per_hour"] <= cap
+              and _click_count(bd, kk) == 0]
         if ok:
             b = max(ok, key=lambda r: (r["tpr"], -r["fa_per_hour"]))
             bv = rows["ver"][tuple(b["k"])]
@@ -1047,25 +1055,34 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
                   + (best if i == 0 else ""))
     print("\n  * 검출·FA/h 는 모두 검증 스트림 값이다. '최고 k' 는 고르기 스트림에서")
     print("    고르고(k<=1 제외) 검증 스트림에서 다시 잰 것이다.")
-    print("  * 클릭: 한 프레임짜리 소리 뒤 무음이 WAKE 를 내는 채널 수 (8 중). 0 이어야")
-    print("    탁 소리·문 닫는 소리에 켜지지 않는다. 스트림에는 이런 소리가 거의 없다.")
+    print("  * 클릭: 짧은 소리(한 채널, 1~6프레임) 뒤 무음이 WAKE 를 낸 경우 수 (48 중).")
+    print("    0 이어야 탁 소리에 켜지지 않는다. 스트림에는 이런 소리가 거의 없다.")
+    print("    '최고 k' 는 클릭 0 인 것 중에서만 고른다.")
     print("  * timeout 직후 re-arm 을 반영했다(2026-10-16). 종전 single [6,5] 의")
     print("    50.0% @ 25.0 은 re-arm 전 값이라 조금 다를 수 있다.")
 
 
-def _click_wakes(board, k: Sequence[int]) -> str:
-    """한 프레임 소리 + 무음 이 WAKE 를 내는 채널 수. 무음에서 Template 이
-    이미 k 를 넘으면 START 만 서면 WAKE 가 된다."""
+def _click_count(board, k: Sequence[int], max_len: int = 6) -> int:
+    """짧은 소리(한 채널, 1~max_len 프레임) 뒤 무음이 WAKE 를 내는 경우의 수.
+
+    무음에서 Template 이 이미 k 를 넘으면 START 만 서면 WAKE 가 된다(k=[6,5]).
+    한 프레임만 보면 x3 START 가 거른 것처럼 보이지만 3~6 프레임(23~47 ms)
+    소리에는 그대로 켜진다 -- 그래서 길이를 훑는다. 0 이어야 한다.
+    """
     import copy as _cp
     b = _cp.copy(board)
     b.k = list(k)
-    T = b.timeout_count + 20
-    n = 0
-    for ch in range(b.n_channels):
-        x = torch.zeros(1, b.n_channels, T)
-        x[0, ch, 3] = 1.0
-        n += int(b.run(x)["wake"].item() > 0.5)
-    return f"{n}/{b.n_channels}"
+    T = b.timeout_count + max_len + 20
+    x = torch.zeros(max_len * b.n_channels, b.n_channels, T)
+    for L in range(1, max_len + 1):
+        for ch in range(b.n_channels):
+            x[(L - 1) * b.n_channels + ch, ch, 3:3 + L] = 1.0
+    return int((b.run(x)["wake"] > 0.5).sum())
+
+
+def _click_wakes(board, k: Sequence[int]) -> str:
+    n = _click_count(board, k)
+    return "0" if n == 0 else f"{n}/{6 * board.n_channels}"
 
 
 # ------------------------------------------- 화자별 발화 수 (GSC 화자 종속 가능?)
@@ -1460,7 +1477,12 @@ def train(cfg: Config, *, init_n: int = 4096, log_every: int = 50,
     ld = D.loaders(cfg.data_root, cfg.train.target_word, cfg.train.batch_size,
                    seed=cfg.train.seed, num_workers=cfg.train.num_workers,
                    extra_pos=extra, enroll_frac=enroll_frac,
-                   enroll_only=enroll_only, extra_neg=extra_neg)
+                   enroll_only=enroll_only, extra_neg=extra_neg,
+                   burst_fraction=cfg.train.burst_neg,
+                   burst_ms=cfg.train.burst_ms)
+    if cfg.train.burst_neg > 0:
+        print(f"짧은 소리 + 무음 음성: 양성의 {cfg.train.burst_neg:g}배, "
+              f"{cfg.train.burst_ms[0]:g}~{cfg.train.burst_ms[1]:g} ms")
     model = WakeupModel(cfg).to(dev)
 
     # 1) 데이터에서 초기화
@@ -1724,6 +1746,9 @@ def main(argv=None) -> None:
     p.add_argument("--gain-curve", action="store_true",
                    help="입력 이득 x k 를 같이 훑는다. --eval-wav 를 주면 "
                         "검출률을 그 녹음에서 잰다")
+    p.add_argument("--burst-neg", type=float, default=0.0,
+                   help="짧은 소리 + 무음 음성을 양성의 몇 배 넣을지 (0 = 끔). "
+                        "k=[6,5] 가 클릭 하나에 켜진 문제를 학습에서 막는다")
     p.add_argument("--board-start", default="single",
                    choices=("single", "causal", "delay"),
                    help="연속 평가에 쓰는 START 회로. single=1프레임(종전 수치), "
@@ -1788,6 +1813,7 @@ def main(argv=None) -> None:
     cfg.train.lr = a.lr
     cfg.train.lr_threshold = a.lr_threshold
     cfg.train.seed = a.seed
+    cfg.train.burst_neg = a.burst_neg
     cfg.train.device = a.device
     cfg.train.num_workers = a.workers
     cfg.data_root = a.root

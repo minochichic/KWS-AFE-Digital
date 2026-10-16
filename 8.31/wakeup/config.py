@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
-from typing import List, Optional
+from typing import Tuple, List, Optional
 
 
 @dataclass
@@ -195,6 +195,12 @@ class TrainConfig:
     # 손실은 분리도만 만들면 되고, 동작점은 fit_k 가 고른다. 둘을 분리한다.
     # 0 이면 자동(N/P 비) -- 이제 권장하지 않는다.
     pos_weight: float = 1.0
+    # "짧은 소리 + 무음" 음성의 양 (양성 개수 대비 비율). 0 이면 끔.
+    # 다른 단어나 잡음을 burst_ms 만큼만 잘라 무음 위에 놓는다. 음성 데이터가
+    # 전부 '다른 단어' 라 늘 에너지가 있어서, Template 이 "조용하면 통과" 를
+    # 배워도 손해가 없었다(k=[6,5] 가 클릭 하나에 WAKE). 이 음성이 그걸 벌한다.
+    burst_neg: float = 0.0
+    burst_ms: Tuple[float, float] = (8.0, 100.0)
     num_workers: int = 4
     device: str = "cuda"
 

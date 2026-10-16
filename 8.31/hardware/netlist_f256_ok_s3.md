@@ -3,8 +3,8 @@
 `python -m wakeup.netlist` 로 생성. 손으로 고치지 말 것 — 생성기를 고친다.
 
 - VDD 1.8 V, 74LVC/74LV 계열 · START 1프레임(채널 1개 이상) · 창 ±2 · timeout 카운트 60
-- s1: Template `0 0 0 0 0 0 1 0`, k=6, 창 카운트 0..4
-- s2: Template `0 0 0 0 0 X 1 X`, k=5, 창 카운트 6..10
+- s1: Template `0 0 0 0 0 0 1 0`, k=7, 창 카운트 0..4
+- s2: Template `0 0 0 0 0 X 1 X`, k=6, 창 카운트 6..10
 
 ## 배선 검사
 
@@ -12,7 +12,7 @@
 
 ## 넷리스트 시뮬 대조
 
-10800프레임, 시나리오 12개에서 gatelevel 모델과 **불일치 0** (WAKE 0, 내부 PASS·RUN 0). WAKE 가 선 프레임 4477개.
+10800프레임, 시나리오 12개에서 gatelevel 모델과 **불일치 0** (WAKE 0, 내부 PASS·RUN 0). WAKE 가 선 프레임 1515개.
 
 ## 열린 항목
 
@@ -26,8 +26,8 @@
 
 | 상태 | m | k | R7 / R8 (E96) | V_TH | 이상값 | margin | 이상 margin | 오프셋·공차 예산 |
 |---|---|---|---|---|---|---|---|---|
-| s1 | 8 | 6 | 309k / 681k | 1238.2 mV | 1237.5 mV | 111.8 mV | 112.5 mV | 18.0 mV |
-| s2 | 6 | 5 | 232k / 698k | 1351.0 mV | 1350.0 mV | 149.0 mV | 150.0 mV | 17.7 mV |
+| s1 | 8 | 7 | 169k / 732k | 1462.4 mV | 1462.5 mV | 112.4 mV | 112.5 mV | 15.7 mV |
+| s2 | 6 | 6 | 75k / 825k | 1650.0 mV | 1650.0 mV | 150.0 mV | 150.0 mV | 13.8 mV |
 
 예산 = 비교기 오프셋 최대 8 mV + 분압 1% 저항 최악 + Template 1% 저항 근사. margin 보다 작으면 판정이 바뀌지 않는다.
 
@@ -71,16 +71,16 @@
 | R9 | R | 1M | /CH5 | SC1 | s1 ch5 (0) |
 | R10 | R | 1M | CH6 | SC1 | s1 ch6 (1) |
 | R11 | R | 1M | /CH7 | SC1 | s1 ch7 (0) |
-| R12 | R | 309k | VDD | VTH1 | s1 분압 상단 R7 |
-| R13 | R | 681k | VTH1 | GND | s1 분압 하단 R8 |
+| R12 | R | 169k | VDD | VTH1 | s1 분압 상단 R7 |
+| R13 | R | 732k | VTH1 | GND | s1 분압 하단 R8 |
 | R14 | R | 1M | /CH0 | SC2 | s2 ch0 (0) |
 | R15 | R | 1M | /CH1 | SC2 | s2 ch1 (0) |
 | R16 | R | 1M | /CH2 | SC2 | s2 ch2 (0) |
 | R17 | R | 1M | /CH3 | SC2 | s2 ch3 (0) |
 | R18 | R | 1M | /CH4 | SC2 | s2 ch4 (0) |
 | R19 | R | 1M | CH6 | SC2 | s2 ch6 (1) |
-| R20 | R | 232k | VDD | VTH2 | s2 분압 상단 R7 |
-| R21 | R | 698k | VTH2 | GND | s2 분압 하단 R8 |
+| R20 | R | 75k | VDD | VTH2 | s2 분압 상단 R7 |
+| R21 | R | 825k | VTH2 | GND | s2 분압 하단 R8 |
 | R22 | R | 10k | WAKE | Q_B | 베이스 저항 |
 | D1 | D | LED | LED_A | LED_K |  |
 | R23 | R | 680 | VLED | LED_A | LED 전류 (VLED 3.3 V 가정, 약 2 mA) |
