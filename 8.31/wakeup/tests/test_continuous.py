@@ -106,14 +106,14 @@ def test_grid_search_matches_a_full_state_machine_run():
     st, on = build_stream(x, words, "TGT", minutes=1.5, targets_per_min=10.0,
                           seed=0)
     feats = stream_features(m, st)
-    board = board_from_model(m)
+    board = board_from_model(m, start="single")
     starts, mx = scan_segments(board, feats)
     assert len(starts) > 5, "계측 구간이 너무 적어 비교가 무의미하다"
 
     e = m.export()
     k = [int(v) for v in e["k"]]
     rows = sweep_k(starts, mx, on, [int(v) for v in e["m"]], frame_ms=10.0,
-                   frames=feats.shape[2], tau_last=int(board.tau[-1]))
+                   frames=feats.shape[2], tau_last=board.wake_count)
     grid = [r for r in rows if r["k"] == k][0]
     full = evaluate_stream(board, feats, on, frame_ms=10.0)
     assert grid["n_wakes"] == full["n_wakes"], (

@@ -129,7 +129,7 @@ def _trained(seed=0, steps=400):
 def test_gate_level_matches_the_trained_model_bit_for_bit():
     """이게 통과해야 스키매틱을 그릴 수 있다."""
     m = _trained()
-    board = board_from_model(m, n_decoders=3)
+    board = board_from_model(m, start="delay", n_decoders=3)
     xte, yte, _ = make_batch(256, m.cfg.head.tau, seed=4242)
 
     with torch.no_grad():
@@ -148,7 +148,7 @@ def test_gate_level_matches_the_trained_model_bit_for_bit():
 
 def test_start_detection_agrees_with_the_model():
     m = _trained()
-    board = board_from_model(m)
+    board = board_from_model(m, start="delay")
     xte, _, _ = make_batch(128, m.cfg.head.tau, seed=77)
     with torch.no_grad():
         feat = m.features(xte)
@@ -159,7 +159,7 @@ def test_start_detection_agrees_with_the_model():
 def test_wake_frame_is_the_last_sample_time():
     """WAKE 는 마지막 상태가 채점되는 프레임에 뜬다 -> 폭 계산의 근거."""
     m = _trained()
-    board = board_from_model(m)
+    board = board_from_model(m, start="delay")
     xte, yte, _ = make_batch(256, m.cfg.head.tau, seed=4242)
     with torch.no_grad():
         feat = m.features(xte)
@@ -189,7 +189,7 @@ def test_gate_level_matches_with_a_match_window():
     search_timing(m, xtr, ytr)
     m.eval()
 
-    board = board_from_model(m, n_decoders=3)
+    board = board_from_model(m, start="delay", n_decoders=3)
     assert board.match_window == 2
     xte, _, _ = make_batch(192, cfg.head.tau, seed=3003)
     with torch.no_grad():
@@ -210,3 +210,118 @@ def test_window_admits_a_shifted_pattern_that_the_point_sample_misses():
     x[0, :, 2 + 10 + 2] = 1.0   # 패턴이 2프레임 늦다
     assert DigitalBoard(**common, match_window=0).run(x)["wake"].item() == 0.0
     assert DigitalBoard(**common, match_window=2).run(x)["wake"].item() == 1.0
+
+
+# ------------------------------------------- START 시프트 레지스터와 시각 원점
+def test_ripple_transients_are_the_trailing_ones_cleared():
+    from wakeup.gatelevel import ripple_transients
+    assert ripple_transients(11) == [10, 8]       # 1011 -> 1010 -> 1000 -> 1100
+    assert ripple_transients(7) == [6, 4, 0]
+    assert ripple_transients(4) == []
+
+
+def test_start_needs_n_consecutive_frames():
+    """x3 이면 2프레임 켜짐은 START 가 아니고, 3번째 프레임이 카운트 0 이다."""
+    b = DigitalBoard(template=torch.tensor([[1]]), k=[1], tau=[4], timeout=10,
+                     start_k=1, start_frames=3, start_mode="causal")
+    x = torch.zeros(1, 1, 20)
+    x[0, 0, 2:4] = 1.0                    # 2프레임만 -> START 아님
+    assert b.run(x)["found"].item() == 0.0
+    x[0, 0, 6:9] = 1.0                    # 6,7,8 -> 프레임 8 에서 RUN
+    assert b.run(x)["found"].item() == 1.0
+    # causal: 디코드는 tau-(N-1) = 2 -> 프레임 8+2 = 10, 학습 시각으로는 6+4 = 10
+    x[0, 0, 10] = 1.0
+    r = b.run(x)
+    assert r["wake"].item() == 1.0 and r["wake_frame"].item() == 10
+
+
+def test_causal_pulls_the_decode_and_truncates_the_first_window():
+    """확정 설정(tau 2/8, 창 ±2, timeout 60, x3)을 causal 로 만들면 창1 앞이 잘린다."""
+    b = DigitalBoard(template=torch.tensor([[1, 0], [0, 1]]), k=[1, 1],
+                     tau=[2, 8], timeout=60, start_k=1, match_window=2,
+                     start_frames=3, start_mode="causal")
+    assert b.window_counts(0) == [0, 1, 2]       # 학습 시각 0..4 중 2..4 만 남는다
+    assert b.window_counts(1) == [4, 5, 6, 7, 8]
+    assert b.timeout_count == 58
+    d = DigitalBoard(template=torch.tensor([[1, 0], [0, 1]]), k=[1, 1],
+                     tau=[2, 8], timeout=60, start_k=1, match_window=2,
+                     start_frames=3, start_mode="delay")
+    assert d.window_counts(0) == [0, 1, 2, 3, 4] and d.data_delay == 2
+
+
+def test_causal_refuses_a_window_entirely_before_confirmation():
+    with pytest.raises(ValueError):
+        DigitalBoard(template=torch.tensor([[1]]), k=[1], tau=[1], timeout=10,
+                     start_k=1, start_frames=3, start_mode="causal")
+
+
+def test_delay_board_matches_the_model_with_min_frames():
+    """delay 구성은 x3 학습 모델과 같은 함수여야 한다 (원점 = 구간 첫 프레임)."""
+    torch.manual_seed(5)
+    cfg = Config()
+    cfg.head.temperature = cfg.head.and_temperature = 0.7
+    cfg.head.match_window = 2
+    cfg.head.l1_gate, cfg.head.min_channels = 0.05, 3
+    m = WakeupModel(cfg)
+    xtr, ytr, _ = make_batch(384, cfg.head.tau, seed=5)
+    m.frontend.init_fixed_scale(xtr[:256])
+    m.frontend.init_thresholds(xtr[:256])
+    search_timing(m, xtr, ytr)
+    cfg.start.min_frames = 3              # 탐색이 START 조건을 다시 고르므로 뒤에 고정
+    m.eval()
+
+    board = board_from_model(m, start="delay", n_decoders=3)
+    assert board.start_frames == 3
+    xte, _, _ = make_batch(192, cfg.head.tau, seed=5005)
+    with torch.no_grad():
+        feat = m.features(xte)
+        want = m.hard(xte)["wake"]
+        _, found = detect_start(feat, cfg.start.k, 3)
+    r = board.run(feat)
+    assert torch.equal(r["found"].bool(), found)
+    agree = (r["wake"] == want).float().mean().item()
+    print(f"\n  x3 delay vs 모델: {agree*100:.2f}% 일치, START {found.float().mean():.2f}")
+    assert agree == 1.0
+
+
+def test_single_board_ignores_min_frames():
+    """종전 스트림 수치를 재현하는 회로 -- min_frames 를 보지 않는다."""
+    cfg = Config()
+    cfg.start.min_frames = 3
+    m = WakeupModel(cfg)
+    assert board_from_model(m, start="single").start_frames == 1
+    assert board_from_model(m, start="causal").start_frames == 3
+    with pytest.raises(TypeError):
+        board_from_model(m)                       # 어느 회로인지 반드시 밝힌다
+
+
+# ------------------------------------------------------- S 게이팅이 빠지면
+def _hazard_x(T, on):
+    x = torch.zeros(1, 2, T)
+    for f in on:
+        x[0, :, f] = 1.0
+    return x
+
+
+def test_idle_counter_zero_sets_pass_without_run_gate():
+    """S 에 RUN 이 없으면 IDLE 의 카운트 0 이 창1 로 읽힌다.
+
+    s1 이 '전부 꺼짐' 을 요구하면 조용할 때마다 MATCH1 이 선다 -- 확정 형판
+    s1 = 0000 0010 (k=6) 도 무음에서 7개가 맞아 그렇다.
+    """
+    common = dict(template=torch.tensor([[-1, -1], [1, 1]]), k=[2, 2],
+                  tau=[1, 6], timeout=12, start_k=1, match_window=1)
+    # 0..9 무음(IDLE), 10 에서 START, 10..12 켜짐(s1 창 실패), 16 에서 s2 일치
+    x = _hazard_x(24, on=[10, 11, 12, 16])
+    assert DigitalBoard(**common).run(x)["wake"].item() == 0.0
+    assert DigitalBoard(**common, gate_run=False).run(x)["wake"].item() == 1.0
+
+
+def test_ripple_transient_sets_pass_without_clk_gate():
+    """S 를 CLK 로 막지 않으면 11->12 에서 지나가는 10, 8 이 창(8..10)으로 읽힌다."""
+    common = dict(template=torch.tensor([[-1, -1]]), k=[2], tau=[9],
+                  timeout=20, start_k=1, match_window=1)
+    # 프레임 0 START. 창(카운트 8..10)에서는 켜져 있어 실패, 카운트 12 에서 꺼짐
+    x = _hazard_x(30, on=[0, 8, 9, 10])
+    assert DigitalBoard(**common).run(x)["wake"].item() == 0.0
+    assert DigitalBoard(**common, gate_clk=False).run(x)["wake"].item() == 1.0

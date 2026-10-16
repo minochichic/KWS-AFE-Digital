@@ -174,6 +174,7 @@ class WakeupModel(nn.Module):
         d["tau"] = list(self.cfg.head.tau)
         d["timeout"] = self.cfg.head.timeout
         d["start_k"] = self.cfg.start.k
+        d["start_min_frames"] = self.cfg.start.min_frames
         d["match_window"] = self.cfg.head.match_window
         d["theta"] = self.frontend.threshold.detach().cpu()
         d["wake_width_ms"] = (self.cfg.head.timeout - self.cfg.head.tau[-1]) * \

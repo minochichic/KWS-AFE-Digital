@@ -26,6 +26,20 @@ import torch
 PHASE_HIGH, PHASE_LOW = 0, 1
 
 
+def ripple_transients(count: int) -> List[int]:
+    """리플 카운터가 count -> count+1 로 갈 때 잠깐 거치는 값들.
+
+    LSB 부터 차례로 뒤집히므로, 끝자리 1 들이 하나씩 0 이 되는 동안의 값이
+    출력에 나타난다. 11(1011) -> 10(1010) -> 8(1000) -> 12(1100).
+    """
+    out, c, bit = [], count, 1
+    while c & bit:
+        c &= ~bit
+        out.append(c)
+        bit <<= 1
+    return out
+
+
 @dataclass
 class DigitalBoard:
     """학습이 확정한 상수로 구성된 판별부 회로."""
@@ -42,6 +56,22 @@ class DigitalBoard:
     # 회로에서는 PASS 를 에지 트리거 D 플립플롭이 아니라 **셋 우세 래치**로 두고,
     # 디코더 출력 2w+1 개를 OR 해 창을 만든다. 래치는 한 번 서면 CLR 까지 유지된다.
     match_window: int = 0
+    # START 조건이 몇 프레임 연속이어야 하나 (시프트 레지스터 깊이). 1 이면 순간 조건.
+    start_frames: int = 1
+    # start_frames = N > 1 일 때 시각 원점을 맞추는 방법. tau·timeout 은 학습
+    # 모델과 같이 "연속 구간의 첫 프레임" 기준으로 받고, 회로 카운트로는 여기서 바꾼다.
+    #  "causal": RUN 은 N 번째 프레임에 선다(회로는 그때 처음 안다). 그 프레임이
+    #            카운트 0 이고 채널은 지연 없이 본다 -> 디코드 값이 tau-(N-1) 로
+    #            당겨지고, 음수가 되는 창 칸은 잘린다. 부품 추가 없음.
+    #  "delay" : 채널을 N-1 프레임 지연(레지스터 8*(N-1)비트)해 Template 에 넣는다
+    #            -> 학습 모델과 같은 함수. 지연 레지스터는 프레임 에지에서 표본화한다.
+    start_mode: str = "causal"
+    # 위험 재현용 스위치. 실제 회로는 둘 다 True 여야 한다.
+    #  gate_run: S 에 RUN 을 넣는다. 빼면 IDLE 동안 MR 로 묶인 카운트 0 이 창으로 읽힌다.
+    #  gate_clk: S 를 카운트가 안정된 반주기에만 연다. 빼면 리플 카운터가 올라가는
+    #            순간 거치는 중간값(예: 11->12 는 10, 8 을 지난다)이 창으로 읽힌다.
+    gate_run: bool = True
+    gate_clk: bool = True
 
     def __post_init__(self) -> None:
         self.template = torch.as_tensor(self.template)
@@ -49,6 +79,18 @@ class DigitalBoard:
             raise ValueError(f"template 은 [S, C] 여야 한다: {tuple(self.template.shape)}")
         if len(self.k) != self.template.shape[0] or len(self.tau) != self.template.shape[0]:
             raise ValueError("k, tau 의 길이가 상태 수와 다르다.")
+        if self.start_frames < 1:
+            raise ValueError(f"start_frames 는 1 이상이어야 한다: {self.start_frames}")
+        if self.start_mode not in ("causal", "delay"):
+            raise ValueError(f"start_mode 는 causal/delay 중 하나: {self.start_mode}")
+        for s in range(self.template.shape[0]):
+            if not self.window_counts(s):
+                raise ValueError(
+                    f"상태 {s+1} 의 창이 전부 START 확인 이전이다 (tau={self.tau[s]}, "
+                    f"창 ±{self.match_window}, 당김 {self.count_shift}). causal 로는 못 본다.")
+        if self.timeout_count <= max(max(self.window_counts(s))
+                                     for s in range(self.template.shape[0])):
+            raise ValueError("timeout 이 마지막 창보다 앞이다.")
 
     # ------------------------------------------------------------------ 상수
     @property
@@ -69,13 +111,41 @@ class DigitalBoard:
         m = self.decode_mask
         return (count & m) == (value & m)
 
+    # ------------------------------------------------- 학습 시각 -> 회로 카운트
+    @property
+    def data_delay(self) -> int:
+        """Template 에 들어가는 채널의 지연 (프레임)."""
+        return self.start_frames - 1 if self.start_mode == "delay" else 0
+
+    @property
+    def count_shift(self) -> int:
+        """디코드 값을 학습 시각보다 몇 프레임 당기나."""
+        return self.start_frames - 1 if self.start_mode == "causal" else 0
+
+    def window_counts(self, s: int) -> List[int]:
+        """상태 s 의 창을 이루는 카운터 값들 = 디코더 출력 중 OR 로 묶을 것."""
+        w, sh = self.match_window, self.count_shift
+        return [int(self.tau[s]) + o - sh for o in range(-w, w + 1)
+                if int(self.tau[s]) + o - sh >= 0]
+
+    @property
+    def timeout_count(self) -> int:
+        """CLR 을 거는 카운터 값. causal 이면 끝나는 절대 시각을 지키려고 같이 당긴다."""
+        return int(self.timeout) - self.count_shift
+
+    @property
+    def wake_count(self) -> int:
+        """마지막 상태의 창 중심 카운트 (연속 평가에서 사건 시각을 잡는 데 쓴다)."""
+        return int(self.tau[-1]) - self.count_shift
+
     def aliases(self) -> Dict[int, List[int]]:
         """디코드 값마다, 같은 신호를 또 내는 카운트들. 비어 있어야 정상이다."""
         top = 1 << self.counter_bits
         out: Dict[int, List[int]] = {}
-        for v in list(self.tau) + [self.timeout]:
+        vals = [c for s in range(self.n_states) for c in self.window_counts(s)]
+        for v in vals + [self.timeout_count]:
             dup = [c for c in range(top)
-                   if c != v and self.decode_hits(c, v) and c <= self.timeout]
+                   if c != v and self.decode_hits(c, v) and c <= self.timeout_count]
             if dup:
                 out[v] = dup
         return out
@@ -100,8 +170,12 @@ class DigitalBoard:
         return (cnt >= kk.unsqueeze(0)).float()
 
     def _start(self, col: torch.Tensor) -> torch.Tensor:
-        """START detect — 채널 합산 + 비교기. col: [B, C] -> [B]."""
+        """START 조건 한 프레임분 — 채널 합산 + 비교기. col: [B, C] -> [B].
+        start_frames 연속 확인은 run/scan_segments 의 시프트 레지스터가 한다."""
         return (col.sum(dim=1) >= self.start_k).float()
+
+    def _hits(self, count: int, s: int) -> bool:
+        return any(self.decode_hits(count, v) for v in self.window_counts(s))
 
     # ------------------------------------------------------------------ 실행
     @torch.no_grad()
@@ -119,6 +193,9 @@ class DigitalBoard:
         dev = x.device
         S = self.n_states
 
+        if not self.gate_clk and self.match_window == 0:
+            raise ValueError("gate_clk=False 재현은 창(latch) 구성에서만 한다.")
+
         run_ff = torch.zeros(B, device=dev)             # RUN latch
         cnt = torch.zeros(B, dtype=torch.long, device=dev)
         pass_ff = torch.zeros(B, S, device=dev)         # PASS F/F
@@ -126,42 +203,55 @@ class DigitalBoard:
         wake_frame = torch.full((B,), -1, dtype=torch.long, device=dev)
         wake_seq = torch.zeros(B, T, device=dev)   # 연속 평가용 WAKE 시계열
         started = torch.zeros(B, device=dev)            # START 를 한 번이라도 봤나
-
-        tau_t = torch.tensor(list(self.tau), device=dev)
+        # START 시프트 레지스터 — 최근 start_frames 프레임의 START 조건
+        hist = torch.zeros(B, self.start_frames, device=dev)
+        d = self.data_delay
+        to_c = self.timeout_count
         rows: List[dict] = []
 
         for f in range(T):
             col = x[:, :, f]                            # 이 프레임의 채널 값
+            # Template 이 보는 값. delay 구성이면 지연 레지스터를 거친 값이다.
+            col_t = x[:, :, f - d] if f >= d else torch.zeros_like(col)
 
             # ── 위상 0 (CLK 상승) : RUN=1 이면 카운터 증가, RUN=0 이면 MR 로 0 유지
-            cnt = torch.where(run_ff > 0.5, cnt + 1, torch.zeros_like(cnt))
-            # START 는 이 프레임 값으로 판정되고, RUN latch 를 세운다.
-            # 카운터가 0 인 프레임이 START 프레임이 되도록 증가 뒤에 세운다.
-            st = self._start(col)
-            newly = (st > 0.5) & (run_ff < 0.5)
+            prev = cnt.clone()
+            stepped = run_ff > 0.5
+            cnt = torch.where(stepped, cnt + 1, torch.zeros_like(cnt))
+            # START 조건을 시프트 레지스터에 넣고, 마지막 N 프레임이 모두 참이면
+            # RUN latch 를 세운다. 카운터가 0 인 프레임 = START 를 확인한 프레임.
+            hist = torch.cat([hist[:, 1:], self._start(col).unsqueeze(1)], dim=1)
+            st = (hist > 0.5).all(dim=1)
+            newly = st & (run_ff < 0.5)
             run_ff = torch.where(newly, torch.ones_like(run_ff), run_ff)
             cnt = torch.where(newly, torch.zeros_like(cnt), cnt)
-            started = torch.maximum(started, st)
+            started = torch.maximum(started, st.float())
 
             # ── 위상 1 (/CLK = 1) : 카운터가 안정된 뒤에만 채점한다
             active = run_ff > 0.5
-            w = self.match_window
+            gate = active if self.gate_run else torch.ones_like(active)
+            m = self.decode_mask
             dec = torch.stack(
-                [torch.stack([((cnt & self.decode_mask) ==
-                               ((int(t) + o) & self.decode_mask))
-                              for o in range(-w, w + 1)], 0).any(0) & active
-                 for t in tau_t], dim=1).float()        # [B, S] -- 창 OR
-            dec_to = (((cnt & self.decode_mask) ==
-                       (self.timeout & self.decode_mask)) & active).float()
+                [torch.stack([(cnt & m) == (v & m) for v in self.window_counts(s)],
+                             0).any(0) & gate
+                 for s in range(S)], dim=1).float()     # [B, S] -- 창 OR
+            dec_to = (((cnt & m) == (to_c & m)) & active).float()
 
-            match = self._match(col)                    # [B, S] 레벨, 상시 유효
+            match = self._match(col_t)                  # [B, S] 레벨, 상시 유효
             if self.match_window == 0:
                 # SAMPLE 상승 에지에서 D 를 붙잡는다 (에지 트리거 D 플립플롭)
                 pass_ff = torch.where(dec > 0.5, match, pass_ff)
             else:
-                # 창 안에서 한 번이라도 맞으면 선다 (셋 우세 래치).
+                # 창 안에서 한 번이라도 맞으면 선다 (S = MATCH·WIN·CLK·RUN).
                 # 한 번 선 PASS 는 CLR 까지 내려오지 않는다.
                 pass_ff = torch.maximum(pass_ff, dec * match)
+                if not self.gate_clk:
+                    # CLK 로 막지 않으면 카운터가 올라가는 순간의 중간값도 S 를 연다
+                    for b in stepped.nonzero().flatten().tolist():
+                        for tv in ripple_transients(int(prev[b])):
+                            for s in range(S):
+                                if self._hits(tv, s) and match[b, s] > 0.5:
+                                    pass_ff[b, s] = 1.0
 
             w = pass_ff.prod(dim=1) * active.float()
             first = (w > 0.5) & (wake_frame < 0)
@@ -198,33 +288,38 @@ def scan_segments(board: "DigitalBoard", x: torch.Tensor):
     어떤 k 에 대해서도 PASS = (maxcount >= k) 로 답이 나온다. 창을 쓰는 설정에서
     PASS 는 셋 우세 래치이므로 창 안 최대가 곧 통과 여부다.
 
-    반환 (starts [n_seg], maxcount [n_seg, S]) -- starts 는 각 구간의 START 프레임.
+    반환 (starts [n_seg], maxcount [n_seg, S]) -- starts 는 각 구간에서 RUN 이 선
+    프레임(START 를 확인한 프레임). 사건 시각은 starts + board.wake_count 다.
     """
     if x.dim() == 2:
         x = x.unsqueeze(0)
     if x.shape[0] != 1:
         raise ValueError("연속 스캔은 스트림 하나만 받는다.")
+    if not (board.gate_run and board.gate_clk):
+        raise ValueError("scan_segments 는 올바른 회로(gate_run, gate_clk)만 돈다.")
     B, C, T = x.shape
-    S, w = board.n_states, board.match_window
-    tau = list(board.tau)
+    S = board.n_states
+    d, to_c = board.data_delay, board.timeout_count
+    hist = [0.0] * board.start_frames                      # START 시프트 레지스터
 
     run_ff, cnt = 0.0, 0
     seg_start, seg_max = None, None
     starts, maxes = [], []
     for f in range(T):
         col = x[:, :, f]
+        col_t = x[:, :, f - d] if f >= d else torch.zeros_like(col)
         cnt = cnt + 1 if run_ff > 0.5 else 0
-        st = float(board._start(col)[0])
-        if st > 0.5 and run_ff < 0.5:
+        hist = hist[1:] + [float(board._start(col)[0])]
+        if all(h > 0.5 for h in hist) and run_ff < 0.5:
             run_ff, cnt = 1.0, 0
             seg_start = f
             seg_max = torch.zeros(S)
         if run_ff > 0.5:
-            m = board._match_counts(col)[0]                 # [S]
-            for si, t in enumerate(tau):
-                if any(board.decode_hits(cnt, t + o) for o in range(-w, w + 1)):
+            m = board._match_counts(col_t)[0]               # [S]
+            for si in range(S):
+                if board._hits(cnt, si):
                     seg_max[si] = max(float(seg_max[si]), float(m[si]))
-            if board.decode_hits(cnt, board.timeout):
+            if board.decode_hits(cnt, to_c):
                 starts.append(seg_start); maxes.append(seg_max)
                 run_ff, cnt, seg_start, seg_max = 0.0, 0, None, None
     if seg_start is not None:
@@ -234,7 +329,25 @@ def scan_segments(board: "DigitalBoard", x: torch.Tensor):
     return torch.tensor(starts), torch.stack(maxes)
 
 
-def board_from_export(rep: Dict, n_decoders: int = 3) -> DigitalBoard:
+START_CHOICES = ("single", "causal", "delay")
+
+
+def _start_args(start: str, min_frames: int) -> Dict[str, object]:
+    """START 구현 선택 -> DigitalBoard 인자.
+
+    single : 1프레임 순간 조건. 2026-10 까지의 연속 스트림 수치(FA/h, 검출률)가
+             전부 이 회로로 잰 것이다 -- 학습 설정의 min_frames 를 무시했었다.
+    causal : min_frames 연속, 원점은 확인한 프레임. 부품 추가 없음.
+    delay  : min_frames 연속, 채널 지연 레지스터로 학습 모델과 같은 원점.
+    """
+    if start not in START_CHOICES:
+        raise ValueError(f"start 는 {START_CHOICES} 중 하나: {start}")
+    if start == "single":
+        return {"start_frames": 1, "start_mode": "causal"}
+    return {"start_frames": int(min_frames), "start_mode": start}
+
+
+def board_from_export(rep: Dict, *, start: str, n_decoders: int = 3) -> DigitalBoard:
     """`export.build_report()` 결과에서 보드를 만든다."""
     tmpl = torch.tensor([s["template"] for s in rep["states"]], dtype=torch.int8)
     return DigitalBoard(
@@ -245,10 +358,13 @@ def board_from_export(rep: Dict, n_decoders: int = 3) -> DigitalBoard:
         start_k=rep["start_k"],
         n_decoders=n_decoders,
         match_window=int(rep.get("match_window", 0)),
+        **_start_args(start, int(rep.get("start_min_frames", 1))),
     )
 
 
-def board_from_model(model, n_decoders: int = 3) -> DigitalBoard:
+def board_from_model(model, *, start: str, n_decoders: int = 3) -> DigitalBoard:
+    """start 에 기본값을 두지 않는다. 기본값이 있으면 어느 START 회로로 잰
+    수치인지가 호출부에서 안 보인다 -- 실제로 그렇게 min_frames 가 빠졌다."""
     e = model.export()
     return DigitalBoard(
         template=e["M"],
@@ -258,4 +374,5 @@ def board_from_model(model, n_decoders: int = 3) -> DigitalBoard:
         start_k=int(e["start_k"]),
         n_decoders=n_decoders,
         match_window=int(model.cfg.head.match_window),
+        **_start_args(start, model.cfg.start.min_frames),
     )

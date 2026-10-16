@@ -69,6 +69,7 @@ def build_report(model: WakeupModel, vdd: float = 3.3) -> Dict:
         "n_channels": C,
         "n_states": S,
         "start_k": int(e["start_k"]),
+        "start_min_frames": int(e.get("start_min_frames", 1)),
         "timeout_frames": int(e["timeout"]),
         "timeout_ms": int(e["timeout"]) * cfg.frontend.envelope_win_ms,
         "wake_width_ms": e["wake_width_ms"],
@@ -98,7 +99,8 @@ def format_report(rep: Dict, test: Optional[Dict] = None) -> str:
         a(f"  START 재현율 {test['start_recall']:.3f}")
 
     a(f"\n타이밍  (1 프레임 = {rep['frame_ms']:.0f} ms)")
-    a(f"  START 조건    채널 {rep['start_k']}개 이상 동시 ON")
+    a(f"  START 조건    채널 {rep['start_k']}개 이상 동시 ON "
+      f"x {rep.get('start_min_frames', 1)}프레임 연속")
     for s in rep["states"]:
         a(f"  tau({s['state']})        {s['tau_frames']:3d} 프레임 = {s['tau_ms']:.0f} ms")
     w = rep.get("match_window", 0)

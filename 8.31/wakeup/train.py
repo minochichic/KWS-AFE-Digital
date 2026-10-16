@@ -426,7 +426,8 @@ def sweep_window(cfg: Config, wave: torch.Tensor, y: torch.Tensor,
 
 # ------------------------------------------------------- 내 목소리 시험
 @torch.no_grad()
-def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
+def eval_wav(cfg: Config, path: str, *, board_start: str,
+             gains=(0.25, 0.5, 1.0, 2.0, 4.0),
              match_level: bool = True, utt_gap: float = 0.8) -> None:
     """직접 녹음한 파일을 학습된 회로에 넣어 본다.
 
@@ -497,7 +498,7 @@ def eval_wav(cfg: Config, path: str, *, gains=(0.25, 0.5, 1.0, 2.0, 4.0),
         detail = {}
         for g in gains:
             feats = stream_features(model, wav * g)
-            board = board_from_model(model, n_decoders=3)
+            board = board_from_model(model, start=board_start, n_decoders=3)
             starts, mx = scan_segments(board, feats)
             if len(starts) == 0:
                 print(f"    {g:6.2f} {0:5d} {0:5d}   START 가 뜨지 않음")
@@ -782,7 +783,7 @@ def _read_wave(path: str) -> Optional[torch.Tensor]:
 
 
 @torch.no_grad()
-def gain_curve(cfg: Config, wav_path: str = "", *,
+def gain_curve(cfg: Config, wav_path: str = "", *, board_start: str,
                gains=(0.5, 0.71, 1.0, 1.41, 2.0, 2.83, 4.0),
                timeouts=(28, 45, 60),
                minutes: float = 20.0, n_clips: int = 12000,
@@ -868,18 +869,18 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
         line = []
         for to in tos:
             c.head.timeout = to
-            board = board_from_model(model, n_decoders=3)
+            board = board_from_model(model, start=board_start, n_decoders=3)
             s_st, m_st = scan_segments(board, fs)
             fa_rows = sweep_k(s_st, m_st, on, m_used, frames=fs.shape[2],
                               frame_ms=c.frontend.envelope_win_ms,
-                              tau_last=int(board.tau[-1]))
+                              tau_last=board.wake_count)
             if fw is not None:
                 s_w, m_w = scan_segments(board, fw)
                 det = {tuple(r["k"]): r["tpr"]
                        for r in sweep_k(s_w, m_w, onsets, m_used,
                                         frames=fw.shape[2],
                                         frame_ms=c.frontend.envelope_win_ms,
-                                        tau_last=int(board.tau[-1]))}
+                                        tau_last=board.wake_count)}
             else:
                 det = {tuple(r["k"]): r["tpr"] for r in fa_rows}
             for fr in fa_rows:
@@ -930,13 +931,13 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
             key = (bpick["gain"], bpick["timeout"])
             if key not in cache:
                 c.head.timeout = bpick["timeout"]
-                bd = board_from_model(model, n_decoders=3)
+                bd = board_from_model(model, start=board_start, n_decoders=3)
                 fv = stream_features(model, st_v * bpick["gain"])
                 sv, mv = scan_segments(bd, fv)
                 cache[key] = {tuple(r["k"]): r for r in
                               sweep_k(sv, mv, on_v, m_used, frames=fv.shape[2],
                                       frame_ms=c.frontend.envelope_win_ms,
-                                      tau_last=int(bd.tau[-1]))}
+                                      tau_last=bd.wake_count)}
             v = cache[key].get(tuple(bpick["k"]))
             if v is None:
                 continue
@@ -954,6 +955,92 @@ def gain_curve(cfg: Config, wav_path: str = "", *,
     print("  * 검출률과 FA/h 의 출처가 다르다. 섞어서 하나의 '정확도'로 쓰지 말 것.")
     print("=" * 74 + "\n")
 
+
+
+
+# ------------------------------------------------ START 회로 세 가지 비교
+@torch.no_grad()
+def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
+                  gain: float = 1.0, minutes: float = 20.0, n_clips: int = 12000,
+                  gap_s: Tuple[float, float] = (0.3, 1.5), cap: float = 30.0,
+                  verify_seed: int = 1) -> None:
+    """같은 Template 을 START 회로만 바꿔 연속 스트림에서 잰다.
+
+    지금까지의 스트림 수치는 전부 1프레임 START(single)로 잰 것이다 --
+    gatelevel 이 min_frames 를 몰랐다. 확정 사양은 x3 인데, 학습 모델은 3프레임
+    구간의 첫 프레임을 원점으로 보므로 회로로 그대로는 못 만든다(3번째 프레임에야
+    안다). 세 회로를 같은 스트림에서 재서 고른다.
+
+      single : 8채널 OR -> RUN. 부품 최소
+      causal : x3 시프트, 원점 = 확인 프레임, 디코드 값 tau-2 (창1 앞쪽이 잘린다)
+      delay  : x3 시프트 + 채널 2프레임 지연 레지스터. 학습 모델과 같은 함수
+    """
+    from . import data as D
+    from .gatelevel import START_CHOICES, board_from_model, scan_segments
+    from .continuous import build_stream, stream_features, sweep_k
+
+    model, c = _load_trained(cfg)
+    if model is None:
+        return
+    if set_timeout:
+        c.head.timeout = int(set_timeout)
+    e = model.export()
+    m_used = [int(v) for v in e["m"]]
+    k_fix = ([int(v) for v in set_k.split(",")] if set_k
+             else [int(v) for v in e["k"]])
+    if len(k_fix) != len(m_used):
+        raise SystemExit(f"--set-k 개수({len(k_fix)})가 상태 수({len(m_used)})와 다르다.")
+
+    waves, words = D.raw_batch(c.data_root, "test", n_clips, seed=0)
+    pool = _noise_pool(c)
+    st, on = build_stream(waves, words, c.train.target_word, minutes=minutes,
+                          noise=pool, seed=0, gap_s=gap_s)
+    st_v, on_v = build_stream(waves, words, c.train.target_word, minutes=minutes,
+                              noise=pool, seed=verify_seed, gap_s=gap_s)
+    fs = stream_features(model, st * gain)
+    fv = stream_features(model, st_v * gain)
+    fms = c.frontend.envelope_win_ms
+
+    print(f"  '{c.train.target_word}', 상태 {len(m_used)}, m={m_used}, "
+          f"tau={list(c.head.tau)}, 창 ±{c.head.match_window}, "
+          f"timeout {c.head.timeout}, 이득 {gain}")
+    print(f"  START 조건: 채널 {c.start.k}개 이상, 학습 설정 x{c.start.min_frames}프레임")
+    print(f"  스트림 {minutes:.0f}분 x 2 (고르기 시드 0 / 검증 시드 {verify_seed})\n")
+    if c.start.min_frames <= 1:
+        print("  min_frames 가 1 이라 세 회로가 같다. 비교할 것이 없다.")
+        return
+
+    print(f"  {'회로':>7} {'창 카운트':>22} {'TO':>4} | {'고정 k':>8} "
+          f"{'검출':>7} {'FA/h':>7} | {'FA/h<=%g 최고 k' % cap:>16} {'검출':>7} {'FA/h':>7}")
+    for mode in START_CHOICES:
+        try:
+            bd = board_from_model(model, start=mode, n_decoders=3)
+        except ValueError as ex:
+            print(f"  {mode:>7}  만들 수 없다: {ex}")
+            continue
+        wins = "/".join(f"{min(bd.window_counts(s))}-{max(bd.window_counts(s))}"
+                        for s in range(bd.n_states))
+        rows = {}
+        for name, f_, o_ in (("pick", fs, on), ("ver", fv, on_v)):
+            s0, m0 = scan_segments(bd, f_)
+            rows[name] = {tuple(r["k"]): r for r in
+                          sweep_k(s0, m0, o_, m_used, frames=f_.shape[2],
+                                  frame_ms=fms, tau_last=bd.wake_count)}
+        fx = rows["ver"][tuple(k_fix)]
+        ok = [r for kk, r in rows["pick"].items()
+              if all(v > 1 for v in kk) and r["fa_per_hour"] <= cap]
+        if ok:
+            b = max(ok, key=lambda r: (r["tpr"], -r["fa_per_hour"]))
+            bv = rows["ver"][tuple(b["k"])]
+            best = (f"{str(b['k']):>16} {bv['tpr']*100:6.1f}% "
+                    f"{bv['fa_per_hour']:7.1f}")
+        else:
+            best = f"{'—':>16}"
+        print(f"  {mode:>7} {wins:>22} {bd.timeout_count:4d} | {str(k_fix):>8} "
+              f"{fx['tpr']*100:6.1f}% {fx['fa_per_hour']:7.1f} | {best}")
+    print("\n  * 검출·FA/h 는 모두 검증 스트림 값이다. '최고 k' 는 고르기 스트림에서")
+    print("    고르고(k<=1 제외) 검증 스트림에서 다시 잰 것이다.")
+    print("  * single 의 고정 k 행이 종전 보고 수치(50.0% @ 25.0 FA/h)와 같아야 한다.")
 
 
 # ------------------------------------------- 화자별 발화 수 (GSC 화자 종속 가능?)
@@ -1109,7 +1196,7 @@ def speaker_eval(cfg: Config, *, max_fpr: float = 0.05,
 
 # ----------------------------------------------------- 동작점 선택
 @torch.no_grad()
-def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
+def fa_curve(cfg: Config, *, board_start: str, minutes: float = 20.0, n_clips: int = 12000,
              timeouts=(28, 45, 60), top: int = 12) -> None:
     """연속 지표로 동작점(k)을 고른다. 재학습 없음.
 
@@ -1156,11 +1243,11 @@ def fa_curve(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
         if not (c.head.tau[-1] + c.head.min_wake_frames < to <= 63):
             continue
         c.head.timeout = to
-        board = board_from_model(model, n_decoders=3)
+        board = board_from_model(model, start=board_start, n_decoders=3)
         starts, mx = scan_segments(board, feats)
         rows = sweep_k(starts, mx, on, m_used, frames=feats.shape[2],
                        frame_ms=c.frontend.envelope_win_ms,
-                       tau_last=int(board.tau[-1]))
+                       tau_last=board.wake_count)
         cur = [r for r in rows if r["k"] == saved_k]
         front = pareto(rows)
         print(f"\n  timeout {to} 프레임 ({to*10} ms), 계측 구간 {len(starts)}개")
@@ -1234,7 +1321,7 @@ def _load_trained(cfg: Config):
 
 # ------------------------------------------------------- 연속 오디오 평가
 @torch.no_grad()
-def fa_eval(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
+def fa_eval(cfg: Config, *, board_start: str, minutes: float = 20.0, n_clips: int = 12000,
             targets_per_min: float = 6.0, with_noise: bool = True,
             seeds: int = 3) -> None:
     """학습된 회로를 연속 오디오에서 돌려 검출률과 FA/h 를 함께 잰다."""
@@ -1264,7 +1351,7 @@ def fa_eval(cfg: Config, *, minutes: float = 20.0, n_clips: int = 12000,
     model = WakeupModel(c)
     model.load_state_dict(ck["model"])
     model.eval()
-    board = board_from_model(model, n_decoders=3)
+    board = board_from_model(model, start=board_start, n_decoders=3)
     print(f"체크포인트 {ck_path}")
     print(f"  '{c.train.target_word}', {c.frontend.n_channels}채널, "
           f"상태 {c.head.n_states}, tau {list(c.head.tau)}, "
@@ -1612,6 +1699,14 @@ def main(argv=None) -> None:
     p.add_argument("--gain-curve", action="store_true",
                    help="입력 이득 x k 를 같이 훑는다. --eval-wav 를 주면 "
                         "검출률을 그 녹음에서 잰다")
+    p.add_argument("--board-start", default="single",
+                   choices=("single", "causal", "delay"),
+                   help="연속 평가에 쓰는 START 회로. single=1프레임(종전 수치), "
+                        "causal=xN 확인 프레임 원점, delay=xN + 채널 지연")
+    p.add_argument("--start-compare", action="store_true",
+                   help="START 회로 세 가지를 같은 스트림에서 비교한다")
+    p.add_argument("--gain", type=float, default=1.0,
+                   help="--start-compare 의 입력 이득")
     p.add_argument("--fa-curve", action="store_true",
                    help="검출률 대 FA/h 맞바꿈 곡선 (재학습 없음)")
     p.add_argument("--fa-eval", action="store_true",
@@ -1686,16 +1781,19 @@ def main(argv=None) -> None:
         "fa_curve": a.fa_curve, "fa_eval": a.fa_eval,
         "sweep_window": a.sweep_window, "sweep_structure": a.sweep_structure,
         "sweep_words": bool(a.sweep_words), "sweep_frontend": a.sweep_frontend,
-        "diagnose": a.diagnose,
+        "diagnose": a.diagnose, "start_compare": a.start_compare,
     }
     _on = [k for k, v in _analysis.items() if v]
+    if any(_analysis[k] for k in ("eval_wav", "gain_curve", "fa_curve", "fa_eval")):
+        print(f"  연속 평가 START 회로: {a.board_start}  (--board-start)")
 
     if a.eval_wav:
         if a.gain_curve:
-            gain_curve(cfg, a.eval_wav, minutes=a.minutes, utt_gap=a.utt_gap,
+            gain_curve(cfg, a.eval_wav, board_start=a.board_start,
+                       minutes=a.minutes, utt_gap=a.utt_gap,
                        gap_s=_pair(a.gap_s))
         else:
-            eval_wav(cfg, a.eval_wav, utt_gap=a.utt_gap)
+            eval_wav(cfg, a.eval_wav, board_start=a.board_start, utt_gap=a.utt_gap)
         return
     if a.quantize_theta:
         quantize_theta(cfg, a.theta_steps)
@@ -1715,14 +1813,19 @@ def main(argv=None) -> None:
         speaker_stats(cfg)
         return
     if a.gain_curve:
-        gain_curve(cfg, "", minutes=a.minutes, utt_gap=a.utt_gap,
+        gain_curve(cfg, "", board_start=a.board_start,
+                   minutes=a.minutes, utt_gap=a.utt_gap,
                    gap_s=_pair(a.gap_s))
         return
     if a.speaker_eval:
         speaker_eval(cfg, max_fpr=a.max_fpr)
         return
     if a.fa_curve:
-        fa_curve(cfg, minutes=a.minutes)
+        fa_curve(cfg, board_start=a.board_start, minutes=a.minutes)
+        return
+    if a.start_compare:
+        start_compare(cfg, set_k=a.set_k, set_timeout=a.set_timeout,
+                      gain=a.gain, minutes=a.minutes, gap_s=_pair(a.gap_s))
         return
     if _on and not any(_analysis[k] for k in
                        ("fa_eval", "sweep_window", "sweep_structure",
@@ -1731,7 +1834,7 @@ def main(argv=None) -> None:
             f"분석 플래그 {_on} 가 켜졌는데 처리할 분기가 없다. "
             "학습으로 흘려보내지 않고 멈춘다 -- 분기 연결을 확인할 것.")
     if a.fa_eval:
-        fa_eval(cfg, minutes=a.minutes)
+        fa_eval(cfg, board_start=a.board_start, minutes=a.minutes)
         return
     if a.sweep_structure:
         sweep_structure(cfg)
