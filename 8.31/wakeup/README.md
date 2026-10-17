@@ -249,6 +249,45 @@ x3 START 는 16 ms 미만만 거른다 -- 해법이 아니다. 대가 (120분, �
 무음을 벌하는 신호가 없어 Template 이 "조용하면 통과" 를 배웠다(음성은 다른 단어라
 늘 에너지가 있다). 짧은 소리 + 무음을 음성으로 넣어 재학습한다.
 
+## 보드 상수 — f256_bsb_s4 (2026-10-17)
+
+```bash
+python -m wakeup.train --target sheila --channels 8 --states 2 --match-window 2 \
+    --epochs 30 --on-rate 0.15 --frame-ms 7.8125 --repeat 5 \
+    --board-start-only --burst-neg 0.5 --tag f256_bsb      # 시드 4 를 쓴다
+python -m wakeup.train --tag f256_bsb_s4 --gain-curve --minutes 120 --gap-s 30,120
+python -m wakeup.train --tag f256_bsb_s4 --emit-circuit --set-k 7,6 --set-timeout 28
+python -m wakeup.netlist --params hardware/f256_bsb_s4.json --out hardware
+```
+
+| 항목 | 값 |
+|---|---|
+| Template | s1 `0000 0010` (16 ms), s2 `0000 0111` (78 ms), 둘 다 m=8 |
+| 동작점 | **이득 1.41 · timeout 28 (219 ms) · k = [7, 6]** · WAKE 폭 141 ms |
+| 성능 (검증 스트림) | **45.7% @ 12.5 FA/h**, 대안 k=[7,7] 41.3% @ 8.5 |
+| 짧은 소리 | 1~6프레임 48가지 모두 WAKE 없음 (s2 가 ch5~7 ON 을 요구) |
+| 넷리스트 | `hardware/netlist_f256_bsb_s4.md` -- 배선 검사 통과, 시뮬 대조 불일치 0 |
+
+학습 두 벌을 같은 조건(`--board-start-only`)에서 비교했다:
+
+| | 클립 TPR (5시드) | 고른 시드의 FA/h<=10 | FA/h<=15 |
+|---|---|---|---|
+| `--burst-neg 0.5` (bsb) | 0.511 ± 0.060 | 41.3% @ 8.5 (이득 1.41) | 45.7% @ 12.5 |
+| 없음 (bs0) | 0.501 ± 0.025 | 39.1% @ 11.0 (이득 2.0) | 39.1% @ 11.0 |
+
+클립 TPR 은 같다 -- 짧은 소리 음성은 공짜다. 스트림에서는 bsb 가 더 낮은 이득으로
+같거나 조금 높은 검출을 냈지만 **시드 하나씩이고 차이가 1~3개라 잡음 안이다.**
+판단 근거는 "비용 없음 + START 가 보드와 맞음" 이다.
+
+동작점 선택에 두 규칙을 더했다 (`gain_curve`, `start_compare`):
+- 짧은 소리 검사(`_click_count`) 0 이 아니면 뺀다
+- 스트림 구간의 절반 넘게 통과하는 상태가 있으면 뺀다(`_dead_state`) --
+  k<=1 만 빼던 때는 [2,7] 같은 노는 s1 이 표 위쪽을 차지했다
+
+남은 확인: 이득 1.41 은 아날로그 PreAMP 저항비라 담당 확인이 필요하다. timeout 45·60
+에서는 이득 1.41 의 검출이 12% 로 무너졌다(원인 미확인) -- timeout 을 늘려 WAKE 폭을
+벌리는 대신 출력단 RC 펄스 연장을 쓴다.
+
 **"최종" 이 아니라 "첫 번째 보드의 상수" 다.** 전부 소프트웨어 AFE 시뮬
 위의 값이고, 실제 회로의 포락선 분포가 다르면 theta 와 형판을 다시 맞춰야
 한다. 저항은 바꿔 끼울 수 있게 둘 것.

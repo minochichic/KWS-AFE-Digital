@@ -1,0 +1,43 @@
+{
+  "name": "f256_bsb_s4",
+  "source": "runs/f256_bsb_s4 (--board-start-only --burst-neg 0.5), --emit-circuit --set-k 7,6 --set-timeout 28",
+  "template": [
+    [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      -1
+    ],
+    [
+      -1,
+      -1,
+      -1,
+      -1,
+      -1,
+      1,
+      1,
+      1
+    ]
+  ],
+  "k": [
+    7,
+    6
+  ],
+  "tau": [
+    2,
+    10
+  ],
+  "match_window": 2,
+  "timeout": 28,
+  "start_k": 1,
+  "frame_ms": 7.8125,
+  "alt_k": [
+    7,
+    7
+  ],
+  "note": "검증 스트림 45.7% @ 12.5 FA/h (이득 1.41). 대안 [7,7]: 41.3% @ 8.5"
+}

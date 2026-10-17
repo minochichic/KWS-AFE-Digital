@@ -1,0 +1,16 @@
+{
+  "target_word": "sheila", "n_channels": 8, "n_states": 2,
+  "start_k": 1, "start_min_frames": 1,
+  "timeout_frames": 28, "timeout_ms": 218.75, "wake_width_ms": 140.625,
+  "frame_ms": 7.8125, "vdd": 3.3, "n_resistors_template": 16,
+  "n_active_states": 2, "n_unique_templates": 2, "match_window": 2,
+  "channel_thresholds": [1.0689, 1.0759, 1.0631, 1.0534, 1.0476, 1.0473, 1.0481, 1.0484],
+  "states": [
+    {"state": 1, "active": true, "tau_frames": 2, "tau_ms": 15.625,
+     "template": [-1, -1, -1, -1, -1, -1, 1, -1], "m": 8, "k": 7,
+     "V_TH": 2.6812, "margin_V": 0.2062, "R7_ohm": 187500, "R8_ohm": 812500},
+    {"state": 2, "active": true, "tau_frames": 10, "tau_ms": 78.125,
+     "template": [-1, -1, -1, -1, -1, 1, 1, 1], "m": 8, "k": 6,
+     "V_TH": 2.2687, "margin_V": 0.2062, "R7_ohm": 312500, "R8_ohm": 687500}
+  ]
+}

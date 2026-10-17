@@ -642,6 +642,13 @@ def write_doc(nl: Netlist, out: Path, sim: Optional[Dict] = None) -> Path:
     for s, w in enumerate(p["windows"]):
         a(f"- s{s+1}: Template `{_tmpl(p['template'][s])}`, k={p['k'][s]}, "
           f"창 카운트 {w[0]}..{w[-1]}")
+    if p.get("frame_ms"):
+        fm = float(p["frame_ms"])
+        a(f"- 프레임 {fm} ms · timeout {p['timeout'] * fm:.0f} ms · "
+          f"WAKE 폭 약 {(p['timeout'] - p['tau'][-1]) * fm:.0f} ms "
+          f"((timeout − τ_last) × 프레임)")
+    if p.get("source"):
+        a(f"- 출처: {p['source']}")
     a("")
     errs = nl.check()
     a("## 배선 검사\n")
@@ -667,6 +674,17 @@ def write_doc(nl: Netlist, out: Path, sim: Optional[Dict] = None) -> Path:
           f"{budget*1e3:.1f} mV |")
     a("\n예산 = 비교기 오프셋 최대 8 mV + 분압 1% 저항 최악 + Template 1% 저항 근사. "
       "margin 보다 작으면 판정이 바뀌지 않는다.\n")
+    alt = p.get("alt_k")
+    if alt:
+        a(f"**대안 k = {alt}** — 분압 저항만 바꿔 끼운다 (배선 동일).\n")
+        a("| 상태 | k | R7 / R8 (E96) | V_TH |\n|---|---|---|---|")
+        for s, (d, ka) in enumerate(zip(nl.analog.values(), alt)):
+            if ka == d["k"]:
+                continue
+            r7, r8 = e96_divider((ka - 0.5) / d["m"])
+            a(f"| s{s+1} | {ka} | {fmt_r(r7)} / {fmt_r(r8)} | "
+              f"{p['vdd'] * r8 / (r7 + r8) * 1e3:.1f} mV |")
+        a("")
 
     a("## 부품 (BOM)\n")
     a("| 참조 | 부품 | 패키지 | 쓰임 | 핀 배치 근거 |")
@@ -804,7 +822,10 @@ def main() -> None:
     else:
         d = json.loads(Path(a.params).read_text(encoding="utf-8"))
     board = board_from_params(d)
-    nl = build_netlist(board, vdd=a.vdd, name=d.get("name", Path(a.params).stem))
+    nl = build_netlist(board, vdd=a.vdd, name=d.get("name") or Path(a.params or a.circuit).stem)
+    for key in ("alt_k", "frame_ms", "source", "note"):
+        if d.get(key) is not None:
+            nl.params[key] = d[key]
     errs = nl.check()
     sim = compare_streams(nl, board, make_streams(board), a.vdd)
     path = write_doc(nl, Path(a.out), sim)
