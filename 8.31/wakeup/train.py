@@ -713,6 +713,10 @@ def summarize(cfg: Config, prefixes: str) -> None:
 _CAPS = (1.0, 3.0, 5.0, 10.0, 15.0, 20.0, 30.0, 50.0, 100.0)
 
 
+def _gains_kw(txt: str) -> Dict:
+    return {"gains": tuple(float(v) for v in txt.split(","))} if txt else {}
+
+
 def _pair(txt: str) -> Tuple[float, float]:
     a, b = (float(x) for x in txt.split(","))
     return (a, b)
@@ -890,6 +894,8 @@ def gain_curve(cfg: Config, wav_path: str = "", *, board_start: str,
                 # 비교기 하나가 장식이 된다.
                 if any(int(v) <= 1 for v in fr["k"]):
                     continue
+                if _dead_state(m_st, fr["k"]):
+                    continue        # 구간 절반 넘게 통과하는 상태 = 노는 비교기
                 ck = (to, tuple(fr["k"]))
                 if ck not in click_cache:
                     click_cache[ck] = _click_count(board, fr["k"])
@@ -957,6 +963,7 @@ def gain_curve(cfg: Config, wav_path: str = "", *, board_start: str,
     print("  * 어떤 상태든 k<=1 인 지점은 뺐다 -- 그 상태가 꺼진 것과 같아서,")
     print("    2상태로 설계해 놓고 1상태로 동작하는 셈이 된다.")
     print("  * 짧은 소리(1~6프레임) 뒤 무음에 WAKE 가 나는 k 는 뺐다 (_click_count).")
+    print("  * 스트림 구간의 절반 넘게 통과하는 상태가 있는 k 도 뺐다 (노는 비교기).")
     print("  * 오경보 사건이 10개 미만이면 FA/h 를 믿지 말 것. 60분에 1건이면")
     print("    '1.0 FA/h' 지만 다음 스트림에서 5건이 날 수도 있다(실측).")
     print("  * 검출률과 FA/h 의 출처가 다르다. 섞어서 하나의 '정확도'로 쓰지 말 것.")
@@ -1030,15 +1037,17 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
             continue
         wins = "/".join(f"{min(bd.window_counts(s))}-{max(bd.window_counts(s))}"
                         for s in range(bd.n_states))
-        rows = {}
+        rows, rows_mx = {}, {}
         for name, f_, o_ in (("pick", fs, on), ("ver", fv, on_v)):
             s0, m0 = scan_segments(bd, f_)
+            rows_mx[name] = m0
             rows[name] = {tuple(r["k"]): r for r in
                           sweep_k(s0, m0, o_, m_used, frames=f_.shape[2],
                                   frame_ms=fms, tau_last=bd.wake_count)}
         ok = [r for kk, r in rows["pick"].items()
               if all(v > 1 for v in kk) and r["fa_per_hour"] <= cap
-              and _click_count(bd, kk) == 0]
+              and _click_count(bd, kk) == 0
+              and not _dead_state(rows_mx["pick"], kk)]
         if ok:
             b = max(ok, key=lambda r: (r["tpr"], -r["fa_per_hour"]))
             bv = rows["ver"][tuple(b["k"])]
@@ -1060,6 +1069,20 @@ def start_compare(cfg: Config, *, set_k: str = "", set_timeout: int = 0,
     print("    '최고 k' 는 클릭 0 인 것 중에서만 고른다.")
     print("  * timeout 직후 re-arm 을 반영했다(2026-10-16). 종전 single [6,5] 의")
     print("    50.0% @ 25.0 은 re-arm 전 값이라 조금 다를 수 있다.")
+
+
+def _dead_state(maxcount: torch.Tensor, k: Sequence[int]) -> bool:
+    """스트림 구간의 절반 넘게 통과하는 상태가 있는가 (search.DEAD_STATE_FPR 와 같은 규칙).
+
+    k<=1 만 빼면 [2,7] 처럼 8개 중 2개면 통과하는 s1 이 남는다 -- 그 상태는
+    판정에 기여하지 않고 비교기만 차지한다. 구간 대부분은 대상이 아니므로
+    구간 통과율이 곧 음성 통과율에 가깝다.
+    """
+    from .search import DEAD_STATE_FPR
+    if maxcount.numel() == 0:
+        return False
+    kt = torch.tensor(list(k), dtype=maxcount.dtype)
+    return bool(((maxcount >= kt.unsqueeze(0)).float().mean(0) > DEAD_STATE_FPR).any())
 
 
 def _click_count(board, k: Sequence[int], max_len: int = 6) -> int:
@@ -1752,6 +1775,8 @@ def main(argv=None) -> None:
     p.add_argument("--gain-curve", action="store_true",
                    help="입력 이득 x k 를 같이 훑는다. --eval-wav 를 주면 "
                         "검출률을 그 녹음에서 잰다")
+    p.add_argument("--gains", default="",
+                   help="--gain-curve 의 이득 목록 '1.0,1.41'. 비우면 0.5~4.0")
     p.add_argument("--board-start-only", action="store_true",
                    help="START 탐색을 보드 회로(채널 1개 이상 x 1프레임)로 묶는다. "
                         "다른 조건으로 고른 tau 는 보드에서 원점이 어긋난다")
@@ -1851,7 +1876,7 @@ def main(argv=None) -> None:
         if a.gain_curve:
             gain_curve(cfg, a.eval_wav, board_start=a.board_start,
                        minutes=a.minutes, utt_gap=a.utt_gap,
-                       gap_s=_pair(a.gap_s))
+                       gap_s=_pair(a.gap_s), **_gains_kw(a.gains))
         else:
             eval_wav(cfg, a.eval_wav, board_start=a.board_start, utt_gap=a.utt_gap)
         return
@@ -1875,7 +1900,7 @@ def main(argv=None) -> None:
     if a.gain_curve:
         gain_curve(cfg, "", board_start=a.board_start,
                    minutes=a.minutes, utt_gap=a.utt_gap,
-                   gap_s=_pair(a.gap_s))
+                   gap_s=_pair(a.gap_s), **_gains_kw(a.gains))
         return
     if a.speaker_eval:
         speaker_eval(cfg, max_fpr=a.max_fpr)

@@ -704,6 +704,22 @@ def _tmpl(row: Sequence[int]) -> str:
     return " ".join({1: "1", -1: "0", 0: "X"}[int(t)] for t in row)
 
 
+def params_from_circuit(rep: Dict, name: str, source: str = "") -> Dict:
+    """export.build_report() 결과(circuit.json) -> hardware/*.json 형식."""
+    if int(rep.get("start_min_frames", 1)) != 1:
+        print(f"  주의: 학습 START 가 x{rep['start_min_frames']}프레임이다. 보드는 1프레임"
+              " -- --board-start-only 로 학습한 모델이어야 tau 원점이 맞는다.")
+    if int(rep["start_k"]) != 1:
+        raise SystemExit(f"start_k={rep['start_k']} -- 보드 START 는 채널 1개 이상(OR)뿐이다.")
+    st = rep["states"]
+    return {"name": name, "source": source or "circuit.json",
+            "template": [s["template"] for s in st], "k": [s["k"] for s in st],
+            "tau": [s["tau_frames"] for s in st],
+            "match_window": int(rep.get("match_window", 0)),
+            "timeout": int(rep["timeout_frames"]), "start_k": 1,
+            "frame_ms": rep.get("frame_ms")}
+
+
 def board_from_params(d: Dict) -> DigitalBoard:
     """hardware/*.json -> DigitalBoard (single START)."""
     return DigitalBoard(template=torch.tensor(d["template"]), k=d["k"], tau=d["tau"],
@@ -770,11 +786,23 @@ def make_streams(board: DigitalBoard, n: int = 12, T: int = 900, seed: int = 0
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="디지털 판별부 넷리스트 생성·검사·대조")
-    ap.add_argument("--params", required=True, help="hardware/*.json")
+    src = ap.add_mutually_exclusive_group(required=True)
+    src.add_argument("--params", help="hardware/*.json")
+    src.add_argument("--circuit", help="--emit-circuit 이 쓴 runs/.../circuit.json. "
+                                       "읽은 상수를 hardware/<name>.json 으로도 남긴다")
+    ap.add_argument("--name", default="", help="--circuit 일 때 이름 (기본: 폴더 이름)")
     ap.add_argument("--out", default="hardware")
     ap.add_argument("--vdd", type=float, default=1.8)
     a = ap.parse_args()
-    d = json.loads(Path(a.params).read_text(encoding="utf-8"))
+    if a.circuit:
+        d = params_from_circuit(json.loads(Path(a.circuit).read_text(encoding="utf-8")),
+                                a.name or Path(a.circuit).parent.name, a.circuit)
+        Path(a.out).mkdir(parents=True, exist_ok=True)
+        pj = Path(a.out) / f"{d['name']}.json"
+        pj.write_text(json.dumps(d, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"상수: {pj}")
+    else:
+        d = json.loads(Path(a.params).read_text(encoding="utf-8"))
     board = board_from_params(d)
     nl = build_netlist(board, vdd=a.vdd, name=d.get("name", Path(a.params).stem))
     errs = nl.check()
