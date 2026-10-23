@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -284,6 +285,11 @@ class Trainer:
 
 # --------------------------------------------------------------------------- #
 def main() -> None:
+    # nohup ... > runs/<tag>.log 로 띄우면 stdout 이 파일이라 파이썬이 8 KB
+    # 블록 단위로 버퍼링한다. 에폭 한 줄이 ~80 바이트라 100 에폭을 다 돌아도
+    # 로그가 비어 있고 `tail -f` 에 아무것도 안 나온다. 줄마다 내보낸다.
+    sys.stdout.reconfigure(line_buffering=True)
+
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", default="configs/base.yaml")
     ap.add_argument("--overfit-smoke", action="store_true",
