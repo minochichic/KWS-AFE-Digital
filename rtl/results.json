@@ -55,5 +55,20 @@
       "ok   clip1: class 11",
       "2 frames checked, 0 failures"
     ]
+  },
+  "wake_top": {
+    "passed": true,
+    "tag": "bd_base",
+    "checked": 3,
+    "commit": "50237fb",
+    "when": "2026-10-26T00:23:24+09:00",
+    "lines": [
+      "ok   bad CRC -> link_err",
+      "ok   wrong N -> link_err",
+      "ok   clip 0: class 5 (keyword 5, margin 27918) at 95170370000",
+      "ok   clip 1: class 11 (keyword 5, margin -8612) at 170589550000",
+      "ok   clip 2: class 5 (keyword 5, margin 26911) at 246008730000",
+      "3 clips checked, 0 failures"
+    ]
   }
 }

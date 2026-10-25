@@ -52,7 +52,8 @@ ALL_RTL=$(ls rtl/*.v)
 # kws_board_top 은 kws_top_synth 를 인스턴스화하는데 그 파일은 rtl/synth/ 에 있어
 # 위 글롭에 안 걸린다. board_top 을 돌릴 때만 붙인다 -- 다른 테스트에까지 넣으면
 # 매크로로 파라미터를 전부 박은 네트워크가 한 벌 더 엘라보레이션된다.
-[ "$NAME" = board_top ] && ALL_RTL="$ALL_RTL $(ls rtl/synth/*.v)"
+# wake_top 도 같은 이유 -- kws_top_synth 를 부른다.
+case "$NAME" in board_top|wake_top) ALL_RTL="$ALL_RTL $(ls rtl/synth/*.v)";; esac
 [ -f "$DUT" ] || { echo "no such module: $DUT" >&2; exit 1; }
 [ -f "$TB" ]  || { echo "no testbench: $TB" >&2; exit 1; }
 
@@ -102,7 +103,11 @@ grep -qE ', 0 failures' "$LOG" || { echo "no pass line in output" >&2; exit 1; }
 # rather than something the repo knew -- and that is exactly the kind of claim
 # that rots. docs/make_site.py reads this file; nothing else may write it.
 RES="rtl/results.json"
-CHECKED=$(grep -oE '[0-9]+ frames checked' "$LOG" | tail -1 | grep -oE '^[0-9]+')
+# `|| true`: with `set -euo pipefail` a grep that finds nothing fails the whole
+# assignment, and the script exited HERE -- after the pass line, before the
+# record -- for every testbench that counts clips instead of frames.
+CHECKED=$( { grep -oE '[0-9]+ (frames|clips) checked' "$LOG" || true; } \
+           | tail -1 | grep -oE '^[0-9]+' || true )
 python3 - "$RES" "$NAME" "${CHECKED:-0}" "$LOG" "$TAG" <<'EOPY'
 import json, pathlib, subprocess, sys, datetime
 path, name, checked, log, tag = sys.argv[1:6]

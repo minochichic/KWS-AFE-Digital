@@ -350,6 +350,36 @@ VADJ 위치(`J6-3↔J6-5`, `J6-4↔J6-6`)여도 **당장은 멀쩡히 돈다** �
 
 ---
 
+## 7.2 웨이크 링크 — STM32 ↔ FPGA (방식 B, 2026-10-26)
+
+`docs/wake_stm32_plan.md` 의 보드에서는 **비교기가 FPGA 가 아니라 STM32 로 간다**
+(J5 → PB0..15). FPGA 의 경계는 §2~§5 의 16가닥이 아니라 아래 패킷이 된다. 네트워크
+(`kws_top`) 는 같다 — `kws_frame_ctrl` 자리에 `kws_link_rx` 가 들어갈 뿐이다.
+
+| 신호 (J4) | 방향 | 내용 |
+|---|---|---|
+| UART_TX | STM32 → FPGA | 8N1, 기본 115200 baud (`kws_wake_top` 의 `BAUD`) |
+| UART_RX | FPGA → STM32 | 8N1, 같은 속도 |
+| WAKE_FPGA | STM32 → FPGA | 상승 에지 = 패킷 경계. 수신기가 반쯤 받은 패킷을 버리고 재동기 |
+
+```
+STM32 → FPGA   0xA5 | N | frame[0..N-1] (2 바이트, LE, bit k = ch k) | CRC-8      (203 바이트)
+FPGA → STM32   0x5A | class_idx | keyword_idx | margin (int32 LE) | CRC-8          (8 바이트)
+```
+
+- **CRC-8/SMBUS** (다항식 0x07, 초기값 0, 반사 없음), sync 를 포함한 앞 바이트 전부.
+  검사값 `crc8(b"123456789") = 0xF4`. STM32 CRC 주변장치로 같은 값을 낸다.
+- **N 은 native 프레임 수(100)** 다. 앞뒤 −1 패딩 14 칸은 FPGA 가 붙인다 (`parameters.vh`).
+  N 이 `KWS_NATIVE_T` 와 다르면 패킷을 버린다 — 펌웨어와 export 가 클립 길이에 대해
+  어긋났다는 뜻이다.
+- **패킷 전체를 받고 CRC 가 맞아야** 추론이 시작된다. 틀린 패킷은 추론을 일으키지 않는다.
+- margin 은 `kws_tail` 의 keyword_margin (pool 합 단위, 나누지 않음) 을 32 비트로 부호 확장.
+- 프레임 하나 = 10 ms 안에 한 번이라도 1 이었던 채널 (§5 의 sticky OR 과 같은 규칙,
+  펌웨어 쪽 구현은 계획 문서 §2.1).
+
+기준 구현: `export/wake_link.py` (Python), `rtl/kws_link_rx.v` · `kws_link_tx.v` (RTL).
+검증: `./rtl/run_tb.sh wake_top bd_base rtl/gen/bd_base/selftest`.
+
 ## 8. 관련 문서
 
 - **`docs/hanback_kit.md`** — 실습장비(XC7S75 킷)의 확정 사실. **§7.1 을 대체한다**
