@@ -20,6 +20,9 @@
 | **동료 확정 보드 필터뱅크** | **`bd_base`** | **0.825** | 🏆 **트랙 2 최고. 우리 설계 둘 다 이겼다 ↓** |
 | conv2 이진 → **int8** (separable 유지, `bd_base` 위에 이것만) | `bd_c2int8` | 0.8284 (val 0.8476) | ⚪ **+0.35pp = 잡음** (test ~17클립). conv2 이진화는 정확도를 거의 안 먹는다. seed 1개. **export 불가** — `emit.py` 가 non-binary separable dw 를 거부 (2026-10-24). 비교: [`conv2_int8_compare.md`](conv2_int8_compare.md) |
 | **B1–B3 + conv2 → int8** (XNOR 0개, 활성 ReLU, `Int8TCSBlock`) | `bd_allint8` | **0.870** (val 0.878, ep 20) | 🔴 **+4.5pp. B1–B3 이진화는 공짜가 아니다.** 이진은 과소적합, int8 은 과적합(train 0.988) → 병목은 용량. 활성 float 이라 **상한**. 하드웨어 추정 곱셈 ×4 · 사이클 ×2.15 (10 Hz 미달). export 불가. seed 1개 (2026-10-25). [`conv2_int8_compare.md`](conv2_int8_compare.md) §9 |
+| `bd_allint8` + dropout 0.1 | `bd_allint8_do10` | 0.8711 (마지막 0.8713) | ⚪ 잡음. **봉우리는 그대로, 봉우리 뒤 하락이 사라짐** (train 0.961) | 
+| `bd_allint8` + weight decay 1e-4 (AFE 제외) | `bd_allint8_wd1e4` | 0.8652 | ⚪ −0.5pp, 잡음 | 
+| `bd_allint8` + label smoothing 0.1 | `bd_allint8_ls01` | 0.8693 | ⚪ 잡음. val 만 올랐다 (+0.4pp) — test 로 안 옮겨감. §9.4 |
 | **`ste_clip` 1.0 → 0.003** | **`fx_ste0003`** | **0.817** | ✅ **+10.0pp. `bd_base` 전까지 최고** |
 | `ste_clip` 1.0 → 0.01 | `fx_ste001` / `_long` | 0.811 | ✅ +9.4pp. 150에폭도 **같은 값** |
 | `ste_clip` 1.0 → 0.03 | `fx_ste003` | 0.800 | ✅ +8.3pp |
