@@ -264,6 +264,13 @@ MatchboxNet-3x2xC 골격 + 정밀도 오버레이:
 conv2 혼자 238K로 논문 전체(93K)를 초과하므로 원 논문 epilogue는 separable로 판단.
 정확도 미달 시 `separable: false`(dense, 총 324K)가 1순위 ablation.
 
+**결정 기록 (2026-10-25, 사용자 승인):** 이진화의 값을 재는 **비교 실험 전용**으로
+B1~B3 의 int8 경로를 연다 — `Int8TCSBlock` (int8 dw → int8 pw → [+skip] → BN → ReLU,
+XNOR 없음). 아래 절대 규칙 2 의 예외이며 **기본값·하드웨어 경로는 그대로 binary** 이고,
+이 경로는 export 하지 않는다(`emit.py`/`golden.py` 가 거부). int8 블록은 ReLU 를 내므로
+그 뒤 층은 전부 비이진이어야 한다(모델이 거부). 선행 결과: conv2 만 int8 인
+`bd_c2int8` 은 test +0.35pp(잡음) — `docs/conv2_int8_compare.md`.
+
 **절대 규칙:**
 1. **첫 층(Conv1)과 마지막 층(Conv4)은 절대 이진화하지 않는다.**
    입력이 이미 이진이므로 Conv1을 INT8로 두어 연속 특징 공간으로 펼쳐 손실을 완충한다.

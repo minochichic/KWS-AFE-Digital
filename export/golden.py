@@ -55,7 +55,8 @@ from export.pack import pack_pm1, to_hex_words
 from export.tailbuild import (TailSite, apply_site, int8_weights, tail_plan)
 from export.tailfmt import pooled_argmax
 from models.binary_ops import BinaryConv1d
-from models.binary_matchboxnet import BinaryMatchboxNet, BinaryTCSBlock, PlainStage
+from models.binary_matchboxnet import (BinaryMatchboxNet, BinaryTCSBlock,
+                                      Int8TCSBlock, PlainStage)
 from models.quant_ops import QuantConv1d
 
 
@@ -78,6 +79,11 @@ def layer_sites(model: BinaryMatchboxNet) -> List[Site]:
     sites: List[Site] = []
     for st in model.cfg.stages:
         mod = model.stages[st.name]
+        if isinstance(mod, Int8TCSBlock):
+            # would otherwise fall through both branches and vanish silently
+            raise NotImplementedError(
+                f"{st.name}: Int8TCSBlock is an accuracy-only ablation and "
+                f"has no golden vectors (no RTL for it)")
         if isinstance(mod, BinaryTCSBlock):
             skip = (f"{st.name}_skip" if isinstance(mod.skip, BinaryConv1d)
                     else None)

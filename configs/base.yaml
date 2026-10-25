@@ -146,7 +146,8 @@ model:
 
     - name: b1
       kernel: 13
-      precision: binary
+      precision: binary    # ablation only: int8 -> Int8TCSBlock (no XNOR). Then
+                           #   b2, b3, conv2 must be int8 too (CLAUDE.md 3.3, 2026-10-25)
       channels_mult: 1.0
       n_sub_blocks: 2
       separable: true

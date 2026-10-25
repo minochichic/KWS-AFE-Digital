@@ -19,7 +19,8 @@ from pathlib import Path
 import pytest
 import torch
 
-from models.binary_matchboxnet import BinaryMatchboxNet, BinaryTCSBlock
+from models.binary_matchboxnet import (BinaryMatchboxNet, BinaryTCSBlock,
+                                      Int8TCSBlock)
 from models.binary_ops import BinaryConv1d
 from models.quant_ops import QuantConv1d
 from train.config import load_config
@@ -103,9 +104,17 @@ def test_no_binary_conv_hides_in_first_or_last_stage() -> None:
 
 def test_tcs_block_rejects_non_binary_precision() -> None:
     cfg = load_config(BASE)
-    cfg.model.stages[1].precision = "int8"     # b1 -- validate() allows it,
+    cfg.model.stages[1].precision = "fixed"    # b1 -- validate() allows it,
     with pytest.raises(ValueError, match="binary"):
         BinaryMatchboxNet(cfg.model)           # the model must not.
+
+
+def test_binary_stage_after_int8_tcs_block_is_refused() -> None:
+    """b1 int8 ends in ReLU; b2 binary would XNOR multi-bit inputs."""
+    cfg = load_config(BASE)
+    cfg.model.stages[1].precision = "int8"     # b1 only
+    with pytest.raises(ValueError, match="int8 TCS block"):
+        BinaryMatchboxNet(cfg.model)
 
 
 # --------------------------------------------------------------------------- #
@@ -258,6 +267,43 @@ def test_conv2_int8_ablation_builds_and_runs() -> None:
     model = BinaryMatchboxNet(cfg.model)
     assert isinstance(model.stages["conv2"].conv, QuantConv1d)
     assert model(binary_image(2, 16, 128)).shape == (2, 12)
+
+
+NON_BINARY = {f"model.stages.{s}.precision": "int8"
+              for s in ("b1", "b2", "b3", "conv2")}
+
+
+def test_all_int8_ablation_has_no_xnor_anywhere() -> None:
+    """CLAUDE.md 3.3 결정 기록 2026-10-25: the no-XNOR comparison network."""
+    model = build(**NON_BINARY)
+    for name in ("b1", "b2", "b3"):
+        assert isinstance(model.stages[name], Int8TCSBlock)
+    assert not any(isinstance(m, BinaryConv1d) for m in model.modules())
+    # conv1 now feeds an int8 block, so it must hand over ReLU, not sign
+    assert model.stages["conv1"].activation == "relu"
+    assert model(binary_image(2, 16, 128)).shape == (2, 12)
+
+
+def test_all_int8_ablation_keeps_weight_count() -> None:
+    """Only bits per weight change -- the inner BN between dw and pw goes."""
+    def conv_weights(m):
+        return sum(c.weight.numel() for c in m.modules()
+                   if isinstance(c, torch.nn.Conv1d))
+    assert conv_weights(build(**NON_BINARY)) == conv_weights(build())
+
+
+def test_all_int8_ablation_gradients_reach_every_parameter() -> None:
+    model = build(**NON_BINARY)
+    model(binary_image(4, 16, 128)).sum().backward()
+    missing = [n for n, p in model.named_parameters()
+               if p.requires_grad and (p.grad is None or not p.grad.any())]
+    assert not missing, missing
+
+
+def test_int8_tcs_block_is_not_exportable() -> None:
+    from export.golden import layer_sites
+    with pytest.raises(NotImplementedError, match="Int8TCSBlock"):
+        layer_sites(build(**NON_BINARY))
 
 
 def test_conv2_default_is_separable_dense_is_fallback() -> None:

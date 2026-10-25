@@ -107,8 +107,9 @@ class BinaryTCSBlock(nn.Module):
         super().__init__()
         if stage.precision != "binary":
             raise ValueError(
-                f"stage {stage.name}: TCS residual blocks are binary-only "
-                f"(CLAUDE.md 2.2), got {stage.precision!r}")
+                f"stage {stage.name}: TCS residual blocks are binary "
+                f"(CLAUDE.md 3.3; int8 only as the Int8TCSBlock ablation), "
+                f"got {stage.precision!r}")
         if stage.stride != 1:
             raise ValueError(
                 f"stage {stage.name}: residual blocks require stride 1, "
@@ -144,6 +145,63 @@ class BinaryTCSBlock(nn.Module):
             if i == last:
                 acc = acc + res                  # integer + integer
             y = self.drop(sign_ste(bn(acc), _ACT_CLIP))
+        return y
+
+
+class Int8TCSBlock(nn.Module):
+    """ABLATION ONLY: the TCS block with no XNOR anywhere (CLAUDE.md 3.3,
+    결정 기록 2026-10-25). Answers "what does binarising B1-B3 cost?".
+
+        x -> int8 dw -> int8 pw -> [last: + skip] -> BN -> ReLU
+
+    The SAME skeleton as BinaryTCSBlock so that precision is the only thing
+    that changes: residual joins the pw output before the one BN, the skip is
+    identity or a 1x1 projection. What differs is forced by leaving ±1:
+    no inner BN->sign between dw and pw (it only existed so pw could XNOR --
+    conv2's int8 path drops it the same way), and ReLU instead of sign, so
+    activations are multi-bit. Every stage downstream must therefore be
+    non-binary too; BinaryMatchboxNet refuses a binary stage after this one.
+
+    Not exportable: export/emit.py and export/golden.py raise on it.
+    """
+
+    def __init__(self, in_ch: int, out_ch: int, stage: StageConfig,
+                 mcfg: ModelConfig) -> None:
+        super().__init__()
+        if stage.precision != "int8":
+            raise ValueError(f"stage {stage.name}: Int8TCSBlock needs "
+                             f"precision int8, got {stage.precision!r}")
+        if stage.stride != 1:
+            raise ValueError(
+                f"stage {stage.name}: residual blocks require stride 1, "
+                f"got {stage.stride}")
+
+        self.dws = nn.ModuleList()
+        self.pws = nn.ModuleList()
+        self.post_bns = nn.ModuleList()
+        ch = in_ch
+        for _ in range(stage.n_sub_blocks):
+            self.dws.append(_make_conv("int8", ch, ch, stage.kernel,
+                                       dilation=stage.dilation, groups=ch))
+            self.pws.append(_make_conv("int8", ch, out_ch, 1))
+            self.post_bns.append(nn.BatchNorm1d(out_ch, eps=mcfg.bn_eps,
+                                                momentum=mcfg.bn_momentum))
+            ch = out_ch
+
+        self.skip: nn.Module = (nn.Identity() if in_ch == out_ch else
+                                _make_conv("int8", in_ch, out_ch, 1))
+        self.drop = nn.Dropout(stage.dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        res = self.skip(x)
+        y = x
+        last = len(self.pws) - 1
+        for i, (dw, pw, bn) in enumerate(zip(self.dws, self.pws,
+                                             self.post_bns)):
+            acc = pw(dw(y))
+            if i == last:
+                acc = acc + res
+            y = self.drop(F.relu(bn(acc)))
         return y
 
 
@@ -218,12 +276,24 @@ class BinaryMatchboxNet(nn.Module):
         n = len(mcfg.stages)
         for i, st in enumerate(mcfg.stages):
             out_ch = st.out_channels(mcfg.C, mcfg.n_classes)
+            # An Int8TCSBlock ends in ReLU, and a binary conv does not binarise
+            # its own input (models/binary_ops.py), so a binary stage after it
+            # would train on multi-bit inputs with no error -- and no longer be
+            # an XNOR anything. Refuse rather than build that.
+            if (i > 0 and st.precision == "binary"
+                    and mcfg.stages[i - 1].residual
+                    and mcfg.stages[i - 1].precision == "int8"):
+                raise ValueError(
+                    f"stage {st.name} is binary but {mcfg.stages[i - 1].name} "
+                    f"is an int8 TCS block, which outputs ReLU, not ±1. "
+                    f"Make every stage after it non-binary.")
             if st.residual:
                 if not st.separable:
                     raise NotImplementedError(
                         f"stage {st.name}: residual is only supported on "
                         f"separable TCS blocks")
-                self.stages[st.name] = BinaryTCSBlock(ch, out_ch, st, mcfg)
+                block = Int8TCSBlock if st.precision == "int8" else BinaryTCSBlock
+                self.stages[st.name] = block(ch, out_ch, st, mcfg)
             else:
                 if i == n - 1:
                     act = "none"

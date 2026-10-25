@@ -51,7 +51,8 @@ from export.streaming_policy import add_streaming_policy
 from export.tailbuild import check_site, fixed_weights, tail_plan
 from export.tailfmt import FRAC_BITS
 from models.binary_ops import BinaryConv1d
-from models.binary_matchboxnet import BinaryMatchboxNet, BinaryTCSBlock, PlainStage
+from models.binary_matchboxnet import (BinaryMatchboxNet, BinaryTCSBlock,
+                                      Int8TCSBlock, PlainStage)
 from models.quant_ops import QuantConv1d
 
 
@@ -457,6 +458,10 @@ class Emitter:
         self._T = int(cfg.model.T)
         for st in self.model.cfg.stages:
             mod = self.model.stages[st.name]
+            if isinstance(mod, Int8TCSBlock):
+                raise NotImplementedError(
+                    f"{st.name}: Int8TCSBlock is an accuracy-only ablation "
+                    f"and is not exported (no RTL for it)")
             if isinstance(mod, BinaryTCSBlock):
                 self._tcs(st.name, mod)
             else:
