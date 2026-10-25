@@ -23,6 +23,7 @@
 | `bd_allint8` + dropout 0.1 | `bd_allint8_do10` | 0.8711 (마지막 0.8713) | ⚪ 잡음. **봉우리는 그대로, 봉우리 뒤 하락이 사라짐** (train 0.961) | 
 | `bd_allint8` + weight decay 1e-4 (AFE 제외) | `bd_allint8_wd1e4` | 0.8652 | ⚪ −0.5pp, 잡음 | 
 | `bd_allint8` + label smoothing 0.1 | `bd_allint8_ls01` | 0.8693 | ⚪ 잡음. val 만 올랐다 (+0.4pp) — test 로 안 옮겨감. §9.4 |
+| `bd_allint8` + **활성 8비트 (W8A8)** | `bd_allint8_a8` | **0.8668** | ⚪ −0.33pp, 잡음. **하드웨어 조건 int8 ≈ 0.867, 이진 대비 +4.2pp 확정.** §9.5 |
 | **`ste_clip` 1.0 → 0.003** | **`fx_ste0003`** | **0.817** | ✅ **+10.0pp. `bd_base` 전까지 최고** |
 | `ste_clip` 1.0 → 0.01 | `fx_ste001` / `_long` | 0.811 | ✅ +9.4pp. 150에폭도 **같은 값** |
 | `ste_clip` 1.0 → 0.03 | `fx_ste003` | 0.800 | ✅ +8.3pp |
