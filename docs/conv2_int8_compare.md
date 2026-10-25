@@ -31,6 +31,64 @@ python -m train.train --config configs/base.yaml --tag bd_c2int8 \
     model.stages.conv2.precision=int8
 ```
 
+### 1.1 전체 구조에서 어디가 다른가
+
+설계 원칙(CLAUDE.md §3.3)은 **"양 끝은 이진화하지 않고 가운데만 이진화한다"** 다.
+Cerutti Fig.5 에서 입력·끝단 이진화가 정확도를 급락시켰기 때문이다.
+
+| 층 | `bd_base` | `bd_c2int8` | 이렇게 정한 이유 |
+|---|---|---|---|
+| AFE | 16ch → ±1 프레임 | 같음 | |
+| conv1 | int8 × ±1 | 같음 | 첫 층 이진화 금지. 입력이 ±1 이라 int8 이어도 곱셈 없이 부호 누산 |
+| B1–B3 | XNOR-popcount | 같음 | 연산·파라미터 대부분 → 이진화 이득이 가장 큼 |
+| **conv2 dw** | **XNOR-popcount** | **int8 × ±1** | 기본은 이진, int8 / dense 는 사전 등록 ablation |
+| **conv2 pw** | **XNOR-popcount** | **int8 × 13비트 곱셈** | |
+| conv3 | int8 × 다비트 곱셈 | 같음 | |
+| conv4 → pool | 고정소수점 | 같음 | 마지막 층 이진화 금지 |
+
+`bd_base` 의 conv2 는 **dw·pw 둘 다 XNOR-popcount** 다 (`manifest.json`: `conv2_dw`
+= `binary_dw`, `conv2_pw` = `binary_pw`). 다만 이득의 크기가 다르다 (CLAUDE.md §3.4):
+
+- **dw** 는 채널을 섞지 않는다. 한 채널의 29탭이 32비트 워드 하나에 들어가 **채널당 1사이클**.
+  가장자리에서는 패딩 탭을 빼고 N 을 줄여야 해서 정렬 장치(`valid` 시프트)가 붙는다.
+- **pw** 는 64채널이 그대로 워드 2개라 **출력당 2사이클**. 비트 팩킹 이득이 여기서 가장 크다.
+
+이진 층은 모두 같은 방식으로 돈다: 내적 = `2·popcount(XNOR) − N`, BN 은 정수 문턱 하나로
+접고, 비교 결과(±1)가 다음 층 입력이다. 그래서 **"활성이 ±1 인 구간 = 비교만 하는 세계"**,
+그 아래가 **산술 세계**다.
+
+**RTL 배치** (`rtl/kws_top.v`):
+
+```
+u_c1   kws_conv1     conv1
+u_b1~3 kws_block     B1~B3  = kws_tcs_sub(kws_dw_conv + kws_pw_conv) x2 + skip
+u_c2   kws_dw_conv   conv2 dw                                   ── ±1 출력
+u_tail kws_tail      conv2 pw → affine → conv3 → affine → conv4 → affine → pool/argmax
+```
+
+`kws_tail` 이 **conv2 pw 부터** 시작하는 건 우연이 아니다. conv2 pw 는 **BN 이 문턱으로
+접히지 않고 살아남는 첫 층**이고(다음 층 conv3 가 int8 이라 sign 이 아니라 ReLU),
+그 지점이 비교가 끝나고 산술이 시작되는 경계다 (`kws_tail.v` 주석).
+
+**int8 로 바꾸면 이 경계가 한 층 위, conv2 dw 와 pw 사이로 올라간다:**
+
+```
+              bd_base                         bd_c2int8
+  B3      ±1 ─────────────               ±1 ─────────────
+  conv2 dw  XNOR → 문턱 → ±1                int8 × ±1 → 13비트 그대로   ← 경계
+  conv2 pw  XNOR → 정수 누산    ← 경계       (채널별 재스케일) → int8 × 13비트 곱셈
+  conv3     int8 곱셈                       int8 곱셈
+```
+
+- **dw**: 입력이 여전히 B3 의 ±1 이라 곱셈은 없다. 다만 dw→pw 사이 BN → sign 이 없으므로
+  출력이 **13비트 값 그대로** 나간다.
+- **pw**: 그 값을 받으므로 `kws_pw_conv`(XNOR) 가 아니라 `kws_dense_conv` 형 곱셈이 된다.
+- **사이**: dw 채널별 스케일이 달라 pw 앞에 채널별 재스케일(`kws_affine` 형)이 필요하다.
+
+즉 RTL 로는 **conv2 dw 가 이진 엔진 쪽(`u_c2`)에서 꼬리 쪽(`u_tail`)으로 넘어가는 구조
+변경**이다. 학습 쪽은 config 한 줄이지만 하드웨어에서는 경계선이 움직이는 일이고,
+`emit.py` 가 이 경우를 거부하는 것도 같은 이유다.
+
 ---
 
 ## 2. 정확도 (Performance ①)
