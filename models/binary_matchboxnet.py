@@ -49,7 +49,7 @@ from models.binary_ops import (
     same_padding,
     sign_ste,
 )
-from models.quant_ops import QuantConv1d
+from models.quant_ops import ActQuant, QuantConv1d
 from train.config import ModelConfig, StageConfig
 
 # STE clip for *activation* binarization. Pre-sign values are BN outputs
@@ -76,6 +76,13 @@ def _make_conv(precision: str, in_ch: int, out_ch: int, kernel: int,
         return nn.Conv1d(in_ch, out_ch, kernel, stride=stride, padding=pad,
                          dilation=dilation, groups=groups, bias=bias)
     raise ValueError(f"unknown precision {precision!r}")
+
+
+def _act_q(mcfg: ModelConfig, *, signed: bool) -> nn.Module:
+    """Activation fake-quant when model.act_bits > 0, else a no-op (so a
+    float run builds exactly the modules -- and state_dict -- it always did)."""
+    return (ActQuant(mcfg.act_bits, signed=signed) if mcfg.act_bits
+            else nn.Identity())
 
 
 class _TCSSub(nn.Module):
@@ -179,6 +186,8 @@ class Int8TCSBlock(nn.Module):
         self.dws = nn.ModuleList()
         self.pws = nn.ModuleList()
         self.post_bns = nn.ModuleList()
+        self.dw_qs = nn.ModuleList()      # raw dw output -> pw input (signed)
+        self.out_qs = nn.ModuleList()     # ReLU output -> next input
         ch = in_ch
         for _ in range(stage.n_sub_blocks):
             self.dws.append(_make_conv("int8", ch, ch, stage.kernel,
@@ -186,6 +195,8 @@ class Int8TCSBlock(nn.Module):
             self.pws.append(_make_conv("int8", ch, out_ch, 1))
             self.post_bns.append(nn.BatchNorm1d(out_ch, eps=mcfg.bn_eps,
                                                 momentum=mcfg.bn_momentum))
+            self.dw_qs.append(_act_q(mcfg, signed=True))
+            self.out_qs.append(_act_q(mcfg, signed=False))
             ch = out_ch
 
         self.skip: nn.Module = (nn.Identity() if in_ch == out_ch else
@@ -196,12 +207,12 @@ class Int8TCSBlock(nn.Module):
         res = self.skip(x)
         y = x
         last = len(self.pws) - 1
-        for i, (dw, pw, bn) in enumerate(zip(self.dws, self.pws,
-                                             self.post_bns)):
-            acc = pw(dw(y))
+        for i, (dw, pw, bn, dq, oq) in enumerate(zip(
+                self.dws, self.pws, self.post_bns, self.dw_qs, self.out_qs)):
+            acc = pw(dq(dw(y)))
             if i == last:
                 acc = acc + res
-            y = self.drop(F.relu(bn(acc)))
+            y = self.drop(oq(F.relu(bn(acc))))
         return y
 
 
@@ -246,12 +257,21 @@ class PlainStage(nn.Module):
                                   momentum=mcfg.bn_momentum))
         self.drop = nn.Dropout(stage.dropout)
         self._binary_sep = stage.separable and stage.precision == "binary"
+        # multi-bit tensors only: the raw output of a non-binary dw, and ReLU.
+        # sign outputs are already 1 bit; the final stage's logits stay float.
+        self.dw_q = (_act_q(mcfg, signed=True)
+                     if stage.separable and not self._binary_sep
+                     else nn.Identity())
+        self.act_q = (_act_q(mcfg, signed=False) if activation == "relu"
+                      else nn.Identity())
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.dw is not None:
             x = self.dw(x)
             if self._binary_sep:
                 x = sign_ste(self.dw_bn(x), _ACT_CLIP)
+            else:
+                x = self.dw_q(x)
             x = self.pw(x)
         else:
             x = self.conv(x)
@@ -259,7 +279,7 @@ class PlainStage(nn.Module):
         if self.activation == "sign":
             x = sign_ste(x, _ACT_CLIP)
         elif self.activation == "relu":
-            x = F.relu(x)
+            x = self.act_q(F.relu(x))
         return self.drop(x)
 
 

@@ -372,6 +372,11 @@ class ModelConfig:
     bn_eps: float = 1e-5
     final_pool: str = "avg"
 
+    # Activation fake-quant width for the NON-binary tensors (ReLU outputs and
+    # the raw dw output of a non-binary separable conv). 0 = float, which is
+    # what every recorded run used. Binary ±1 activations are untouched.
+    act_bits: int = 0
+
     stages: List[StageConfig] = field(default_factory=list)
 
 

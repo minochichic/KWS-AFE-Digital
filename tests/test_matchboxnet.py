@@ -306,6 +306,40 @@ def test_int8_tcs_block_is_not_exportable() -> None:
         layer_sites(build(**NON_BINARY))
 
 
+def test_float_runs_build_no_activation_quant() -> None:
+    """act_bits=0 (every recorded run) must build exactly what it always did."""
+    from models.quant_ops import ActQuant
+    for model in (build(), build(**NON_BINARY)):
+        assert not any(isinstance(m, ActQuant) for m in model.modules())
+
+
+def test_w8a8_quantizes_every_multibit_activation() -> None:
+    from models.quant_ops import ActQuant
+    model = build(**NON_BINARY, **{"model.act_bits": 8})
+    qs = [m for m in model.modules() if isinstance(m, ActQuant)]
+    # conv1 relu + 3 blocks x 2 subs x (dw, out) + conv2 (dw, relu) + conv3 relu
+    assert len(qs) == 1 + 12 + 2 + 1
+    x = binary_image(4, 16, 128)
+    model.train()(x)                                 # seed the running max
+    seen = []
+    for q in qs:
+        q.register_forward_hook(lambda m, i, o: seen.append((m, o.detach())))
+    model.eval()(x)
+    for m, o in seen:
+        step = (m.running_max / m.qmax).item()
+        levels = o / step
+        assert torch.allclose(levels, levels.round(), atol=1e-3)
+        assert levels.min() >= m.lo - 1e-3 and levels.max() <= m.qmax + 1e-3
+
+
+def test_w8a8_gradients_reach_every_parameter() -> None:
+    model = build(**NON_BINARY, **{"model.act_bits": 8})
+    model(binary_image(4, 16, 128)).sum().backward()
+    missing = [n for n, p in model.named_parameters()
+               if p.requires_grad and (p.grad is None or not p.grad.any())]
+    assert not missing, missing
+
+
 def test_conv2_default_is_separable_dense_is_fallback() -> None:
     """Decision 2026-07-21 (user-approved, see CLAUDE.md 2.2): conv2 defaults
     to separable (~96.5K total, matching the paper's 93K); dense (324K) stays

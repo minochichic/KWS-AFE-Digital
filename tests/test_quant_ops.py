@@ -74,3 +74,26 @@ def test_binary_input_is_fine_for_int8_conv() -> None:
     out = conv(x)
     assert out.shape == (2, 32, 64)
     assert out.unique().numel() > 2              # continuous feature space
+
+
+def test_act_quant_unsigned_and_signed_ranges() -> None:
+    from models.quant_ops import ActQuant
+    torch.manual_seed(0)
+    x = torch.randn(1000) * 3
+    u = ActQuant(8, signed=False).train()
+    out = u(x.relu())
+    assert out.min() >= 0 and out.unique().numel() <= 256
+    s = ActQuant(8, signed=True).train()
+    out = s(x)
+    assert out.unique().numel() <= 255 and out.min() < 0 < out.max()
+    assert torch.isclose(out.abs().max(), x.abs().max(), rtol=1e-2)
+
+
+def test_act_quant_scale_freezes_in_eval() -> None:
+    from models.quant_ops import ActQuant
+    q = ActQuant(8, signed=False).train()
+    q(torch.ones(10))
+    before = q.running_max.clone()
+    q.eval()(torch.full((10,), 100.0))
+    assert torch.equal(q.running_max, before)
+

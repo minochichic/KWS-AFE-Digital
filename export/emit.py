@@ -455,6 +455,11 @@ class Emitter:
         self._stage_in_binary = True          # a TCS block ends in sign()
 
     def run(self, cfg: Any, tag: str) -> Dict[str, Any]:
+        if getattr(cfg.model, "act_bits", 0):
+            raise NotImplementedError(
+                f"model.act_bits={cfg.model.act_bits}: activation fake-quant is "
+                f"an accuracy-only ablation; the RTL's formats come from "
+                f"export/tailfmt.py, not from it")
         self._T = int(cfg.model.T)
         for st in self.model.cfg.stages:
             mod = self.model.stages[st.name]

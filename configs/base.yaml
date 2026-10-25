@@ -134,6 +134,8 @@ model:
   bn_momentum: 0.1
   bn_eps: 1.0e-5
   final_pool: avg
+  act_bits: 0          # activation fake-quant for non-binary tensors. 0 = float
+                       #   (every recorded run). 8 = W8A8 comparison (ablation only)
 
   # MatchboxNet Table 1 topology, with CLAUDE.md 2.2 precision overlay.
   stages:
