@@ -75,7 +75,16 @@ class Trainer:
         self.afe = afe.to(self.device) if afe is not None else None
 
         params = list(self.model.parameters())
-        if self.afe is not None:
+        if self.afe is not None and cfg.train.weight_decay > 0:
+            # The AFE's parameters are comparator thresholds -- R7/R8 on the
+            # board, 0.003~0.19 under `fixed` -- not weights. Decaying them
+            # pulls the analog front end toward 0 instead of regularising the
+            # net. Their own group, no decay. Only when decay is on, so a
+            # decay-free run keeps ONE group and old checkpoints still resume.
+            params = [{"params": params},
+                      {"params": list(self.afe.parameters()),
+                       "weight_decay": 0.0}]
+        elif self.afe is not None:
             params += list(self.afe.parameters())
         self.optimizer = _make_optimizer(cfg, params)
         self.criterion = nn.CrossEntropyLoss(

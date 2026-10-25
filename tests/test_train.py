@@ -99,6 +99,23 @@ def test_unknown_optimizer_rejected(tmp_path) -> None:
         build_trainer(cfg)
 
 
+def test_weight_decay_spares_the_afe_thresholds(tmp_path) -> None:
+    """Thresholds are R7/R8, not weights: decay must not reach them."""
+    tr = build_trainer(tiny_cfg(tmp_path, **{"train.weight_decay": 1e-4}))
+    afe_ids = {id(p) for p in tr.afe.parameters()}
+    for g in tr.optimizer.param_groups:
+        if any(id(p) in afe_ids for p in g["params"]):
+            assert g["weight_decay"] == 0.0
+            assert all(id(p) in afe_ids for p in g["params"])
+        else:
+            assert g["weight_decay"] == 1e-4
+
+
+def test_no_weight_decay_keeps_one_param_group(tmp_path) -> None:
+    """Old checkpoints carry one group; a resume must still load them."""
+    assert len(build_trainer(tiny_cfg(tmp_path)).optimizer.param_groups) == 1
+
+
 def test_novograd_is_explicitly_deferred(tmp_path) -> None:
     """CLAUDE.md 3: NovoGrad only after Adam reproduces. Fail loudly, not
     silently fall back to Adam."""
