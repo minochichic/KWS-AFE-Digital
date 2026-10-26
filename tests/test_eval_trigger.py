@@ -146,3 +146,15 @@ def test_policy_mode_and_label():
     assert TriggerPolicy(pre=10).mode == "M2"
     assert TriggerPolicy(delta=3).mode == "M2"     # the background needs 10 ms wakes
     assert TriggerPolicy(k=1, delta=3, run=2, pre=10).label == "k1_d3_run2_pre10_all"
+
+
+def test_quiet_waves_levels():
+    torch = pytest.importorskip("torch")
+    from experiments.eval_trigger import quiet_waves
+    noise = [torch.randn(48000), torch.randn(20000) * 5]
+    z = quiet_waves(noise, 4, 16000, None, seed=0)
+    assert z.shape == (4, 16000) and not z.any()
+    q = quiet_waves(noise, 8, 16000, 0.01, seed=0)
+    rms = q.pow(2).mean(1).sqrt()
+    assert torch.allclose(rms, torch.full_like(rms, 0.01), rtol=1e-3)
+    assert torch.equal(q, quiet_waves(noise, 8, 16000, 0.01, seed=0))   # seeded
