@@ -24,7 +24,8 @@ A policy is
 
     k      channels that must be on in one frame for it to count as "sound"
     delta  >0: ALSO need `on >= background + delta`, background being an EMA of
-           the on-count over idle frames (1/32 per frame, ~0.3 s). Measured on
+           the on-count over idle frames (1/32 per frame, ~0.3 s), kept as an
+           integer x32 exactly as the firmware does. Measured on
            bd_base, GSC silence keeps 15-89% of the comparators on (ch15 89%),
            so an absolute k is satisfied by the noise itself; delta asks for
            a change instead. 0 = absolute k only.
@@ -36,6 +37,13 @@ A policy is
            left out of the counts (still in the model input). 1.0 = all.
 
 After a capture the scan resumes `busy` frames after its end (UART + FPGA).
+
+THE ARITHMETIC IS THE FIRMWARE'S, not an approximation of it: integer
+background `bg_q = 32 x mean`, `bg_q += on - (bg_q >> 5)`, a 32-frame warm-up
+that seeds it before anything can trigger. firmware/stm32_wake/core/wake_core.c
+is checked against simulate_triggers frame for frame
+(tests/test_firmware_core.py), so the numbers this tool reports are the
+numbers the shipped rule gets.
 
 Reported per policy: keyword recall, wrong keyword, false alarms per stream,
 and DUTY -- the fraction of silence-stream time spent capturing. Duty near 1
@@ -59,13 +67,14 @@ NATIVE = 100                 # frames in one capture (1 s at 10 ms)
 LEAD_MIN, LEAD_MAX = 50, 150
 TAIL = 200                   # silence after the target
 SCAN_AFTER = 100             # keep scanning 1 s past the target
-BG_ALPHA = 1.0 / 32
+BG_SHIFT = 5                 # background EMA weight 1/32, as a shift
+WARMUP = 1 << BG_SHIFT       # frames listened to before arming: bg_q = their sum
 
 
 @dataclass(frozen=True)
 class TriggerPolicy:
     k: int = 1
-    delta: float = 0.0
+    delta: int = 0
     run: int = 1
     pre: int = 0
     hot: float = 1.0
@@ -93,6 +102,12 @@ class TriggerPolicy:
         return f"k{self.k}{d}_run{self.run}_pre{self.pre}_{hot}"
 
 
+#: The rule the firmware ships (docs/wake_stm32_plan.md 2.3, decided 2026-10-26
+#: on val, confirmed once on test). firmware/stm32_wake/core/wake_cfg.h must
+#: carry the same numbers -- tests/test_firmware_core.py compares them.
+FIRMWARE_POLICY = TriggerPolicy(k=1, delta=4, run=1, pre=30)
+
+
 @dataclass(frozen=True)
 class Capture:
     onset: int               # first frame of the qualifying run
@@ -107,21 +122,28 @@ def hot_mask(silence_frames: np.ndarray, hot: float) -> np.ndarray:
 
 def simulate_triggers(stream: np.ndarray, policy: TriggerPolicy,
                       counted: np.ndarray, scan_end: int,
-                      bg0: Optional[float] = None) -> List[Capture]:
+                      bg_q0: Optional[int] = None) -> List[Capture]:
     """The firmware's IDLE -> CAPTURE -> busy loop over one [T, C] stream.
 
-    bg0 seeds the background on-count (the firmware has been listening before
-    the stream starts); None seeds it from the first frame."""
-    on = stream[:, counted].sum(axis=1).astype(float)
-    bg = float(on[0]) if bg0 is None else float(bg0)
+    bg_q0 None (the firmware): the first WARMUP frames only seed the
+    background, bg_q = sum of their on-counts = 32 x mean, and nothing can
+    trigger before frame WARMUP. An int: start at frame 0 with that bg_q
+    (unit tests that want an event near the start)."""
+    on = stream[:, counted].sum(axis=1).astype(np.int64)
+    if bg_q0 is None:
+        bg_q, t = int(on[:WARMUP].sum()), WARMUP     # WARMUP == 32: sum = 32 x mean
+    else:
+        bg_q, t = int(bg_q0), 0
+    d_q = policy.delta << BG_SHIFT
     caps: List[Capture] = []
-    t, run = 0, 0
+    run = 0
     while t < min(scan_end, len(stream)):
-        sound = on[t] >= policy.k and (policy.delta == 0
-                                       or on[t] >= bg + policy.delta)
+        o = int(on[t])
+        sound = o >= policy.k and (policy.delta == 0
+                                   or (o << BG_SHIFT) >= bg_q + d_q)
         run = run + 1 if sound else 0
         if not sound:
-            bg += BG_ALPHA * (on[t] - bg)    # learn the floor only from quiet
+            bg_q += o - (bg_q >> BG_SHIFT)   # learn the floor only from quiet
         if run >= policy.run:
             onset = t - policy.run + 1
             start = max(0, onset - policy.pre)
@@ -141,9 +163,9 @@ def overlap(a0: int, a1: int, b0: int, b1: int) -> int:
 
 def score_case(caps: Sequence[Capture], preds: Sequence[int], label: int,
                word: Tuple[int, int], n_keywords: int,
-               scanned: int) -> Dict[str, float]:
+               scanned: int, armed: int = 0) -> Dict[str, float]:
     """One stream. `word` is the keyword's frame span (or the target clip);
-    `scanned` is how many frames the stream was watched for (duty's base)."""
+    duty is measured over [armed, scanned) -- the warm-up is not watching."""
     is_kw = label < n_keywords
     hit = wrong = fa = 0
     cover: Optional[float] = None
@@ -160,7 +182,7 @@ def score_case(caps: Sequence[Capture], preds: Sequence[int], label: int,
             fa += 1
     # union, not sum: with pre > busy a capture reaches back into the previous
     # one (the ring still holds those frames), and summing counted them twice
-    awake, upto = 0, 0
+    awake, upto = 0, armed
     for c in sorted(caps, key=lambda c: c.start):
         lo, hi = max(c.start, upto), min(c.end, scanned)
         if hi > lo:
@@ -168,7 +190,7 @@ def score_case(caps: Sequence[Capture], preds: Sequence[int], label: int,
         upto = max(upto, c.end)
     return {"keyword": int(is_kw), "hit": hit, "wrong": wrong, "fa": fa,
             "wakes": len(caps), "cover": cover,
-            "duty": awake / max(1, scanned)}
+            "duty": awake / max(1, scanned - armed)}
 
 
 def summarize(rows: Sequence[Dict[str, float]],
@@ -233,7 +255,7 @@ def main() -> None:
                          "relative to the median keyword-clip RMS, or 'gsc' (the "
                          "_silence_ class as is)")
     ap.add_argument("--k", type=int, nargs="+", default=[1, 4, 8])
-    ap.add_argument("--delta", type=float, nargs="+", default=[0, 2, 3, 4, 6])
+    ap.add_argument("--delta", type=int, nargs="+", default=[0, 2, 3, 4, 6])
     ap.add_argument("--run", type=int, nargs="+", default=[1, 3])
     ap.add_argument("--pre", type=int, nargs="+", default=[0, 10, 20, 30])
     ap.add_argument("--hot", type=float, nargs="+", default=[1.0])
@@ -318,18 +340,21 @@ def main() -> None:
               f"| firing " + " ".join(f"{r:.2f}" for r in frames.mean(axis=0)))
 
         rng = np.random.default_rng(args.seed + 1)
-        streams, words, scans, quiet, labs, bg0s = [], [], [], [], [], []
+        # every stream opens with WARMUP frames of the same quiet: the firmware
+        # listens that long before it arms, and its ring is full of them
+        streams, words, scans, quiet, labs = [], [], [], [], []
         for i in targets:
             q = rng.choice(len(pool), size=5, replace=True)
             lead = int(rng.integers(LEAD_MIN, LEAD_MAX + 1))
             before = np.concatenate([pool[q[0]], pool[q[1]]], axis=1)[:, -lead:]
-            streams.append(np.concatenate([before, bits[i], pool[q[2]], pool[q[3]]], axis=1).T)
-            bg0s.append(float(pool[q[4]].sum(axis=0).mean()))
+            streams.append(np.concatenate([pool[q[4]][:, :WARMUP], before, bits[i],
+                                           pool[q[2]], pool[q[3]]], axis=1).T)
+            a0 = WARMUP + lead
             if labels[i] < n_kw and int(wb[i]) > int(wa[i]):
-                words.append((lead + int(wa[i]) // FRAME, lead + int(wb[i]) // FRAME))
+                words.append((a0 + int(wa[i]) // FRAME, a0 + int(wb[i]) // FRAME))
             else:
-                words.append((lead, lead + NATIVE))
-            scans.append(lead + NATIVE + SCAN_AFTER)
+                words.append((a0, a0 + NATIVE))
+            scans.append(a0 + NATIVE + SCAN_AFTER)
             quiet.append(False)
             labs.append(int(labels[i]))
         for _ in range(n_quiet_streams):                         # nothing said
@@ -337,10 +362,10 @@ def main() -> None:
             lead = int(rng.integers(LEAD_MIN, LEAD_MAX + 1))
             # lead + 300 frames, and lead can be 150: five clips, not four
             s5 = np.concatenate([pool[j] for j in q[:5]], axis=1)[:, :lead + 3 * NATIVE]
-            streams.append(s5.T)
-            bg0s.append(float(pool[q[5]].sum(axis=0).mean()))
-            words.append((lead, lead + NATIVE))
-            scans.append(lead + NATIVE + SCAN_AFTER)
+            streams.append(np.concatenate([pool[q[5]][:, :WARMUP], s5], axis=1).T)
+            a0 = WARMUP + lead
+            words.append((a0, a0 + NATIVE))
+            scans.append(a0 + NATIVE + SCAN_AFTER)
             quiet.append(True)
             labs.append(SILENCE_INDEX)
 
@@ -348,8 +373,8 @@ def main() -> None:
         plan = []
         for pol in policies:
             counted = hot_mask(frames, pol.hot)
-            caps = [simulate_triggers(st, pol, counted, sc, b0)
-                    for st, sc, b0 in zip(streams, scans, bg0s)]
+            caps = [simulate_triggers(st, pol, counted, sc)
+                    for st, sc in zip(streams, scans)]
             plan.append((pol, counted, caps))
             for i, cs in enumerate(caps):
                 for c in cs:
@@ -364,7 +389,7 @@ def main() -> None:
         cond_rows = []
         for pol, counted, caps in plan:
             rows = [score_case(cs, [cache[(i, c.start)] for c in cs], labs[i],
-                               words[i], n_kw, scans[i])
+                               words[i], n_kw, scans[i], armed=WARMUP)
                     for i, cs in enumerate(caps)]
             cond_rows.append({"noise": cond, **asdict(pol), "mode": pol.mode,
                               "label": pol.label,

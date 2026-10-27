@@ -117,3 +117,6 @@ hs_err_pid*
 *.swo
 *~
 .DS_Store
+
+# STM32 펌웨어 생성물 (export/wake_replay.py)
+firmware/stm32_wake/gen/

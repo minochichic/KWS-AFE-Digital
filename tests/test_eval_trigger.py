@@ -20,8 +20,10 @@ def stream(frames: int = 400) -> np.ndarray:
     return np.zeros((frames, 16), dtype=np.uint8)
 
 
-def sim(s, pol, counted=ALL, bg0=None):
-    return simulate_triggers(s, pol, counted, END, bg0)
+def sim(s, pol, counted=ALL, bg_q0=0):
+    """bg_q0=0: no warm-up, so events near frame 0 can trigger (the firmware's
+    32-frame warm-up has its own test below)."""
+    return simulate_triggers(s, pol, counted, END, bg_q0)
 
 
 def test_silence_never_triggers():
@@ -93,7 +95,7 @@ def test_delta_ignores_a_steady_noise_floor_and_fires_on_a_rise():
     s[:, :6] = 1                         # floor: 6 of 16 on, every frame
     s[200:210, 6:10] = 1                 # word: 4 more come on
     assert sim(s, TriggerPolicy(k=1))[0].onset == 0          # absolute: fires at once
-    caps = sim(s, TriggerPolicy(k=1, delta=3), bg0=6.0)
+    caps = sim(s, TriggerPolicy(k=1, delta=3), bg_q0=6 * 32)
     assert [c.onset for c in caps] == [200]
 
 
@@ -101,7 +103,7 @@ def test_background_tracks_only_quiet_frames():
     s = stream()
     s[:, :2] = 1
     s[100:400, 2:12] = 1                 # sustained loud section
-    caps = sim(s, TriggerPolicy(k=1, delta=4, busy=0), bg0=2.0)
+    caps = sim(s, TriggerPolicy(k=1, delta=4, busy=0), bg_q0=2 * 32)
     assert caps[0].onset == 100          # the rise is caught, not learned away
 
 
@@ -158,3 +160,28 @@ def test_quiet_waves_levels():
     rms = q.pow(2).mean(1).sqrt()
     assert torch.allclose(rms, torch.full_like(rms, 0.01), rtol=1e-3)
     assert torch.equal(q, quiet_waves(noise, 8, 16000, 0.01, seed=0))   # seeded
+
+
+def test_warmup_seeds_the_background_and_blocks_early_triggers():
+    s = stream()
+    s[:, :6] = 1                         # noise floor from the first frame
+    s[10, 6:12] = 1                      # a burst inside the warm-up: ignored
+    s[200, 6:12] = 1
+    caps = simulate_triggers(s, TriggerPolicy(k=1, delta=4), ALL, END)
+    assert [c.onset for c in caps] == [200]
+
+
+def test_background_is_integer_x32():
+    """bg_q is the firmware's register: 32 x mean, updated with a shift."""
+    s = stream()
+    s[:, :3] = 1                         # floor 3 -> bg_q = 96 after warm-up
+    s[100, 3:7] = 1                      # 7 on: 7*32 = 224 >= 96 + 4*32 = 224
+    s[150, 3:6] = 1                      # 6 on: 192 < 224 -> not sound
+    caps = simulate_triggers(s, TriggerPolicy(k=1, delta=4, busy=0), ALL, END)
+    assert [c.onset for c in caps] == [100]
+
+
+def test_duty_skips_the_warmup():
+    r = score_case([Capture(40, 40, 140)], [11], 11, (100, 200), 10,
+                   scanned=232, armed=32)
+    assert r["duty"] == pytest.approx(100 / 200)
