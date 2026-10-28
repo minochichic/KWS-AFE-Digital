@@ -13,8 +13,15 @@ core/        하드웨어를 모르는 C. Mac 에서 컴파일·검증된 그대
   link.*       CRC-8, 203 바이트 패킷, 8 바이트 결과 해석
 host/        Mac 테스트용 구동기 (보드에는 안 들어감)
 gen/         생성물 (커밋 안 함) -- replay_clips.h
-board.c      ← 보드가 오면 쓴다: LPTIM·EXTI·GPIO·UART·WAKE·저전력
+kws_wake/    CubeIDE 프로젝트 (kws_wake.ioc). 보드부는 Core/Src/board.c,
+             core/ 는 Core/Src/wake_core_link.c 가 #include 한다 (복사하지 않음)
 ```
+
+**보드 확인 (2026-10-28, T470)**: SWD 는 `mode=UR` 로만 붙는다 (출하 펌웨어 탓으로 추정).
+플래시 후 `board_stats.ticks` 가 3 s 에 +323 -- LSE·LPTIM1 10 ms 박자 정상. AFE 미연결이라
+`last_frame` = 0xFFFE (떠 있는 입력), 배경이 그 값을 배워 트리거 없음 -- 정상.
+재생 빌드는 프로젝트 설정의 심볼에 `WAKE_REPLAY` 를 더하고 `python -m export.wake_replay` 먼저.
+Stop 2 는 아직 (지금은 `__WFI`) -- 단계 5.
 
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
