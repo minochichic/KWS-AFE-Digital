@@ -197,7 +197,7 @@ FPGA → STM32   0x5A | class_idx | keyword_idx | margin (2 바이트) | CRC-8
 
 ## 6. 열린 질문
 
-1. J4 → J6 EXT 핀 (사용자: 나중에).
+1. ~~J4 → J6 EXT 핀~~ — 확정 (2026-10-28): J4.2 UART_TX → J6 핀 30 (EXT27, `uart_rx`), J4.1 UART_RX ← J6 핀 31 (EXT28, `uart_tx`), J4.3 WAKE_FPGA → J6 핀 32 (EXT29, `wake`), J4.4 GND — J6 핀 49/50. STM32 보드 JP1·JP2 = 시프터 쪽, JP3 = 3V3. `rtl/constraints/kws_top.xdc`.
 2. ~~AFE 기판이 비교기를 J5 와 J6 에 동시에 내보낼 수 있나?~~ — 아마 안 된다 (사용자). 단계 4 를 따로 캡처 + 통계 비교로 바꿨다.
 3. M2 의 링 길이·트리거 조건(켜진 채널 수 k, 연속 프레임 수) — 단계 1 에서 정한다.
 4. 결과를 어디에 표시하나 — FPGA 키트 LED/7-세그먼트가 가장 쉽다 (STM32 보드에는 LED 없음).

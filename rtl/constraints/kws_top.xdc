@@ -65,6 +65,15 @@ if {[llength [get_ports -quiet {cmp[*]}]] > 0} {
     set_false_path -from [get_ports {cmp[*]}]
 }
 
+# --- 웨이크 링크 (kws_wake_top 을 합성할 때) ---------------------------------- #
+# uart_rx / wake 는 STM32 에서 오는 비동기 신호다. kws_uart_rx 와 kws_wake_top 이
+# 2단 FF 로 받으므로 cmp 와 같은 이유로 입력 경로를 뺀다. uart_tx 는 STM32 가
+# 비트당 434 클럭에 한 번 샘플하므로 출력 지연을 맞출 대상이 없다.
+foreach _p {uart_rx wake} {
+    if {[llength [get_ports -quiet $_p]] > 0} { set_false_path -from [get_ports $_p] }
+}
+if {[llength [get_ports -quiet uart_tx]] > 0} { set_false_path -to [get_ports uart_tx] }
+
 # 2단 동기화기 자체에는 ASYNC_REG 가 필요하다 -- 두 FF 를 같은 슬라이스에 묶어
 # 메타스테이빌리티 해소 시간을 벌어준다. RTL 에 속성이 없으면 여기서 건다.
 # 위와 같은 이유로 존재를 먼저 확인한다 (frame_ctrl 이 없으면 동기화기도 없다).
@@ -202,6 +211,27 @@ for {set b 0} {$b < 4} {incr b} {
     incr n [kws_pin "class_idx\[$b\]" [lindex $EXT [expr {19 + $b}]] $IOSTD]
 }
 incr n [kws_pin busy [lindex $EXT 23] $IOSTD]
+
+# 웨이크 링크 -- STM32 보드 J4 와 점퍼선 4가닥 (docs/wake_stm32_plan.md, ICD 7.2).
+# 2026-10-28 사용자 확정. 이름이 STM32 기준이라 엇갈려 보이는 것에 주의:
+#
+#   STM32 J4.2 UART_TX   ->  J6 핀 30 (EXT27)  ->  uart_rx  (FPGA 입력)
+#   STM32 J4.1 UART_RX   <-  J6 핀 31 (EXT28)  <-  uart_tx  (FPGA 출력)
+#   STM32 J4.3 WAKE_FPGA ->  J6 핀 32 (EXT29)  ->  wake     (FPGA 입력)
+#   STM32 J4.4 GND       --  J6 핀 49 / 50
+#
+# EXT27~29 는 cmp(EXT30~45) 바로 옆, 같은 bank 13 (VCCO 3.308 V 실측).
+# STM32 보드 JP3 = 3V3 이어야 시프터 출력이 LVCMOS33 이다.
+# STM32 보드 전원이 꺼져 있으면 TXU0304 출력이 뜰 수 있으므로 내부 저항으로
+# 쉬는 값을 만든다: uart_rx 는 UART 쉬는 상태 High, wake 는 Low.
+set WAKE_EXT0 27
+incr n [kws_pin uart_rx [lindex $EXT [expr {$WAKE_EXT0 + 0}]] $IOSTD]
+incr n [kws_pin uart_tx [lindex $EXT [expr {$WAKE_EXT0 + 1}]] $IOSTD]
+incr n [kws_pin wake    [lindex $EXT [expr {$WAKE_EXT0 + 2}]] $IOSTD]
+kws_pull uart_rx PULLUP
+kws_pull wake    PULLDOWN
+# 링크 오류 표시(sticky). LED 핀표가 오면 옮긴다.
+incr n [kws_pin link_err [lindex $EXT 24] $IOSTD]
 
 # 클럭. MAIN_CLOCK1 = B6. 넷 중 어느 것이 실제로 우리 모듈에 연결되는지는 매뉴얼에
 # 없다 -- M8 / M15 / P15 가 대안이다.
