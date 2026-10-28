@@ -21,6 +21,7 @@ extern LPTIM_HandleTypeDef hlptim1;
 extern UART_HandleTypeDef huart2;
 
 volatile board_stats_t board_stats;
+volatile uint32_t board_inject;
 
 static wake_t w;
 static volatile uint8_t clip_pending;   /* ISR 가 세우고 board_poll 이 내린다 */
@@ -94,6 +95,8 @@ static void enter_stop2(void)
 void board_init(void)
 {
   memset((void *)&board_stats, 0, sizeof(board_stats));
+  board_stats.magic = BOARD_STATS_MAGIC;
+  board_inject = 0;
   wake_init(&w);
 
 #if BOARD_TEST
@@ -126,6 +129,15 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
   uint16_t frame = (uint16_t)(prev_idr | pr);
   prev_idr = idr;
 
+#if BOARD_TEST
+  if (board_inject != 0)                         /* 디버거가 넣은 가짜 칸 (한 번만) */
+  {
+    frame |= (uint16_t)board_inject;
+    board_inject = 0;
+    board_stats.injected++;
+  }
+#endif
+
   board_stats.ticks++;
   board_stats.last_frame = frame;
   board_stats.edges_or |= pr;
@@ -148,6 +160,8 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
   {
     clip_pending = 1;
   }
+  board_stats.state = w.state;
+  board_stats.bg_q = w.bg_q;
 }
 
 void board_poll(void)

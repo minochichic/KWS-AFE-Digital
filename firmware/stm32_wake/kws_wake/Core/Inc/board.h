@@ -43,13 +43,21 @@ typedef struct {
   int32_t  last_margin;
   uint16_t edges_or;     /* 지금까지 에지가 한 번이라도 온 채널 (EXTI pending 누적 OR) */
   uint8_t  max_on;       /* 칸 하나에서 켜진 채널 수의 최댓값 */
-  uint8_t  pad;
+  uint8_t  state;        /* wake_core 상태 사본: 0 WARMUP, 1 IDLE, 2 CAPTURE, 3 HOLD */
+  int32_t  bg_q;         /* wake_core 배경 사본 (= 배경 채널 수 x 32) */
+  uint32_t injected;     /* board_inject 를 칸에 넣은 횟수 */
 #if BOARD_TEST
   uint16_t edges[16];    /* 채널별 에지가 잡힌 칸 수 */
 #endif
+  uint32_t magic;        /* BOARD_STATS_MAGIC. SWD 읽기가 중간에 Stop 2 에 걸려 0 으로 잘렸는지 판별 */
 } board_stats_t;
 
+#define BOARD_STATS_MAGIC    0xB0A2D57Au
+
 extern volatile board_stats_t board_stats;
+
+/* 테스트 빌드: SWD 로 0 아닌 마스크를 쓰면 다음 칸 하나에 OR 된다 (tools/read_stats.ps1 -Inject) */
+extern volatile uint32_t board_inject;
 
 void board_init(void);
 void board_poll(void);
