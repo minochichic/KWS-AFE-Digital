@@ -70,10 +70,39 @@ static int send_clip(const uint16_t *frames, link_result_t *r)
   return rc;
 }
 
+/*
+ * 다음 박자까지 Stop 2. LPTIM1 은 LSE 로 계속 세고 그 인터럽트가 깨운다.
+ * EXTI 는 NVIC 가 꺼져 있어 깨우지 않는다 -- 에지는 pending 비트에 남아 다음 박자가 읽는다.
+ * 인터럽트를 막은 채 clip_pending 을 보고 들어가야 그 사이 박자를 놓치지 않는다
+ * (PRIMASK 가 서 있어도 대기 중인 인터럽트는 WFI 를 깨운다).
+ */
+#ifndef WAKE_REPLAY
+static void enter_stop2(void)
+{
+  __disable_irq();
+  if (!clip_pending)
+  {
+    HAL_SuspendTick();
+    board_stats.stops++;
+    HAL_PWREx_EnterSTOP2Mode(PWR_STOPENTRY_WFI);
+    HAL_ResumeTick();
+  }
+  __enable_irq();                                /* 여기서 LPTIM ISR 이 돈다 */
+}
+#endif
+
 void board_init(void)
 {
   memset((void *)&board_stats, 0, sizeof(board_stats));
   wake_init(&w);
+
+#if BOARD_TEST
+  GPIOB->PUPDR = 0xAAAAAAAAu;                    /* 16 핀 모두 풀다운 (10b) */
+  HAL_DBGMCU_EnableDBGStopMode();
+#endif
+
+  /* Stop 2 에서 깨면 MSI (4 MHz, 들어가기 전 범위 그대로) -- SystemClock_Config 재호출 불필요 */
+  __HAL_RCC_WAKEUPSTOP_CLK_CONFIG(RCC_STOP_WAKEUPCLOCK_MSI);
 
   /* 리셋 전에 래치된 에지는 버린다 */
   EXTI->PR1 = 0xFFFFu;
@@ -99,6 +128,21 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
 
   board_stats.ticks++;
   board_stats.last_frame = frame;
+  board_stats.edges_or |= pr;
+  uint8_t on = wake_popcount16(frame);
+  if (on > board_stats.max_on)
+  {
+    board_stats.max_on = on;
+  }
+#if BOARD_TEST
+  for (uint32_t k = 0; pr != 0; k++, pr >>= 1)
+  {
+    if ((pr & 1u) && board_stats.edges[k] != 0xFFFF)
+    {
+      board_stats.edges[k]++;
+    }
+  }
+#endif
 
   if (wake_tick(&w, frame) == WAKE_CLIP_READY)
   {
@@ -135,6 +179,11 @@ void board_poll(void)
     __enable_irq();
     return;
   }
-  __WFI();                                       /* 다음 박자까지 (Stop 2 는 단계 5) */
+  enter_stop2();
+#if BOARD_TEST
+  /* Stop 2 중에는 DBG_STOP 을 켜도 SWD 로 RAM 이 0 으로 읽힌다 (실측). 깨어 있는 창을
+   * 넓혀 tools/read_stats.ps1 이 걸리게 한다. 박자는 LPTIM 이 정하므로 판단엔 영향 없음. */
+  HAL_Delay(BOARD_TEST_AWAKE_MS);
+#endif
 #endif
 }

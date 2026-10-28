@@ -21,7 +21,11 @@ kws_wake/    CubeIDE 프로젝트 (kws_wake.ioc). 보드부는 Core/Src/board.c,
 플래시 후 `board_stats.ticks` 가 3 s 에 +323 -- LSE·LPTIM1 10 ms 박자 정상. AFE 미연결이라
 `last_frame` = 0xFFFE (떠 있는 입력), 배경이 그 값을 배워 트리거 없음 -- 정상.
 재생 빌드는 프로젝트 설정의 심볼에 `WAKE_REPLAY` 를 더하고 `python -m export.wake_replay` 먼저.
-Stop 2 는 아직 (지금은 `__WFI`) -- 단계 5.
+**Stop 2 (2026-10-28)**: 박자 100 Hz, `stops == ticks` (박자마다 한 번 들어감). `BOARD_TEST=1`
+(board.h, 지금 기본값)은 PB 풀다운 + DBG_STOP + 깨어날 때 3 ms 대기 -- Stop 2 중엔 DBG_STOP 을
+켜도 SWD 로 RAM 이 0 으로 읽혀서다. 상태는 `tools\read_stats.ps1 [-Watch 2]` 로 본다.
+풀다운을 켜니 `last_frame` 0xFFFE → 0x0000: 그동안 1 은 떠 있는 입력이었다.
+전력을 잴 때와 AFE 를 붙일 때는 `BOARD_TEST=0`.
 
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
