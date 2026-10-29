@@ -53,6 +53,12 @@ WAKE 를 올리고 보내면 20/20 맞고, 안 올리면(대조군) 0/20 -- WAKE
 (`tools/replay_report.py`, Vivado 동봉 Python). 골든 앞 600개는 right 396 + go 204 뿐이라 보고서의
 라벨 정확도(81.3%)는 12-class test 정확도가 아니다.
 
+**트리거 → FPGA (2026-10-29): 일반 빌드 `-Inject 0xFFFF` 10/10 `ok`.** 처음엔 3번 중 2번 실패했다.
+`uart_err` 로 보니 `ErrorCode 0x08`(오버런), 전송 끝에서 57 ms -- FPGA 답이 도착한 순간이다. 결과를
+폴링(`HAL_UART_Receive`)으로 받는 동안 10 ms 박자 ISR 이 끼어 바이트(87 us 간격)를 놓쳤다. 재생 빌드는
+ISR 이 박자만 세서 안 드러났다. 고침: `HAL_UART_Receive_IT` 로 받고 LPTIM1 우선순위를 1 로 내려 USART2(0)
+가 끼어들 수 있게 했다. 재생 600/600 과 WAKE 20/0 회귀 확인. 트리거당 깨어 있는 시간 약 9 박자.
+
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
 보드 쪽(`board.c`)은 칸을 만들어 넣고, 완성되면 보내고, 답을 받으면 `wake_sent(&w)`.

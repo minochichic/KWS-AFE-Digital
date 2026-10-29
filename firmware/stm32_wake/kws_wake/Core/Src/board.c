@@ -37,7 +37,7 @@ static uint8_t pkt[LINK_PACKET_BYTES(WAKE_NATIVE)];
  * use_wake = 0 은 WAKE 테스트의 대조군 전용: WAKE 를 안 올리고 보낸다. */
 static int send_clip_ex(const uint16_t *frames, link_result_t *r, int use_wake)
 {
-  uint8_t res[LINK_RESULT_BYTES];
+  static uint8_t res[LINK_RESULT_BYTES];
   size_t n = link_frame_packet(frames, WAKE_NATIVE, pkt);
   int rc;
 
@@ -45,15 +45,27 @@ static int send_clip_ex(const uint16_t *frames, link_result_t *r, int use_wake)
   __HAL_UART_SEND_REQ(&huart2, UART_RXDATA_FLUSH_REQUEST);
   __HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF | UART_CLEAR_FEF | UART_CLEAR_NEF);
 
+  /* 결과는 인터럽트로 받는다. 폴링(HAL_UART_Receive)이면 그 사이 10 ms 박자 ISR 이 끼어
+   * 87 us 마다 오는 바이트를 놓쳐 오버런이 났다 -- 일반 빌드에서 매번 (2026-10-29 실측,
+   * ErrorCode 0x08, 전송 끝 57 ms = FPGA 답 도착 시점). USART2 는 LPTIM 보다 우선순위가 높다. */
+  HAL_UART_Receive_IT(&huart2, res, sizeof(res));
+
   if (use_wake)
   {
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);    /* 상승 에지 = FPGA 수신기 초기화 */
   }
   HAL_UART_Transmit(&huart2, pkt, (uint16_t)n, BOARD_TX_MS);
 
-  if (HAL_UART_Receive(&huart2, res, sizeof(res), BOARD_RESULT_MS) != HAL_OK)
+  uint32_t t_rx = HAL_GetTick();
+  while (huart2.RxState != HAL_UART_STATE_READY && HAL_GetTick() - t_rx < BOARD_RESULT_MS)
+  {
+  }
+  if (huart2.RxState != HAL_UART_STATE_READY || huart2.ErrorCode != HAL_UART_ERROR_NONE)
   {
     rc = 1;
+    board_stats.uart_err = huart2.ErrorCode | ((uint32_t)huart2.RxState << 16);
+    board_stats.rx_fail_ms = HAL_GetTick() - t_rx;
+    HAL_UART_AbortReceive(&huart2);
   }
   else
   {
@@ -170,6 +182,9 @@ void board_init(void)
   /* 리셋 전에 래치된 에지는 버린다 */
   EXTI->PR1 = 0xFFFFu;
   prev_idr = (uint16_t)GPIOB->IDR;
+
+  /* UART 수신이 박자 ISR 에 밀리지 않게: USART2 0 (CubeMX), LPTIM1 1 */
+  HAL_NVIC_SetPriority(LPTIM1_IRQn, 1, 0);
 
   /* 재생 빌드도 박자는 돌린다 -- ticks 가 올라가야 read_stats.ps1 이 살아 있다고 본다 */
   if (HAL_LPTIM_Counter_Start_IT(&hlptim1, BOARD_LPTIM_ARR) != HAL_OK)

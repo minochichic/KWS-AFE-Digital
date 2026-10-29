@@ -72,8 +72,11 @@ function Show($w) {
   if ($w[15] -ne 0) {
     $s += "`n  wake test: {0} trials, with WAKE {1} ok, without WAKE {2} ok" -f $w[15], $w[16], $w[17]
   }
-  if ($w.Count -ge 27) {
-    $e = @(); for ($i = 18; $i -lt 26; $i++) { $e += ($w[$i] -band 0xFFFF); $e += ($w[$i] -shr 16) }
+  if ($w[18] -ne 0) {
+    $s += "`n  last rx failure: ErrorCode 0x{0:X2} (HAL {1}) after {2} ms" -f ($w[18] -band 0xFFFF), ($w[18] -shr 16), $w[19]
+  }
+  if ($w.Count -ge 29) {
+    $e = @(); for ($i = 20; $i -lt 28; $i++) { $e += ($w[$i] -band 0xFFFF); $e += ($w[$i] -shr 16) }
     $s += "`n  edges_or=0x{0:X4} edges ch0..15 = [{1}]" -f ($w[9] -band 0xFFFF), ($e -join ',')
   }
   $s

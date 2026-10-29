@@ -52,6 +52,8 @@ typedef struct {
   uint32_t wake_test_n;       /* WAKE 테스트: 시행 수 (각 시행 = WAKE 있음 1 + 없음 1) */
   uint32_t wake_with_ok;      /* 반쪽 패킷 뒤 WAKE 를 올리고 보낸 클립이 맞은 수 (기대: 전부) */
   uint32_t wake_without_ok;   /* 반쪽 패킷 뒤 WAKE 없이 보낸 클립이 맞은 수 (기대: 0 -- 대조군) */
+  uint32_t uart_err;          /* 마지막 실패 수신의 huart2.ErrorCode | HAL 반환값 << 16 (0x08 = 오버런) */
+  uint32_t rx_fail_ms;        /* 마지막 실패 수신이 전송 끝에서 몇 ms 만에 끝났나 (200 근처 = 진짜 타임아웃) */
 #if BOARD_TEST
   uint16_t edges[16];    /* 채널별 에지가 잡힌 칸 수 */
 #endif
