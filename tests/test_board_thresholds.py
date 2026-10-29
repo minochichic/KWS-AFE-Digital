@@ -50,3 +50,12 @@ def test_per_channel_targets_use_each_channels_dc_and_swing():
     assert rows[15]["target"] == pytest.approx(888.1 + 0.5 * 15.99)
     assert rows[0]["target"] == pytest.approx(rows[0]["peak"])        # thr 1.0 = peak
     assert rows[3]["target"] == pytest.approx(dc[3])                  # thr 0 = its own DC
+
+
+def test_awg_swing_interpolation():
+    from experiments.awg_thresholds import swing_at
+    assert swing_at(0.0, 2.0, 16.0) == (0.0, "")
+    assert swing_at(0.5, 2.0, 16.0) == (1.0, "lin<1mV")             # origin to 1 mV
+    assert swing_at(2.5, 2.0, 16.0)[0] == pytest.approx(9.0)         # 1..4 mV segment
+    v, how = swing_at(5.0, 2.0, 16.0)
+    assert how == "extrap>4mV" and v == pytest.approx(16.0 + 14.0 / 3)
