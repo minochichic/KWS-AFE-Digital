@@ -3,7 +3,9 @@
 #   read_stats.ps1                    # 한 번
 #   read_stats.ps1 -Watch 2           # 2 초마다 (Ctrl+C)
 #   read_stats.ps1 -Inject 0xFFFF     # 테스트 빌드: 가짜 칸 하나를 넣고 트리거 → 전송 → 결과까지 본다
-#   read_stats.ps1 -Replay            # 재생 빌드: 골든 클립을 한 바퀴 보내고 FPGA 답을 정답지와 대조
+#   read_stats.ps1 -Replay            # 재생 빌드: 골든 클립을 한 바퀴 보내고 FPGA 답을 정답지와 대조,
+#                                     #   out/replay/replay_<시각>.html 보고서
+#   read_stats.ps1 -WakeTest          # 재생 빌드: WAKE 선이 FPGA 파서를 실제로 초기화하는지 (반쪽 패킷)
 #
 # Stop 2 중에 읽으면 RAM 이 0 으로 읽힌다 (DBG_STOP 을 켜도). BOARD_TEST 빌드는 10 ms 마다
 # 3 ms 깨어 있으므로 그 순간에 걸릴 때까지 다시 읽는다. 끝 단어 magic 이 맞아야 온전한 읽기다.
@@ -11,6 +13,7 @@ param(
   [double]$Watch = 0,
   [string]$Inject = "",
   [switch]$Replay,
+  [switch]$WakeTest,
   [string]$Elf = "$PSScriptRoot\..\kws_wake\Debug\kws_wake.elf"
 )
 
@@ -66,8 +69,11 @@ function Show($w) {
   if ($w[14] -ne 0) {
     $s += "`n  replay: " + (Show-Replay $w)
   }
-  if ($w.Count -ge 24) {
-    $e = @(); for ($i = 15; $i -lt 23; $i++) { $e += ($w[$i] -band 0xFFFF); $e += ($w[$i] -shr 16) }
+  if ($w[15] -ne 0) {
+    $s += "`n  wake test: {0} trials, with WAKE {1} ok, without WAKE {2} ok" -f $w[15], $w[16], $w[17]
+  }
+  if ($w.Count -ge 27) {
+    $e = @(); for ($i = 18; $i -lt 26; $i++) { $e += ($w[$i] -band 0xFFFF); $e += ($w[$i] -shr 16) }
     $s += "`n  edges_or=0x{0:X4} edges ch0..15 = [{1}]" -f ($w[9] -band 0xFFFF), ($e -join ',')
   }
   $s
@@ -86,14 +92,32 @@ function Show-Replay($w) {
   $s
 }
 
-if ($Replay) {
+# 재생 빌드에 시작 신호를 주고 진행 중(replay_state 1)이 보일 때까지 다시 쓴다
+function Start-ReplayMode($value) {
   $go = Get-Sym 'board_replay_go'      # 재생 빌드에만 있다 -- 없으면 여기서 멈춘다
   for ($t = 0; $t -lt 60; $t++) {
-    & $cli -c port=SWD mode=HOTPLUG -w32 $go.addr 0x00000001 2>&1 | Out-Null
+    & $cli -c port=SWD mode=HOTPLUG -w32 $go.addr ('0x{0:X8}' -f $value) 2>&1 | Out-Null
     $w = Read-Once
-    if ($w -and $w[14] -eq 1) { break }
+    if ($w -and $w[14] -eq 1) { return }
   }
-  if (-not ($w -and $w[14] -eq 1)) { throw "replay did not start (is this a WAKE_REPLAY build?)" }
+  throw "did not start (is this a WAKE_REPLAY build?)"
+}
+
+# 첫 python: Vivado 동봉판(표준 라이브러리만 쓰므로 충분), 없으면 PATH 의 python
+function Find-Python {
+  # PATH 의 python 은 Windows 스토어 바로가기일 수 있어(실행하면 안내문만 찍는다) 뒤로 미룬다
+  $p = Get-ChildItem "C:\AMDDesignTools\*\Vivado\tps\win64\python*\python.exe",
+                     "C:\Xilinx\*\Vivado\tps\win64\python*\python.exe" -ErrorAction SilentlyContinue |
+       Select-Object -First 1 -ExpandProperty FullName
+  if ($p) { return $p }
+  $c = Get-Command python -ErrorAction SilentlyContinue
+  if ($c -and $c.Source -notmatch 'WindowsApps') { return $c.Source }
+  return $null
+}
+
+if ($Replay) {
+  Start-ReplayMode 1
+  $t0 = Get-Date
   "started"
   do {
     Start-Sleep -Seconds 3
@@ -103,6 +127,41 @@ if ($Replay) {
   $n = $w[2]
   if ($w[6] -eq $n) { "PASS: $($w[6])/$n clips match predictions_fixed" }
   else { "FAIL: $($w[6])/$n match" }
+
+  # 클립별 FPGA 답을 읽어 보고서를 만든다
+  $got = Get-Sym 'board_replay_got'
+  $o = & $cli -c port=SWD mode=HOTPLUG -r32 $got.addr ([int][Math]::Ceiling($got.size / 4) * 4) 2>&1 | Select-String '^0x2000'
+  $bytes = @()
+  foreach ($l in $o) {
+    foreach ($x in (($l.Line -split ':')[1].Trim() -split '\s+')) {
+      $v = [Convert]::ToUInt32($x, 16)
+      $bytes += ($v -band 0xFF), (($v -shr 8) -band 0xFF), (($v -shr 16) -band 0xFF), (($v -shr 24) -band 0xFF)
+    }
+  }
+  $bytes = $bytes[0..($got.size - 1)]
+  $outdir = Join-Path $PSScriptRoot "..\..\..\out\replay"
+  New-Item -ItemType Directory -Force $outdir | Out-Null
+  $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+  $csv = Join-Path $outdir "replay_$stamp.txt"
+  [IO.File]::WriteAllLines($csv, [string[]]($bytes | ForEach-Object { "$_" }))
+  $py = Find-Python
+  if (-not $py) { "got written to $csv (no python found for the report)"; return }
+  $html = Join-Path $outdir "replay_$stamp.html"
+  & $py -I (Join-Path $PSScriptRoot 'replay_report.py') $csv $html --seconds ((Get-Date) - $t0).TotalSeconds
+  return
+}
+
+if ($WakeTest) {
+  Start-ReplayMode 2
+  "wake test started (20 trials, about 8 s)"
+  do {
+    Start-Sleep -Seconds 2
+    $w = Read-Once
+  } while (-not $w -or $w[14] -ne 2)
+  "trials {0}: with WAKE {1}/{0} ok, without WAKE (control) {2}/{0} ok" -f $w[15], $w[16], $w[17]
+  if ($w[16] -eq $w[15] -and $w[17] -eq 0) { "PASS: WAKE reaches the FPGA and resyncs its parser" }
+  elseif ($w[16] -eq 0 -and $w[17] -eq 0) { "FAIL: WAKE has no effect -- check J4.3 -> J6 pin 32" }
+  else { "UNCLEAR: look at the counts above" }
   return
 }
 

@@ -46,6 +46,13 @@ WNS +5.29 ns), STM32 = 재생 빌드(헤드리스 빌드에 `-D WAKE_REPLAY` -- 
 600 클립에 58.6 s (클립당 약 98 ms). 첫 시도는 600 개 전부 타임아웃이었다 -- **JP1/JP2 가 ST-LINK 쪽**이라
 패킷이 PC COM4 로 갔다 (COM4 에서 `A5 64 ...` 확인). 시프터 쪽으로 옮기니 바로 통과.
 
+**WAKE 선 (2026-10-29): `read_stats.ps1 -WakeTest` PASS.** 600/600 은 WAKE 가 끊겨도 나온다 (FPGA 는
+WAKE 를 반쪽 패킷 버리기에만 쓴다). 그래서 패킷 절반을 보내고 끊은 뒤 온전한 클립을 보낸다:
+WAKE 를 올리고 보내면 20/20 맞고, 안 올리면(대조군) 0/20 -- WAKE 가 FPGA 파서를 실제로 초기화한다.
+`-Replay` 는 클립별 FPGA 답을 `board_replay_got[]` 에서 읽어 `out/replay/replay_<시각>.html` 을 만든다
+(`tools/replay_report.py`, Vivado 동봉 Python). 골든 앞 600개는 right 396 + go 204 뿐이라 보고서의
+라벨 정확도(81.3%)는 12-class test 정확도가 아니다.
+
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
 보드 쪽(`board.c`)은 칸을 만들어 넣고, 완성되면 보내고, 답을 받으면 `wake_sent(&w)`.

@@ -49,6 +49,9 @@ typedef struct {
   uint32_t replay_first_bad;  /* 재생: 처음 틀린 클립 번호, 없으면 0xFFFFFFFF */
   uint32_t replay_bad_info;   /* 재생: 그 클립의 got | exp << 8 | rc << 16 (rc 1 = 타임아웃) */
   uint32_t replay_state;      /* 재생: 0 대기, 1 진행 중, 2 끝 */
+  uint32_t wake_test_n;       /* WAKE 테스트: 시행 수 (각 시행 = WAKE 있음 1 + 없음 1) */
+  uint32_t wake_with_ok;      /* 반쪽 패킷 뒤 WAKE 를 올리고 보낸 클립이 맞은 수 (기대: 전부) */
+  uint32_t wake_without_ok;   /* 반쪽 패킷 뒤 WAKE 없이 보낸 클립이 맞은 수 (기대: 0 -- 대조군) */
 #if BOARD_TEST
   uint16_t edges[16];    /* 채널별 에지가 잡힌 칸 수 */
 #endif
@@ -65,8 +68,13 @@ extern volatile uint32_t board_inject;
 /* 재생 빌드: SWD 로 0 아닌 값을 쓰면 골든 클립을 처음부터 끝까지 한 번 보낸다
  * (tools/read_stats.ps1 -Replay). 부팅하자마자 보내지 않는 이유: FPGA 가 아직 안 올라왔으면
  * 600 개가 전부 타임아웃으로 끝난다. */
-extern volatile uint32_t board_replay_go;
+extern volatile uint32_t board_replay_go;   /* 1 = 골든 재생, 2 = WAKE 테스트 */
 #define BOARD_REPLAY_GAP_MS  5u     /* 클립 사이 간격 -- FPGA 가 다음 패킷 받을 준비 */
+#define BOARD_WAKE_TEST_N    20u    /* WAKE 테스트 시행 수 */
+
+/* 재생: 클립 i 에 FPGA 가 낸 클래스. 0xFF = 타임아웃, 0xFE = sync/CRC 오류 */
+#define BOARD_GOT_TIMEOUT    0xFFu
+#define BOARD_GOT_BAD        0xFEu
 
 void board_init(void);
 void board_poll(void);

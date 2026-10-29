@@ -23,15 +23,20 @@ extern UART_HandleTypeDef huart2;
 volatile board_stats_t board_stats;
 volatile uint32_t board_inject;
 volatile uint32_t board_replay_go;
+#ifdef WAKE_REPLAY
+volatile uint8_t board_replay_got[REPLAY_N];     /* tools/read_stats.ps1 -Replay 가 읽어 보고서를 만든다 */
+#endif
 
 static wake_t w;
 static volatile uint8_t clip_pending;   /* ISR 가 세우고 board_poll 이 내린다 */
 static uint16_t prev_idr;
 
-/* WAKE 올림 → 패킷 → 결과 8 B → WAKE 내림. 반환 = LINK_OK / LINK_ERR_* / 1(타임아웃) */
-static int send_clip(const uint16_t *frames, link_result_t *r)
+static uint8_t pkt[LINK_PACKET_BYTES(WAKE_NATIVE)];
+
+/* WAKE 올림 → 패킷 → 결과 8 B → WAKE 내림. 반환 = LINK_OK / LINK_ERR_* / 1(타임아웃)
+ * use_wake = 0 은 WAKE 테스트의 대조군 전용: WAKE 를 안 올리고 보낸다. */
+static int send_clip_ex(const uint16_t *frames, link_result_t *r, int use_wake)
 {
-  static uint8_t pkt[LINK_PACKET_BYTES(WAKE_NATIVE)];
   uint8_t res[LINK_RESULT_BYTES];
   size_t n = link_frame_packet(frames, WAKE_NATIVE, pkt);
   int rc;
@@ -40,7 +45,10 @@ static int send_clip(const uint16_t *frames, link_result_t *r)
   __HAL_UART_SEND_REQ(&huart2, UART_RXDATA_FLUSH_REQUEST);
   __HAL_UART_CLEAR_FLAG(&huart2, UART_CLEAR_OREF | UART_CLEAR_FEF | UART_CLEAR_NEF);
 
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);      /* FPGA 수신기 초기화 */
+  if (use_wake)
+  {
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);    /* 상승 에지 = FPGA 수신기 초기화 */
+  }
   HAL_UART_Transmit(&huart2, pkt, (uint16_t)n, BOARD_TX_MS);
 
   if (HAL_UART_Receive(&huart2, res, sizeof(res), BOARD_RESULT_MS) != HAL_OK)
@@ -71,6 +79,55 @@ static int send_clip(const uint16_t *frames, link_result_t *r)
   }
   return rc;
 }
+
+static int send_clip(const uint16_t *frames, link_result_t *r)
+{
+  return send_clip_ex(frames, r, 1);
+}
+
+#ifdef WAKE_REPLAY
+/* 패킷 앞 절반만 보내고 끊는다 -- 바이트가 빠진 링크를 흉내 낸다. FPGA 파서는 그 패킷을
+ * 받는 중인 채로 남는다. 다음 패킷 앞에서 WAKE 가 올라가야 그 반쪽이 버려진다. */
+static void send_half_packet(const uint16_t *frames)
+{
+  size_t n = link_frame_packet(frames, WAKE_NATIVE, pkt);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+  HAL_UART_Transmit(&huart2, pkt, (uint16_t)(n / 2), BOARD_TX_MS);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+  HAL_Delay(20);
+}
+
+/* 시행마다: [반쪽 → WAKE 있이 온전한 클립] 그리고 [반쪽 → WAKE 없이 온전한 클립].
+ * WAKE 선이 이어져 있으면 앞은 전부 맞고, 뒤(대조군)는 반쪽에 이어 붙어 CRC 로 버려진다.
+ * 선이 끊겼으면 둘 다 틀린다. 대조군이 맞으면 이 테스트가 WAKE 를 재지 못한다는 뜻이다. */
+static void wake_test(void)
+{
+  link_result_t r;
+  board_stats.wake_test_n = 0;
+  board_stats.wake_with_ok = 0;
+  board_stats.wake_without_ok = 0;
+
+  for (uint32_t j = 0; j < BOARD_WAKE_TEST_N; j++)
+  {
+    send_half_packet(replay_frames[j]);
+    memset(&r, 0, sizeof(r));
+    if (send_clip_ex(replay_frames[j], &r, 1) == LINK_OK && r.class_idx == replay_expect[j])
+    {
+      board_stats.wake_with_ok++;
+    }
+    HAL_Delay(BOARD_REPLAY_GAP_MS);
+
+    send_half_packet(replay_frames[j]);
+    memset(&r, 0, sizeof(r));
+    if (send_clip_ex(replay_frames[j], &r, 0) == LINK_OK && r.class_idx == replay_expect[j])
+    {
+      board_stats.wake_without_ok++;
+    }
+    HAL_Delay(BOARD_REPLAY_GAP_MS);
+    board_stats.wake_test_n++;
+  }
+}
+#endif
 
 /*
  * 다음 박자까지 Stop 2. LPTIM1 은 LSE 로 계속 세고 그 인터럽트가 깨운다.
@@ -181,6 +238,14 @@ void board_poll(void)
     __WFI();
     return;
   }
+  if (board_replay_go == 2)
+  {
+    board_stats.replay_state = 1;
+    wake_test();
+    board_stats.replay_state = 2;
+    board_replay_go = 0;
+    return;
+  }
   if (i == 0)                                    /* 한 바퀴 시작: 결과 카운터만 비운다 */
   {
     board_stats.clips = 0;
@@ -194,6 +259,8 @@ void board_poll(void)
   }
 
   int rc = send_clip(replay_frames[i], &r);
+  board_replay_got[i] = rc == LINK_OK ? r.class_idx
+                      : rc == 1       ? BOARD_GOT_TIMEOUT : BOARD_GOT_BAD;
   if (rc == LINK_OK && r.class_idx == replay_expect[i])
   {
     board_stats.match++;
