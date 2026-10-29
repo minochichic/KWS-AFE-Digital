@@ -22,6 +22,7 @@ extern UART_HandleTypeDef huart2;
 
 volatile board_stats_t board_stats;
 volatile uint32_t board_inject;
+volatile uint32_t board_replay_go;
 
 static wake_t w;
 static volatile uint8_t clip_pending;   /* ISR 가 세우고 board_poll 이 내린다 */
@@ -97,6 +98,8 @@ void board_init(void)
   memset((void *)&board_stats, 0, sizeof(board_stats));
   board_stats.magic = BOARD_STATS_MAGIC;
   board_inject = 0;
+  board_replay_go = 0;
+  board_stats.replay_first_bad = 0xFFFFFFFFu;
   wake_init(&w);
 
 #if BOARD_TEST
@@ -111,18 +114,21 @@ void board_init(void)
   EXTI->PR1 = 0xFFFFu;
   prev_idr = (uint16_t)GPIOB->IDR;
 
-#ifndef WAKE_REPLAY
+  /* 재생 빌드도 박자는 돌린다 -- ticks 가 올라가야 read_stats.ps1 이 살아 있다고 본다 */
   if (HAL_LPTIM_Counter_Start_IT(&hlptim1, BOARD_LPTIM_ARR) != HAL_OK)
   {
     Error_Handler();
   }
-#endif
 }
 
 /* 10 ms 박자 (LPTIM1 자동 리로드 일치) */
 void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
 {
   (void)hlptim;
+#ifdef WAKE_REPLAY
+  board_stats.ticks++;                           /* 재생은 AFE 를 안 본다 */
+  return;
+#endif
   uint16_t pr = (uint16_t)(EXTI->PR1 & 0xFFFFu);
   EXTI->PR1 = pr;                                /* 1 을 써서 지운다 */
   uint16_t idr = (uint16_t)GPIOB->IDR;
@@ -168,18 +174,44 @@ void board_poll(void)
 {
 #ifdef WAKE_REPLAY
   static uint32_t i;
-  link_result_t r;
+  link_result_t r = {0};
 
-  if (i < REPLAY_N)
+  if (board_replay_go == 0)
   {
-    if (send_clip(replay_frames[i], &r) == LINK_OK && r.class_idx == replay_expect[i])
-    {
-      board_stats.match++;
-    }
-    i++;
+    __WFI();
     return;
   }
-  __WFI();
+  if (i == 0)                                    /* 한 바퀴 시작: 결과 카운터만 비운다 */
+  {
+    board_stats.clips = 0;
+    board_stats.ok = 0;
+    board_stats.timeouts = 0;
+    board_stats.bad = 0;
+    board_stats.match = 0;
+    board_stats.replay_first_bad = 0xFFFFFFFFu;
+    board_stats.replay_bad_info = 0;
+    board_stats.replay_state = 1;
+  }
+
+  int rc = send_clip(replay_frames[i], &r);
+  if (rc == LINK_OK && r.class_idx == replay_expect[i])
+  {
+    board_stats.match++;
+  }
+  else if (board_stats.replay_first_bad == 0xFFFFFFFFu)
+  {
+    board_stats.replay_first_bad = i;
+    board_stats.replay_bad_info = (uint32_t)r.class_idx | ((uint32_t)replay_expect[i] << 8)
+                                | ((uint32_t)(rc & 0xFF) << 16);
+  }
+  HAL_Delay(BOARD_REPLAY_GAP_MS);
+
+  if (++i == REPLAY_N)
+  {
+    i = 0;
+    board_replay_go = 0;
+    board_stats.replay_state = 2;
+  }
 #else
   link_result_t r;
 

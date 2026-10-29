@@ -46,6 +46,9 @@ typedef struct {
   uint8_t  state;        /* wake_core 상태 사본: 0 WARMUP, 1 IDLE, 2 CAPTURE, 3 HOLD */
   int32_t  bg_q;         /* wake_core 배경 사본 (= 배경 채널 수 x 32) */
   uint32_t injected;     /* board_inject 를 칸에 넣은 횟수 */
+  uint32_t replay_first_bad;  /* 재생: 처음 틀린 클립 번호, 없으면 0xFFFFFFFF */
+  uint32_t replay_bad_info;   /* 재생: 그 클립의 got | exp << 8 | rc << 16 (rc 1 = 타임아웃) */
+  uint32_t replay_state;      /* 재생: 0 대기, 1 진행 중, 2 끝 */
 #if BOARD_TEST
   uint16_t edges[16];    /* 채널별 에지가 잡힌 칸 수 */
 #endif
@@ -58,6 +61,12 @@ extern volatile board_stats_t board_stats;
 
 /* 테스트 빌드: SWD 로 0 아닌 마스크를 쓰면 다음 칸 하나에 OR 된다 (tools/read_stats.ps1 -Inject) */
 extern volatile uint32_t board_inject;
+
+/* 재생 빌드: SWD 로 0 아닌 값을 쓰면 골든 클립을 처음부터 끝까지 한 번 보낸다
+ * (tools/read_stats.ps1 -Replay). 부팅하자마자 보내지 않는 이유: FPGA 가 아직 안 올라왔으면
+ * 600 개가 전부 타임아웃으로 끝난다. */
+extern volatile uint32_t board_replay_go;
+#define BOARD_REPLAY_GAP_MS  5u     /* 클립 사이 간격 -- FPGA 가 다음 패킷 받을 준비 */
 
 void board_init(void);
 void board_poll(void);

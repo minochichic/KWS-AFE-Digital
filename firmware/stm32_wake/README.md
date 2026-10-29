@@ -39,6 +39,13 @@ Stop 2 중 NVIC 없이 EXTI pending 으로 래치되고, 에지로는 깨지 않
 bg_q = 3 으로 남아 그 뒤로 **4ch 는 다시 트리거하지 못한다** (문턱 4.09). 조용한 방에서 실효 Δ 는
 4 가 아니라 4~5. `eval_trigger.py` 도 같은 식이라 계획서 수치에는 이미 반영돼 있다 -- 바꾸려면 둘 다.
 
+**단계 3 재생 (2026-10-29): 600/600 PASS, 2회 연속.** FPGA = `kws_wake_top` + `bd_base`
+(`vivado -mode batch -source rtl/build.tcl -tclargs -tag bd_base -top kws_wake_top -impl -out out/wake`,
+WNS +5.29 ns), STM32 = 재생 빌드(헤드리스 빌드에 `-D WAKE_REPLAY` -- `.cproject` 를 바꾸므로 끝나면
+`git checkout` 으로 되돌린다). `read_stats.ps1 -Replay` 가 SWD 로 `board_replay_go` 를 세워 시작하고
+600 클립에 58.6 s (클립당 약 98 ms). 첫 시도는 600 개 전부 타임아웃이었다 -- **JP1/JP2 가 ST-LINK 쪽**이라
+패킷이 PC COM4 로 갔다 (COM4 에서 `A5 64 ...` 확인). 시프터 쪽으로 옮기니 바로 통과.
+
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
 보드 쪽(`board.c`)은 칸을 만들어 넣고, 완성되면 보내고, 답을 받으면 `wake_sent(&w)`.

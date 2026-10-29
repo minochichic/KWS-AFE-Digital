@@ -210,7 +210,14 @@ if {$stream_selftest ne ""} {
 # 기본값이 "" 이고 RTL 이 그걸 걸러내므로, 그냥 합성하면 **가중치가 하나도 없는
 # 회로가 에러 없이** 나온다. 래퍼가 테스트벤치와 같은 매크로를 꽂아준다.
 create_project -in_memory -part $part
-read_verilog [concat [glob rtl/*.v] [glob rtl/synth/*.v]]
+# 스트리밍 래퍼(kws_stream_*)는 스트리밍 정책이 든 태그에만 있는 `KWS_STREAM_* 매크로를
+# 쓴다. 최상위가 스트리밍이 아니면 빼고 읽는다 -- 안 그러면 bd_base 같은 클립 태그로는
+# 아무 최상위도 합성이 안 된다 (2026-10-29, kws_wake_top 첫 합성에서 6 errors).
+set srcs [concat [glob rtl/*.v] [glob rtl/synth/*.v]]
+if {![string match kws_stream* $top]} {
+    set srcs [lsearch -all -inline -not -glob $srcs *kws_stream_*]
+}
+read_verilog $srcs
 # include 검색 경로: 재작성한 paths.vh 가 원본보다 먼저 걸리도록 앞에 둔다
 set_property include_dirs [list $synth_inc $gen rtl/gen] [current_fileset]
 # -unmanaged: 이 파일을 **온전한 Tcl 스크립트**로 취급하라는 뜻이다.
