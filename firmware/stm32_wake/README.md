@@ -76,6 +76,15 @@ FPGA 가 `predictions_fixed` 를 내야 한다. 같은 스트림 안에서는 �
 -- 트리거 위치가 정확도에 직접 닿는다는 실례. 라벨 대비는 정보용: 스트림 1 12/13, 스트림 2 7/8.
 **이 테스트가 보지 않는 것**: 핀 -> EXTI 경로(손 테스트로 별도 확인), 실제 펄스 타이밍(B2).
 
+**실제 빌드 (2026-10-29): 스트림 1 PASS -- 13/13 캡처, 모델 9/9.** 위 결과는 테스트 빌드(DBG_STOP 켬,
+깨어날 때마다 3 ms 더 깨어 있음)였다. `-D WAKE_STREAM -D BOARD_TEST=0 -D BOARD_STREAM_AUTOSTART=5` 로
+디버그 장치를 다 빼고, J1 전원을 껐다 켜(ST-LINK 가 켠 DBGMCU 는 전원을 내려야만 지워진다) SWD 를
+건드리지 않은 채 부팅 5 s 뒤 스스로 스트림 1 을 돌렸다. 끝난 뒤 `read_stats.ps1 -Collect 1`:
+`DBGMCU at boot = 0`(진짜 Stop 2), 스트림 동안 박자마다 Stop 2(stops 3722), 결과는 테스트 빌드와 같다.
+덤: AFE 없이 `BOARD_TEST=0` 이면 PB 가 떠 있어 끝난 뒤에도 초당 1 개쯤 클립이 나간다(627/627 응답) --
+AFE 를 붙이기 전에는 실제 빌드를 그대로 두지 말 것. 그리고 DBG_SLEEP 이 꺼진 Sleep 에서는 SWD 연결이
+가끔 실패해 `read_stats.ps1` 이 다시 읽는다.
+
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
 보드 쪽(`board.c`)은 칸을 만들어 넣고, 완성되면 보내고, 답을 받으면 `wake_sent(&w)`.

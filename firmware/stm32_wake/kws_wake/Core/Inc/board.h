@@ -54,6 +54,8 @@ typedef struct {
   uint32_t wake_without_ok;   /* 반쪽 패킷 뒤 WAKE 없이 보낸 클립이 맞은 수 (기대: 0 -- 대조군) */
   uint32_t uart_err;          /* 마지막 실패 수신의 huart2.ErrorCode | HAL 반환값 << 16 (0x08 = 오버런) */
   uint32_t rx_fail_ms;        /* 마지막 실패 수신이 전송 끝에서 몇 ms 만에 끝났나 (200 근처 = 진짜 타임아웃) */
+  uint32_t dbgmcu_boot;       /* 부팅 때 DBGMCU->CR. 0 이면 Stop 중 디버그가 꺼진 진짜 Stop 2 였다
+                                 (ST-LINK 가 연결하면 켜고, 전원을 내려야만 지워진다) */
 #if BOARD_TEST
   uint16_t edges[16];    /* 채널별 에지가 잡힌 칸 수 */
 #endif
@@ -80,6 +82,8 @@ extern volatile uint32_t board_replay_go;   /* 1 = 골든 재생, 2 = WAKE 테�
  * wake_init). 걸린 클립과 FPGA 답을 board_caps[] 에 남긴다 -- tools/read_stats.ps1 -Stream k.
  */
 #define BOARD_MAX_CAPS       16u
+/* -DBOARD_STREAM_AUTOSTART=s: 부팅 s 초 뒤 스트림 1 을 스스로 시작한다. 실제 빌드(BOARD_TEST=0)를
+ * SWD 없이 돌리는 시험용 -- 전원을 껐다 켜서 디버그 설정을 지운 뒤 손대지 않고 기다린다. */
 typedef struct {
   uint32_t end;          /* 스트림 칸 번호: 이 칸에서 클립이 찼다 (시뮬의 Capture.end) */
   uint8_t  got;          /* FPGA 클래스, 0xFF 타임아웃, 0xFE sync/CRC */

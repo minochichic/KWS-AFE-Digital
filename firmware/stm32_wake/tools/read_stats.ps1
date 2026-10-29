@@ -17,6 +17,7 @@ param(
   [switch]$Replay,
   [switch]$WakeTest,
   [int]$Stream = 0,
+  [int]$Collect = 0,
   [string]$Elf = "$PSScriptRoot\..\kws_wake\Debug\kws_wake.elf"
 )
 
@@ -78,8 +79,9 @@ function Show($w) {
   if ($w[18] -ne 0) {
     $s += "`n  last rx failure: ErrorCode 0x{0:X2} (HAL {1}) after {2} ms" -f ($w[18] -band 0xFFFF), ($w[18] -shr 16), $w[19]
   }
-  if ($w.Count -ge 29) {
-    $e = @(); for ($i = 20; $i -lt 28; $i++) { $e += ($w[$i] -band 0xFFFF); $e += ($w[$i] -shr 16) }
+  $s += "`n  DBGMCU at boot = 0x{0:X8} ({1})" -f $w[20], $(if ($w[20] -eq 0) { 'debug in Stop off: real Stop 2' } else { 'debug in Stop on' })
+  if ($w.Count -ge 30) {
+    $e = @(); for ($i = 21; $i -lt 29; $i++) { $e += ($w[$i] -band 0xFFFF); $e += ($w[$i] -shr 16) }
     $s += "`n  edges_or=0x{0:X4} edges ch0..15 = [{1}]" -f ($w[9] -band 0xFFFF), ($e -join ',')
   }
   $s
@@ -157,7 +159,9 @@ if ($Replay) {
   return
 }
 
+if ($Collect -gt 0) { $Stream = $Collect }   # 이미 끝난 스트림(자동 시작 빌드)의 결과만 읽는다
 if ($Stream -gt 0) {
+  if ($Collect -eq 0) {
   $go = Get-Sym 'board_stream_go'      # 스트림 빌드에만 있다
   for ($t = 0; $t -lt 60; $t++) {
     & $cli -c port=SWD mode=HOTPLUG -w32 $go.addr ('0x{0:X8}' -f $Stream) 2>&1 | Out-Null
@@ -171,12 +175,24 @@ if ($Stream -gt 0) {
     $w = Read-Once
     if ($w) { "[{0:HH:mm:ss}] captures sent {1}, ok {2}, timeouts {3}" -f (Get-Date), $w[2], $w[3], $w[4] }
   } while (-not $w -or $w[14] -ne 2)
+  } else {
+    # 끝난 보드는 Sleep 이라 0 으로 잘리지 않는다. Get-Stats 의 두 번 읽기는 쓰지 않는다 --
+    # BOARD_TEST=0 에서 AFE 없이 떠 있는 핀이 계속 클립을 내 카운터가 두 번 같게 읽히지 않는다
+    for ($t = 0; $t -lt 40 -and -not $w; $t++) { $w = Read-Once }
+    if (-not $w) { throw "read failed" }
+    if ($w[14] -ne 2) { throw "stream not finished yet (replay_state $($w[14])) -- wait and retry" }
+    Show $w
+  }
 
   # 끝나면 보드는 Sleep 에 머문다 -- 큰 블록도 한 번에 읽힌다
+  # 실제 빌드(DBG_SLEEP 꺼짐)의 Sleep 에서는 연결이 가끔 "No STM32 target found" 로 실패한다 -- 다시 읽는다
   function Read-Words($sym, $bytes) {
-    $o = & $cli -c port=SWD mode=HOTPLUG -r32 $sym.addr $bytes 2>&1 | Select-String '^0x2000'
-    $v = @(); foreach ($l in $o) { $v += ($l.Line -split ':')[1].Trim() -split '\s+' | ForEach-Object { [Convert]::ToUInt32($_, 16) } }
-    return , $v
+    for ($t = 0; $t -lt 20; $t++) {
+      $o = & $cli -c port=SWD mode=HOTPLUG -r32 $sym.addr $bytes 2>&1 | Select-String '^0x2000'
+      $v = @(); foreach ($l in $o) { $v += ($l.Line -split ':')[1].Trim() -split '\s+' | ForEach-Object { [Convert]::ToUInt32($_, 16) } }
+      if ($v.Count -eq $bytes / 4) { return , $v }
+    }
+    throw "read of $($sym.addr) failed"
   }
   $n = (Read-Words (Get-Sym 'board_cap_n') 4)[0]
   $capsSym = Get-Sym 'board_caps'

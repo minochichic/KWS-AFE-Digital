@@ -176,6 +176,7 @@ void board_init(void)
 {
   memset((void *)&board_stats, 0, sizeof(board_stats));
   board_stats.magic = BOARD_STATS_MAGIC;
+  board_stats.dbgmcu_boot = DBGMCU->CR;
   board_inject = 0;
   board_replay_go = 0;
   board_stats.replay_first_bad = 0xFFFFFFFFu;
@@ -218,6 +219,12 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
   prev_idr = idr;
 
 #ifdef WAKE_STREAM
+#ifdef BOARD_STREAM_AUTOSTART
+  if (board_stats.ticks == (uint32_t)(BOARD_STREAM_AUTOSTART) * 100u && board_stats.replay_state == 0)
+  {
+    board_stream_go = 1;
+  }
+#endif
   /* 시작: 보내는 중인 클립이 없을 때만 (wake_init 이 그 클립을 지우므로) */
   if (board_stream_go != 0 && !s_on && board_stats.replay_state != 1 && !clip_pending)
   {
