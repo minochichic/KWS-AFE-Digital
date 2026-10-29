@@ -27,6 +27,16 @@ volatile uint32_t board_replay_go;
 volatile uint8_t board_replay_got[REPLAY_N];     /* tools/read_stats.ps1 -Replay 가 읽어 보고서를 만든다 */
 #endif
 
+volatile uint32_t board_stream_go;
+#ifdef WAKE_STREAM
+#include "../../../gen/stream_clips.h"
+volatile uint32_t board_cap_n;
+volatile board_cap_t board_caps[BOARD_MAX_CAPS];
+static volatile uint8_t  s_on;                   /* 스트림을 먹이는 중 */
+static volatile uint32_t s_idx, s_k;             /* 스트림 번호, 다음에 먹일 칸 */
+static volatile uint32_t s_ready_end;            /* 클립이 찬 칸 (ISR -> board_poll) */
+#endif
+
 static wake_t w;
 static volatile uint8_t clip_pending;   /* ISR 가 세우고 board_poll 이 내린다 */
 static uint16_t prev_idr;
@@ -207,6 +217,31 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
   uint16_t frame = (uint16_t)(prev_idr | pr);
   prev_idr = idr;
 
+#ifdef WAKE_STREAM
+  /* 시작: 보내는 중인 클립이 없을 때만 (wake_init 이 그 클립을 지우므로) */
+  if (board_stream_go != 0 && !s_on && board_stats.replay_state != 1 && !clip_pending)
+  {
+    if (board_stream_go <= STREAM_N)
+    {
+      s_idx = board_stream_go - 1;
+      s_k = 0;
+      s_on = 1;
+      board_cap_n = 0;
+      wake_init(&w);
+      board_stats.replay_state = 1;
+    }
+    board_stream_go = 0;
+  }
+  if (s_on)                                      /* 핀 대신 스트림 칸 */
+  {
+    frame = stream_frames[stream_off[s_idx] + s_k];
+    if (++s_k == stream_len[s_idx])
+    {
+      s_on = 0;
+    }
+  }
+#endif
+
 #if BOARD_TEST
   if (board_inject != 0)                         /* 디버거가 넣은 가짜 칸 (한 번만) */
   {
@@ -237,6 +272,9 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
   if (wake_tick(&w, frame) == WAKE_CLIP_READY)
   {
     clip_pending = 1;
+#ifdef WAKE_STREAM
+    s_ready_end = s_k;                           /* 방금 먹인 칸 번호 + 1 = Capture.end */
+#endif
   }
   board_stats.state = w.state;
   board_stats.bg_q = w.bg_q;
@@ -300,13 +338,37 @@ void board_poll(void)
   if (clip_pending)
   {
     /* HOLD 동안 core 는 clip 을 건드리지 않는다 -- ISR 이 돌아도 그대로 읽어도 된다 */
+#ifdef WAKE_STREAM
+    uint32_t c = board_cap_n;
+    memset(&r, 0, sizeof(r));
+    int rc = send_clip(wake_clip(&w), &r);
+    if (board_stats.replay_state == 1 && c < BOARD_MAX_CAPS)
+    {
+      board_caps[c].end = s_ready_end;
+      board_caps[c].got = rc == LINK_OK ? r.class_idx : rc == 1 ? BOARD_GOT_TIMEOUT : BOARD_GOT_BAD;
+      memcpy((void *)board_caps[c].clip, wake_clip(&w), sizeof(board_caps[c].clip));
+      board_cap_n = c + 1;
+    }
+#else
     send_clip(wake_clip(&w), &r);
+#endif
     __disable_irq();
     wake_sent(&w);
     clip_pending = 0;
     __enable_irq();
     return;
   }
+#ifdef WAKE_STREAM
+  if (board_stats.replay_state == 1 && !s_on)    /* 스트림 끝, 보내는 중인 클립도 없음 */
+  {
+    board_stats.replay_state = 2;
+  }
+  if (board_stats.replay_state == 2)             /* 끝난 뒤엔 Stop 2 대신 Sleep: board_caps(3 KB)를 */
+  {                                              /* SWD 로 읽는 동안 RAM 이 0 으로 읽히지 않게 */
+    __WFI();
+    return;
+  }
+#endif
   enter_stop2();
 #if BOARD_TEST
   /* Stop 2 중에는 DBG_STOP 을 켜도 SWD 로 RAM 이 0 으로 읽힌다 (실측). 깨어 있는 창을

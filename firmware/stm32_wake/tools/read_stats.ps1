@@ -6,6 +6,8 @@
 #   read_stats.ps1 -Replay            # 재생 빌드: 골든 클립을 한 바퀴 보내고 FPGA 답을 정답지와 대조,
 #                                     #   out/replay/replay_<시각>.html 보고서
 #   read_stats.ps1 -WakeTest          # 재생 빌드: WAKE 선이 FPGA 파서를 실제로 초기화하는지 (반쪽 패킷)
+#   read_stats.ps1 -Stream 1          # 스트림 빌드: 스트림 1 을 핀 대신 먹이고, 걸린 클립을 시뮬과 대조
+#                                     #   (make_streams.py 먼저, 비교는 stream_check.py)
 #
 # Stop 2 중에 읽으면 RAM 이 0 으로 읽힌다 (DBG_STOP 을 켜도). BOARD_TEST 빌드는 10 ms 마다
 # 3 ms 깨어 있으므로 그 순간에 걸릴 때까지 다시 읽는다. 끝 단어 magic 이 맞아야 온전한 읽기다.
@@ -14,6 +16,7 @@ param(
   [string]$Inject = "",
   [switch]$Replay,
   [switch]$WakeTest,
+  [int]$Stream = 0,
   [string]$Elf = "$PSScriptRoot\..\kws_wake\Debug\kws_wake.elf"
 )
 
@@ -151,6 +154,46 @@ if ($Replay) {
   if (-not $py) { "got written to $csv (no python found for the report)"; return }
   $html = Join-Path $outdir "replay_$stamp.html"
   & $py -I (Join-Path $PSScriptRoot 'replay_report.py') $csv $html --seconds ((Get-Date) - $t0).TotalSeconds
+  return
+}
+
+if ($Stream -gt 0) {
+  $go = Get-Sym 'board_stream_go'      # 스트림 빌드에만 있다
+  for ($t = 0; $t -lt 60; $t++) {
+    & $cli -c port=SWD mode=HOTPLUG -w32 $go.addr ('0x{0:X8}' -f $Stream) 2>&1 | Out-Null
+    $w = Read-Once
+    if ($w -and $w[14] -eq 1) { break }
+  }
+  if (-not ($w -and $w[14] -eq 1)) { throw "stream did not start (is this a WAKE_STREAM build?)" }
+  "stream $Stream started"
+  do {
+    Start-Sleep -Seconds 3
+    $w = Read-Once
+    if ($w) { "[{0:HH:mm:ss}] captures sent {1}, ok {2}, timeouts {3}" -f (Get-Date), $w[2], $w[3], $w[4] }
+  } while (-not $w -or $w[14] -ne 2)
+
+  # 끝나면 보드는 Sleep 에 머문다 -- 큰 블록도 한 번에 읽힌다
+  function Read-Words($sym, $bytes) {
+    $o = & $cli -c port=SWD mode=HOTPLUG -r32 $sym.addr $bytes 2>&1 | Select-String '^0x2000'
+    $v = @(); foreach ($l in $o) { $v += ($l.Line -split ':')[1].Trim() -split '\s+' | ForEach-Object { [Convert]::ToUInt32($_, 16) } }
+    return , $v
+  }
+  $n = (Read-Words (Get-Sym 'board_cap_n') 4)[0]
+  $capsSym = Get-Sym 'board_caps'
+  $per = [int]($capsSym.size / 16)                   # BOARD_MAX_CAPS
+  $v = Read-Words $capsSym ($per * [Math]::Max($n, 1))
+  $caps = @()
+  for ($c = 0; $c -lt $n; $c++) {
+    $b = [int]($c * $per / 4)
+    $clip = @(); for ($j = 0; $j -lt 50; $j++) { $x = $v[$b + 2 + $j]; $clip += ($x -band 0xFFFF), ($x -shr 16) }
+    $caps += [pscustomobject]@{ end = $v[$b]; got = ($v[$b + 1] -band 0xFF); clip = $clip }
+  }
+  $outdir = Join-Path $PSScriptRoot "..\..\..\out\stream"
+  New-Item -ItemType Directory -Force $outdir | Out-Null
+  $json = Join-Path $outdir ("stream{0}_{1}.json" -f $Stream, (Get-Date -Format 'yyyyMMdd_HHmmss'))
+  [IO.File]::WriteAllText($json, (ConvertTo-Json @($caps) -Depth 4 -Compress))
+  $py = Find-Python
+  & $py -I (Join-Path $PSScriptRoot 'stream_check.py') $json $Stream
   return
 }
 

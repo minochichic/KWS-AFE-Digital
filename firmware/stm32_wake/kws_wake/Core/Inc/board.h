@@ -74,6 +74,20 @@ extern volatile uint32_t board_replay_go;   /* 1 = 골든 재생, 2 = WAKE 테�
 #define BOARD_REPLAY_GAP_MS  5u     /* 클립 사이 간격 -- FPGA 가 다음 패킷 받을 준비 */
 #define BOARD_WAKE_TEST_N    20u    /* WAKE 테스트 시행 수 */
 
+/*
+ * 스트림 빌드(-DWAKE_STREAM, 단계 3.5 B1): SWD 로 board_stream_go = k(1..) 를 쓰면 다음 박자부터
+ * gen/stream_clips.h 의 스트림 k 를 한 박자에 한 칸씩 **핀 대신** wake_core 에 넣는다 (시작에
+ * wake_init). 걸린 클립과 FPGA 답을 board_caps[] 에 남긴다 -- tools/read_stats.ps1 -Stream k.
+ */
+#define BOARD_MAX_CAPS       16u
+typedef struct {
+  uint32_t end;          /* 스트림 칸 번호: 이 칸에서 클립이 찼다 (시뮬의 Capture.end) */
+  uint8_t  got;          /* FPGA 클래스, 0xFF 타임아웃, 0xFE sync/CRC */
+  uint8_t  pad[3];
+  uint16_t clip[100];    /* FPGA 로 보낸 100 칸 */
+} board_cap_t;
+extern volatile uint32_t board_stream_go;
+
 /* 재생: 클립 i 에 FPGA 가 낸 클래스. 0xFF = 타임아웃, 0xFE = sync/CRC 오류 */
 #define BOARD_GOT_TIMEOUT    0xFFu
 #define BOARD_GOT_BAD        0xFEu
