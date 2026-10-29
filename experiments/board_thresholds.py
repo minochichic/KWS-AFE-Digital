@@ -122,7 +122,7 @@ POT_MV = (900.0, 990.0)  # 동료가 R7/R8 을 가변저항으로 바꾼 뒤의 
 
 
 def measured_dc(path: Path = DC_CSV) -> dict:
-    """ch -> (V_Filt, V_Env) [mV], 무신호 실측. `#` 줄은 주석."""
+    """ch -> (V_Filt, V_Env) [mV], 신호 없을 때의 실측. `#` 줄은 주석."""
     import csv
     lines = [l for l in Path(path).read_text().splitlines()
              if l.strip() and not l.lstrip().startswith("#")]
@@ -176,7 +176,7 @@ def main() -> None:
     ap.add_argument("--k-mv", nargs="+", type=float, default=[20.0, 40.0, 80.0],
                     help="정규화 1.0 에 해당하는 전압 [mV]. 미지수다 -- 여러 개 준다")
     ap.add_argument("--dc-csv", type=Path, nargs="?", const=DC_CSV, default=None,
-                    help="채널별 무신호 DC 실측 CSV. 주면 K_ch = 그 채널 스윙, 기준점 = "
+                    help="채널별 DC 실측 CSV (신호 없음). 주면 K_ch = 그 채널 스윙, 기준점 = "
                          "그 채널 V_Env 로 채널별 목표를 낸다 (값 없이 주면 최신 실측)")
     args = ap.parse_args()
 
