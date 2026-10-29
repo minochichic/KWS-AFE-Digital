@@ -122,13 +122,19 @@ def hot_mask(silence_frames: np.ndarray, hot: float) -> np.ndarray:
 
 def simulate_triggers(stream: np.ndarray, policy: TriggerPolicy,
                       counted: np.ndarray, scan_end: int,
-                      bg_q0: Optional[int] = None) -> List[Capture]:
+                      bg_q0: Optional[int] = None,
+                      decay_round: int = 0) -> List[Capture]:
     """The firmware's IDLE -> CAPTURE -> busy loop over one [T, C] stream.
 
     bg_q0 None (the firmware): the first WARMUP frames only seed the
     background, bg_q = sum of their on-counts = 32 x mean, and nothing can
     trigger before frame WARMUP. An int: start at frame 0 with that bg_q
-    (unit tests that want an event near the start)."""
+    (unit tests that want an event near the start).
+
+    decay_round: added before the >> in the decay term. 0 is the firmware
+    (floor: bg_q < 32 never decays, so a word leaves up to ~1 channel of
+    floor behind); 16 rounds (floor 15); 31 is ceil (decays to 0).
+    experiments/eval_trigger_history.py compares them."""
     on = stream[:, counted].sum(axis=1).astype(np.int64)
     if bg_q0 is None:
         bg_q, t = int(on[:WARMUP].sum()), WARMUP     # WARMUP == 32: sum = 32 x mean
@@ -143,7 +149,7 @@ def simulate_triggers(stream: np.ndarray, policy: TriggerPolicy,
                                    or (o << BG_SHIFT) >= bg_q + d_q)
         run = run + 1 if sound else 0
         if not sound:
-            bg_q += o - (bg_q >> BG_SHIFT)   # learn the floor only from quiet
+            bg_q += o - ((bg_q + decay_round) >> BG_SHIFT)   # learn the floor only from quiet
         if run >= policy.run:
             onset = t - policy.run + 1
             start = max(0, onset - policy.pre)
