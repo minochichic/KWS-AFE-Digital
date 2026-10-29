@@ -35,7 +35,8 @@ K 는 "정규화 1.0 이 몇 mV 인가"이고, 마이크 감도 x 프리앰프 x
 (B) 를 반영하려면 그 채널을 죽이거나 vos 를 켜야 한다. 별도 실험이다.
 
 체크포인트가 있는 학습 박스에서 돌린다:
-    python -m experiments.board_thresholds --tag bd_base --k-mv 20 40 80
+    python -m experiments.board_thresholds --tag bd_base --k-mv 20 40 80 100
+    python -m experiments.board_thresholds --tag bd_base --mic-mv 0.1   # 옛 0.1 mV 열
 """
 from __future__ import annotations
 
@@ -67,11 +68,22 @@ def board_rows():
     return bom.name, rows
 
 
-def measured():
-    """swing_board.md 에서 Venv_DC 와 채널별 스윙 [mV].
+MIC_MV = (0.1, 0.4)     # swing_board.md 의 두 열. 0.4 mV 가 설계점 (CLAUDE.md 2.2)
+
+
+def measured(mic_mv: float = 0.4):
+    """swing_board.md 에서 Venv_DC 와 채널별 스윙 [mV], 그리고 `≤` 채널.
 
     복사가 아니라 파싱이다 -- 표가 갱신되면 여기 숫자도 같이 움직여야 한다.
+    실제로 갱신됐고(4f35691: "0.1 mV 에서 ch14·15 사망" 을 정정하며 표를
+    마이크 진폭 0.1 / 0.4 mV 두 열로 바꿨다) 옛 절 제목을 찾던 이 함수가 멈췄다.
+
+    `≤` 는 ngspice 가 그 진폭에서 수렴하지 못해 낮은 진폭에서 재고 선형 환산한
+    값이다. 회로가 100 mV 근처에서 압축되므로 **상한**이다 -- 그 채널 집합을
+    같이 돌려준다.
     """
+    if mic_mv not in MIC_MV:
+        raise SystemExit(f"--mic-mv 는 {MIC_MV} 중 하나 (swing_board.md 의 열)")
     if not SWING_MD.is_file():
         raise SystemExit(f"{SWING_MD} 가 없다. board_swing.py 를 먼저 돌린다.")
     txt = SWING_MD.read_text()
@@ -79,21 +91,30 @@ def measured():
     if not m:
         raise SystemExit("swing_board.md 에서 Venv_DC 를 못 찾았다.")
     dc = float(m.group(1))
-    sw = {}
-    # 문서에 표가 여러 개다(스윙 표, 루프여유 표, 이득 스윕 표). 스윙 표 절만
-    # 잘라서 읽는다 -- 안 그러면 여유 표의 f_c 를 채널 번호로 주워 온다.
-    head = "## 마이크 0.1 mV 입력에서의 스윙"
+
+    head = "## 스윙 (마이크 진폭별)"
     if head not in txt:
         raise SystemExit(f"swing_board.md 에 '{head}' 절이 없다.")
     body = txt.split(head, 1)[1].split("\n## ", 1)[0]
-    # 좌우 2단 표: | ch | f_c | 스윙 | | ch | f_c | 스윙 |
+    col = MIC_MV.index(mic_mv)                  # 0 -> @0.1 mV, 1 -> @0.4 mV
+    sw, upper = {}, set()
+    # 좌우 2단 표: | ch | f_c | @0.1 | @0.4 | | ch | f_c | @0.1 | @0.4 |
     for line in body.splitlines():
-        for cm in re.finditer(r"\|\s*\*{0,2}(\d+)\*{0,2}\s*\|\s*\*{0,2}[\d.]+\*{0,2}"
-                              r"\s*\|\s*\*{0,2}([\d.]+)\s*mV", line):
-            sw[int(cm.group(1))] = float(cm.group(2))
+        if not line.lstrip().startswith("|"):
+            continue
+        cells = [c.strip().replace("*", "") for c in line.strip().strip("|").split("|")]
+        cells = [c for c in cells if c]
+        for i in range(0, len(cells) - 3, 4):
+            ch, _fc, *vals = cells[i:i + 4]
+            if not ch.isdigit():
+                continue                        # 머리 줄, 구분 줄
+            v = vals[col]
+            if v.startswith("≤"):
+                upper.add(int(ch))
+            sw[int(ch)] = float(v.lstrip("≤"))
     if len(sw) != 16:
         raise SystemExit(f"스윙을 16개가 아니라 {len(sw)}개 파싱했다: {sorted(sw)}")
-    return dc, sw
+    return dc, sw, upper
 
 
 def learned(runs: str, tag: str) -> torch.Tensor:
@@ -117,17 +138,21 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--tag", default="bd_base")
     ap.add_argument("--runs", default="runs")
+    ap.add_argument("--mic-mv", type=float, default=0.4,
+                    help="스윙 표의 마이크 진폭 열 [mV]: 0.1 또는 0.4 (설계점)")
     ap.add_argument("--k-mv", nargs="+", type=float, default=[20.0, 40.0, 80.0],
                     help="정규화 1.0 에 해당하는 전압 [mV]. 미지수다 -- 여러 개 준다")
     args = ap.parse_args()
 
     bom_name, board = board_rows()
-    dc, swing = measured()
+    dc, swing, upper = measured(args.mic_mv)
     thr = learned(args.runs, args.tag)
 
     print(f"체크포인트: {args.runs}/{args.tag}/best.pt")
     print(f"BOM:        {bom_name}")
-    print(f"Venv_DC:    {dc:.2f} mV   (비교기 오프셋 가정 {VOS_MV:g} mV)\n")
+    print(f"Venv_DC:    {dc:.2f} mV   (비교기 오프셋 가정 {VOS_MV:g} mV)")
+    print(f"스윙:       마이크 {args.mic_mv:g} mV 열. ≤ = 상한 (ngspice 수렴 실패, "
+          f"선형 환산): " + (", ".join(f"ch{c}" for c in sorted(upper)) or "없음") + "\n")
 
     dead = [c for c in range(16) if swing[c] < VOS_MV]
     if dead:
@@ -140,7 +165,7 @@ def main() -> None:
         print(f"── 정방향  K = {k:g} mV  (정규화 1.0 = {k:g} mV) "
               f"{'─'*28}")
         print(f"{'ch':>3}{'f_c':>7}{'thr':>8}{'Vthr':>10}{'R7[k]':>9}"
-              f"{'R8[k]':>9}{'스윙':>9}{'':>4}")
+              f"{'R8[k]':>9}{'스윙':>9}{'':>7}{'DC 위':>9}")
         over = []
         for c in range(16):
             t = float(thr[c])
@@ -152,8 +177,10 @@ def main() -> None:
                 over.append(c)
             if swing[c] < VOS_MV:
                 flag = "사망"
+            le = "≤" if c in upper else " "
             print(f"{c:>3}{board[c]['fc']:>7.0f}{t:>8.3f}{vthr:>9.1f}m"
-                  f"{r7:>9.1f}{r8:>9.1f}{swing[c]:>8.2f}m{flag:>7}")
+                  f"{r7:>9.1f}{r8:>9.1f}{le}{swing[c]:>7.2f}m{flag:>7}"
+                  f"{t * k:>9.2f}m")
         if over:
             print(f"   ⚠️ K={k:g} 에서 임계값이 그 채널 스윙 위에 있는 채널: {over}")
         print()
