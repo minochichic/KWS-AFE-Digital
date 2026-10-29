@@ -117,6 +117,39 @@ def measured(mic_mv: float = 0.4):
     return dc, sw, upper
 
 
+DC_CSV = ROOT / "analog/AFE_board/artifacts/dc_measured_20261029.csv"
+POT_MV = (900.0, 990.0)  # 동료가 R7/R8 을 가변저항으로 바꾼 뒤의 조정 범위 (2026-09)
+
+
+def measured_dc(path: Path = DC_CSV) -> dict:
+    """ch -> (V_Filt, V_Env) [mV], 무신호 실측. `#` 줄은 주석."""
+    import csv
+    lines = [l for l in Path(path).read_text().splitlines()
+             if l.strip() and not l.lstrip().startswith("#")]
+    rows = {int(r["ch"]): (float(r["V_Filt_mV"]), float(r["V_Env_mV"]))
+            for r in csv.DictReader(lines)}
+    if sorted(rows) != list(range(16)):
+        raise SystemExit(f"{path}: 채널이 0..15 가 아니다: {sorted(rows)}")
+    return rows
+
+
+def per_channel_targets(thr, env_dc: dict, swing: dict) -> list:
+    """K 를 하나로 두지 않고 채널마다 그 채널의 스윙으로 둔다.
+
+    학습은 필터뱅크를 채널마다 최대 이득 1 로 맞춘다(board_matrix.py 의
+    peak-norm) -- 모든 채널을 같은 이득으로 본다. 실물은 고역이 약하다(같은
+    마이크 진폭에서 ch15 16 mV, 저역 80~108 mV). 그래서 "정규화 1.0 = 설계점
+    마이크 진폭에서의 그 채널 스윙" 으로 두면 K_ch = swing[ch] 이고, 기준점도
+    시뮬의 공통 Venv_DC 가 아니라 채널마다 잰 V_Env 다."""
+    out = []
+    for c in range(16):
+        t = float(thr[c])
+        above = t * swing[c]
+        out.append(dict(ch=c, thr=t, dc=env_dc[c], above=above,
+                        target=env_dc[c] + above, peak=env_dc[c] + swing[c]))
+    return out
+
+
 def learned(runs: str, tag: str) -> torch.Tensor:
     ck = torch.load(Path(runs) / tag / "best.pt", map_location="cpu",
                     weights_only=True)
@@ -142,7 +175,14 @@ def main() -> None:
                     help="스윙 표의 마이크 진폭 열 [mV]: 0.1 또는 0.4 (설계점)")
     ap.add_argument("--k-mv", nargs="+", type=float, default=[20.0, 40.0, 80.0],
                     help="정규화 1.0 에 해당하는 전압 [mV]. 미지수다 -- 여러 개 준다")
+    ap.add_argument("--dc-csv", type=Path, nargs="?", const=DC_CSV, default=None,
+                    help="채널별 무신호 DC 실측 CSV. 주면 K_ch = 그 채널 스윙, 기준점 = "
+                         "그 채널 V_Env 로 채널별 목표를 낸다 (값 없이 주면 최신 실측)")
     args = ap.parse_args()
+
+    if args.dc_csv is not None:
+        report_measured_dc(args)
+        return
 
     bom_name, board = board_rows()
     dc, swing, upper = measured(args.mic_mv)
@@ -206,5 +246,40 @@ def main() -> None:
     print("  K 를 확정하려면 알려진 음압에서 v_env 스윙을 재야 한다 -- 동료 몫이다.")
 
 
+def report_measured_dc(args) -> None:
+    bom_name, board = board_rows()
+    _, swing, upper = measured(args.mic_mv)
+    dc = measured_dc(args.dc_csv)
+    thr = learned(args.runs, args.tag)
+    rows = per_channel_targets(thr, {c: dc[c][1] for c in dc}, swing)
+
+    env = [dc[c][1] for c in range(16)]
+    print(f"체크포인트: {args.runs}/{args.tag}/best.pt")
+    print(f"실측 DC:    {args.dc_csv}  (V_Env {min(env):.1f}..{max(env):.1f} mV)")
+    print(f"가정:       정규화 1.0 = 마이크 {args.mic_mv:g} mV 에서 그 채널의 스윙 (시뮬), "
+          f"비교기 오프셋 0")
+    print(f"BOM Vthr:   {bom_name} (가변저항 이전 고정 R7/R8), 가변 범위 "
+          f"{POT_MV[0]:g}..{POT_MV[1]:g} mV\n")
+    print(f"{'ch':>3}{'f_c':>7}{'thr':>7}{'V_Env':>8}{'DC위':>7}{'목표':>8}"
+          f"{'최고점':>9}{'BOM':>6}  BOM 으로 켜지나   가변범위  오프셋")
+    never, out_of_range, buried = [], [], []
+    for r in rows:
+        c = r["ch"]
+        bom = board[c]["vthr"] * 1000
+        reach = r["peak"] - bom
+        never += [c] if reach < 0 else []
+        in_pot = POT_MV[0] <= r["target"] <= POT_MV[1]
+        out_of_range += [] if in_pot else [c]
+        buried += [c] if r["above"] < VOS_MV else []
+        print(f"{c:>3}{board[c]['fc']:>7.0f}{r['thr']:>7.3f}{r['dc']:>8.1f}{r['above']:>7.2f}"
+              f"{r['target']:>8.1f}{r['peak']:>8.1f}{'≤' if c in upper else ' '}{bom:>6.0f}  "
+              f"{'안 닿음' if reach < 0 else f'+{reach:.1f} mV':>12}   "
+              f"{'O' if in_pot else '범위 밖':>6}  {'<3mV' if r['above'] < VOS_MV else ''}")
+    print(f"\n  BOM 임계값으로 마이크 {args.mic_mv:g} mV 에서 안 켜지는 채널: {never}")
+    print(f"  목표가 가변 범위 {POT_MV[0]:g}..{POT_MV[1]:g} mV 밖인 채널: {out_of_range}")
+    print(f"  목표가 자기 DC 위 {VOS_MV:g} mV 이내 (비교기 오프셋에 묻힘): {buried}")
+
+
 if __name__ == "__main__":
     main()
+

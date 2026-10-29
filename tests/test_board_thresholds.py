@@ -31,3 +31,22 @@ def test_unknown_mic_column_is_refused():
 def test_board_bom_has_16_channels():
     _, rows = board_rows()
     assert sorted(rows) == list(range(16))
+
+
+def test_measured_dc_csv():
+    from experiments.board_thresholds import measured_dc
+    dc = measured_dc()
+    assert sorted(dc) == list(range(16))
+    assert dc[10] == (903.9, 870.6) and dc[12] == (892.4, 886.2)
+
+
+def test_per_channel_targets_use_each_channels_dc_and_swing():
+    from experiments.board_thresholds import measured_dc, per_channel_targets
+    dc = {c: v[1] for c, v in measured_dc().items()}
+    _, sw, _ = measured(0.4)
+    thr = [0.0] * 16
+    thr[15], thr[0] = 0.5, 1.0
+    rows = per_channel_targets(thr, dc, sw)
+    assert rows[15]["target"] == pytest.approx(888.1 + 0.5 * 15.99)
+    assert rows[0]["target"] == pytest.approx(rows[0]["peak"])        # thr 1.0 = peak
+    assert rows[3]["target"] == pytest.approx(dc[3])                  # thr 0 = its own DC
