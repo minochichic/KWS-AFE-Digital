@@ -59,3 +59,24 @@ def test_awg_swing_interpolation():
     assert swing_at(2.5, 2.0, 16.0)[0] == pytest.approx(9.0)         # 1..4 mV segment
     v, how = swing_at(5.0, 2.0, 16.0)
     assert how == "extrap>4mV" and v == pytest.approx(16.0 + 14.0 / 3)
+
+
+def test_arb_fit_recovers_the_scale(tmp_path):
+    """A synthetic .arb made the way the bench made lef00005.arb: 4x upsampled,
+    padded with silence, min..max stretched to the full code range."""
+    import numpy as np
+    from experiments.awg_thresholds import fit_mv_per_unit, read_arb
+    rng = np.random.default_rng(0)
+    wav = (rng.standard_normal(1600) * 0.1).astype(float)
+    up = np.repeat(wav, 4)
+    sig = np.concatenate([np.zeros(800), up, np.zeros(800)])
+    hi_v, lo_v = 0.05 * sig.max() / (sig.max() - sig.min()) * 2, 0.05 * sig.min() / (sig.max() - sig.min()) * 2
+    codes = np.round(-32767 + (sig - sig.min()) / (sig.max() - sig.min()) * 65534).astype(int)
+    p = tmp_path / "t.arb"
+    p.write_text("File Format:1.10\nSample Rate:64000.000000\n"
+                 f"High Level:{hi_v}\nLow Level:{lo_v}\nData Points:{len(codes)}\nData:\n"
+                 + "\n".join(map(str, codes)) + "\n")
+    sr, mv = read_arb(p)
+    g, r = fit_mv_per_unit(sr, mv, wav, 16000)
+    assert sr == 64000 and r > 0.999
+    assert g == pytest.approx(100.0 / (sig.max() - sig.min()), rel=1e-3)

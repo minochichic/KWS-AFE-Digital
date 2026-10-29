@@ -22,9 +22,17 @@
 전압으로 돌리려면 클립마다 Vpp 를 peak 에 비례시켜 "디지털 1 당 mV" 를 고정한다.
 --wav 를 여러 개 주면 그 Vpp 를 같이 낸다.
 
+"디지털 1 = 몇 mV" 는 arb 파일과 원본 wav 를 최소제곱으로 맞춰 얻는 것이 가장 정확하다
+(--arb + --wav). arb 를 만들 때 4배 보간이 꼭짓점을 바꾸므로 Vpp/peak 로 계산한 값과
+~1% 다르다. 그 값을 이미 알면 --mv-per-unit 로 바로 준다.
+
+--wav 를 주면 그 클립에 대해 모델이 기대하는 비교기 출력(16채널 x 100칸)도 찍는다 --
+벤치에서 비교기 출력을 볼 때의 정답지다.
+
 체크포인트가 있는 학습 박스에서:
-    python -m experiments.awg_thresholds --tag bd_base --wav <넣은 GSC wav> --vpp-mv 100
-    python -m experiments.awg_thresholds --tag bd_base --peak 0.5 --vpp-mv 100
+    python -m experiments.awg_thresholds --tag bd_base --mv-per-unit 121.52 --wav <원본 wav>
+    python -m experiments.awg_thresholds --tag bd_base --arb lef00005.arb --wav <원본 wav>
+    python -m experiments.awg_thresholds --tag bd_base --vpp-mv 100 --wav <원본 wav>   # peak 로 근사
 """
 from __future__ import annotations
 
@@ -89,10 +97,58 @@ def tone_threshold_amplitudes(afe, thr, fcs, sr: int, n: int) -> List[float]:
     return out
 
 
+def read_arb(path: Path) -> Tuple[float, np.ndarray]:
+    """Keysight 형식 .arb -> (샘플레이트, mV). 코드 -32767..32767 이 Low..High Level."""
+    lines = Path(path).read_text().splitlines()
+    hdr, i = {}, 0
+    while i < len(lines) and not lines[i].startswith("Data:"):
+        k, _, v = lines[i].partition(":")
+        hdr[k.strip()] = v.strip()
+        i += 1
+    codes = np.array([int(x) for x in lines[i + 1:] if x.strip()], dtype=float)
+    hi, lo = float(hdr["High Level"]), float(hdr["Low Level"])
+    mv = (lo + (codes + 32767) * (hi - lo) / 65534) * 1000.0
+    return float(hdr["Sample Rate"]), mv
+
+
+def fit_mv_per_unit(arb_sr: float, arb_mv: np.ndarray, wav: np.ndarray,
+                    wav_sr: int) -> Tuple[float, float]:
+    """arb(전압) = g * wav(디지털) 인 g 와 정규화 상관. 정수배 업샘플만 가정한다."""
+    k = int(round(arb_sr / wav_sr))
+    if abs(arb_sr - k * wav_sr) > 1e-6:
+        raise SystemExit(f"arb {arb_sr} Hz 가 wav {wav_sr} Hz 의 정수배가 아니다")
+    best = None
+    for phase in range(k):
+        d = arb_mv[phase::k]
+        if len(d) < len(wav):
+            continue
+        # wav 를 arb 안에서 미끄러뜨려 가장 잘 맞는 위치
+        c = np.correlate(d - d.mean(), wav - wav.mean(), mode="valid")
+        lag = int(np.argmax(c))
+        seg = d[lag:lag + len(wav)]
+        g = float(seg @ wav / (wav @ wav))
+        r = float(np.corrcoef(seg, wav)[0, 1])
+        if best is None or r > best[1]:
+            best = (g, r)
+    if best is None:
+        raise SystemExit("arb 가 wav 보다 짧다")
+    return best
+
+
+def load_wav(path: Path) -> Tuple[np.ndarray, int]:
+    """16비트 PCM wav -> ([-1, 1) float, 샘플레이트). GSC 형식이면 충분하고, torchaudio
+    백엔드가 없는 기계(Mac 의 venv)에서도 돈다. 첫 채널만."""
+    import wave
+    with wave.open(str(path)) as w:
+        if w.getsampwidth() != 2:
+            raise SystemExit(f"{path}: 16비트 PCM 이 아니다")
+        x = np.frombuffer(w.readframes(w.getnframes()), dtype="<i2")
+        x = x.reshape(-1, w.getnchannels())[:, 0].astype(np.float32) / 32768.0
+        return x, w.getframerate()
+
+
 def wav_peak(path: Path) -> float:
-    import torchaudio
-    w, _ = torchaudio.load(str(path))
-    return float(w.abs().max())
+    return float(np.abs(load_wav(path)[0]).max())
 
 
 def main() -> None:
@@ -101,11 +157,12 @@ def main() -> None:
     ap.add_argument("--tag", default="bd_base")
     ap.add_argument("--runs", default="runs")
     ap.add_argument("--vpp-mv", type=float, default=100.0, help="AWG 진폭 설정 [mVpp]")
-    g = ap.add_mutually_exclusive_group(required=True)
-    g.add_argument("--wav", type=Path, nargs="+",
-                   help="AWG 로 넣은 GSC wav. 첫 파일이 기준(peak), 나머지는 같은 "
-                        "보정을 유지할 Vpp 를 계산한다")
-    g.add_argument("--peak", type=float, help="arb 변환 때 100%% 로 맞춘 클립 최대값 (디지털)")
+    ap.add_argument("--wav", type=Path, nargs="+",
+                    help="AWG 로 넣은 클립의 원본 GSC wav. 첫 파일이 기준; 나머지는 같은 "
+                         "보정을 유지할 Vpp 를 계산한다. 첫 파일의 예상 비교기 출력도 찍는다")
+    ap.add_argument("--arb", type=Path, help="AWG 에 넣은 .arb -- --wav 첫 파일과 맞춰 mV/단위를 구한다")
+    ap.add_argument("--mv-per-unit", type=float, help="디지털 1 = 몇 mV (이미 알면)")
+    ap.add_argument("--peak", type=float, help="arb 변환 때 Vpp 에 맞춘 클립 최대값 (디지털)")
     ap.add_argument("--dc-csv", type=Path, default=DC_CSV)
     args = ap.parse_args()
 
@@ -131,17 +188,32 @@ def main() -> None:
     _, s4, up4 = measured(0.4)
     dc = measured_dc(args.dc_csv)
 
-    peaks = [wav_peak(p) for p in args.wav] if args.wav else [args.peak]
-    peak = peaks[0]
-    mv_per_unit = (args.vpp_mv / 2.0) / peak
     sr = int(cfg.afe.sample_rate)
+    peaks = [wav_peak(p) for p in args.wav] if args.wav else []
+    if args.mv_per_unit:
+        mv_per_unit, how = args.mv_per_unit, "--mv-per-unit"
+    elif args.arb:
+        if not args.wav:
+            raise SystemExit("--arb 는 원본 --wav 와 같이 준다")
+        w0, wsr = load_wav(args.wav[0])
+        if wsr != sr:
+            raise SystemExit(f"{args.wav[0]}: {wsr} Hz, 모델은 {sr} Hz")
+        asr, amv = read_arb(args.arb)
+        mv_per_unit, r = fit_mv_per_unit(asr, amv, w0.astype(float), wsr)
+        how = f"{args.arb.name} 와 원본을 최소제곱으로 맞춤 (상관 {r:.4f})"
+        if r < 0.99:
+            print(f"⚠️  상관 {r:.3f} -- arb 가 이 wav 에서 온 게 아닐 수 있다")
+    elif peaks or args.peak:
+        pk = peaks[0] if peaks else args.peak
+        mv_per_unit, how = (args.vpp_mv / 2.0) / pk, f"Vpp/2 / peak {pk:.4f} (근사)"
+    else:
+        raise SystemExit("--mv-per-unit, --arb + --wav, --wav, --peak 중 하나가 필요하다")
     n = int(sr * cfg.afe.clip_ms / 1000)
     a_thr = tone_threshold_amplitudes(afe, thr, fcs, sr, n)
 
     print(f"체크포인트: {run}/best.pt  (normalize=fixed, lo={float(afe.fixed_lo):.4g}, "
           f"hi={float(afe.fixed_hi):.4g})")
-    print(f"AWG:        {args.vpp_mv:g} mVpp, 클립 peak {peak:.4f} -> 디지털 1 = "
-          f"{mv_per_unit:.1f} mV (프리앰프 출력 노드)"
+    print(f"AWG:        디지털 1 = {mv_per_unit:.2f} mV (프리앰프 출력 노드) -- {how}"
           + (f"  [{args.wav[0].name}]" if args.wav else ""))
     print(f"            = 마이크 환산 {mv_per_unit / PREAMP_GAIN:.2f} mV / 디지털 1 "
           f"(설계점 0.4 mV 정현파 = 프리앰프 4 mV)")
@@ -169,11 +241,22 @@ def main() -> None:
     if ok:
         print(f"\n  V_thr 범위 {min(ok):.1f} .. {max(ok):.1f} mV  (가변저항 900..990 mV)")
 
+    if args.wav:
+        w0, _ = load_wav(args.wav[0])
+        with torch.no_grad():
+            bits = (afe(torch.from_numpy(w0).unsqueeze(0)) > 0)[0].numpy()  # [16, native_T]
+        print(f"\n  모델이 기대하는 비교기 출력: {args.wav[0].name}  "
+              f"(10 ms 칸, # = 켜짐, 위가 ch15)")
+        for c in range(15, -1, -1):
+            print(f"  ch{c:>2} {''.join('#' if b else '.' for b in bits[c])} "
+                  f"{int(bits[c].sum()):>3}")
+
     if args.wav and len(args.wav) > 1:
         print(f"\n  같은 V_thr 로 여러 클립을 돌리려면 '디지털 1 = {mv_per_unit:.1f} mV' 를 "
               f"유지하는 Vpp 로 넣는다:")
         for p, pk in zip(args.wav, peaks):
-            print(f"    {p.name:40s} peak {pk:.4f}  ->  {2 * pk * mv_per_unit:6.1f} mVpp")
+            print(f"    {p.name:40s} peak {pk:.4f}  ->  {2 * pk * mv_per_unit:6.1f} mVpp "
+                  f"(peak 기준 근사)")
 
 
 if __name__ == "__main__":
