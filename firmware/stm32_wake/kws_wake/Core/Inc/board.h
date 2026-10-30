@@ -85,12 +85,26 @@ extern volatile uint32_t board_replay_go;   /* 1 = 골든 재생, 2 = WAKE 테�
 /* -DBOARD_STREAM_AUTOSTART=s: 부팅 s 초 뒤 스트림 1 을 스스로 시작한다. 실제 빌드(BOARD_TEST=0)를
  * SWD 없이 돌리는 시험용 -- 전원을 껐다 켜서 디버그 설정을 지운 뒤 손대지 않고 기다린다. */
 typedef struct {
-  uint32_t end;          /* 스트림 칸 번호: 이 칸에서 클립이 찼다 (시뮬의 Capture.end) */
+  uint32_t end;          /* 이 칸에서 클립이 찼다: 스트림 칸 번호(시뮬의 Capture.end), AFE 기록은 ticks */
   uint8_t  got;          /* FPGA 클래스, 0xFF 타임아웃, 0xFE sync/CRC */
-  uint8_t  pad[3];
+  uint8_t  pad;
+  uint16_t bg_q;         /* 트리거 때 배경 (채널 수 x 32) -- AFE 기록 빌드만 채운다 */
   uint16_t clip[100];    /* FPGA 로 보낸 100 칸 */
 } board_cap_t;
 extern volatile uint32_t board_stream_go;
+
+/*
+ * AFE 기록 빌드(-DWAKE_AFELOG, 단계 4): 핀에서 걸린 클립을 FPGA 로 보내는 것은 일반 빌드와 같고,
+ * 처음 BOARD_MAX_CAPS 개를 board_caps[] 에 남긴다 (end = 그 박자의 ticks). 조용한 박자(wake_core
+ * IDLE)마다 채널별로 켜진 칸을 board_quiet 에 센다 -- AFE 의 무음 발화율. Stop 2 대신 Sleep 이라
+ * SWD 로 언제든 읽힌다 (전력은 단계 6 에서 따로 잰다). SWD 로 board_log_reset = 1 을 쓰면 둘 다
+ * 비운다. tools/read_stats.ps1 -Afe [-Reset].
+ */
+typedef struct {
+  uint32_t n;            /* 센 조용한 박자 수 */
+  uint32_t on[16];       /* 그중 채널 k 가 켜진 박자 수 */
+} board_quiet_t;
+extern volatile uint32_t board_log_reset;
 
 /* 재생: 클립 i 에 FPGA 가 낸 클래스. 0xFF = 타임아웃, 0xFE = sync/CRC 오류 */
 #define BOARD_GOT_TIMEOUT    0xFFu

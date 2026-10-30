@@ -8,6 +8,9 @@
 #   read_stats.ps1 -WakeTest          # 재생 빌드: WAKE 선이 FPGA 파서를 실제로 초기화하는지 (반쪽 패킷)
 #   read_stats.ps1 -Stream 1          # 스트림 빌드: 스트림 1 을 핀 대신 먹이고, 걸린 클립을 시뮬과 대조
 #                                     #   (make_streams.py 먼저, 비교는 stream_check.py)
+#   read_stats.ps1 -Afe [-Tag x]      # AFE 기록 빌드(단계 4): 핀에서 걸린 클립 + 무음 발화율을
+#                                     #   out/afe/afe_<tag>_<시각>.json 으로 (비교는 experiments/afe_clip.py check)
+#   read_stats.ps1 -Afe -Reset        # 기록을 비운다 (재생을 시작하기 전에)
 #
 # Stop 2 중에 읽으면 RAM 이 0 으로 읽힌다 (DBG_STOP 을 켜도). BOARD_TEST 빌드는 10 ms 마다
 # 3 ms 깨어 있으므로 그 순간에 걸릴 때까지 다시 읽는다. 끝 단어 magic 이 맞아야 온전한 읽기다.
@@ -18,6 +21,9 @@ param(
   [switch]$WakeTest,
   [int]$Stream = 0,
   [int]$Collect = 0,
+  [switch]$Afe,
+  [switch]$Reset,
+  [string]$Tag = "clip",
   [string]$Elf = "$PSScriptRoot\..\kws_wake\Debug\kws_wake.elf"
 )
 
@@ -159,6 +165,66 @@ if ($Replay) {
   return
 }
 
+# 실제 빌드(DBG_SLEEP 꺼짐)의 Sleep 에서는 연결이 가끔 "No STM32 target found" 로 실패한다 -- 다시 읽는다
+function Read-Words($sym, $bytes) {
+  for ($t = 0; $t -lt 20; $t++) {
+    $o = & $cli -c port=SWD mode=HOTPLUG -r32 $sym.addr $bytes 2>&1 | Select-String '^0x2000'
+    $v = @(); foreach ($l in $o) { $v += ($l.Line -split ':')[1].Trim() -split '\s+' | ForEach-Object { [Convert]::ToUInt32($_, 16) } }
+    if ($v.Count -eq $bytes / 4) { return , $v }
+  }
+  throw "read of $($sym.addr) failed"
+}
+
+# board_caps[0..n-1] (board.h board_cap_t: end, got | bg_q << 16, clip[100])
+function Read-Caps($n) {
+  $capsSym = Get-Sym 'board_caps'
+  $per = [int]($capsSym.size / 16)                   # BOARD_MAX_CAPS
+  $v = Read-Words $capsSym ($per * [Math]::Max($n, 1))
+  $caps = @()
+  for ($c = 0; $c -lt $n; $c++) {
+    $b = [int]($c * $per / 4)
+    $clip = @(); for ($j = 0; $j -lt 50; $j++) { $x = $v[$b + 2 + $j]; $clip += ($x -band 0xFFFF), ($x -shr 16) }
+    $caps += [pscustomobject]@{ end = $v[$b]; got = ($v[$b + 1] -band 0xFF); bg_q = ($v[$b + 1] -shr 16); clip = $clip }
+  }
+  return , $caps
+}
+
+if ($Afe) {
+  $nSym = Get-Sym 'board_cap_n'
+  if ($Reset) {
+    $rs = Get-Sym 'board_log_reset'                  # AFE 기록 빌드에만 있다
+    for ($t = 0; $t -lt 20; $t++) {
+      & $cli -c port=SWD mode=HOTPLUG -w32 $rs.addr 0x00000001 2>&1 | Out-Null
+      if ((Read-Words $nSym 4)[0] -eq 0 -and (Read-Words $rs 4)[0] -eq 0) { "log cleared"; return }
+    }
+    throw "reset not taken (is this a WAKE_AFELOG build?)"
+  }
+  $w = $null
+  for ($t = 0; $t -lt 40 -and -not $w; $t++) { $w = Read-Once }
+  if (-not $w) { throw "read failed" }
+  Show $w
+  $n = (Read-Words $nSym 4)[0]
+  $caps = Read-Caps ([Math]::Min($n, 16))
+  $q = Read-Words (Get-Sym 'board_quiet') 68
+  $quiet = [pscustomobject]@{ n = $q[0]; on = @($q[1..16]) }
+  if ($q[0] -gt 0) {
+    "  quiet frames {0} ({1:N1} s), on-rate ch0..15 = [{2}]" -f $q[0], ($q[0] / 100),
+      ((1..16 | ForEach-Object { '{0:N2}' -f ($q[$_] / $q[0]) }) -join ' ')
+  }
+  foreach ($c in $caps) {
+    $on = 0; foreach ($f in $c.clip) { for ($k = 0; $k -lt 16; $k++) { $on += ($f -shr $k) -band 1 } }
+    "  capture at tick {0}: FPGA class {1}, bg {2:N2} ch, mean on {3:N2} ch/frame" -f $c.end, $c.got, ($c.bg_q / 32), ($on / 100)
+  }
+  $outdir = Join-Path $PSScriptRoot "..\..\..\out\afe"
+  New-Item -ItemType Directory -Force $outdir | Out-Null
+  $json = Join-Path $outdir ("afe_{0}_{1}.json" -f $Tag, (Get-Date -Format 'yyyyMMdd_HHmmss'))
+  $o = [pscustomobject]@{ tag = $Tag; ticks = $w[0]; clips = $w[2]; ok = $w[3]; timeouts = $w[4]; bad = $w[5];
+                          cap_n = $n; quiet = $quiet; caps = @($caps) }
+  [IO.File]::WriteAllText($json, (ConvertTo-Json $o -Depth 4 -Compress))
+  "$n capture(s) since reset ($($caps.Count) kept) -> $json"
+  return
+}
+
 if ($Collect -gt 0) { $Stream = $Collect }   # 이미 끝난 스트림(자동 시작 빌드)의 결과만 읽는다
 if ($Stream -gt 0) {
   if ($Collect -eq 0) {
@@ -185,25 +251,8 @@ if ($Stream -gt 0) {
   }
 
   # 끝나면 보드는 Sleep 에 머문다 -- 큰 블록도 한 번에 읽힌다
-  # 실제 빌드(DBG_SLEEP 꺼짐)의 Sleep 에서는 연결이 가끔 "No STM32 target found" 로 실패한다 -- 다시 읽는다
-  function Read-Words($sym, $bytes) {
-    for ($t = 0; $t -lt 20; $t++) {
-      $o = & $cli -c port=SWD mode=HOTPLUG -r32 $sym.addr $bytes 2>&1 | Select-String '^0x2000'
-      $v = @(); foreach ($l in $o) { $v += ($l.Line -split ':')[1].Trim() -split '\s+' | ForEach-Object { [Convert]::ToUInt32($_, 16) } }
-      if ($v.Count -eq $bytes / 4) { return , $v }
-    }
-    throw "read of $($sym.addr) failed"
-  }
   $n = (Read-Words (Get-Sym 'board_cap_n') 4)[0]
-  $capsSym = Get-Sym 'board_caps'
-  $per = [int]($capsSym.size / 16)                   # BOARD_MAX_CAPS
-  $v = Read-Words $capsSym ($per * [Math]::Max($n, 1))
-  $caps = @()
-  for ($c = 0; $c -lt $n; $c++) {
-    $b = [int]($c * $per / 4)
-    $clip = @(); for ($j = 0; $j -lt 50; $j++) { $x = $v[$b + 2 + $j]; $clip += ($x -band 0xFFFF), ($x -shr 16) }
-    $caps += [pscustomobject]@{ end = $v[$b]; got = ($v[$b + 1] -band 0xFF); clip = $clip }
-  }
+  $caps = Read-Caps $n
   $outdir = Join-Path $PSScriptRoot "..\..\..\out\stream"
   New-Item -ItemType Directory -Force $outdir | Out-Null
   $json = Join-Path $outdir ("stream{0}_{1}.json" -f $Stream, (Get-Date -Format 'yyyyMMdd_HHmmss'))

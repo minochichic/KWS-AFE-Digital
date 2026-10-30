@@ -28,13 +28,22 @@ volatile uint8_t board_replay_got[REPLAY_N];     /* tools/read_stats.ps1 -Replay
 #endif
 
 volatile uint32_t board_stream_go;
-#ifdef WAKE_STREAM
-#include "../../../gen/stream_clips.h"
+#if defined(WAKE_STREAM) && defined(WAKE_AFELOG)
+#error "WAKE_STREAM and WAKE_AFELOG both use board_caps -- pick one"
+#endif
+#if defined(WAKE_STREAM) || defined(WAKE_AFELOG)
 volatile uint32_t board_cap_n;
 volatile board_cap_t board_caps[BOARD_MAX_CAPS];
+static volatile uint32_t s_ready_end;            /* 클립이 찬 칸 (ISR -> board_poll) */
+#endif
+#ifdef WAKE_STREAM
+#include "../../../gen/stream_clips.h"
 static volatile uint8_t  s_on;                   /* 스트림을 먹이는 중 */
 static volatile uint32_t s_idx, s_k;             /* 스트림 번호, 다음에 먹일 칸 */
-static volatile uint32_t s_ready_end;            /* 클립이 찬 칸 (ISR -> board_poll) */
+#endif
+#ifdef WAKE_AFELOG
+volatile board_quiet_t board_quiet;
+volatile uint32_t board_log_reset;
 #endif
 
 static wake_t w;
@@ -281,8 +290,20 @@ void HAL_LPTIM_AutoReloadMatchCallback(LPTIM_HandleTypeDef *hlptim)
     clip_pending = 1;
 #ifdef WAKE_STREAM
     s_ready_end = s_k;                           /* 방금 먹인 칸 번호 + 1 = Capture.end */
+#elif defined(WAKE_AFELOG)
+    s_ready_end = board_stats.ticks;
 #endif
   }
+#ifdef WAKE_AFELOG
+  if (w.state == WAKE_S_IDLE)                    /* 조용한 박자 (트리거·캡처·HOLD 가 아님) */
+  {
+    board_quiet.n++;
+    for (uint32_t k = 0; k < 16u; k++)
+    {
+      board_quiet.on[k] += (frame >> k) & 1u;
+    }
+  }
+#endif
   board_stats.state = w.state;
   board_stats.bg_q = w.bg_q;
 }
@@ -342,17 +363,33 @@ void board_poll(void)
 #else
   link_result_t r;
 
+#ifdef WAKE_AFELOG
+  if (board_log_reset != 0)
+  {
+    board_log_reset = 0;
+    __disable_irq();
+    board_cap_n = 0;
+    memset((void *)&board_quiet, 0, sizeof(board_quiet));
+    __enable_irq();
+  }
+#endif
   if (clip_pending)
   {
     /* HOLD 동안 core 는 clip 을 건드리지 않는다 -- ISR 이 돌아도 그대로 읽어도 된다 */
-#ifdef WAKE_STREAM
+#if defined(WAKE_STREAM) || defined(WAKE_AFELOG)
     uint32_t c = board_cap_n;
     memset(&r, 0, sizeof(r));
     int rc = send_clip(wake_clip(&w), &r);
-    if (board_stats.replay_state == 1 && c < BOARD_MAX_CAPS)
+#ifdef WAKE_STREAM
+    int keep = board_stats.replay_state == 1;
+#else
+    int keep = 1;                                /* AFE 기록: 처음 BOARD_MAX_CAPS 개, 덮어쓰지 않는다 */
+#endif
+    if (keep && c < BOARD_MAX_CAPS)
     {
       board_caps[c].end = s_ready_end;
       board_caps[c].got = rc == LINK_OK ? r.class_idx : rc == 1 ? BOARD_GOT_TIMEOUT : BOARD_GOT_BAD;
+      board_caps[c].bg_q = (uint16_t)w.bg_q;     /* 캡처·HOLD 동안 배경은 그대로 -- 트리거 때 값 */
       memcpy((void *)board_caps[c].clip, wake_clip(&w), sizeof(board_caps[c].clip));
       board_cap_n = c + 1;
     }
@@ -375,6 +412,10 @@ void board_poll(void)
     __WFI();
     return;
   }
+#endif
+#ifdef WAKE_AFELOG
+  __WFI();                                       /* Sleep: board_caps 를 언제든 SWD 로 읽게 */
+  return;
 #endif
   enter_stop2();
 #if BOARD_TEST
