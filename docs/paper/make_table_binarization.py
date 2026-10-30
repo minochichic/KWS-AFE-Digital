@@ -242,10 +242,14 @@ def plain(s):
              .replace("\\,", " ").replace("\\%", "%").replace("--", "–").replace("\\ ", " "))
 
 
-def render(stem, number, title, heads, groups, cells, align, tight, notes):
+def render(stem, number, title, heads, groups, cells, align, tight, notes, report=False):
     """heads: column headers; groups: (first_col, last_col, label);
-    tight: columns that hug the one before them (the '(x)' columns)."""
-    fig = plt.figure(dpi=220)
+    tight: columns that hug the one before them (the '(x)' columns).
+    report=True: body only -- no title block and no notes (the report's own
+    caption and note paragraphs carry them), tighter gaps, to report/."""
+    if report:
+        title, notes = "", []
+    fig = plt.figure(dpi=300 if report else 220)
     rnd = fig.canvas.get_renderer()
 
     def width(s, size):
@@ -260,7 +264,7 @@ def render(stem, number, title, heads, groups, cells, align, tight, notes):
     heads = [plain(h) for h in heads]
     n = len(heads)
     colw = [max([width(heads[j], SZ_HEAD)] + [width(r[j], SZ_CELL) for r in data]) for j in range(n)]
-    gap = [0.06 if j in tight else (0.0 if j == 0 else 0.2) for j in range(n)]
+    gap = [0.06 if j in tight else (0.0 if j == 0 else (0.13 if report else 0.2)) for j in range(n)]
     for a, b, lab in groups:                     # a group label must fit over its columns
         span = sum(colw[a:b + 1]) + sum(gap[a + 1:b + 1])
         need = width(lab, SZ_HEAD) + 0.1
@@ -280,9 +284,10 @@ def render(stem, number, title, heads, groups, cells, align, tight, notes):
     for sym, s in notes:
         note_lines += textwrap.wrap((sym + s) if sym else s, note_chars)
     title_lines = textwrap.wrap(title.upper(), int(W / 0.07))
-    H = (0.30 + 0.20 * len(title_lines) + 0.12 + (0.30 if groups else 0) + 0.26
+    top_pad = 0.30 + 0.20 * len(title_lines) + 0.12 if not report else 0.06
+    H = (top_pad + (0.30 if groups else 0) + 0.26
          + 0.25 * len(rows) + 0.06 * sum(isinstance(r, str) for r in rows[1:])
-         + 0.14 + 0.135 * len(note_lines) + 0.08)
+         + (0.14 + 0.135 * len(note_lines) + 0.08 if not report else 0.22))
     fig.set_size_inches(W, H)
     ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, W); ax.set_ylim(0, H); ax.axis("off")
 
@@ -292,12 +297,15 @@ def render(stem, number, title, heads, groups, cells, align, tight, notes):
     def cx(j):
         return x0[j] + (colw[j] if align[j] == "right" else 0)
 
-    y = H - 0.16
-    t(W / 2, y, f"TABLE {number}", "center", 9.5)
-    for line in title_lines:
-        y -= 0.20
-        t(W / 2, y, line, "center", 7.6)
-    y -= 0.22
+    if report:
+        y = H - 0.04
+    else:
+        y = H - 0.16
+        t(W / 2, y, f"TABLE {number}", "center", 9.5)
+        for line in title_lines:
+            y -= 0.20
+            t(W / 2, y, line, "center", 7.6)
+        y -= 0.22
     ax.plot([M - 0.04, W - M + 0.04], [y, y], color="k", lw=1.1)
     if groups:
         y -= 0.17
@@ -327,32 +335,37 @@ def render(stem, number, title, heads, groups, cells, align, tight, notes):
         y -= 0.125
     y -= 0.05
     ax.plot([M - 0.04, W - M + 0.04], [y, y], color="k", lw=1.1)
-    ax.text(M, y - 0.06, "\n".join(note_lines), ha="left", va="top", size=SZ_NOTE, linespacing=1.38)
+    if note_lines:
+        ax.text(M, y - 0.06, "\n".join(note_lines), ha="left", va="top", size=SZ_NOTE, linespacing=1.38)
+    out = HERE / "report" if report else HERE
+    out.mkdir(exist_ok=True)
     for ext in ("png", "svg"):
-        fig.savefig(HERE / f"{stem}.{ext}", dpi=220)
+        fig.savefig(out / f"{stem}.{ext}", dpi=300 if report else 220)
     plt.close(fig)
 
 
-render("table_binarization", "IV",
-       "Hardware cost of binarization: ablation of the proposed network on the same FPGA "
-       "(Xilinx XC7S75, 50 MHz), Google Speech Commands v2",
-       ["Method", "Binarized layers", "Weights [kbit]", "XNOR", "ADD", "MAC",
-        "inference", "avg. @10 Hz", "(improv.†)", "Latency [ms]", "DSP‖", "12 classes", ""],
-       [(3, 5, "Ops / inference [M]"), (6, 8, "Arith. + memory power* [mW]"), (11, 12, "Accuracy [%]")],
-       net_cells,
-       ["left", "left", "right", "right", "right", "right", "right", "right", "left",
-        "right", "right", "right", "left"],
-       {8, 12}, NET_NOTES)
+# IEEE previews (TABLE IV/V) and report bodies (report/: 표 2, 표 3 of the IDEC report)
+for rep in (False, True):
+    render("table2_binarization" if rep else "table_binarization", "IV",
+           "Hardware cost of binarization: ablation of the proposed network on the same FPGA "
+           "(Xilinx XC7S75, 50 MHz), Google Speech Commands v2",
+           ["Method", "Binarized layers", "Weights [kbit]", "XNOR", "ADD", "MAC",
+            "inference", "avg. @10 Hz", "(improv.†)", "Latency [ms]", "DSP‖", "12 classes", ""],
+           [(3, 5, "Ops / inference [M]"), (6, 8, "Arith. + memory power* [mW]"), (11, 12, "Accuracy [%]")],
+           net_cells,
+           ["left", "left", "right", "right", "right", "right", "right", "right", "left",
+            "right", "right", "right", "left"],
+           {8, 12}, NET_NOTES, report=rep)
 
-render("table_mac_bench", "V",
-       "Post-route cost of one MAC engine of each kind (Xilinx XC7S75, 50 MHz, Vivado, vectorless)",
-       ["Engine", "Act. × weight", "Terms/cycle", "LUT", "FF", "DSP", "BRAM", "WNS [ns]",
-        "as built*", "@32 terms/cyc.†", "(rel.)"],
-       [(8, 10, "Engine power [mW]")],
-       bench_cells,
-       ["left", "left", "right", "right", "right", "right", "right", "right", "right", "right",
-        "left"],
-       {10}, BENCH_NOTES)
+    render("table3_mac_bench" if rep else "table_mac_bench", "V",
+           "Post-route cost of one MAC engine of each kind (Xilinx XC7S75, 50 MHz, Vivado, vectorless)",
+           ["Engine", "Act. × weight", "Terms/cycle", "LUT", "FF", "DSP", "BRAM", "WNS [ns]",
+            "as built*", "@32 terms/cyc.†", "(rel.)"],
+           [(8, 10, "Engine power [mW]")],
+           bench_cells,
+           ["left", "left", "right", "right", "right", "right", "right", "right", "right", "right",
+            "left"],
+           {10}, BENCH_NOTES, report=rep)
 
 print("wrote table_binarization.{tex,svg,png} and table_mac_bench.{tex,svg,png} in", HERE)
 for c in net_cells:
