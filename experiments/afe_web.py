@@ -7,7 +7,10 @@ at http://127.0.0.1:8765 that redraws once a second:
     the 16x100 image the STM32 sent to the FPGA (channel k = PBk = bit k,
     labelled with the filter's centre frequency), the FPGA's answer and
     best.pt's answer on the same 100 frames, per-channel firing rate against
-    the software AFE (--ref), a tally, recent captures, the board counters
+    the software AFE (--ref), a tally, recent captures, the board counters,
+    and a threshold table: per channel, board vs software on-frames summed over
+    every capture since the last "reset" plus the board's quiet (IDLE) firing,
+    with which way to move Vthr
 
 The board keeps only BOARD_MAX_CAPS (16) captures; once all are read the
 server clears the log (board_log_reset) so it keeps going. Every capture is
@@ -144,6 +147,23 @@ class Poller(threading.Thread):
         self.per_ref: Dict[str, dict] = {}
         self.total = self.agree = 0
         self.status: dict = {"ok": False, "msg": "connecting..."}
+        self.epoch = 0
+        self.want_reset = False
+        self.clear_tune()
+
+    def clear_tune(self) -> None:
+        """Totals for the threshold table: board vs software on-frames over every scored capture,
+        and the board's quiet (IDLE) frames. Cleared from the page after a trimmer is turned."""
+        self.tune = {"n": 0, "refs": Counter(), "board": [0] * 16, "sim": [0] * 16,
+                     "since": time.strftime("%H:%M:%S")}
+        self.q_base = [0] * 17                      # quiet counts from before the board's last log reset
+        self.q_last = [0] * 17
+
+    def request_reset(self) -> None:
+        with self.lock:
+            self.epoch += 1
+            self.clear_tune()
+            self.want_reset = True                  # the poll thread owns SWD; it clears the board log
 
     def run(self) -> None:
         seen = 0
@@ -178,7 +198,14 @@ class Poller(threading.Thread):
                     self.agree += int(g == p)
                     self.tally[fpga] += 1
                     rec = {**c, **m, "n": self.total, "fpga": fpga, "best_pt": self.names[int(p)],
-                           "prob": round(float(q), 3), "time": time.strftime("%H:%M:%S")}
+                           "prob": round(float(q), 3), "time": time.strftime("%H:%M:%S"), "epoch": self.epoch}
+                    if m.get("ref"):
+                        t = self.tune
+                        t["n"] += 1
+                        t["refs"][m["ref"]] += 1
+                        for k, (b, s) in enumerate(zip(bits_of(c["clip"]).sum(0), bits_of(m["sim"]).sum(0))):
+                            t["board"][k] += int(b)
+                            t["sim"][k] += int(s)
                     self.caps = (self.caps + [rec])[-KEEP:]
                     f.write(json.dumps({k: v for k, v in rec.items() if k != "sim"}) + "\n")
                     if m.get("ref"):
@@ -190,11 +217,26 @@ class Poller(threading.Thread):
                             pr["answered"] += 1
                             pr["fpga"][fpga] += 1
             seen = n
-        if n >= MAX_CAPS and seen >= MAX_CAPS:      # the board stops logging at 16; start over
+        q = self.board.quiet()                      # before any reset: the reset zeroes it too
+        with self.lock:
+            if q:
+                self.q_last = q
+            reset = self.want_reset
+            self.want_reset = False
+            if not reset and n >= MAX_CAPS and seen >= MAX_CAPS:
+                self.q_base = [a + b for a, b in zip(self.q_base, self.q_last)]
+                self.q_last = [0] * 17
+                reset = True
+            elif reset:                             # page asked: drop what the board counted so far
+                self.q_base = [0] * 17
+                self.q_last = [0] * 17
+        if reset:                                   # the board stops logging at 16; start over
             self.board.reset()
             seen = 0
-        q = self.board.quiet()
         with self.lock:
+            qt = [a + b for a, b in zip(self.q_base, self.q_last)]
+            self.tune["quiet_n"] = qt[0]
+            self.tune["quiet"] = qt[1:]
             self.status = {"ok": True, "msg": "", "ticks": st[0], "clips": st[2], "ok_n": st[3],
                            "timeouts": st[4], "bad": st[5], "bg": int(np.int32(np.uint32(st[10]))) / 32,
                            "quiet_s": (q[0] / 100) if q else 0,
@@ -208,7 +250,7 @@ class Poller(threading.Thread):
                     "correct": v["fpga"].get(v["label"], 0)} for _, v in sorted(self.per_ref.items())]
             return {"status": self.status, "caps": self.caps, "tally": dict(self.tally),
                     "total": self.total, "agree": self.agree, "per_ref": per,
-                    "playing": self.playing.current}
+                    "playing": self.playing.current, "tune": {**self.tune, "refs": len(self.tune["refs"])}}
 
 
 def main() -> None:
@@ -265,6 +307,9 @@ def main() -> None:
                 from urllib.parse import parse_qs, urlparse
                 playing.set((parse_qs(urlparse(self.path).query).get("ref") or [None])[0])
                 body, ctype = json.dumps({"playing": playing.current}).encode(), "application/json"
+            elif self.path.startswith("/reset_tune"):        # after turning a trimmer
+                poller.request_reset()
+                body, ctype = b"{}", "application/json"
             elif self.path in ("/", "/index.html"):
                 body, ctype = page.encode(), "text/html; charset=utf-8"
             else:
@@ -325,6 +370,14 @@ canvas{width:100%;display:block}.row{display:flex;justify-content:space-between;
 <h2 style="margin-top:16px">보드</h2><div id="board" class="mute"></div></section>
 <section class="card"><h2>채널별 발화율 <span class="legend"><span style="background:var(--on)"></span>보드 (이 캡처)<span style="background:var(--sim)"></span>소프트웨어 AFE</span></h2><canvas id="rate" height="190"></canvas></section>
 <section class="card"><h2 id="simt">소프트웨어 AFE 기준</h2><canvas id="sim" height="190"></canvas></section>
+<section class="card full"><h2 id="tunet">threshold 조정 안내</h2>
+<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span id="tunei" class="mute"></span>
+<button id="tunereset">집계 초기화 (threshold 를 바꾼 뒤 누르세요)</button></div>
+<div class="legend mute" style="margin-bottom:4px"><span style="background:var(--sim)"></span>목표 (소프트웨어 AFE, 같은 ARB)<span style="background:var(--on)"></span>보드 (합산)<span style="background:var(--bad)"></span>무음 발화</div>
+<canvas id="tunec" height="190"></canvas><div id="tunetab" style="margin-top:10px"></div>
+<div class="mute" style="font-size:12px;margin-top:8px">합산 = 초기화 뒤 ARB 를 고른 상태로 들어온 캡처 전부 (ARB 바꾼 직후 2 초 제외). 목표는 각 캡처의 ARB 에 대한 소프트웨어 AFE 캡처 창이며,
+ARB 100 mVpp ≈ PCM 0.29 레벨 보정을 쓴다 — 레벨 기준이 바뀌면 목표도 바뀐다. 무음 발화 = 보드가 트리거 대기(IDLE) 중인 프레임에서 켜진 비율 (ARB 앞뒤 무음 포함).
+Vthr 를 올리면 발화가 준다. 발화율은 Vthr 에 대해 넓게 평평하고 잡음 바닥 근처에서 급하게 변하므로, 한 번에 조금씩 바꾸고 초기화 후 다시 모은다.</div></section>
 <section class="card full"><h2>최근 캡처 (누르면 위에 크게)</h2><div id="thumbs"></div></section>
 <section class="card full"><h2 id="sumt">ARB 별 결과</h2><div id="sum" class="mute">재생 중인 ARB 를 고르면 그 뒤 캡처가 여기 쌓인다 (바꾼 직후 2 초는 빼고)</div></section>
 </main>
@@ -375,6 +428,7 @@ function render(){if(!S)return;const st=S.status;const c=document.getElementById
   d.className='th'+(cur&&x.n===cur.n?' sel':'');const cv=document.createElement('canvas');cv.style.width='120px';cv.height=40;d.appendChild(cv);
   const t=document.createElement('div');t.innerHTML=`#${x.n} ${x.playing||''} <span class="${x.label?(x.fpga===x.label?'ok':'badc'):''}">${x.fpga}</span>`;d.appendChild(t);
   d.onclick=()=>{sel=(sel===x.n?null:x.n);render()};th.appendChild(d);drawImg(cv,x.clip,css('--on'),false)});
+ renderTune();
  const P=S.per_ref;if(P.length){let ans=0,cor=0,maj=0,simok=0,simmaj=0;
   const rows=P.map(r=>{const top=Object.entries(r.fpga).sort((a,b)=>b[1]-a[1]);ans+=r.answered;cor+=r.correct;
    const m=top.length&&top[0][0]===r.label;maj+=m;simok+=r.sim_pred===r.label;simmaj+=(r.sim_pred===r.label)===m;
@@ -382,6 +436,30 @@ function render(){if(!S)return;const st=S.status;const c=document.getElementById
     `<td>${top.slice(0,3).map(([k,v])=>`<span class="${k===r.label?'ok':''}">${k} ${v}</span>`).join(', ')||'—'}</td><td class="${m?'ok':'badc'}">${r.answered?Math.round(100*r.correct/r.answered)+'%':'—'}</td></tr>`}).join('');
   document.getElementById('sumt').textContent=`ARB 별 결과 — ${P.length}개 · 최다 답이 정답 ${maj}/${P.length} · 캡처 단위 정답 ${cor}/${ans}${ans?' ('+Math.round(100*cor/ans)+'%)':''} · 시뮬 예측과 맞고 틀림이 같음 ${simmaj}/${P.length}`;
   document.getElementById('sum').innerHTML=`<table class="res"><tr><th>ARB</th><th>정답</th><th>시뮬 예측</th><th>캡처</th><th>FPGA 응답</th><th>FPGA 답</th><th>정답률</th></tr>${rows}</table>`}}
+const TOL=.03,QMAX=.02,MIN_N=5;
+function verdict(n,b,s,q){const d=b-s;
+ if(n<MIN_N)return ['mute',`캡처 더 모으기 (${n}/${MIN_N})`];
+ if(q>QMAX&&d<-TOL)return ['badc','무음에서 켜지는데 음성은 부족 — threshold 로는 안 됨, 이득·배선 확인'];
+ if(q>QMAX)return ['badc','무음에서 켜짐 — Vthr 올리기 (잡음 바닥에 걸림)'];
+ if(b<.005&&s>=TOL)return ['badc','꺼져 있음 — Vthr 를 조금씩 내리며 무음 발화 확인 (무음이 먼저 켜지면 이득·배선)'];
+ if(d>TOL)return ['',`발화 ${d.toFixed(2)} 줄이기 (클립당 ${Math.round(d*100)}칸) → Vthr 올리기 ↑`];
+ if(d<-TOL)return ['',`발화 ${(-d).toFixed(2)} 늘리기 (클립당 ${Math.round(-d*100)}칸) → Vthr 내리기 ↓`];
+ return ['ok','맞음']}
+function renderTune(){const T=S.tune;if(!T)return;const n=T.n,qn=T.quiet_n||0;
+ const b=T.board.map(x=>n?x/(100*n):0),s=T.sim.map(x=>n?x/(100*n):0),q=(T.quiet||[]).map(x=>qn?x/qn:0);
+ document.getElementById('tunei').textContent=`${T.since} 부터 · 캡처 ${n}개 (ARB ${T.refs}개) · 무음 ${(qn/100).toFixed(1)} s`;
+ const [g,W,H]=setup(document.getElementById('tunec'));const B=20,bw=W/16,max=Math.max(.3,...b,...s,...q)*1.1;
+ g.font='11px system-ui';g.textAlign='center';
+ for(let k=0;k<16;k++){const x=k*bw,y=v=>(H-B)*(1-Math.min(v,max)/max);
+  g.fillStyle=css('--sim');g.fillRect(x+bw*.12,y(s[k]),bw*.76,H-B-y(s[k]));
+  g.fillStyle=css('--on');g.fillRect(x+bw*.3,y(b[k]),bw*.4,H-B-y(b[k]));
+  if(qn){g.fillStyle=css('--bad');g.fillRect(x+bw*.08,y(q[k])-1.5,bw*.84,3)}
+  g.fillStyle=css('--mute');g.fillText(k,x+bw/2,H-B+4)}
+ const rows=Array.from({length:16},(_,k)=>{const [cl,txt]=verdict(n,b[k],s[k],q[k]),d=b[k]-s[k];
+  return `<tr><td>${chLabel(k)}</td><td>${n?s[k].toFixed(2):'—'}</td><td>${n?b[k].toFixed(2):'—'}</td>`+
+   `<td class="${Math.abs(d)>TOL?'badc':''}">${n?(d>=0?'+':'')+d.toFixed(2):'—'}</td><td class="${q[k]>QMAX?'badc':''}">${qn?q[k].toFixed(3):'—'}</td><td class="${cl}">${txt}</td></tr>`}).join('');
+ document.getElementById('tunetab').innerHTML=`<table class="res"><tr><th>채널</th><th>목표</th><th>보드</th><th>보드−목표</th><th>무음 발화</th><th>조정</th></tr>${rows}</table>`}
+document.getElementById('tunereset').onclick=async()=>{await fetch('/reset_tune');tick()};
 async function tick(){try{S=await (await fetch('/state')).json();render()}catch(e){document.getElementById('conn').innerHTML='<span class="dot"></span>서버 꺼짐'}}
 setInterval(tick,1000);tick();addEventListener('resize',render);</script></body></html>
 """
