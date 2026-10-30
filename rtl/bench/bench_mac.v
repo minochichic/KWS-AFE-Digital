@@ -9,6 +9,13 @@
 //   KIND 4  int8x32_lut  KIND 1 with use_dsp = "no": multipliers in LUTs
 //   KIND 5  stim         no engine at all -- the stimulus and the output XOR
 //                        alone, to subtract from the others
+//   KIND 6  int8x32_dsp  KIND 1 with use_dsp = "yes". Vivado maps an 8x8
+//                        multiply to LUTs by default (first run, 2026-10-30:
+//                        KIND 1 == KIND 4, 0 DSP); a real int8 design would
+//                        use the 140 DSP48s, so this is the fair int8 point
+//   KIND 7  bin32x8      8 x kws_bin_mac, 256 terms/cycle. One bin32 draws
+//                        ~3 mW, and report_power prints 1 mW steps -- +-17%.
+//                        Eight of them put the engine in the tens of mW
 //
 // The network's op counts are already known (conv2_int8_compare.md 4, 9.2);
 // what is missing is what one term of each kind costs in LUT/FF/DSP and power.
@@ -41,7 +48,7 @@ module bench_mac #(
     output reg  out
 );
 
-    localparam integer LANES = (KIND == 2) ? 1 : (KIND == 5) ? 0 : 32;
+    localparam integer LANES = (KIND == 2) ? 1 : (KIND == 5 || KIND == 7) ? 0 : 32;
     localparam integer VEC   = 64;      // words per vector
 
     // ---- stimulus: 8 x xorshift64 = 512 fresh bits a cycle ------------------ //
@@ -82,6 +89,22 @@ module bench_mac #(
     generate
     if (KIND == 5) begin : g_stim
         assign acc_x = {ACC{1'b0}};
+    end else if (KIND == 7) begin : g_bin8
+        wire [15:0] accs [0:7];
+        genvar m;
+        for (m = 0; m < 8; m = m + 1) begin : g_m
+            wire signed [15:0] acc;
+            wire               ov;
+            kws_bin_mac #(.WORD_BITS(32), .ACC_BITS(16), .CNT_BITS(16)) u_mac (
+                .clk(clk), .rst_n(rst_n), .start(start),
+                .n_valid(16'd2048), .in_valid(in_valid),
+                .act(act_bits[32*m +: 32]), .wgt(wgt_bits[32*m +: 32]),
+                .out_valid(ov), .acc(acc));
+            assign accs[m] = acc;
+        end
+        wire [15:0] x8 = accs[0] ^ accs[1] ^ accs[2] ^ accs[3]
+                       ^ accs[4] ^ accs[5] ^ accs[6] ^ accs[7];
+        assign acc_x = {{(ACC-16){1'b0}}, x8};
     end else if (KIND == 0) begin : g_bin
         wire signed [15:0] acc;
         wire               ov;
@@ -115,6 +138,14 @@ module bench_mac #(
                     if (!rst_n)        acc[k] <= {ACC{1'b0}};
                     else if (start)    acc[k] <= {ACC{1'b0}};
                     else if (in_valid) acc[k] <= acc[k] + t;
+            end else if (KIND == 6) begin : g_dsp
+                (* use_dsp = "yes" *) reg signed [ACC-1:0] acc_d;
+                (* use_dsp = "yes" *) wire signed [15:0] p = a * w;
+                always @(posedge clk or negedge rst_n)
+                    if (!rst_n)        acc_d <= {ACC{1'b0}};
+                    else if (start)    acc_d <= {ACC{1'b0}};
+                    else if (in_valid) acc_d <= acc_d + {{(ACC-16){p[15]}}, p};
+                always @* acc[k] = acc_d;
             end else if (KIND == 4) begin : g_lut
                 (* use_dsp = "no" *) wire signed [15:0] p = a * w;
                 always @(posedge clk or negedge rst_n)

@@ -2,6 +2,8 @@
 # kit's part and tabulate what each costs (docs/conv2_int8_compare.md, option A).
 #
 #   vivado -mode batch -source rtl/bench/run_mac_bench.tcl -notrace
+#   vivado -mode batch -source rtl/bench/run_mac_bench.tcl -notrace -tclargs 6 7
+#                                   (only those KINDs; 5 is always added)
 #
 # Non-project, like rtl/build.tcl. About 3 minutes per KIND on the T470.
 # Writes out/bench/mac_bench.csv and per-KIND reports under out/bench/.
@@ -24,6 +26,14 @@ set kinds {
     3 int8pm1x32   32
     4 int8x32_lut  32
     5 stim          0
+    6 int8x32_dsp  32
+    7 bin32x8     256
+}
+if {[llength $argv] > 0} {
+    set want [lsort -unique [concat $argv 5]]
+    set sel {}
+    foreach {k n t} $kinds { if {[lsearch -exact $want $k] >= 0} { lappend sel $k $n $t } }
+    set kinds $sel
 }
 
 read_verilog [list rtl/kws_bin_mac.v rtl/bench/bench_mac.v]
@@ -60,7 +70,8 @@ foreach {k name tpc} $kinds {
 
 # ---- subtract the stimulus (KIND 5) and tabulate ------------------------------ #
 foreach r $rows { if {[lindex $r 0] == 5} { set base $r } }
-set csv [open $out/mac_bench.csv w]
+set csv_name [expr {[llength $argv] > 0 ? "mac_bench_[join $argv _].csv" : "mac_bench.csv"}]
+set csv [open $out/$csv_name w]
 puts $csv "kind,name,terms_per_cycle,lut,ff,dsp,wns_ns,dyn_w,total_w,lut_net,ff_net,dyn_net_mw,pj_per_term"
 puts ""
 puts [format "%-12s %5s %7s %7s %4s %7s %9s %9s %10s" \
@@ -79,4 +90,4 @@ foreach r $rows {
 close $csv
 puts "\nLUT / FF / net_mW are after subtracting KIND 5 (stimulus only)."
 puts "pJ/term = engine dynamic power / terms per second at 50 MHz. Vectorless."
-puts "written $out/mac_bench.csv"
+puts "written $out/$csv_name"

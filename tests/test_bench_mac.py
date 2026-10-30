@@ -11,7 +11,7 @@ IV = shutil.which("iverilog")
 
 
 @pytest.mark.skipif(IV is None, reason="iverilog not installed")
-@pytest.mark.parametrize("kind", [0, 1, 2, 3, 4, 5])
+@pytest.mark.parametrize("kind", [0, 1, 2, 3, 4, 5, 6, 7])
 def test_bench_kind(tmp_path, kind):
     exe = tmp_path / "b"
     subprocess.run([IV, "-g2012", f"-DKIND_UNDER_TEST={kind}", "-s", "tb_bench_mac",

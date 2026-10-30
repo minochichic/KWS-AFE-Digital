@@ -36,7 +36,7 @@ module tb_bench_mac;
         if (!rst_n) ref_acc <= 0;
         else if (dut.start) ref_acc <= 0;
         else if (dut.in_valid) begin
-            if (KIND == 0)
+            if (KIND == 0 || KIND == 7)
                 ref_acc <= ref_acc + 2 * $countones(~(dut.act_bits[31:0] ^ dut.wgt_bits[31:0])) - 32;
             else if (KIND == 3)
                 ref_acc <= ref_acc + (dut.act_bits[0] ? $signed(dut.wgt_bits[7:0])
@@ -56,6 +56,11 @@ module tb_bench_mac;
                 if (dut.g_bin.acc !== ref_acc[15:0]) begin
                     fails = fails + 1;
                     $display("FAIL bin acc %0d want %0d", dut.g_bin.acc, ref_acc);
+                end
+            end else if (KIND == 7) begin
+                if (dut.g_bin8.g_m[0].acc !== ref_acc[15:0]) begin
+                    fails = fails + 1;
+                    $display("FAIL bin8 acc %0d want %0d", dut.g_bin8.g_m[0].acc, ref_acc);
                 end
             end else if (dut.g_int.acc[0] !== ref_acc[23:0]) begin
                 fails = fails + 1;
