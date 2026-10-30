@@ -275,6 +275,18 @@ conv1 처럼 더하기·빼기로 끝난다. pw 는 입력이 dw 의 13비트 �
 int8 dw → int8 pw → [+skip] → BN → **ReLU**, conv2 도 int8. conv1 은 다음 층이 int8 이라
 sign 대신 ReLU 를 낸다. **바뀐 것은 가중치 정밀도 + 활성(±1 → 다비트) 둘 다**다.
 
+![층별 연산 종류 — bd_base / conv2 INT8 / All INT8](paper/fig_int8_network_blocks.svg)
+
+점선은 활성이 ±1 에서 다비트로 바뀌는 지점이다. bd_base 는 conv2 pw 뒤, conv2-int8 은
+conv2 dw 와 pw 사이, all-int8 은 conv1 바로 뒤. 굵은 테두리가 bd_base 와 다른 블록.
+
+![TCS sub-block 내부 — 이진 / W8A8](paper/fig_int8_tcs_subblock.svg)
+
+sub-block 하나를 열면: 이진은 dw 와 pw 사이에 **BN → sign** 이 있다 (pw 도 XNOR 이려면 ±1
+입력이 필요). int8 은 그 BN 이 없고 8비트 재양자화만 있다 (MatchboxNet 원형). residual 은
+이진이 popcount 정수에 그대로, int8 은 두 경로 스케일을 맞춘 뒤 더한다. 하드웨어 차이의
+대부분은 **pw** — 이진은 32채널/사이클, int8 은 채널마다 곱셈 1번 (§9.6).
+
 ```bash
 python -m train.train --config configs/base.yaml --tag bd_allint8 \
     afe.spice_matrix_path=analog/AFE/artifacts/filterbank_matrix_board.csv \
@@ -478,6 +490,10 @@ B3 4, conv2 2)다. int8 로 바꾸며 지연을 지키려면 엔진마다 int8 M
 엔진당 DSP 로 바꿔 넣은 어림이다.)
 
 ## 10. 한 장 정리
+
+논문용 표(IEEE, booktabs): [`paper/table_binarization.tex`](paper/table_binarization.tex)
+· 미리보기 [`paper/table_binarization.png`](paper/table_binarization.png)
+· 생성 `python docs/paper/make_table_binarization.py`. 그림은 §9 의 두 SVG.
 
 | | 이진 (`bd_base`) | int8 W8A8 (`bd_allint8_a8`) |
 |---|---|---|

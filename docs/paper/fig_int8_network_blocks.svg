@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="500" viewBox="0 0 680 500" role="img"><title>세 모델의 층별 연산 종류</title><desc>bd_base, conv2만 INT8, 전부 INT8(W8A8) 세 모델을 층별로 쌓아, 각 층이 XNOR, INT8×±1 덧셈, INT8 곱셈 중 무엇으로 계산되는지와 활성이 1비트에서 다비트로 바뀌는 지점을 보인다.</desc><style>
+text{font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;fill:#2C2C2A}
+.th{font-size:14px;font-weight:500}.ts{font-size:12px;fill:#5F5E5A}
+.arr{stroke:#73726C;stroke-width:1.5;fill:none}
+.c-purple rect,rect.c-purple{fill:#EEEDFE;stroke:#534AB7}.c-purple text{fill:#3C3489}
+.c-teal rect,rect.c-teal{fill:#E1F5EE;stroke:#0F6E56}.c-teal text{fill:#085041}
+.c-coral rect,rect.c-coral{fill:#FAECE7;stroke:#993C1D}.c-coral text{fill:#712B13}
+.c-gray rect,rect.c-gray{fill:#F1EFE8;stroke:#5F5E5A}.c-gray text{fill:#444441}
+</style><rect width="680" height="500" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#73726C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text class="th" x="115" y="22" text-anchor="middle" dominant-baseline="central">bd_base (이진)</text>
+<text class="ts" x="115" y="41" text-anchor="middle" dominant-baseline="central">82.5% · 57 μJ · DSP 0</text>
+<text class="th" x="340" y="22" text-anchor="middle" dominant-baseline="central">Conv2 → INT8</text>
+<text class="ts" x="340" y="41" text-anchor="middle" dominant-baseline="central">82.8% · 73 μJ · DSP 1</text>
+<text class="th" x="565" y="22" text-anchor="middle" dominant-baseline="central">All INT8 (W8A8)</text>
+<text class="ts" x="565" y="41" text-anchor="middle" dominant-baseline="central">86.7% · 147 μJ · DSP 30</text>
+
+<g class="c-gray"><rect x="30" y="62" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="79" text-anchor="middle" dominant-baseline="central">AFE → ±1 프레임</text></g>
+<g class="c-gray"><rect x="255" y="62" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="340" y="79" text-anchor="middle" dominant-baseline="central">AFE → ±1 프레임</text></g>
+<g class="c-gray"><rect x="480" y="62" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="565" y="79" text-anchor="middle" dominant-baseline="central">AFE → ±1 프레임</text></g>
+
+<g class="c-coral"><rect x="30" y="104" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="121" text-anchor="middle" dominant-baseline="central">conv1 · ADD → sign</text></g>
+<g class="c-coral"><rect x="255" y="104" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="340" y="121" text-anchor="middle" dominant-baseline="central">conv1 · ADD → sign</text></g>
+<g class="c-coral"><rect x="480" y="104" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="565" y="121" text-anchor="middle" dominant-baseline="central">conv1 · ADD → ReLU</text></g>
+
+<g class="c-purple"><rect x="30" y="146" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="163" text-anchor="middle" dominant-baseline="central">B1 · XNOR</text></g>
+<g class="c-purple"><rect x="255" y="146" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="340" y="163" text-anchor="middle" dominant-baseline="central">B1 · XNOR</text></g>
+<g class="c-teal"><rect x="480" y="146" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="565" y="163" text-anchor="middle" dominant-baseline="central">B1 · MAC 8×8</text></g>
+
+<g class="c-purple"><rect x="30" y="188" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="205" text-anchor="middle" dominant-baseline="central">B2 · XNOR</text></g>
+<g class="c-purple"><rect x="255" y="188" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="340" y="205" text-anchor="middle" dominant-baseline="central">B2 · XNOR</text></g>
+<g class="c-teal"><rect x="480" y="188" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="565" y="205" text-anchor="middle" dominant-baseline="central">B2 · MAC 8×8</text></g>
+
+<g class="c-purple"><rect x="30" y="230" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="247" text-anchor="middle" dominant-baseline="central">B3 · XNOR</text></g>
+<g class="c-purple"><rect x="255" y="230" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="340" y="247" text-anchor="middle" dominant-baseline="central">B3 · XNOR</text></g>
+<g class="c-teal"><rect x="480" y="230" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="565" y="247" text-anchor="middle" dominant-baseline="central">B3 · MAC 8×8</text></g>
+
+<g class="c-purple"><rect x="30" y="272" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="289" text-anchor="middle" dominant-baseline="central">conv2 dw · XNOR</text></g>
+<g class="c-coral"><rect x="255" y="272" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="340" y="289" text-anchor="middle" dominant-baseline="central">conv2 dw · ADD</text></g>
+<g class="c-teal"><rect x="480" y="272" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="565" y="289" text-anchor="middle" dominant-baseline="central">conv2 dw · MAC 8×8</text></g>
+
+<g class="c-purple"><rect x="30" y="314" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="331" text-anchor="middle" dominant-baseline="central">conv2 pw · XNOR</text></g>
+<g class="c-teal"><rect x="255" y="314" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="340" y="331" text-anchor="middle" dominant-baseline="central">conv2 pw · MAC</text></g>
+<g class="c-teal"><rect x="480" y="314" width="170" height="34" rx="4" stroke-width="2"/><text class="th" x="565" y="331" text-anchor="middle" dominant-baseline="central">conv2 pw · MAC 8×8</text></g>
+
+<g class="c-teal"><rect x="30" y="356" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="373" text-anchor="middle" dominant-baseline="central">conv3 · MAC</text></g>
+<g class="c-teal"><rect x="255" y="356" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="340" y="373" text-anchor="middle" dominant-baseline="central">conv3 · MAC</text></g>
+<g class="c-teal"><rect x="480" y="356" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="565" y="373" text-anchor="middle" dominant-baseline="central">conv3 · MAC</text></g>
+
+<g class="c-teal"><rect x="30" y="398" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="115" y="415" text-anchor="middle" dominant-baseline="central">conv4 · MAC → pool</text></g>
+<g class="c-teal"><rect x="255" y="398" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="340" y="415" text-anchor="middle" dominant-baseline="central">conv4 · MAC → pool</text></g>
+<g class="c-teal"><rect x="480" y="398" width="170" height="34" rx="4" stroke-width="0.5"/><text class="th" x="565" y="415" text-anchor="middle" dominant-baseline="central">conv4 · MAC → pool</text></g>
+
+<line x1="24" y1="352" x2="206" y2="352" stroke="#BA7517" stroke-width="2" stroke-dasharray="5 3"/>
+<line x1="249" y1="310" x2="431" y2="310" stroke="#BA7517" stroke-width="2" stroke-dasharray="5 3"/>
+<line x1="474" y1="142" x2="656" y2="142" stroke="#BA7517" stroke-width="2" stroke-dasharray="5 3"/>
+
+<rect class="c-purple" x="30" y="452" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="50" y="459" dominant-baseline="central">XNOR-popcount (1비트)</text>
+<rect class="c-coral" x="220" y="452" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="240" y="459" dominant-baseline="central">ADD: int8 × ±1 (곱셈 없음)</text>
+<rect class="c-teal" x="430" y="452" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="450" y="459" dominant-baseline="central">MAC: 곱셈기 (DSP)</text>
+<line x1="30" y1="484" x2="56" y2="484" stroke="#BA7517" stroke-width="2" stroke-dasharray="5 3"/>
+<text class="ts" x="62" y="484" dominant-baseline="central">이 선 위는 활성 ±1, 아래는 다비트</text>
+<rect x="300" y="477" width="14" height="14" rx="3" fill="none" stroke="#2C2C2A" stroke-width="2"/>
+<text class="ts" x="320" y="484" dominant-baseline="central">굵은 테두리 = bd_base 와 다른 블록</text>
+</svg>

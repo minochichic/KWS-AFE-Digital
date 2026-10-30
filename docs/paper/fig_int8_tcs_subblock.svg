@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="680" height="540" viewBox="0 0 680 540" role="img"><title>TCS sub-block 내부: 이진과 INT8</title><desc>이진 sub-block 은 depthwise XNOR, 문턱 비교, pointwise XNOR, 정수 residual 덧셈, 문턱 비교로 1비트를 유지한다. INT8 sub-block 은 depthwise 곱셈, 8비트 재양자화, pointwise 곱셈, 스케일을 맞춘 residual 덧셈, BN과 ReLU, 8비트 재양자화로 이루어진다.</desc><style>
+text{font-family:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;fill:#2C2C2A}
+.th{font-size:14px;font-weight:500}.ts{font-size:12px;fill:#5F5E5A}
+.arr{stroke:#73726C;stroke-width:1.5;fill:none}
+.c-purple rect,rect.c-purple{fill:#EEEDFE;stroke:#534AB7}.c-purple text{fill:#3C3489}
+.c-teal rect,rect.c-teal{fill:#E1F5EE;stroke:#0F6E56}.c-teal text{fill:#085041}
+.c-coral rect,rect.c-coral{fill:#FAECE7;stroke:#993C1D}.c-coral text{fill:#712B13}
+.c-gray rect,rect.c-gray{fill:#F1EFE8;stroke:#5F5E5A}.c-gray text{fill:#444441}
+</style><rect width="680" height="540" fill="#FFFFFF"/>
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#73726C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></marker></defs>
+<text class="th" x="185" y="22" text-anchor="middle" dominant-baseline="central">bd_base · 이진 sub-block</text>
+<text class="th" x="495" y="22" text-anchor="middle" dominant-baseline="central">All INT8 · W8A8 sub-block</text>
+
+<g class="c-gray"><rect x="60" y="44" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="185" y="60" text-anchor="middle" dominant-baseline="central">입력 ±1</text><text class="ts" x="185" y="78" text-anchor="middle" dominant-baseline="central">채널 64개 = 64비트</text></g>
+<g class="c-gray"><rect x="370" y="44" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="495" y="60" text-anchor="middle" dominant-baseline="central">입력 8비트</text><text class="ts" x="495" y="78" text-anchor="middle" dominant-baseline="central">채널 64개 = 512비트</text></g>
+<line x1="185" y1="90" x2="185" y2="106" class="arr" marker-end="url(#arrow)"/>
+<line x1="495" y1="90" x2="495" y2="106" class="arr" marker-end="url(#arrow)"/>
+
+<g class="c-purple"><rect x="60" y="108" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="185" y="124" text-anchor="middle" dominant-baseline="central">depthwise · XNOR-popcount</text><text class="ts" x="185" y="142" text-anchor="middle" dominant-baseline="central">한 워드에 탭 전부, 곱셈 없음</text></g>
+<g class="c-teal"><rect x="370" y="108" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="495" y="124" text-anchor="middle" dominant-baseline="central">depthwise · int8 MAC</text><text class="ts" x="495" y="142" text-anchor="middle" dominant-baseline="central">탭마다 곱셈 1번</text></g>
+<line x1="185" y1="154" x2="185" y2="170" class="arr" marker-end="url(#arrow)"/>
+<line x1="495" y1="154" x2="495" y2="170" class="arr" marker-end="url(#arrow)"/>
+
+<g class="c-purple"><rect x="60" y="172" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="185" y="188" text-anchor="middle" dominant-baseline="central">BN → sign</text><text class="ts" x="185" y="206" text-anchor="middle" dominant-baseline="central">정수 문턱과 비교 1번</text></g>
+<g class="c-teal"><rect x="370" y="172" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="495" y="188" text-anchor="middle" dominant-baseline="central">8비트 재양자화</text><text class="ts" x="495" y="206" text-anchor="middle" dominant-baseline="central">채널별 스케일 곱셈</text></g>
+<line x1="185" y1="218" x2="185" y2="234" class="arr" marker-end="url(#arrow)"/>
+<line x1="495" y1="218" x2="495" y2="234" class="arr" marker-end="url(#arrow)"/>
+
+<g class="c-purple"><rect x="60" y="236" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="185" y="252" text-anchor="middle" dominant-baseline="central">pointwise · XNOR-popcount</text><text class="ts" x="185" y="270" text-anchor="middle" dominant-baseline="central">32채널을 1사이클에</text></g>
+<g class="c-teal"><rect x="370" y="236" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="495" y="252" text-anchor="middle" dominant-baseline="central">pointwise · int8 MAC</text><text class="ts" x="495" y="270" text-anchor="middle" dominant-baseline="central">채널마다 곱셈 1번</text></g>
+<line x1="185" y1="282" x2="185" y2="298" class="arr" marker-end="url(#arrow)"/>
+<line x1="495" y1="282" x2="495" y2="298" class="arr" marker-end="url(#arrow)"/>
+
+<g class="c-gray"><rect x="60" y="300" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="185" y="316" text-anchor="middle" dominant-baseline="central">+ residual</text><text class="ts" x="185" y="334" text-anchor="middle" dominant-baseline="central">정수 그대로 더함</text></g>
+<g class="c-teal"><rect x="370" y="300" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="495" y="316" text-anchor="middle" dominant-baseline="central">+ residual</text><text class="ts" x="495" y="334" text-anchor="middle" dominant-baseline="central">스케일 맞춘 뒤 더함</text></g>
+<line x1="185" y1="346" x2="185" y2="362" class="arr" marker-end="url(#arrow)"/>
+<line x1="495" y1="346" x2="495" y2="362" class="arr" marker-end="url(#arrow)"/>
+
+<g class="c-purple"><rect x="60" y="364" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="185" y="380" text-anchor="middle" dominant-baseline="central">BN → sign</text><text class="ts" x="185" y="398" text-anchor="middle" dominant-baseline="central">문턱 비교 1번</text></g>
+<g class="c-teal"><rect x="370" y="364" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="495" y="380" text-anchor="middle" dominant-baseline="central">BN → ReLU → 8비트</text><text class="ts" x="495" y="398" text-anchor="middle" dominant-baseline="central">곱셈 + 덧셈 + 자르기</text></g>
+<line x1="185" y1="410" x2="185" y2="426" class="arr" marker-end="url(#arrow)"/>
+<line x1="495" y1="410" x2="495" y2="426" class="arr" marker-end="url(#arrow)"/>
+
+<g class="c-gray"><rect x="60" y="428" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="185" y="444" text-anchor="middle" dominant-baseline="central">출력 ±1</text><text class="ts" x="185" y="462" text-anchor="middle" dominant-baseline="central">다음 층도 XNOR</text></g>
+<g class="c-gray"><rect x="370" y="428" width="250" height="46" rx="6" stroke-width="0.5"/><text class="th" x="495" y="444" text-anchor="middle" dominant-baseline="central">출력 8비트</text><text class="ts" x="495" y="462" text-anchor="middle" dominant-baseline="central">다음 층도 곱셈</text></g>
+
+<rect class="c-purple" x="60" y="500" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="80" y="507" dominant-baseline="central">1비트 논리 (LUT, DSP 0)</text>
+<rect class="c-teal" x="290" y="500" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="310" y="507" dominant-baseline="central">곱셈기 필요 (DSP)</text>
+<rect class="c-gray" x="460" y="500" width="14" height="14" rx="3" stroke-width="0.5"/>
+<text class="ts" x="480" y="507" dominant-baseline="central">데이터 · 정수 덧셈</text>
+</svg>
