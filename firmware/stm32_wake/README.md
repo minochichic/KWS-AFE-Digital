@@ -107,6 +107,42 @@ GSC test 키워드 300 개를 스트림당 10 단어(사이 1~3 s 조용)로 이
 (−20 dB)에서 오경보 1.8 배, 깨어 있는 시간 3 배. −30 dB 이상에서는 잡음 자체가 바닥(~1 채널)을 만들어
 규칙이 무관하다. 그래서 펌웨어 규칙은 그대로 둔다.
 
+**단계 4 -- AFE 연결 (준비, 2026-10-29, 클립 1개 `left/54aecbd5_nohash_1`).** 핀 → EXTI → 칸 경로에
+처음으로 실제 비교기를 물린다. 정답지는 소프트웨어 AFE(STFT+mel)라 비트 일치는 기준이 아니다
+(`docs/edu33212a_gsc_lab.md`). 보는 것은 같은 *종류*의 그림인가 -- 채널별 발화율, 트리거 위치, 답.
+`normalize: fixed` 라 임계가 절대값이므로 **재생 음량이 시험 조건의 일부**다.
+
+```
+AWG(EDU33212A, burst 1회 = 250 ms 무음 + 클립 1 s + 500 ms 무음) → AFE 입력
+AFE 비교기 16가닥 → J5 → STM32 (-D WAKE_AFELOG) → J4 → FPGA (kws_wake_top, 단계 3 그대로)
+```
+
+| 순서 | 할 일 | 명령 / 확인 |
+|---|---|---|
+| 1 | 소프트웨어 기준 | `python -m experiments.afe_clip prep --run runs/bd_base --wav <...>/left/54aecbd5_nohash_1.wav` → `out/afe/54aecbd5_nohash_1/ref.{json,png}`: 0 dB 그림, 게인 −12~+12 dB 별 발화율·트리거 위치·답 |
+| 2 | AWG 파형 | `experiments/gsc_to_edu33212a.py` (기본값이 위 burst 와 같다). **주입점 = 프리앰프 뒤 vin** (프리앰프 출력을 필터 입력에서 물리적으로 떼고, 발생기가 0.9 V 바이어스까지 준다: `--generator-zero-v 0.9`, High Z). 기준 레벨 50 mVpp = 동료 전송본의 마이크 5 mVpp × 프리앰프 10 (`analog/AFE_board/transfer_v3`), 25 / 100 mVpp 와 함께 `out/afe/<clip>/awg_vin_*mVpp/` |
+| 3 | 펌웨어 | 헤드리스 빌드에 `-D WAKE_AFELOG` (BOARD_TEST 는 기본 1 그대로: 풀다운 + `edges[]`). 걸린 클립 처음 16 개와 FPGA 답·트리거 때 배경을 `board_caps[]` 에, 조용한 박자의 채널별 켜짐을 `board_quiet` 에 남긴다. Stop 2 대신 Sleep -- 언제든 SWD 로 읽힌다 |
+| 4 | 무음 | AWG 출력만 연결, 신호 없음. `read_stats.ps1 -Afe -Reset` → 10 s 뒤 `read_stats.ps1 -Afe -Tag quiet`: 캡처 0 개, 무음 발화율 |
+| 5 | 클립 | `-Afe -Reset` → burst 를 2 s 간격으로 5 회 → `-Afe -Tag vin50`. 25 / 100 mVpp 도 같은 방법 (`-Tag vin25`, `vin100`) |
+| 6 | 비교 | `python -m experiments.afe_clip check out/afe/54aecbd5_nohash_1/ref.json out/afe/afe_vin50_*.json --plot out/afe/check_vin50.png` |
+
+`check` 가 캡처마다 내는 것: 시뮬 캡처 대비 몇 칸 늦/이르게 걸렸나(`shift`)와 그때 1600 비트 중 같은 비율,
+**발화율이 가장 닮은 소프트웨어 게인**(`like gain` -- 보드의 레벨이 학습 분포의 어디에 해당하나), FPGA 답,
+같은 100칸에 대한 best.pt 답. 통과로 볼 것: burst 마다 캡처 정확히 1 개 (놓침·이중 트리거 없음), 무음에서
+캡처 0, FPGA == best.pt (링크는 단계 3 에서 증명 -- 다르면 핀 경로가 아니라 다른 문제), 반복 간 `like gain`·
+`shift` 가 안정. 답이 left 인지는 정보용이다: **화자 54aecbd5 는 train split** 이라(`docs/request_v4/unknown_list.csv`
+의 three/54aecbd5_nohash_1, GSC 는 화자 단위로 나눈다) 모델이 이 녹음을 학습 때 봤다.
+
+**이 클립의 소프트웨어 기준 (`prep`, 2026-10-29)**: 원래 음량(0 dB)에서 best.pt 답은 **yes** 다 -- train
+클립인데도. −6 dB 이하에서만 left. 트리거는 버스트마다 1 번(−12 ~ +12 dB 모두), 캡처는 클립보다 6 칸 늦게
+시작한다(0 dB). 그래서 보드가 yes 라고 답해도 그 자체는 고장이 아니다 -- `like gain` 과 함께 읽는다.
+
+시뮬이 미리 말해 주는 것 (다른 left 클립 `28497c5b_nohash_0` 으로 도구 시험): 레벨을 올리면 단어 꼬리에서
+**한 burst 에 두 번** 걸리기 시작한다 (+3 dB 이상, 둘째 창은 up 으로 답). 레벨을 −12 dB 로 내리면 답이 right
+로 바뀐다. 즉 레벨 축에서 정상 구간이 있고, `like gain` 이 그 안에 드는지가 이 시험의 핵심이다.
+**보지 않는 것**: J6 경로(FPGA `kws_frame_ctrl`)와의 프레임 대조 -- FPGA 비교기 경로에는 프레임을 꺼내는
+수단이 없다(ILA 또는 덤프 RTL 필요). 이번엔 소프트웨어 AFE 가 기준이다.
+
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
 보드 쪽(`board.c`)은 칸을 만들어 넣고, 완성되면 보내고, 답을 받으면 `wake_sent(&w)`.
