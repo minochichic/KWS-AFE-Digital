@@ -21,23 +21,40 @@ HERE = Path(__file__).resolve().parent
 CLK = 50e6
 DUTY = 64 / 65                       # one start cycle per 64-word vector
 LANE_RATE = CLK * 32 * DUTY          # terms/s at 32 terms/cycle
-#        name, operands, terms/cycle, LUT, FF, DSP, WNS, engine mW (net of stim)
-BENCH = [
-    ("Binary, 1 engine",  "1\\,b $\\times$ 1\\,b",  32,  173,  49,  0,  9.08,  3.0),
-    ("Binary, 8 engines", "1\\,b $\\times$ 1\\,b", 256,  707, 336,  0,  8.57, 15.0),
-    ("INT8 $\\times\\,\\pm1$ (add/sub)", "1\\,b $\\times$ 8\\,b", 32, 1050, 775, 0, 9.94, 24.0),
-    ("INT8 MAC, DSP48", "8\\,b $\\times$ 8\\,b",   32, 1042, 787, 32, 12.03, 43.0),
-    ("INT8 MAC, LUT only", "8\\,b $\\times$ 8\\,b", 32, 3646, 786,  0,  8.69, 61.0),
+OPS = {"bin": "1\\,b $\\times$ 1\\,b", "pm1": "1\\,b $\\times$ 8\\,b", "i8": "8\\,b $\\times$ 8\\,b"}
+#  key, name, operands, terms/cycle, LUT, FF, DSP, BRAM tiles, WNS, engine mW (net of stim)
+ARITH = [    # KIND 0, 7, 3, 6, 4 -- the engine fed straight from the stimulus
+    ("a_bin1", "Binary, 1 engine",            OPS["bin"],  32,  173,   49,  0, 0,  9.08,  3.0),
+    ("a_bin8", "Binary, 8 engines",           OPS["bin"], 256,  707,  336,  0, 0,  8.57, 15.0),
+    ("a_pm1",  "INT8 $\\times\\,\\pm1$ (add/sub)", OPS["pm1"], 32, 1050, 775, 0, 0, 9.94, 24.0),
+    ("a_dsp",  "INT8 MAC, DSP48",             OPS["i8"],   32, 1042,  787, 32, 0, 12.03, 43.0),
+    ("a_lut",  "INT8 MAC, LUT only",          OPS["i8"],   32, 3646,  786,  0, 0,  8.69, 61.0),
 ]
-BENCH_REF = 1                         # the 8-engine build: 1 mW steps matter less
+MEM = [      # KIND 12, 8, 11, 9, 10 -- + weight ROM and activation frame register
+    ("m_bin1", "Binary, 1 engine",            OPS["bin"],  32,  271,  187,  0, 0,  7.55,  5.0),
+    ("m_bin8", "Binary, 8 engines",           OPS["bin"], 256, 2226, 1431,  0, 0,  7.72, 46.0),
+    ("m_pm1",  "INT8 $\\times\\,\\pm1$ (add/sub)", OPS["pm1"], 32, 2168, 962, 0, 0, 10.73, 43.0),
+    ("m_dsp",  "INT8 MAC, DSP48",             OPS["i8"],   32, 2640, 1890, 32, 0,  6.67, 68.0),
+    ("m_bram", "INT8 MAC, DSP48, BRAM ROM",   OPS["i8"],   32,  928, 2077, 32, 4,  9.25, 57.0),
+]
+B = {r[0]: r for r in ARITH + MEM}
 
 
-def p_at32(b):                        # engine power scaled to 32 terms/cycle
-    return b[7] * 32 / b[2]
+def p_at32(b):                        # engine power scaled to 32 terms/cycle, mW
+    return b[9] * 32 / b[3]
 
 
-P32 = {"xnor": p_at32(BENCH[1]), "add": p_at32(BENCH[2]), "mac": p_at32(BENCH[3])}   # mW
-PJ = {k: v * 1e-3 / LANE_RATE * 1e12 for k, v in P32.items()}                          # pJ/term
+def pj(key):                          # energy per term, pJ
+    return p_at32(B[key]) * 1e-3 / LANE_RATE * 1e12
+
+
+# Table IV: arithmetic + operand memory. Binary and ADD read LUT ROMs as the
+# proposed design does; INT8 MAC takes the block-RAM ROM, the cheaper of its
+# two options -- the choice that favours INT8.
+USE = {"xnor": "m_bin8", "add": "m_pm1", "mac": "m_bram"}
+ALT_LUT = {"xnor": "m_bin8", "add": "m_pm1", "mac": "m_dsp"}
+ARITH_ONLY = {"xnor": "a_bin8", "add": "a_pm1", "mac": "a_dsp"}
+PJ = {k: pj(v) for k, v in USE.items()}
 
 # ---- networks ----------------------------------------------------------------- #
 BASE_CYC = 2.87e6                     # bd_base, on chip
@@ -58,8 +75,12 @@ NETS = [
 NET_REF, ACC_REF = 2, 0
 
 
-def energy_j(r):
-    return (r[3] * PJ["xnor"] + r[4] * PJ["add"] + r[5] * PJ["mac"]) * 1e-12
+def energy_j(r, use=USE):
+    return (r[3] * pj(use["xnor"]) + r[4] * pj(use["add"]) + r[5] * pj(use["mac"])) * 1e-12
+
+
+def gain(use):                        # All INT8 / Binary, energy per inference
+    return energy_j(NETS[2], use) / energy_j(NETS[0], use)
 
 
 net_cells = []
@@ -79,32 +100,42 @@ for i, r in enumerate(NETS):
         f"{r[6]:.1f}", "(ref.)" if i == ACC_REF else f"({d:+.1f})",
     ])
 
+# Table V: two sections, each relative to its own 8-engine binary build
 bench_cells = []
-for i, b in enumerate(BENCH):
-    coarse = b[7] < 10                              # 1 mW steps: >= +-10 %
-    mark = "$^{\\P}$" if coarse else ""
-    p32 = p_at32(b)
-    rel = ("(ref.)" if i == BENCH_REF else
-           "--" if coarse else f"({p32 / p_at32(BENCH[BENCH_REF]):.1f}$\\times$)")
-    bench_cells.append([
-        b[0], b[1], f"{b[2]}", f"{b[3]:,}", f"{b[4]:,}", f"{b[5]}", f"{b[6]:.2f}",
-        f"{b[7]:.1f}{mark}", f"{p32:.1f}{mark}", rel,
-    ])
+for title, rows, ref in (("(a) Arithmetic only", ARITH, "a_bin8"),
+                         ("(b) With operand memory: weight ROM + activation frame register",
+                          MEM, "m_bin8")):
+    bench_cells.append(title)                       # a section row
+    for b in rows:
+        coarse = b[9] < 10                          # 1 mW steps: >= +-10 %
+        mark = "$^{\\P}$" if coarse else ""
+        rel = ("(ref.)" if b[0] == ref else
+               "--" if coarse else f"({p_at32(b) / p_at32(B[ref]):.1f}$\\times$)")
+        bench_cells.append([
+            b[1], b[2], f"{b[3]}", f"{b[4]:,}", f"{b[5]:,}", f"{b[6]}",
+            (f"{b[7]:g}" if b[7] else "0"), f"{b[8]:.2f}",
+            f"{b[9]:.1f}{mark}", f"{p_at32(b):.1f}{mark}", rel,
+        ])
 
 # ---- footnotes (one source for .tex and the previews) ----------------------- #
 NET_NOTES = [
     ("", "All three networks have the same topology and 93,952 weights; only layer precision "
          "differs. XNOR: 32-bit packed XNOR-popcount term; ADD: INT8 weight × ±1 activation "
          "(sign-controlled add); MAC: INT8 multiply-accumulate."),
-    ("*", "Dynamic compute power only. Per-operation cost comes from Table V: engine power at "
-          f"32 terms/cycle and 50 MHz is {P32['xnor']:.1f} mW (XNOR), {P32['add']:.0f} mW (ADD) and "
-          f"{P32['mac']:.0f} mW (MAC on DSP48); dividing by the term rate "
-          f"(50 MHz × 32 × 64/65 = {LANE_RATE / 1e9:.2f} G terms/s) gives "
-          f"{PJ['xnor']:.2f}, {PJ['add']:.1f} and {PJ['mac']:.1f} pJ per term. Network power = "
-          "Σ ops × (pJ per term), divided by the latency (during inference) or multiplied by "
-          f"{RATE_HZ} Hz (average at the {RATE_HZ}-Hz inference rate). Memory access, control and "
-          "static power are excluded; for reference, the whole device draws 0.184 W during "
-          "inference of the proposed network, 0.094 W of it static (vectorless)."),
+    ("*", "Dynamic power of the arithmetic and its operand memory (a weight-ROM word read "
+          "every cycle and the activation frame register), from Table V(b). At 32 terms/cycle "
+          f"and 50 MHz an engine draws {p_at32(B[USE['xnor']]):.1f} mW (XNOR, LUT ROM as in the "
+          f"proposed design), {p_at32(B[USE['add']]):.0f} mW (ADD, LUT ROM) and "
+          f"{p_at32(B[USE['mac']]):.0f} mW (MAC on DSP48 with a block-RAM ROM, the cheaper INT8 "
+          f"option); dividing by the term rate (50 MHz × 32 × 64/65 = {LANE_RATE / 1e9:.2f} G "
+          f"terms/s) gives {PJ['xnor']:.2f}, {PJ['add']:.1f} and {PJ['mac']:.1f} pJ per term. "
+          "Network power = Σ ops × (pJ per term), divided by the latency (during inference) or "
+          f"multiplied by {RATE_HZ} Hz (average at the {RATE_HZ}-Hz inference rate). With a LUT "
+          f"ROM for the INT8 MAC, All INT8 costs {gain(ALT_LUT):.1f}× the binary network; with "
+          f"arithmetic alone (Table V(a)), {gain(ARITH_ONLY):.1f}×. Excluded: control and clock "
+          "distribution (the same folded controller in all three) and static power (0.094 W, "
+          "the same device); for reference, the whole device draws 0.184 W during inference of "
+          "the proposed network (vectorless)."),
     ("†", "Relative to All INT8, on the 10-Hz average."),
     ("‡", "Measured on chip (600/600 clips bit-exact with the integer reference). Other "
           "latencies are estimated from cycle counts."),
@@ -118,18 +149,23 @@ BENCH_NOTES = [
     ("", "One engine per row, placed and routed alone on XC7S75-1 at 50 MHz. Operands come "
          "from on-chip xorshift64 generators (identical in every build); each engine accumulates "
          "64-word vectors, and every accumulator is XOR-reduced to an output pin so that no logic "
-         "is pruned. LUT, FF and power are net of a stimulus-only build. Act. × weight: "
-         "operand widths."),
+         "is pruned. LUT, FF, BRAM and power are net of a stimulus-only build. Act. × weight: "
+         "operand widths. In (b) the engine is fed as the proposed design's pointwise layer "
+         "feeds it: a 256-word weight ROM loaded from a file, 32 bits wide for binary and 256 for INT8, "
+         "read one word a cycle (asynchronously from LUTs unless BRAM), and a 128-channel "
+         "activation frame latched every 260 cycles and read one word a cycle."),
     ("*", "Engine dynamic power: report_power (post-route, vectorless default switching) of the "
           "build minus that of the stimulus-only build. Comparable across rows; not a "
           "measurement on silicon."),
     ("†", f"Scaled to the same throughput, 32 terms/cycle (= {LANE_RATE / 1e9:.2f} G terms/s with "
           "one start cycle per 64-word vector). Per-term energy = this power ÷ term rate: "
-          + ", ".join(f"{p_at32(b) * 1e-3 / LANE_RATE * 1e12:.3g}" for b in BENCH[1:])
-          + " pJ for rows 2–5. Table IV uses rows 2–4."),
-    ("¶", "report_power prints 1 mW steps (±17% at 3 mW), so the binary reference is the "
-          "8-engine build. Shared control logic makes it 88 LUT per engine against 173 alone; "
-          "the real design, with one engine per layer, is the latter."),
+          + ", ".join(f"{pj(k):.3g}" for k in ("a_bin8", "a_pm1", "a_dsp", "a_lut"))
+          + " pJ in (a); "
+          + ", ".join(f"{pj(k):.3g}" for k in ("m_bin8", "m_pm1", "m_dsp", "m_bram"))
+          + " pJ in (b). Table IV uses (b): binary, INT8 × ±1 and the BRAM-ROM MAC."),
+    ("¶", "report_power prints 1 mW steps (±17% at 3 mW, ±10% at 5 mW), so the binary "
+          "reference is the 8-engine build. In (a) shared control logic makes it 88 LUT per "
+          "engine against 173 alone; the real design, with one engine per layer, is the latter."),
 ]
 
 
@@ -150,8 +186,16 @@ def write_tex(stem, label, caption, colspec, head, cells, notes):
            f"\\caption{{{caption}}}\n\\label{{{label}}}\n\\centering\n"
            f"\\setlength{{\\tabcolsep}}{{4.2pt}}\n\\begin{{tabular}}{{{colspec}}}\n\\toprule\n"
            + head + "\\midrule\n")
+    ncol = max(len(c) for c in cells if not isinstance(c, str))
+    first = True
     for c in cells:
-        tex += " & ".join(c) + " \\\\\n"
+        if isinstance(c, str):                       # a section row
+            if not first:
+                tex += "\\midrule\n"
+            tex += f"\\multicolumn{{{ncol}}}{{l}}{{\\textit{{{c}}}}} \\\\\n"
+        else:
+            tex += " & ".join(c) + " \\\\\n"
+        first = False
     tex += ("\\bottomrule\n\\end{tabular}\n\n\\vspace{2pt}\n"
             "\\begin{minipage}{\\textwidth}\\footnotesize\n"
             + " \\\\\n".join(tex_note(*n) for n in notes) + "\n\\end{minipage}\n\\end{table*}\n")
@@ -163,7 +207,7 @@ write_tex(
     "Hardware Cost of Binarization: Ablation of the Proposed Network\\\\\n"
     "on the Same FPGA (Xilinx XC7S75, 50\\,MHz), Google Speech Commands v2",
     "llr rrr rrl r r rl",
-    " & & & \\multicolumn{3}{c}{Ops / inference [M]} & \\multicolumn{3}{c}{Compute power$^{*}$ [mW]}"
+    " & & & \\multicolumn{3}{c}{Ops / inference [M]} & \\multicolumn{3}{c}{Arith.\\ + memory power$^{*}$ [mW]}"
     " & & & \\multicolumn{2}{c}{Accuracy [\\%]} \\\\\n"
     "\\cmidrule(lr){4-6}\\cmidrule(lr){7-9}\\cmidrule(lr){12-13}\n"
     "Method & Binarized layers & Weights [kbit] & XNOR & ADD & MAC & inference & avg.\\ @10\\,Hz"
@@ -174,10 +218,10 @@ write_tex(
     "table_mac_bench", "tab:macbench",
     "Post-Route Cost of One MAC Engine of Each Kind\\\\\n"
     "(Xilinx XC7S75, 50\\,MHz, Vivado, Vectorless)",
-    "ll r rrr r rrl",
-    " & & & & & & & \\multicolumn{3}{c}{Engine power [mW]} \\\\\n"
-    "\\cmidrule(lr){8-10}\n"
-    "Engine & Act.\\ $\\times$ weight & Terms/cycle & LUT & FF & DSP & WNS [ns]"
+    "ll r rrrr r rrl",
+    " & & & & & & & & \\multicolumn{3}{c}{Engine power [mW]} \\\\\n"
+    "\\cmidrule(lr){9-11}\n"
+    "Engine & Act.\\ $\\times$ weight & Terms/cycle & LUT & FF & DSP & BRAM & WNS [ns]"
     " & as built$^{*}$ & @32 terms/cyc.$^{\\dagger}$ & (rel.) \\\\\n",
     bench_cells, BENCH_NOTES)
 
@@ -210,10 +254,12 @@ def render(stem, number, title, heads, groups, cells, align, tight, notes):
         t.remove()
         return w
 
-    rows = [[plain(c) for c in r] for r in cells]
+    # a str in cells is a section row: italic, across the table
+    rows = [plain(r) if isinstance(r, str) else [plain(c) for c in r] for r in cells]
+    data = [r for r in rows if not isinstance(r, str)]
     heads = [plain(h) for h in heads]
     n = len(heads)
-    colw = [max([width(heads[j], SZ_HEAD)] + [width(r[j], SZ_CELL) for r in rows]) for j in range(n)]
+    colw = [max([width(heads[j], SZ_HEAD)] + [width(r[j], SZ_CELL) for r in data]) for j in range(n)]
     gap = [0.06 if j in tight else (0.0 if j == 0 else 0.2) for j in range(n)]
     for a, b, lab in groups:                     # a group label must fit over its columns
         span = sum(colw[a:b + 1]) + sum(gap[a + 1:b + 1])
@@ -235,7 +281,8 @@ def render(stem, number, title, heads, groups, cells, align, tight, notes):
         note_lines += textwrap.wrap((sym + s) if sym else s, note_chars)
     title_lines = textwrap.wrap(title.upper(), int(W / 0.07))
     H = (0.30 + 0.20 * len(title_lines) + 0.12 + (0.30 if groups else 0) + 0.26
-         + 0.25 * len(rows) + 0.14 + 0.135 * len(note_lines) + 0.08)
+         + 0.25 * len(rows) + 0.06 * sum(isinstance(r, str) for r in rows[1:])
+         + 0.14 + 0.135 * len(note_lines) + 0.08)
     fig.set_size_inches(W, H)
     ax = fig.add_axes([0, 0, 1, 1]); ax.set_xlim(0, W); ax.set_ylim(0, H); ax.axis("off")
 
@@ -264,7 +311,16 @@ def render(stem, number, title, heads, groups, cells, align, tight, notes):
     y -= 0.15
     ax.plot([M - 0.04, W - M + 0.04], [y, y], color="k", lw=0.6)
     y -= 0.10
-    for r in rows:
+    for i, r in enumerate(rows):
+        if isinstance(r, str):
+            if i:
+                y -= 0.03
+                ax.plot([M - 0.04, W - M + 0.04], [y, y], color="k", lw=0.6)
+                y -= 0.03
+            y -= 0.125
+            ax.text(M, y, r, ha="left", va="center", size=SZ_CELL, style="italic")
+            y -= 0.125
+            continue
         y -= 0.125
         for j, s in enumerate(r):
             t(cx(j), y, s, align[j])
@@ -282,7 +338,7 @@ render("table_binarization", "IV",
        "(Xilinx XC7S75, 50 MHz), Google Speech Commands v2",
        ["Method", "Binarized layers", "Weights [kbit]", "XNOR", "ADD", "MAC",
         "inference", "avg. @10 Hz", "(improv.†)", "Latency [ms]", "DSP‖", "12 classes", ""],
-       [(3, 5, "Ops / inference [M]"), (6, 8, "Compute power* [mW]"), (11, 12, "Accuracy [%]")],
+       [(3, 5, "Ops / inference [M]"), (6, 8, "Arith. + memory power* [mW]"), (11, 12, "Accuracy [%]")],
        net_cells,
        ["left", "left", "right", "right", "right", "right", "right", "right", "left",
         "right", "right", "right", "left"],
@@ -290,15 +346,21 @@ render("table_binarization", "IV",
 
 render("table_mac_bench", "V",
        "Post-route cost of one MAC engine of each kind (Xilinx XC7S75, 50 MHz, Vivado, vectorless)",
-       ["Engine", "Act. × weight", "Terms/cycle", "LUT", "FF", "DSP", "WNS [ns]",
+       ["Engine", "Act. × weight", "Terms/cycle", "LUT", "FF", "DSP", "BRAM", "WNS [ns]",
         "as built*", "@32 terms/cyc.†", "(rel.)"],
-       [(7, 9, "Engine power [mW]")],
+       [(8, 10, "Engine power [mW]")],
        bench_cells,
-       ["left", "left", "right", "right", "right", "right", "right", "right", "right", "left"],
-       {9}, BENCH_NOTES)
+       ["left", "left", "right", "right", "right", "right", "right", "right", "right", "right",
+        "left"],
+       {10}, BENCH_NOTES)
 
 print("wrote table_binarization.{tex,svg,png} and table_mac_bench.{tex,svg,png} in", HERE)
 for c in net_cells:
     print(" ", plain(c[0]), "| inference", c[6], "mW | 10 Hz", c[7], "mW", c[8], "|", c[11], c[12])
 for c in bench_cells:
-    print(" ", plain(c[0]), "|", c[7], "mW as built |", c[8], "mW @32 |", plain(c[9]))
+    if isinstance(c, str):
+        print(" ", c)
+    else:
+        print("   ", plain(c[0]), "|", plain(c[8]), "mW as built |", plain(c[9]), "mW @32 |", plain(c[10]))
+print("  energy All INT8 / Binary:", f"{gain(USE):.2f} (used),", f"{gain(ALT_LUT):.2f} (LUT-ROM MAC),",
+      f"{gain(ARITH_ONLY):.2f} (arithmetic only)")

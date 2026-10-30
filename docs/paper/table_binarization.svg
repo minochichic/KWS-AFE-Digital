@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="642.829091pt" height="266.4pt" viewBox="0 0 642.829091 266.4" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="642.829091pt" height="285.84pt" viewBox="0 0 642.829091 285.84" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-10-30T19:29:24.557572</dc:date>
+    <dc:date>2026-10-30T21:42:27.332011</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -21,8 +21,8 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 266.4 
-L 642.829091 266.4 
+   <path d="M 0 285.84 
+L 642.829091 285.84 
 L 642.829091 0 
 L 0 0 
 z
@@ -32,32 +32,32 @@ z
    <g id="line2d_1">
     <path d="M 5.76 56.16 
 L 637.069091 56.16 
-" clip-path="url(#pc14f7b62b3)" style="fill: none; stroke: #000000; stroke-width: 1.1; stroke-linecap: square"/>
+" clip-path="url(#p3d85012372)" style="fill: none; stroke: #000000; stroke-width: 1.1; stroke-linecap: square"/>
    </g>
    <g id="line2d_2">
     <path d="M 223.821818 76.32 
 L 315.09 76.32 
-" clip-path="url(#pc14f7b62b3)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#p3d85012372)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_3">
     <path d="M 329.49 76.32 
 L 462.51 76.32 
-" clip-path="url(#pc14f7b62b3)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#p3d85012372)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_4">
     <path d="M 571.614545 76.32 
 L 634.189091 76.32 
-" clip-path="url(#pc14f7b62b3)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
+" clip-path="url(#p3d85012372)" style="fill: none; stroke: #000000; stroke-width: 0.5; stroke-linecap: square"/>
    </g>
    <g id="line2d_5">
     <path d="M 5.76 97.92 
 L 637.069091 97.92 
-" clip-path="url(#pc14f7b62b3)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: square"/>
+" clip-path="url(#p3d85012372)" style="fill: none; stroke: #000000; stroke-width: 0.6; stroke-linecap: square"/>
    </g>
    <g id="line2d_6">
     <path d="M 5.76 162.72 
 L 637.069091 162.72 
-" clip-path="url(#pc14f7b62b3)" style="fill: none; stroke: #000000; stroke-width: 1.1; stroke-linecap: square"/>
+" clip-path="url(#p3d85012372)" style="fill: none; stroke: #000000; stroke-width: 1.1; stroke-linecap: square"/>
    </g>
    <g id="text_1">
     <!-- TABLE IV -->
@@ -286,7 +286,7 @@ z
    </g>
    <g id="text_2">
     <!-- HARDWARE COST OF BINARIZATION: ABLATION OF THE PROPOSED NETWORK ON THE SAME FPGA (XILINX XC7S75, 50 MHZ), GOOGLE SPEECH -->
-    <g transform="translate(63.645108 27.690563) scale(0.076 -0.076)">
+    <g transform="translate(63.645108 27.690562) scale(0.076 -0.076)">
      <defs>
       <path id="STIXGeneral-Regular-48" d="M 4499 0 
 L 2714 0 
@@ -1384,28 +1384,90 @@ z
     </g>
    </g>
    <g id="text_5">
-    <!-- Compute power* [mW] -->
-    <g transform="translate(354.917531 70.403531) scale(0.086 -0.086)">
+    <!-- Arith. + memory power* [mW] -->
+    <g transform="translate(341.106469 70.3995) scale(0.086 -0.086)">
      <defs>
-      <path id="STIXGeneral-Regular-6f" d="M 3008 1478 
-Q 3008 806 2608 371 
-Q 2208 -64 1568 -64 
-Q 979 -64 582 368 
-Q 186 800 186 1459 
-Q 186 2125 582 2534 
-Q 979 2944 1626 2944 
-Q 2221 2944 2614 2537 
-Q 3008 2131 3008 1478 
+      <path id="STIXGeneral-Regular-74" d="M 1702 493 
+L 1786 422 
+Q 1478 -64 1011 -64 
+Q 448 -64 448 749 
+L 448 2675 
+L 109 2675 
+Q 83 2694 83 2720 
+Q 83 2771 192 2842 
+Q 435 2982 813 3526 
+Q 826 3546 874 3606 
+Q 922 3667 941 3706 
+Q 986 3706 986 3622 
+L 986 2880 
+L 1632 2880 
+L 1632 2675 
+L 986 2675 
+L 986 845 
+Q 986 538 1062 403 
+Q 1139 269 1318 269 
+Q 1510 269 1702 493 
 z
-M 2432 1306 
-Q 2432 2035 2112 2445 
-Q 1856 2765 1504 2765 
-Q 1171 2765 966 2493 
-Q 762 2221 762 1747 
-Q 762 928 1101 435 
-Q 1318 115 1677 115 
-Q 2029 115 2230 432 
-Q 2432 749 2432 1306 
+" transform="scale(0.015625)"/>
+      <path id="STIXGeneral-Regular-68" d="M 3117 0 
+L 1760 0 
+L 1760 96 
+Q 2042 128 2118 224 
+Q 2195 320 2195 653 
+L 2195 1920 
+Q 2195 2598 1722 2598 
+Q 1530 2598 1370 2508 
+Q 1210 2419 1005 2195 
+L 1005 653 
+Q 1005 320 1081 224 
+Q 1158 128 1440 96 
+L 1440 0 
+L 58 0 
+L 58 96 
+Q 333 134 400 224 
+Q 467 314 467 653 
+L 467 3667 
+Q 467 3872 406 3933 
+Q 346 3994 141 3994 
+Q 83 3994 64 3987 
+L 64 4090 
+L 237 4141 
+Q 730 4288 973 4371 
+L 1005 4352 
+L 1005 2406 
+Q 1229 2694 1446 2819 
+Q 1664 2944 1946 2944 
+Q 2733 2944 2733 1926 
+L 2733 653 
+Q 2733 320 2793 233 
+Q 2854 147 3117 96 
+L 3117 0 
+z
+" transform="scale(0.015625)"/>
+      <path id="STIXGeneral-Regular-2e" d="M 1158 275 
+Q 1158 134 1052 32 
+Q 947 -70 800 -70 
+Q 653 -70 550 32 
+Q 448 134 448 281 
+Q 448 429 553 534 
+Q 659 640 806 640 
+Q 947 640 1052 531 
+Q 1158 422 1158 275 
+z
+" transform="scale(0.015625)"/>
+      <path id="STIXGeneral-Regular-2b" d="M 4070 1408 
+L 2400 1408 
+L 2400 -262 
+L 1978 -262 
+L 1978 1408 
+L 307 1408 
+L 307 1830 
+L 1978 1830 
+L 1978 3501 
+L 2400 3501 
+L 2400 1830 
+L 4070 1830 
+L 4070 1408 
 z
 " transform="scale(0.015625)"/>
       <path id="STIXGeneral-Regular-6d" d="M 4960 0 
@@ -1460,57 +1522,58 @@ L 4960 96
 L 4960 0 
 z
 " transform="scale(0.015625)"/>
-      <path id="STIXGeneral-Regular-75" d="M 3072 320 
-L 3072 230 
-Q 2573 96 2195 -58 
-L 2163 -38 
-L 2163 486 
-L 2150 486 
-Q 1747 -64 1235 -64 
-Q 870 -64 662 160 
-Q 454 384 454 755 
-L 454 2362 
-Q 454 2598 371 2688 
-Q 288 2778 58 2790 
-L 58 2880 
-L 992 2880 
-L 992 813 
-Q 992 595 1123 451 
-Q 1254 307 1446 307 
-Q 1760 307 1984 506 
-Q 2067 582 2099 649 
-Q 2131 717 2131 877 
-L 2131 2355 
-Q 2131 2605 2041 2678 
-Q 1952 2752 1658 2771 
-L 1658 2880 
-L 2669 2880 
-L 2669 685 
-Q 2669 461 2742 390 
-Q 2816 320 3034 320 
-L 3072 320 
+      <path id="STIXGeneral-Regular-6f" d="M 3008 1478 
+Q 3008 806 2608 371 
+Q 2208 -64 1568 -64 
+Q 979 -64 582 368 
+Q 186 800 186 1459 
+Q 186 2125 582 2534 
+Q 979 2944 1626 2944 
+Q 2221 2944 2614 2537 
+Q 3008 2131 3008 1478 
+z
+M 2432 1306 
+Q 2432 2035 2112 2445 
+Q 1856 2765 1504 2765 
+Q 1171 2765 966 2493 
+Q 762 2221 762 1747 
+Q 762 928 1101 435 
+Q 1318 115 1677 115 
+Q 2029 115 2230 432 
+Q 2432 749 2432 1306 
 z
 " transform="scale(0.015625)"/>
-      <path id="STIXGeneral-Regular-74" d="M 1702 493 
-L 1786 422 
-Q 1478 -64 1011 -64 
-Q 448 -64 448 749 
-L 448 2675 
-L 109 2675 
-Q 83 2694 83 2720 
-Q 83 2771 192 2842 
-Q 435 2982 813 3526 
-Q 826 3546 874 3606 
-Q 922 3667 941 3706 
-Q 986 3706 986 3622 
-L 986 2880 
-L 1632 2880 
-L 1632 2675 
-L 986 2675 
-L 986 845 
-Q 986 538 1062 403 
-Q 1139 269 1318 269 
-Q 1510 269 1702 493 
+      <path id="STIXGeneral-Regular-79" d="M 3040 2880 
+L 3040 2784 
+Q 2925 2771 2854 2700 
+Q 2784 2630 2720 2458 
+L 1760 -160 
+Q 1510 -838 1257 -1116 
+Q 1005 -1395 640 -1395 
+Q 435 -1395 313 -1289 
+Q 192 -1184 192 -1024 
+Q 192 -902 272 -816 
+Q 352 -730 467 -730 
+Q 653 -730 800 -813 
+Q 883 -858 966 -858 
+Q 1101 -858 1286 -576 
+Q 1376 -448 1459 -211 
+Q 1542 26 1542 115 
+Q 1542 198 1274 762 
+L 429 2566 
+Q 346 2752 90 2790 
+L 90 2880 
+L 1402 2880 
+L 1402 2784 
+Q 1197 2778 1117 2739 
+Q 1037 2701 1037 2611 
+Q 1037 2541 1120 2349 
+L 1837 749 
+L 2458 2515 
+Q 2483 2573 2483 2630 
+Q 2483 2784 2189 2784 
+L 2189 2880 
+L 3040 2880 
 z
 " transform="scale(0.015625)"/>
       <path id="STIXGeneral-Regular-77" d="M 4442 2880 
@@ -1613,31 +1676,70 @@ Q 2074 3219 1715 3014
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#STIXGeneral-Regular-43"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="66.699997"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="116.699982"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="194.499969"/>
-     <use xlink:href="#STIXGeneral-Regular-75" x="244.499954"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="294.499939"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="322.299927"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="366.699921"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="391.699905"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="441.69989"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="491.699875"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="563.899857"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="608.29985"/>
-     <use xlink:href="#STIXGeneral-Regular-2a" x="641.599838"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="691.599823"/>
-     <use xlink:href="#STIXGeneral-Regular-5b" x="716.599808"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="749.899796"/>
-     <use xlink:href="#STIXGeneral-Regular-57" x="827.699783"/>
-     <use xlink:href="#STIXGeneral-Regular-5d" x="922.099777"/>
+     <use xlink:href="#STIXGeneral-Regular-41"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="72.199982"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="105.499969"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="133.299957"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="161.099945"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="211.09993"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="236.099915"/>
+     <use xlink:href="#STIXGeneral-Regular-2b" x="261.099899"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="329.599884"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="354.599869"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="432.399857"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="476.79985"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="554.599838"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="604.599823"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="637.899811"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="687.899796"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="712.89978"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="762.899765"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="812.89975"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="885.099731"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="929.499725"/>
+     <use xlink:href="#STIXGeneral-Regular-2a" x="962.799713"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1012.799698"/>
+     <use xlink:href="#STIXGeneral-Regular-5b" x="1037.799683"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="1071.09967"/>
+     <use xlink:href="#STIXGeneral-Regular-57" x="1148.899658"/>
+     <use xlink:href="#STIXGeneral-Regular-5d" x="1243.299652"/>
     </g>
    </g>
    <g id="text_6">
     <!-- Accuracy [%] -->
     <g transform="translate(579.276678 70.498266) scale(0.086 -0.086)">
      <defs>
+      <path id="STIXGeneral-Regular-75" d="M 3072 320 
+L 3072 230 
+Q 2573 96 2195 -58 
+L 2163 -38 
+L 2163 486 
+L 2150 486 
+Q 1747 -64 1235 -64 
+Q 870 -64 662 160 
+Q 454 384 454 755 
+L 454 2362 
+Q 454 2598 371 2688 
+Q 288 2778 58 2790 
+L 58 2880 
+L 992 2880 
+L 992 813 
+Q 992 595 1123 451 
+Q 1254 307 1446 307 
+Q 1760 307 1984 506 
+Q 2067 582 2099 649 
+Q 2131 717 2131 877 
+L 2131 2355 
+Q 2131 2605 2041 2678 
+Q 1952 2752 1658 2771 
+L 1658 2880 
+L 2669 2880 
+L 2669 685 
+Q 2669 461 2742 390 
+Q 2816 320 3034 320 
+L 3072 320 
+z
+" transform="scale(0.015625)"/>
       <path id="STIXGeneral-Regular-61" d="M 2829 422 
 L 2829 243 
 Q 2586 -64 2253 -64 
@@ -1677,39 +1779,6 @@ Q 1043 307 1242 307
 Q 1453 307 1613 410 
 Q 1747 506 1792 589 
 Q 1837 672 1837 813 
-z
-" transform="scale(0.015625)"/>
-      <path id="STIXGeneral-Regular-79" d="M 3040 2880 
-L 3040 2784 
-Q 2925 2771 2854 2700 
-Q 2784 2630 2720 2458 
-L 1760 -160 
-Q 1510 -838 1257 -1116 
-Q 1005 -1395 640 -1395 
-Q 435 -1395 313 -1289 
-Q 192 -1184 192 -1024 
-Q 192 -902 272 -816 
-Q 352 -730 467 -730 
-Q 653 -730 800 -813 
-Q 883 -858 966 -858 
-Q 1101 -858 1286 -576 
-Q 1376 -448 1459 -211 
-Q 1542 26 1542 115 
-Q 1542 198 1274 762 
-L 429 2566 
-Q 346 2752 90 2790 
-L 90 2880 
-L 1402 2880 
-L 1402 2784 
-Q 1197 2778 1117 2739 
-Q 1037 2701 1037 2611 
-Q 1037 2541 1120 2349 
-L 1837 749 
-L 2458 2515 
-Q 2483 2573 2483 2630 
-Q 2483 2784 2189 2784 
-L 2189 2880 
-L 3040 2880 
 z
 " transform="scale(0.015625)"/>
       <path id="STIXGeneral-Regular-25" d="M 4390 1363 
@@ -1786,41 +1855,6 @@ z
     <!-- Method -->
     <g transform="translate(8.64 89.123531) scale(0.086 -0.086)">
      <defs>
-      <path id="STIXGeneral-Regular-68" d="M 3117 0 
-L 1760 0 
-L 1760 96 
-Q 2042 128 2118 224 
-Q 2195 320 2195 653 
-L 2195 1920 
-Q 2195 2598 1722 2598 
-Q 1530 2598 1370 2508 
-Q 1210 2419 1005 2195 
-L 1005 653 
-Q 1005 320 1081 224 
-Q 1158 128 1440 96 
-L 1440 0 
-L 58 0 
-L 58 96 
-Q 333 134 400 224 
-Q 467 314 467 653 
-L 467 3667 
-Q 467 3872 406 3933 
-Q 346 3994 141 3994 
-Q 83 3994 64 3987 
-L 64 4090 
-L 237 4141 
-Q 730 4288 973 4371 
-L 1005 4352 
-L 1005 2406 
-Q 1229 2694 1446 2819 
-Q 1664 2944 1946 2944 
-Q 2733 2944 2733 1926 
-L 2733 653 
-Q 2733 320 2793 233 
-Q 2854 147 3117 96 
-L 3117 0 
-z
-" transform="scale(0.015625)"/>
       <path id="STIXGeneral-Regular-64" d="M 3142 269 
 L 2202 -64 
 L 2176 -45 
@@ -2140,17 +2174,6 @@ Q 2464 2483 2464 2579
 Q 2464 2758 2163 2784 
 L 2163 2880 
 L 3053 2880 
-z
-" transform="scale(0.015625)"/>
-      <path id="STIXGeneral-Regular-2e" d="M 1158 275 
-Q 1158 134 1052 32 
-Q 947 -70 800 -70 
-Q 653 -70 550 32 
-Q 448 134 448 281 
-Q 448 429 553 534 
-Q 659 640 806 640 
-Q 947 640 1052 531 
-Q 1158 422 1158 275 
 z
 " transform="scale(0.015625)"/>
       <path id="STIXGeneral-Regular-40" d="M 4403 467 
@@ -2504,25 +2527,55 @@ z
     </g>
    </g>
    <g id="text_25">
-    <!-- 1.00 -->
+    <!-- 1.63 -->
     <g transform="translate(345.69 116.216719) scale(0.09 -0.09)">
      <use xlink:href="#STIXGeneral-Regular-31"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="49.999985"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="74.999969"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="124.999954"/>
+     <use xlink:href="#STIXGeneral-Regular-36" x="74.999969"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="124.999954"/>
     </g>
    </g>
    <g id="text_26">
-    <!-- 0.57 -->
+    <!-- 0.93 -->
     <g transform="translate(405.499091 116.216719) scale(0.09 -0.09)">
+     <defs>
+      <path id="STIXGeneral-Regular-39" d="M 378 -141 
+L 358 -13 
+Q 1094 115 1603 608 
+Q 2112 1101 2304 1882 
+Q 1933 1517 1344 1517 
+Q 826 1517 509 1875 
+Q 192 2234 192 2816 
+Q 192 3462 573 3894 
+Q 954 4326 1523 4326 
+Q 2131 4326 2528 3840 
+Q 2938 3328 2938 2522 
+Q 2938 1958 2742 1462 
+Q 2547 966 2170 621 
+Q 1773 262 1395 105 
+Q 1018 -51 378 -141 
+z
+M 2317 2272 
+L 2317 2522 
+Q 2317 4147 1472 4147 
+Q 1171 4147 1005 3930 
+Q 909 3802 845 3546 
+Q 781 3290 781 3034 
+Q 781 2464 995 2128 
+Q 1210 1792 1568 1792 
+Q 1824 1792 2070 1917 
+Q 2317 2042 2317 2272 
+z
+" transform="scale(0.015625)"/>
+     </defs>
      <use xlink:href="#STIXGeneral-Regular-30"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="49.999985"/>
-     <use xlink:href="#STIXGeneral-Regular-35" x="74.999969"/>
-     <use xlink:href="#STIXGeneral-Regular-37" x="124.999954"/>
+     <use xlink:href="#STIXGeneral-Regular-39" x="74.999969"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="124.999954"/>
     </g>
    </g>
    <g id="text_27">
-    <!-- (2.6×) -->
+    <!-- (2.2×) -->
     <g transform="translate(425.569091 116.216719) scale(0.09 -0.09)">
      <defs>
       <path id="STIXGeneral-Regular-d7" d="M 3821 141 
@@ -2544,7 +2597,7 @@ z
      <use xlink:href="#STIXGeneral-Regular-28"/>
      <use xlink:href="#STIXGeneral-Regular-32" x="33.299988"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="83.299973"/>
-     <use xlink:href="#STIXGeneral-Regular-36" x="108.299957"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="108.299957"/>
      <use xlink:href="#STIXGeneral-Regular-d7" x="158.299942"/>
      <use xlink:href="#STIXGeneral-Regular-29" x="222.299927"/>
     </g>
@@ -2737,36 +2790,6 @@ z
    <g id="text_34">
     <!-- 445.9 -->
     <g transform="translate(189.171818 134.216719) scale(0.09 -0.09)">
-     <defs>
-      <path id="STIXGeneral-Regular-39" d="M 378 -141 
-L 358 -13 
-Q 1094 115 1603 608 
-Q 2112 1101 2304 1882 
-Q 1933 1517 1344 1517 
-Q 826 1517 509 1875 
-Q 192 2234 192 2816 
-Q 192 3462 573 3894 
-Q 954 4326 1523 4326 
-Q 2131 4326 2528 3840 
-Q 2938 3328 2938 2522 
-Q 2938 1958 2742 1462 
-Q 2547 966 2170 621 
-Q 1773 262 1395 105 
-Q 1018 -51 378 -141 
-z
-M 2317 2272 
-L 2317 2522 
-Q 2317 4147 1472 4147 
-Q 1171 4147 1005 3930 
-Q 909 3802 845 3546 
-Q 781 3290 781 3034 
-Q 781 2464 995 2128 
-Q 1210 1792 1568 1792 
-Q 1824 1792 2070 1917 
-Q 2317 2042 2317 2272 
-z
-" transform="scale(0.015625)"/>
-     </defs>
      <use xlink:href="#STIXGeneral-Regular-34"/>
      <use xlink:href="#STIXGeneral-Regular-34" x="49.999985"/>
      <use xlink:href="#STIXGeneral-Regular-35" x="99.999969"/>
@@ -2802,30 +2825,30 @@ z
     </g>
    </g>
    <g id="text_38">
-    <!-- 1.04 -->
+    <!-- 1.62 -->
     <g transform="translate(345.69 134.216719) scale(0.09 -0.09)">
      <use xlink:href="#STIXGeneral-Regular-31"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="49.999985"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="74.999969"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="124.999954"/>
+     <use xlink:href="#STIXGeneral-Regular-36" x="74.999969"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="124.999954"/>
     </g>
    </g>
    <g id="text_39">
-    <!-- 0.73 -->
+    <!-- 1.13 -->
     <g transform="translate(405.499091 134.216719) scale(0.09 -0.09)">
-     <use xlink:href="#STIXGeneral-Regular-30"/>
+     <use xlink:href="#STIXGeneral-Regular-31"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="49.999985"/>
-     <use xlink:href="#STIXGeneral-Regular-37" x="74.999969"/>
+     <use xlink:href="#STIXGeneral-Regular-31" x="74.999969"/>
      <use xlink:href="#STIXGeneral-Regular-33" x="124.999954"/>
     </g>
    </g>
    <g id="text_40">
-    <!-- (2.0×) -->
+    <!-- (1.8×) -->
     <g transform="translate(425.569091 134.216719) scale(0.09 -0.09)">
      <use xlink:href="#STIXGeneral-Regular-28"/>
-     <use xlink:href="#STIXGeneral-Regular-32" x="33.299988"/>
+     <use xlink:href="#STIXGeneral-Regular-31" x="33.299988"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="83.299973"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="108.299957"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="108.299957"/>
      <use xlink:href="#STIXGeneral-Regular-d7" x="158.299942"/>
      <use xlink:href="#STIXGeneral-Regular-29" x="222.299927"/>
     </g>
@@ -2857,23 +2880,6 @@ z
    <g id="text_44">
     <!-- (+0.3) -->
     <g transform="translate(610.748182 134.216719) scale(0.09 -0.09)">
-     <defs>
-      <path id="STIXGeneral-Regular-2b" d="M 4070 1408 
-L 2400 1408 
-L 2400 -262 
-L 1978 -262 
-L 1978 1408 
-L 307 1408 
-L 307 1830 
-L 1978 1830 
-L 1978 3501 
-L 2400 3501 
-L 2400 1830 
-L 4070 1830 
-L 4070 1408 
-z
-" transform="scale(0.015625)"/>
-     </defs>
      <use xlink:href="#STIXGeneral-Regular-28"/>
      <use xlink:href="#STIXGeneral-Regular-2b" x="33.299988"/>
      <use xlink:href="#STIXGeneral-Regular-30" x="101.799973"/>
@@ -2943,21 +2949,21 @@ z
     </g>
    </g>
    <g id="text_51">
-    <!-- 1.65 -->
+    <!-- 2.30 -->
     <g transform="translate(345.69 152.216719) scale(0.09 -0.09)">
-     <use xlink:href="#STIXGeneral-Regular-31"/>
+     <use xlink:href="#STIXGeneral-Regular-32"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="49.999985"/>
-     <use xlink:href="#STIXGeneral-Regular-36" x="74.999969"/>
-     <use xlink:href="#STIXGeneral-Regular-35" x="124.999954"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="74.999969"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="124.999954"/>
     </g>
    </g>
    <g id="text_52">
-    <!-- 1.47 -->
+    <!-- 2.05 -->
     <g transform="translate(405.499091 152.216719) scale(0.09 -0.09)">
-     <use xlink:href="#STIXGeneral-Regular-31"/>
+     <use xlink:href="#STIXGeneral-Regular-32"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="49.999985"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="74.999969"/>
-     <use xlink:href="#STIXGeneral-Regular-37" x="124.999954"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="74.999969"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="124.999954"/>
     </g>
    </g>
    <g id="text_53">
@@ -3348,7 +3354,7 @@ z
      <use xlink:href="#STIXGeneral-Regular-65" x="783.299789"/>
      <use xlink:href="#STIXGeneral-Regular-2e" x="827.699783"/>
     </g>
-    <!-- *Dynamic compute power only. Per-operation cost comes from Table V: engine power at 32 terms/cycle and 50 MHz is 1.9 mW (XNOR), 24 mW (ADD) and 43 mW (MAC on DSP48); dividing by the term rate (50 MHz -->
+    <!-- *Dynamic power of the arithmetic and its operand memory (a weight-ROM word read every cycle and the activation frame register), from Table V(b). At 32 terms/cycle and 50 MHz an engine draws 5.8 mW -->
     <g transform="translate(8.64 187.54744) scale(0.068 -0.068)">
      <use xlink:href="#STIXGeneral-Regular-2a"/>
      <use xlink:href="#STIXGeneral-Regular-44" x="49.999985"/>
@@ -3359,200 +3365,229 @@ z
      <use xlink:href="#STIXGeneral-Regular-69" x="344.399918"/>
      <use xlink:href="#STIXGeneral-Regular-63" x="372.199905"/>
      <use xlink:href="#STIXGeneral-Regular-20" x="416.599899"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="441.599884"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="485.999878"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="535.999863"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="613.79985"/>
-     <use xlink:href="#STIXGeneral-Regular-75" x="663.799835"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="713.79982"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="741.599808"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="785.999802"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="810.999786"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="860.999771"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="910.999756"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="983.199738"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="1027.599731"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1060.899719"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="1085.899704"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="1135.899689"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="1185.899673"/>
-     <use xlink:href="#STIXGeneral-Regular-79" x="1213.699661"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="1263.699646"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1288.699631"/>
-     <use xlink:href="#STIXGeneral-Regular-50" x="1313.699615"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="1369.399612"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="1413.799606"/>
-     <use xlink:href="#STIXGeneral-Regular-2d" x="1447.099594"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="1480.399582"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="1530.399567"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="1580.399551"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="1624.799545"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="1658.099533"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="1702.499527"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="1730.299515"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="1758.099503"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="1808.099487"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1858.099472"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="1883.099457"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="1927.499451"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="1977.499435"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="2016.399429"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2044.199417"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="2069.199402"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="2113.599396"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="2163.59938"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2241.399368"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="2285.799362"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2324.699356"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="2349.699341"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="2382.999329"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="2416.299316"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="2466.299301"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2544.099289"/>
-     <use xlink:href="#STIXGeneral-Regular-54" x="2569.099274"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="2630.199265"/>
-     <use xlink:href="#STIXGeneral-Regular-62" x="2674.599258"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="2724.599243"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2752.399231"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2796.799225"/>
-     <use xlink:href="#STIXGeneral-Regular-56" x="2821.79921"/>
-     <use xlink:href="#STIXGeneral-Regular-3a" x="2893.999191"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2921.799179"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2946.799164"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="2991.199158"/>
-     <use xlink:href="#STIXGeneral-Regular-67" x="3041.199142"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="3091.199127"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="3118.999115"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3168.9991"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3213.399094"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="3238.399078"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="3288.399063"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="3338.399048"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3410.59903"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="3454.999023"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3488.299011"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="3513.298996"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="3557.69899"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3585.498978"/>
-     <use xlink:href="#STIXGeneral-Regular-33" x="3610.498962"/>
-     <use xlink:href="#STIXGeneral-Regular-32" x="3660.498947"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3710.498932"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="3735.498917"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3763.298904"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="3807.698898"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="3840.998886"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="3918.798874"/>
-     <use xlink:href="#STIXGeneral-Regular-2f" x="3957.698868"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="3985.498856"/>
-     <use xlink:href="#STIXGeneral-Regular-79" x="4029.898849"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="4079.898834"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="4124.298828"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="4152.098816"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4196.49881"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="4221.498795"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="4265.898788"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="4315.898773"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4365.898758"/>
-     <use xlink:href="#STIXGeneral-Regular-35" x="4390.898743"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="4440.898727"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4490.898712"/>
-     <use xlink:href="#STIXGeneral-Regular-4d" x="4515.898697"/>
-     <use xlink:href="#STIXGeneral-Regular-48" x="4604.798691"/>
-     <use xlink:href="#STIXGeneral-Regular-7a" x="4676.998672"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4721.398666"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="4746.398651"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="4774.198639"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4813.098633"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="4838.098618"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="4888.098602"/>
-     <use xlink:href="#STIXGeneral-Regular-39" x="4913.098587"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4963.098572"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="4988.098557"/>
-     <use xlink:href="#STIXGeneral-Regular-57" x="5065.898544"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5160.298538"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="5185.298523"/>
-     <use xlink:href="#STIXGeneral-Regular-58" x="5218.598511"/>
-     <use xlink:href="#STIXGeneral-Regular-4e" x="5290.798492"/>
-     <use xlink:href="#STIXGeneral-Regular-4f" x="5362.998474"/>
-     <use xlink:href="#STIXGeneral-Regular-52" x="5435.198456"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="5501.898453"/>
-     <use xlink:href="#STIXGeneral-Regular-2c" x="5535.198441"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5560.198425"/>
-     <use xlink:href="#STIXGeneral-Regular-32" x="5585.19841"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="5635.198395"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5685.19838"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="5710.198364"/>
-     <use xlink:href="#STIXGeneral-Regular-57" x="5787.998352"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5882.398346"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="5907.398331"/>
-     <use xlink:href="#STIXGeneral-Regular-41" x="5940.698318"/>
-     <use xlink:href="#STIXGeneral-Regular-44" x="6012.8983"/>
-     <use xlink:href="#STIXGeneral-Regular-44" x="6085.098282"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="6157.298264"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6190.598251"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="6215.598236"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="6259.99823"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="6309.998215"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6359.998199"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="6384.998184"/>
-     <use xlink:href="#STIXGeneral-Regular-33" x="6434.998169"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6484.998154"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="6509.998138"/>
-     <use xlink:href="#STIXGeneral-Regular-57" x="6587.798126"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6682.19812"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="6707.198105"/>
-     <use xlink:href="#STIXGeneral-Regular-4d" x="6740.498093"/>
-     <use xlink:href="#STIXGeneral-Regular-41" x="6829.398087"/>
-     <use xlink:href="#STIXGeneral-Regular-43" x="6901.598068"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6968.298065"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="6993.29805"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="7043.298035"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7093.298019"/>
-     <use xlink:href="#STIXGeneral-Regular-44" x="7118.298004"/>
-     <use xlink:href="#STIXGeneral-Regular-53" x="7190.497986"/>
-     <use xlink:href="#STIXGeneral-Regular-50" x="7246.097977"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="7301.797974"/>
-     <use xlink:href="#STIXGeneral-Regular-38" x="7351.797958"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="7401.797943"/>
-     <use xlink:href="#STIXGeneral-Regular-3b" x="7435.097931"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7462.897919"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="7487.897903"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="7537.897888"/>
-     <use xlink:href="#STIXGeneral-Regular-76" x="7565.697876"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="7615.697861"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="7643.497849"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="7693.497833"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="7721.297821"/>
-     <use xlink:href="#STIXGeneral-Regular-67" x="7771.297806"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7821.297791"/>
-     <use xlink:href="#STIXGeneral-Regular-62" x="7846.297775"/>
-     <use xlink:href="#STIXGeneral-Regular-79" x="7896.29776"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7946.297745"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="7971.297729"/>
-     <use xlink:href="#STIXGeneral-Regular-68" x="7999.097717"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="8049.097702"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="8093.497696"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="8118.497681"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="8146.297668"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="8190.697662"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="8223.99765"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="8301.797638"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="8326.797623"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="8360.09761"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="8404.497604"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="8432.297592"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="8476.697586"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="8501.697571"/>
-     <use xlink:href="#STIXGeneral-Regular-35" x="8534.997559"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="8584.997543"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="8634.997528"/>
-     <use xlink:href="#STIXGeneral-Regular-4d" x="8659.997513"/>
-     <use xlink:href="#STIXGeneral-Regular-48" x="8748.897507"/>
-     <use xlink:href="#STIXGeneral-Regular-7a" x="8821.097488"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="441.599884"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="491.599869"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="541.599854"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="613.799835"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="658.199829"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="691.499817"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="716.499802"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="766.499786"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="799.799774"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="824.799759"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="852.599747"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="902.599731"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="946.999725"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="971.99971"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1016.399704"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="1049.699692"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1077.49968"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="1105.299667"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="1155.299652"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1233.09964"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1277.499634"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="1305.299622"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="1333.099609"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1377.499603"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="1402.499588"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="1446.899582"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="1496.899567"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1546.899551"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="1571.899536"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1599.699524"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="1627.499512"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1666.399506"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1691.39949"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="1741.399475"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1791.39946"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1835.799454"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="1869.099442"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="1913.499435"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="1963.49942"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2013.499405"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="2038.49939"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2116.299377"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="2160.699371"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="2238.499359"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="2288.499344"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="2321.799332"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2371.799316"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="2396.799301"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="2430.099289"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2474.499283"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="2499.499268"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2571.699249"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="2616.099243"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="2643.899231"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="2693.899216"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="2743.8992"/>
+     <use xlink:href="#STIXGeneral-Regular-2d" x="2771.699188"/>
+     <use xlink:href="#STIXGeneral-Regular-52" x="2804.999176"/>
+     <use xlink:href="#STIXGeneral-Regular-4f" x="2871.699173"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="2943.899155"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3032.799149"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="3057.799133"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="3129.999115"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="3179.9991"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="3213.299088"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3263.299072"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="3288.299057"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3321.599045"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="3365.999039"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="3410.399033"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3460.399017"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3485.399002"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="3529.798996"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3579.798981"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="3624.198975"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="3657.498962"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3707.498947"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="3732.498932"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="3776.898926"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="3826.898911"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="3871.298904"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3899.098892"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3943.498886"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="3968.498871"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4012.898865"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="4062.898849"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4112.898834"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="4137.898819"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="4165.698807"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4215.698792"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4260.098785"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="4285.09877"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="4329.498764"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="4373.898758"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="4401.698746"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="4429.498734"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="4479.498718"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="4523.898712"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="4551.6987"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4579.498688"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4629.498672"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4679.498657"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="4704.498642"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4737.79863"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="4771.098618"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="4815.498611"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4893.298599"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4937.698593"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4962.698578"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4995.998566"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="5040.39856"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="5090.398544"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="5118.198532"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="5157.098526"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5184.898514"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="5229.298508"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="5262.598495"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="5295.898483"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5320.898468"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="5345.898453"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="5379.198441"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="5412.498428"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="5462.498413"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5540.298401"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="5565.298386"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="5626.398376"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="5670.79837"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="5720.798355"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5748.598343"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5792.998337"/>
+     <use xlink:href="#STIXGeneral-Regular-56" x="5817.998322"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="5890.198303"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="5923.498291"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="5973.498276"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="6006.798264"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6031.798248"/>
+     <use xlink:href="#STIXGeneral-Regular-41" x="6056.798233"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6128.998215"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6156.798203"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="6181.798187"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="6231.798172"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6281.798157"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6306.798141"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6334.598129"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="6378.998123"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="6412.298111"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="6490.098099"/>
+     <use xlink:href="#STIXGeneral-Regular-2f" x="6528.998093"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="6556.79808"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="6601.198074"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="6651.198059"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="6695.598053"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6723.398041"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6767.798035"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="6792.798019"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="6837.198013"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="6887.197998"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6937.197983"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="6962.197968"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="7012.197952"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7062.197937"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="7087.197922"/>
+     <use xlink:href="#STIXGeneral-Regular-48" x="7176.097916"/>
+     <use xlink:href="#STIXGeneral-Regular-7a" x="7248.297897"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7292.697891"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="7317.697876"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="7362.09787"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7412.097855"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7437.097839"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="7481.497833"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="7531.497818"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="7581.497803"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="7609.297791"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7659.297775"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7703.697769"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="7728.697754"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="7778.697739"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="7811.997726"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="7856.39772"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="7928.597702"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7967.497696"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="7992.497681"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="8042.497665"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="8067.49765"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="8117.497635"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="8142.49762"/>
+     <use xlink:href="#STIXGeneral-Regular-57" x="8220.297607"/>
     </g>
-    <!-- × 32 × 64/65 = 1.58 G terms/s) gives 1.19, 15.2 and 27.3 pJ per term. Network power = Σ ops × (pJ per term), divided by the latency (during inference) or multiplied by 10 Hz (average at the 10-Hz -->
+    <!-- (XNOR, LUT ROM as in the proposed design), 43 mW (ADD, LUT ROM) and 57 mW (MAC on DSP48 with a block-RAM ROM, the cheaper INT8 option); dividing by the term rate (50 MHz × 32 × 64/65 = 1.58 G terms/s) -->
     <g transform="translate(8.64 195.485526) scale(0.068 -0.068)">
      <defs>
+      <path id="STIXGeneral-Regular-55" d="M 4512 4237 
+L 4512 4115 
+Q 4122 4077 4016 3926 
+Q 3910 3776 3910 3302 
+L 3910 1670 
+Q 3910 1178 3840 896 
+Q 3770 614 3565 378 
+Q 3155 -90 2272 -90 
+Q 1574 -90 1184 205 
+Q 666 589 666 1594 
+L 666 3578 
+Q 666 3898 566 3994 
+Q 467 4090 90 4115 
+L 90 4237 
+L 1901 4237 
+L 1901 4115 
+Q 1517 4083 1417 3977 
+Q 1318 3872 1318 3514 
+L 1318 1517 
+Q 1318 1101 1369 877 
+Q 1421 653 1600 480 
+Q 1901 192 2419 192 
+Q 3066 192 3392 570 
+Q 3539 749 3584 963 
+Q 3629 1178 3629 1600 
+L 3629 3283 
+Q 3629 3782 3520 3936 
+Q 3411 4090 3027 4115 
+L 3027 4237 
+L 4512 4237 
+z
+" transform="scale(0.015625)"/>
       <path id="STIXGeneral-Regular-3d" d="M 4077 2048 
 L 307 2048 
 L 307 2470 
@@ -3566,6 +3601,211 @@ L 4077 1190
 L 4077 768 
 z
 " transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#STIXGeneral-Regular-28"/>
+     <use xlink:href="#STIXGeneral-Regular-58" x="33.299988"/>
+     <use xlink:href="#STIXGeneral-Regular-4e" x="105.499969"/>
+     <use xlink:href="#STIXGeneral-Regular-4f" x="177.699951"/>
+     <use xlink:href="#STIXGeneral-Regular-52" x="249.899933"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="316.59993"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="341.599915"/>
+     <use xlink:href="#STIXGeneral-Regular-4c" x="366.599899"/>
+     <use xlink:href="#STIXGeneral-Regular-55" x="427.69989"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="499.899872"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="560.999863"/>
+     <use xlink:href="#STIXGeneral-Regular-52" x="585.999847"/>
+     <use xlink:href="#STIXGeneral-Regular-4f" x="652.699844"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="724.899826"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="813.79982"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="838.799805"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="883.199799"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="922.099792"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="947.099777"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="974.899765"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1024.89975"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1049.899734"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="1077.699722"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1127.699707"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1172.099701"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="1197.099686"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1247.09967"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1280.399658"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="1330.399643"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1380.399628"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="1430.399612"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1469.299606"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="1513.6996"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1563.699585"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="1588.69957"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1638.699554"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="1683.099548"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="1721.999542"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="1749.79953"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="1799.799515"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="1849.7995"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="1883.099487"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1908.099472"/>
+     <use xlink:href="#STIXGeneral-Regular-34" x="1933.099457"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="1983.099442"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2033.099426"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="2058.099411"/>
+     <use xlink:href="#STIXGeneral-Regular-57" x="2135.899399"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2230.299393"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="2255.299377"/>
+     <use xlink:href="#STIXGeneral-Regular-41" x="2288.599365"/>
+     <use xlink:href="#STIXGeneral-Regular-44" x="2360.799347"/>
+     <use xlink:href="#STIXGeneral-Regular-44" x="2432.999329"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="2505.19931"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2530.199295"/>
+     <use xlink:href="#STIXGeneral-Regular-4c" x="2555.19928"/>
+     <use xlink:href="#STIXGeneral-Regular-55" x="2616.299271"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="2688.499252"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2749.599243"/>
+     <use xlink:href="#STIXGeneral-Regular-52" x="2774.599228"/>
+     <use xlink:href="#STIXGeneral-Regular-4f" x="2841.299225"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="2913.499207"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="3002.3992"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3035.699188"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="3060.699173"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="3105.099167"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="3155.099152"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3205.099136"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="3230.099121"/>
+     <use xlink:href="#STIXGeneral-Regular-37" x="3280.099106"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3330.099091"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="3355.099075"/>
+     <use xlink:href="#STIXGeneral-Regular-57" x="3432.899063"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3527.299057"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="3552.299042"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="3585.59903"/>
+     <use xlink:href="#STIXGeneral-Regular-41" x="3674.499023"/>
+     <use xlink:href="#STIXGeneral-Regular-43" x="3746.699005"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3813.399002"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="3838.398987"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="3888.398972"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3938.398956"/>
+     <use xlink:href="#STIXGeneral-Regular-44" x="3963.398941"/>
+     <use xlink:href="#STIXGeneral-Regular-53" x="4035.598923"/>
+     <use xlink:href="#STIXGeneral-Regular-50" x="4091.198914"/>
+     <use xlink:href="#STIXGeneral-Regular-34" x="4146.898911"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="4196.898895"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4246.89888"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="4271.898865"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="4344.098846"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="4371.898834"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="4399.698822"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4449.698807"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="4474.698792"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4519.098785"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="4544.09877"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="4594.098755"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4621.898743"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="4671.898727"/>
+     <use xlink:href="#STIXGeneral-Regular-6b" x="4716.298721"/>
+     <use xlink:href="#STIXGeneral-Regular-2d" x="4766.298706"/>
+     <use xlink:href="#STIXGeneral-Regular-52" x="4799.598694"/>
+     <use xlink:href="#STIXGeneral-Regular-41" x="4866.298691"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="4938.498672"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5027.398666"/>
+     <use xlink:href="#STIXGeneral-Regular-52" x="5052.398651"/>
+     <use xlink:href="#STIXGeneral-Regular-4f" x="5119.098648"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="5191.29863"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="5280.198624"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5305.198608"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="5330.198593"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="5357.998581"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5407.998566"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5452.39856"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="5477.398544"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="5521.798538"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5571.798523"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="5616.198517"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="5660.598511"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5710.598495"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="5754.998489"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5788.298477"/>
+     <use xlink:href="#STIXGeneral-Regular-49" x="5813.298462"/>
+     <use xlink:href="#STIXGeneral-Regular-4e" x="5846.59845"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="5918.798431"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="5979.898422"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6029.898407"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="6054.898392"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="6104.898376"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6154.898361"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="6182.698349"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="6210.498337"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="6260.498322"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="6310.498306"/>
+     <use xlink:href="#STIXGeneral-Regular-3b" x="6343.798294"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6371.598282"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="6396.598267"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="6446.598251"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="6474.398239"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="6524.398224"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="6552.198212"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="6602.198196"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="6629.998184"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="6679.998169"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6729.998154"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="6754.998138"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="6804.998123"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6854.998108"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6879.998093"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="6907.79808"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6957.798065"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7002.198059"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="7027.198044"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7054.998032"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="7099.398026"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="7132.698013"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7210.498001"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="7235.497986"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="7268.797974"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="7313.197968"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7340.997955"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7385.397949"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="7410.397934"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="7443.697922"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="7493.697906"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7543.697891"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="7568.697876"/>
+     <use xlink:href="#STIXGeneral-Regular-48" x="7657.59787"/>
+     <use xlink:href="#STIXGeneral-Regular-7a" x="7729.797852"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7774.197845"/>
+     <use xlink:href="#STIXGeneral-Regular-d7" x="7799.19783"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7863.197815"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="7888.1978"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="7938.197784"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7988.197769"/>
+     <use xlink:href="#STIXGeneral-Regular-d7" x="8013.197754"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="8077.197739"/>
+     <use xlink:href="#STIXGeneral-Regular-36" x="8102.197723"/>
+     <use xlink:href="#STIXGeneral-Regular-34" x="8152.197708"/>
+     <use xlink:href="#STIXGeneral-Regular-2f" x="8202.197693"/>
+     <use xlink:href="#STIXGeneral-Regular-36" x="8229.997681"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="8279.997665"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="8329.99765"/>
+     <use xlink:href="#STIXGeneral-Regular-3d" x="8354.997635"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="8423.49762"/>
+     <use xlink:href="#STIXGeneral-Regular-31" x="8448.497604"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="8498.497589"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="8523.497574"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="8573.497559"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="8623.497543"/>
+     <use xlink:href="#STIXGeneral-Regular-47" x="8648.497528"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="8720.69751"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="8745.697495"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="8773.497482"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="8817.897476"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="8851.197464"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="8928.997452"/>
+     <use xlink:href="#STIXGeneral-Regular-2f" x="8967.897446"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="8995.697433"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="9034.597427"/>
+    </g>
+    <!-- gives 3.65, 27.3 and 36.2 pJ per term. Network power = Σ ops × (pJ per term), divided by the latency (during inference) or multiplied by 10 Hz (average at the 10-Hz inference rate). With a LUT ROM for -->
+    <g transform="translate(8.64 203.423613) scale(0.068 -0.068)">
+     <defs>
       <path id="STIXGeneral-Regular-4a" d="M 2266 4237 
 L 2266 4115 
 Q 1875 4083 1776 3984 
@@ -3613,204 +3853,209 @@ L 3840 1306
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#STIXGeneral-Regular-d7"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="63.999985"/>
-     <use xlink:href="#STIXGeneral-Regular-33" x="88.999969"/>
-     <use xlink:href="#STIXGeneral-Regular-32" x="138.999954"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="188.999939"/>
-     <use xlink:href="#STIXGeneral-Regular-d7" x="213.999924"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="277.999908"/>
-     <use xlink:href="#STIXGeneral-Regular-36" x="302.999893"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="352.999878"/>
-     <use xlink:href="#STIXGeneral-Regular-2f" x="402.999863"/>
-     <use xlink:href="#STIXGeneral-Regular-36" x="430.79985"/>
-     <use xlink:href="#STIXGeneral-Regular-35" x="480.799835"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="530.79982"/>
-     <use xlink:href="#STIXGeneral-Regular-3d" x="555.799805"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="624.299789"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="649.299774"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="699.299759"/>
-     <use xlink:href="#STIXGeneral-Regular-35" x="724.299744"/>
-     <use xlink:href="#STIXGeneral-Regular-38" x="774.299728"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="824.299713"/>
-     <use xlink:href="#STIXGeneral-Regular-47" x="849.299698"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="921.49968"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="946.499664"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="974.299652"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="1018.699646"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="1051.999634"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="1129.799622"/>
-     <use xlink:href="#STIXGeneral-Regular-2f" x="1168.699615"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="1196.499603"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="1235.399597"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1268.699585"/>
-     <use xlink:href="#STIXGeneral-Regular-67" x="1293.69957"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="1343.699554"/>
-     <use xlink:href="#STIXGeneral-Regular-76" x="1371.499542"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="1421.499527"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="1465.899521"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1504.799515"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="1529.7995"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="1579.799484"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="1604.799469"/>
-     <use xlink:href="#STIXGeneral-Regular-39" x="1654.799454"/>
-     <use xlink:href="#STIXGeneral-Regular-2c" x="1704.799438"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1729.799423"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="1754.799408"/>
-     <use xlink:href="#STIXGeneral-Regular-35" x="1804.799393"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="1854.799377"/>
-     <use xlink:href="#STIXGeneral-Regular-32" x="1879.799362"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1929.799347"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="1954.799332"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="1999.199326"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="2049.19931"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2099.199295"/>
-     <use xlink:href="#STIXGeneral-Regular-32" x="2124.19928"/>
-     <use xlink:href="#STIXGeneral-Regular-37" x="2174.199265"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="2224.199249"/>
-     <use xlink:href="#STIXGeneral-Regular-33" x="2249.199234"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2299.199219"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="2324.199203"/>
-     <use xlink:href="#STIXGeneral-Regular-4a" x="2374.199188"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2411.499176"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="2436.499161"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2486.499146"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="2530.899139"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2564.199127"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="2589.199112"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2616.9991"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="2661.399094"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="2694.699081"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="2772.499069"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2797.499054"/>
-     <use xlink:href="#STIXGeneral-Regular-4e" x="2822.499039"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2894.69902"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="2939.099014"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="2966.899002"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="3039.098984"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="3089.098969"/>
-     <use xlink:href="#STIXGeneral-Regular-6b" x="3122.398956"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3172.398941"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="3197.398926"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="3247.398911"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="3297.398895"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3369.598877"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="3413.998871"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3447.298859"/>
-     <use xlink:href="#STIXGeneral-Regular-3d" x="3472.298843"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3540.798828"/>
-     <use xlink:href="#STIXGeneral-Regular-3a3" x="3565.798813"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3628.198807"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="3653.198792"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="3703.198776"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="3753.198761"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3792.098755"/>
-     <use xlink:href="#STIXGeneral-Regular-d7" x="3817.09874"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3881.098724"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="3906.098709"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="3939.398697"/>
-     <use xlink:href="#STIXGeneral-Regular-4a" x="3989.398682"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4026.698669"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="4051.698654"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="4101.698639"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="4146.098633"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4179.398621"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="4204.398605"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="4232.198593"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="4276.598587"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="4309.898575"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="4387.698563"/>
-     <use xlink:href="#STIXGeneral-Regular-2c" x="4420.99855"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4445.998535"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="4470.99852"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="4520.998505"/>
-     <use xlink:href="#STIXGeneral-Regular-76" x="4548.798492"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="4598.798477"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="4626.598465"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="4676.59845"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="4720.998444"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4770.998428"/>
-     <use xlink:href="#STIXGeneral-Regular-62" x="4795.998413"/>
-     <use xlink:href="#STIXGeneral-Regular-79" x="4845.998398"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4895.998383"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="4920.998367"/>
-     <use xlink:href="#STIXGeneral-Regular-68" x="4948.798355"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="4998.79834"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5043.198334"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="5068.198318"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="5095.998306"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="5140.3983"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5168.198288"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="5212.598282"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="5262.598267"/>
-     <use xlink:href="#STIXGeneral-Regular-79" x="5306.99826"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5356.998245"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="5381.99823"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="5415.298218"/>
-     <use xlink:href="#STIXGeneral-Regular-75" x="5465.298203"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="5515.298187"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="5548.598175"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="5576.398163"/>
-     <use xlink:href="#STIXGeneral-Regular-67" x="5626.398148"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5676.398132"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="5701.398117"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="5729.198105"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="5779.19809"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5812.498077"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="5856.898071"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5890.198059"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="5934.598053"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="5984.598038"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="6028.998032"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="6073.398026"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6106.698013"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="6131.697998"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="6181.697983"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6214.997971"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="6239.997955"/>
-     <use xlink:href="#STIXGeneral-Regular-75" x="6317.797943"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="6367.797928"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="6395.597916"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="6423.397903"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="6451.197891"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="6501.197876"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="6528.997864"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="6556.797852"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="6601.197845"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6651.19783"/>
-     <use xlink:href="#STIXGeneral-Regular-62" x="6676.197815"/>
-     <use xlink:href="#STIXGeneral-Regular-79" x="6726.1978"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6776.197784"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="6801.197769"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="6851.197754"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6901.197739"/>
-     <use xlink:href="#STIXGeneral-Regular-48" x="6926.197723"/>
-     <use xlink:href="#STIXGeneral-Regular-7a" x="6998.397705"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7042.797699"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="7067.797684"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="7101.097672"/>
-     <use xlink:href="#STIXGeneral-Regular-76" x="7145.497665"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="7195.49765"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="7239.897644"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="7273.197632"/>
-     <use xlink:href="#STIXGeneral-Regular-67" x="7317.597626"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="7367.59761"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7411.997604"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="7436.997589"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="7481.397583"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7509.197571"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="7534.197556"/>
-     <use xlink:href="#STIXGeneral-Regular-68" x="7561.997543"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="7611.997528"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7656.397522"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="7681.397507"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="7731.397491"/>
-     <use xlink:href="#STIXGeneral-Regular-2d" x="7781.397476"/>
-     <use xlink:href="#STIXGeneral-Regular-48" x="7814.697464"/>
-     <use xlink:href="#STIXGeneral-Regular-7a" x="7886.897446"/>
+     <use xlink:href="#STIXGeneral-Regular-67"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="49.999985"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="77.799973"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="127.799957"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="172.199951"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="211.099945"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="236.09993"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="286.099915"/>
+     <use xlink:href="#STIXGeneral-Regular-36" x="311.099899"/>
+     <use xlink:href="#STIXGeneral-Regular-35" x="361.099884"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="411.099869"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="436.099854"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="461.099838"/>
+     <use xlink:href="#STIXGeneral-Regular-37" x="511.099823"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="561.099808"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="586.099792"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="636.099777"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="661.099762"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="705.499756"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="755.499741"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="805.499725"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="830.49971"/>
+     <use xlink:href="#STIXGeneral-Regular-36" x="880.499695"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="930.49968"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="955.499664"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1005.499649"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="1030.499634"/>
+     <use xlink:href="#STIXGeneral-Regular-4a" x="1080.499619"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1117.799606"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="1142.799591"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1192.799576"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1237.19957"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1270.499557"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1295.499542"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1323.29953"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1367.699524"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="1400.999512"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="1478.7995"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1503.799484"/>
+     <use xlink:href="#STIXGeneral-Regular-4e" x="1528.799469"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1600.999451"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1645.399445"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="1673.199432"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1745.399414"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1795.399399"/>
+     <use xlink:href="#STIXGeneral-Regular-6b" x="1828.699387"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1878.699371"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="1903.699356"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1953.699341"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="2003.699326"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2075.899307"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="2120.299301"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2153.599289"/>
+     <use xlink:href="#STIXGeneral-Regular-3d" x="2178.599274"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2247.099258"/>
+     <use xlink:href="#STIXGeneral-Regular-3a3" x="2272.099243"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2334.499237"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="2359.499222"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="2409.499207"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="2459.499191"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2498.399185"/>
+     <use xlink:href="#STIXGeneral-Regular-d7" x="2523.39917"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2587.399155"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="2612.399139"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="2645.699127"/>
+     <use xlink:href="#STIXGeneral-Regular-4a" x="2695.699112"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2732.9991"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="2757.999084"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2807.999069"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="2852.399063"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2885.699051"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="2910.699036"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2938.499023"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="2982.899017"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="3016.199005"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="3093.998993"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="3127.298981"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3152.298965"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="3177.29895"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="3227.298935"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="3255.098923"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="3305.098907"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="3332.898895"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3382.89888"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="3427.298874"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3477.298859"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="3502.298843"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="3552.298828"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3602.298813"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="3627.298798"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="3655.098785"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3705.09877"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3749.498764"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="3774.498749"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="3802.298737"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="3846.69873"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3874.498718"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="3918.898712"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="3968.898697"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="4013.298691"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4063.298676"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="4088.29866"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="4121.598648"/>
+     <use xlink:href="#STIXGeneral-Regular-75" x="4171.598633"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4221.598618"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="4254.898605"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4282.698593"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="4332.698578"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4382.698563"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="4407.698547"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4435.498535"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="4485.49852"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4518.798508"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4563.198502"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4596.498489"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4640.898483"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="4690.898468"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4735.298462"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="4779.698456"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4812.998444"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4837.998428"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4887.998413"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4921.298401"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="4946.298386"/>
+     <use xlink:href="#STIXGeneral-Regular-75" x="5024.098373"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="5074.098358"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="5101.898346"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="5129.698334"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="5157.498322"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="5207.498306"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="5235.298294"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5263.098282"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="5307.498276"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5357.49826"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="5382.498245"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="5432.49823"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5482.498215"/>
+     <use xlink:href="#STIXGeneral-Regular-31" x="5507.498199"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="5557.498184"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5607.498169"/>
+     <use xlink:href="#STIXGeneral-Regular-48" x="5632.498154"/>
+     <use xlink:href="#STIXGeneral-Regular-7a" x="5704.698135"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5749.098129"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="5774.098114"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="5807.398102"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="5851.798096"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5901.79808"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="5946.198074"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="5979.498062"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="6023.898056"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6073.898041"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6118.298035"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="6143.298019"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6187.698013"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6215.498001"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6240.497986"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="6268.297974"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6318.297958"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6362.697952"/>
+     <use xlink:href="#STIXGeneral-Regular-31" x="6387.697937"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="6437.697922"/>
+     <use xlink:href="#STIXGeneral-Regular-2d" x="6487.697906"/>
+     <use xlink:href="#STIXGeneral-Regular-48" x="6520.997894"/>
+     <use xlink:href="#STIXGeneral-Regular-7a" x="6593.197876"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6637.59787"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="6662.597855"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="6690.397842"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="6740.397827"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6773.697815"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="6818.097809"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6851.397797"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="6895.797791"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="6945.797775"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6990.197769"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7034.597763"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="7059.597748"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="7092.897736"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="7137.297729"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7165.097717"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="7209.497711"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="7242.797699"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7267.797684"/>
+     <use xlink:href="#STIXGeneral-Regular-57" x="7292.797668"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="7387.197662"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="7414.99765"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="7442.797638"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7492.797623"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="7517.797607"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7562.197601"/>
+     <use xlink:href="#STIXGeneral-Regular-4c" x="7587.197586"/>
+     <use xlink:href="#STIXGeneral-Regular-55" x="7648.297577"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="7720.497559"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7781.597549"/>
+     <use xlink:href="#STIXGeneral-Regular-52" x="7806.597534"/>
+     <use xlink:href="#STIXGeneral-Regular-4f" x="7873.297531"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="7945.497513"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="8034.397507"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="8059.397491"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="8092.697479"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="8142.697464"/>
     </g>
-    <!-- inference rate). Memory access, control and static power are excluded; for reference, the whole device draws 0.184 W during inference of the proposed network, 0.094 W of it static (vectorless). -->
-    <g transform="translate(8.64 203.376693) scale(0.068 -0.068)">
+    <!-- the INT8 MAC, All INT8 costs 2.3× the binary network; with arithmetic alone (Table V(a)), 2.6×. Excluded: control and clock distribution (the same folded controller in all three) and static power -->
+    <g transform="translate(8.64 211.325043) scale(0.068 -0.068)">
      <defs>
       <path id="STIXGeneral-Regular-78" d="M 3066 0 
 L 1779 0 
@@ -3856,202 +4101,335 @@ L 3066 0
 z
 " transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#STIXGeneral-Regular-69"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="27.799988"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="77.799973"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="111.09996"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="155.499954"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="188.799942"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="233.199936"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="283.199921"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="327.599915"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="371.999908"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="396.999893"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="430.299881"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="474.699875"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="502.499863"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="546.899857"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="580.199844"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="605.199829"/>
-     <use xlink:href="#STIXGeneral-Regular-4d" x="630.199814"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="719.099808"/>
-     <use xlink:href="#STIXGeneral-Regular-6d" x="763.499802"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="841.299789"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="891.299774"/>
-     <use xlink:href="#STIXGeneral-Regular-79" x="924.599762"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="974.599747"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="999.599731"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="1043.999725"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="1088.399719"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="1132.799713"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="1177.199707"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="1216.099701"/>
-     <use xlink:href="#STIXGeneral-Regular-2c" x="1254.999695"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1279.99968"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="1304.999664"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="1349.399658"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="1399.399643"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="1449.399628"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="1477.199615"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="1510.499603"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="1560.499588"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1588.299576"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="1613.299561"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="1657.699554"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="1707.699539"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1757.699524"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="1782.699509"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="1821.599503"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="1849.39949"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="1893.799484"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="1921.599472"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="1949.39946"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="1993.799454"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="2018.799438"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="2068.799423"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="2118.799408"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2190.99939"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="2235.399384"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2268.699371"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="2293.699356"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="2338.09935"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2371.399338"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2415.799332"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2440.799316"/>
-     <use xlink:href="#STIXGeneral-Regular-78" x="2485.19931"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="2535.199295"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="2579.599289"/>
-     <use xlink:href="#STIXGeneral-Regular-75" x="2607.399277"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="2657.399261"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="2707.399246"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="2751.79924"/>
-     <use xlink:href="#STIXGeneral-Regular-3b" x="2801.799225"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2829.599213"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="2854.599197"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="2887.899185"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="2937.89917"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="2971.199158"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="2996.199142"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3029.49913"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="3073.899124"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3107.199112"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="3151.599106"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3184.899094"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="3229.299088"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="3279.299072"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3323.699066"/>
-     <use xlink:href="#STIXGeneral-Regular-2c" x="3368.09906"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3393.099045"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="3418.09903"/>
-     <use xlink:href="#STIXGeneral-Regular-68" x="3445.899017"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3495.899002"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3540.298996"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="3565.298981"/>
-     <use xlink:href="#STIXGeneral-Regular-68" x="3637.498962"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="3687.498947"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="3737.498932"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3765.29892"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="3809.698914"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="3834.698898"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="3884.698883"/>
-     <use xlink:href="#STIXGeneral-Regular-76" x="3929.098877"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="3979.098862"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="4006.898849"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="4051.298843"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4095.698837"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="4120.698822"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="4170.698807"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="4203.998795"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="4248.398788"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="4320.59877"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4359.498764"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="4384.498749"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="4434.498734"/>
-     <use xlink:href="#STIXGeneral-Regular-31" x="4459.498718"/>
-     <use xlink:href="#STIXGeneral-Regular-38" x="4509.498703"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="4559.498688"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4609.498672"/>
-     <use xlink:href="#STIXGeneral-Regular-57" x="4634.498657"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="4728.898651"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="4753.898636"/>
-     <use xlink:href="#STIXGeneral-Regular-75" x="4803.898621"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="4853.898605"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="4887.198593"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="4914.998581"/>
-     <use xlink:href="#STIXGeneral-Regular-67" x="4964.998566"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5014.99855"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="5039.998535"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="5067.798523"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="5117.798508"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5151.098495"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="5195.498489"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5228.798477"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="5273.198471"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="5323.198456"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5367.59845"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5411.998444"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="5436.998428"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="5486.998413"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5520.298401"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="5545.298386"/>
-     <use xlink:href="#STIXGeneral-Regular-68" x="5573.098373"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5623.098358"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="5667.498352"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="5692.498337"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="5742.498322"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="5775.798309"/>
-     <use xlink:href="#STIXGeneral-Regular-70" x="5825.798294"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="5875.798279"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="5925.798264"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="5964.698257"/>
-     <use xlink:href="#STIXGeneral-Regular-64" x="6009.098251"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6059.098236"/>
-     <use xlink:href="#STIXGeneral-Regular-6e" x="6084.098221"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="6134.098206"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="6178.498199"/>
-     <use xlink:href="#STIXGeneral-Regular-77" x="6206.298187"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="6278.498169"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="6328.498154"/>
-     <use xlink:href="#STIXGeneral-Regular-6b" x="6361.798141"/>
-     <use xlink:href="#STIXGeneral-Regular-2c" x="6411.798126"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6436.798111"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="6461.798096"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="6511.79808"/>
-     <use xlink:href="#STIXGeneral-Regular-30" x="6536.798065"/>
-     <use xlink:href="#STIXGeneral-Regular-39" x="6586.79805"/>
-     <use xlink:href="#STIXGeneral-Regular-34" x="6636.798035"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6686.798019"/>
-     <use xlink:href="#STIXGeneral-Regular-57" x="6711.798004"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6806.197998"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="6831.197983"/>
-     <use xlink:href="#STIXGeneral-Regular-66" x="6881.197968"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6914.497955"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="6939.49794"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="6967.297928"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="6995.097916"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="7020.0979"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="7058.997894"/>
-     <use xlink:href="#STIXGeneral-Regular-61" x="7086.797882"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="7131.197876"/>
-     <use xlink:href="#STIXGeneral-Regular-69" x="7158.997864"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="7186.797852"/>
-     <use xlink:href="#STIXGeneral-Regular-20" x="7231.197845"/>
-     <use xlink:href="#STIXGeneral-Regular-28" x="7256.19783"/>
-     <use xlink:href="#STIXGeneral-Regular-76" x="7289.497818"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="7339.497803"/>
-     <use xlink:href="#STIXGeneral-Regular-63" x="7383.897797"/>
-     <use xlink:href="#STIXGeneral-Regular-74" x="7428.297791"/>
-     <use xlink:href="#STIXGeneral-Regular-6f" x="7456.097778"/>
-     <use xlink:href="#STIXGeneral-Regular-72" x="7506.097763"/>
-     <use xlink:href="#STIXGeneral-Regular-6c" x="7539.397751"/>
-     <use xlink:href="#STIXGeneral-Regular-65" x="7567.197739"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="7611.597733"/>
-     <use xlink:href="#STIXGeneral-Regular-73" x="7650.497726"/>
-     <use xlink:href="#STIXGeneral-Regular-29" x="7689.39772"/>
-     <use xlink:href="#STIXGeneral-Regular-2e" x="7722.697708"/>
+     <use xlink:href="#STIXGeneral-Regular-74"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="27.799988"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="77.799973"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="122.199966"/>
+     <use xlink:href="#STIXGeneral-Regular-49" x="147.199951"/>
+     <use xlink:href="#STIXGeneral-Regular-4e" x="180.499939"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="252.699921"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="313.799911"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="363.799896"/>
+     <use xlink:href="#STIXGeneral-Regular-4d" x="388.799881"/>
+     <use xlink:href="#STIXGeneral-Regular-41" x="477.699875"/>
+     <use xlink:href="#STIXGeneral-Regular-43" x="549.899857"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="616.599854"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="641.599838"/>
+     <use xlink:href="#STIXGeneral-Regular-41" x="666.599823"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="738.799805"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="766.599792"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="794.39978"/>
+     <use xlink:href="#STIXGeneral-Regular-49" x="819.399765"/>
+     <use xlink:href="#STIXGeneral-Regular-4e" x="852.699753"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="924.899734"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="985.999725"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1035.99971"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="1060.999695"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1105.399689"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="1155.399673"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1194.299667"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="1222.099655"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1260.999649"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="1285.999634"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="1335.999619"/>
+     <use xlink:href="#STIXGeneral-Regular-33" x="1360.999603"/>
+     <use xlink:href="#STIXGeneral-Regular-d7" x="1410.999588"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1474.999573"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1499.999557"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="1527.799545"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1577.79953"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1622.199524"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="1647.199509"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="1697.199493"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="1724.999481"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="1774.999466"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1819.39946"/>
+     <use xlink:href="#STIXGeneral-Regular-79" x="1852.699448"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1902.699432"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="1927.699417"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1977.699402"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="2022.099396"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="2049.899384"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="2122.099365"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="2172.09935"/>
+     <use xlink:href="#STIXGeneral-Regular-6b" x="2205.399338"/>
+     <use xlink:href="#STIXGeneral-Regular-3b" x="2255.399323"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2283.19931"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="2308.199295"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="2380.399277"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="2408.199265"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="2435.999252"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2485.999237"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="2510.999222"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="2555.399216"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="2588.699203"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="2616.499191"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="2644.299179"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="2694.299164"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2772.099152"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="2816.499146"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="2844.299133"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="2872.099121"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2916.499115"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="2941.4991"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="2985.899094"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="3013.699081"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="3063.699066"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3113.699051"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3158.099045"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="3183.09903"/>
+     <use xlink:href="#STIXGeneral-Regular-54" x="3216.399017"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="3277.499008"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="3321.899002"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="3371.898987"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3399.698975"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3444.098969"/>
+     <use xlink:href="#STIXGeneral-Regular-56" x="3469.098953"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="3541.298935"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="3574.598923"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="3618.998917"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="3652.298904"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="3685.598892"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3710.598877"/>
+     <use xlink:href="#STIXGeneral-Regular-32" x="3735.598862"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="3785.598846"/>
+     <use xlink:href="#STIXGeneral-Regular-36" x="3810.598831"/>
+     <use xlink:href="#STIXGeneral-Regular-d7" x="3860.598816"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="3924.598801"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3949.598785"/>
+     <use xlink:href="#STIXGeneral-Regular-45" x="3974.59877"/>
+     <use xlink:href="#STIXGeneral-Regular-78" x="4035.698761"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="4085.698746"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="4130.09874"/>
+     <use xlink:href="#STIXGeneral-Regular-75" x="4157.898727"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="4207.898712"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4257.898697"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="4302.298691"/>
+     <use xlink:href="#STIXGeneral-Regular-3a" x="4352.298676"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4380.098663"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="4405.098648"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4449.498642"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4499.498627"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="4549.498611"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4577.298599"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4610.598587"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="4660.598572"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4688.39856"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="4713.398544"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4757.798538"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="4807.798523"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4857.798508"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="4882.798492"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="4927.198486"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4954.998474"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="5004.998459"/>
+     <use xlink:href="#STIXGeneral-Regular-6b" x="5049.398453"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5099.398438"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="5124.398422"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="5174.398407"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="5202.198395"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="5241.098389"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="5268.898376"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="5302.198364"/>
+     <use xlink:href="#STIXGeneral-Regular-62" x="5329.998352"/>
+     <use xlink:href="#STIXGeneral-Regular-75" x="5379.998337"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="5429.998322"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="5457.798309"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="5485.598297"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="5535.598282"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5585.598267"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="5610.598251"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="5643.898239"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="5671.698227"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5721.698212"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5766.098206"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="5791.09819"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="5829.998184"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="5874.398178"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5952.198166"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="5996.59816"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="6021.598145"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="6054.898132"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="6104.898117"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="6132.698105"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6182.69809"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="6227.098083"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6277.098068"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="6302.098053"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="6346.498047"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="6396.498032"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6446.498016"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="6474.298004"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="6507.597992"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="6557.597977"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="6585.397964"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="6613.197952"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="6657.597946"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6690.897934"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="6715.897919"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="6743.697906"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6793.697891"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="6818.697876"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="6863.09787"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="6890.897858"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="6918.697845"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="6943.69783"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="6971.497818"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="7021.497803"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7054.797791"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7099.197784"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="7143.597778"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7176.897766"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="7201.897751"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="7246.297745"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="7296.297729"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7346.297714"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="7371.297699"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="7410.197693"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="7437.997681"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="7482.397675"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="7510.197662"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="7537.99765"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="7582.397644"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="7607.397629"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="7657.397614"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="7707.397598"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="7779.59758"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="7823.997574"/>
+    </g>
+    <!-- (0.094 W, the same device); for reference, the whole device draws 0.184 W during inference of the proposed network (vectorless). -->
+    <g transform="translate(8.64 219.216209) scale(0.068 -0.068)">
+     <use xlink:href="#STIXGeneral-Regular-28"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="33.299988"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="83.299973"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="108.299957"/>
+     <use xlink:href="#STIXGeneral-Regular-39" x="158.299942"/>
+     <use xlink:href="#STIXGeneral-Regular-34" x="208.299927"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="258.299911"/>
+     <use xlink:href="#STIXGeneral-Regular-57" x="283.299896"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="377.69989"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="402.699875"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="427.69986"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="455.499847"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="505.499832"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="549.899826"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="574.899811"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="613.799805"/>
+     <use xlink:href="#STIXGeneral-Regular-6d" x="658.199799"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="735.999786"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="780.39978"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="805.399765"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="855.39975"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="899.799744"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="949.799728"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="977.599716"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1021.99971"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="1066.399704"/>
+     <use xlink:href="#STIXGeneral-Regular-3b" x="1099.699692"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1127.49968"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="1152.499664"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1185.799652"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1235.799637"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1269.099625"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1294.099609"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1327.399597"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="1371.799591"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1405.099579"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="1449.499573"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1482.799561"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="1527.199554"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="1577.199539"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1621.599533"/>
+     <use xlink:href="#STIXGeneral-Regular-2c" x="1665.999527"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1690.999512"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="1715.999496"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="1743.799484"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="1793.799469"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="1838.199463"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="1863.199448"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="1935.399429"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="1985.399414"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="2035.399399"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2063.199387"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2107.59938"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="2132.599365"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2182.59935"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="2226.999344"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="2276.999329"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="2304.799316"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="2349.19931"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2393.599304"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="2418.599289"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="2468.599274"/>
+     <use xlink:href="#STIXGeneral-Regular-61" x="2501.899261"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="2546.299255"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="2618.499237"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2657.399231"/>
+     <use xlink:href="#STIXGeneral-Regular-30" x="2682.399216"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="2732.3992"/>
+     <use xlink:href="#STIXGeneral-Regular-31" x="2757.399185"/>
+     <use xlink:href="#STIXGeneral-Regular-38" x="2807.39917"/>
+     <use xlink:href="#STIXGeneral-Regular-34" x="2857.399155"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="2907.399139"/>
+     <use xlink:href="#STIXGeneral-Regular-57" x="2932.399124"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3026.799118"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="3051.799103"/>
+     <use xlink:href="#STIXGeneral-Regular-75" x="3101.799088"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="3151.799072"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="3185.09906"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="3212.899048"/>
+     <use xlink:href="#STIXGeneral-Regular-67" x="3262.899033"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3312.899017"/>
+     <use xlink:href="#STIXGeneral-Regular-69" x="3337.899002"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="3365.69899"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="3415.698975"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3448.998962"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="3493.398956"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3526.698944"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="3571.098938"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="3621.098923"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3665.498917"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3709.898911"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="3734.898895"/>
+     <use xlink:href="#STIXGeneral-Regular-66" x="3784.89888"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3818.198868"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="3843.198853"/>
+     <use xlink:href="#STIXGeneral-Regular-68" x="3870.99884"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="3920.998825"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="3965.398819"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="3990.398804"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4040.398788"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4073.698776"/>
+     <use xlink:href="#STIXGeneral-Regular-70" x="4123.698761"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4173.698746"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="4223.69873"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4262.598724"/>
+     <use xlink:href="#STIXGeneral-Regular-64" x="4306.998718"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4356.998703"/>
+     <use xlink:href="#STIXGeneral-Regular-6e" x="4381.998688"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4431.998672"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="4476.398666"/>
+     <use xlink:href="#STIXGeneral-Regular-77" x="4504.198654"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4576.398636"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4626.398621"/>
+     <use xlink:href="#STIXGeneral-Regular-6b" x="4659.698608"/>
+     <use xlink:href="#STIXGeneral-Regular-20" x="4709.698593"/>
+     <use xlink:href="#STIXGeneral-Regular-28" x="4734.698578"/>
+     <use xlink:href="#STIXGeneral-Regular-76" x="4767.998566"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="4817.99855"/>
+     <use xlink:href="#STIXGeneral-Regular-63" x="4862.398544"/>
+     <use xlink:href="#STIXGeneral-Regular-74" x="4906.798538"/>
+     <use xlink:href="#STIXGeneral-Regular-6f" x="4934.598526"/>
+     <use xlink:href="#STIXGeneral-Regular-72" x="4984.598511"/>
+     <use xlink:href="#STIXGeneral-Regular-6c" x="5017.898499"/>
+     <use xlink:href="#STIXGeneral-Regular-65" x="5045.698486"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="5090.09848"/>
+     <use xlink:href="#STIXGeneral-Regular-73" x="5128.998474"/>
+     <use xlink:href="#STIXGeneral-Regular-29" x="5167.898468"/>
+     <use xlink:href="#STIXGeneral-Regular-2e" x="5201.198456"/>
     </g>
     <!-- †Relative to All INT8, on the 10-Hz average. -->
-    <g transform="translate(8.64 211.267859) scale(0.068 -0.068)">
+    <g transform="translate(8.64 227.107375) scale(0.068 -0.068)">
      <use xlink:href="#STIXGeneral-Regular-2020"/>
      <use xlink:href="#STIXGeneral-Regular-52" x="49.999985"/>
      <use xlink:href="#STIXGeneral-Regular-65" x="116.699982"/>
@@ -4098,7 +4476,7 @@ z
      <use xlink:href="#STIXGeneral-Regular-2e" x="1788.499466"/>
     </g>
     <!-- ‡Measured on chip (600/600 clips bit-exact with the integer reference). Other latencies are estimated from cycle counts. -->
-    <g transform="translate(8.64 219.169289) scale(0.068 -0.068)">
+    <g transform="translate(8.64 235.008805) scale(0.068 -0.068)">
      <use xlink:href="#STIXGeneral-Regular-2021"/>
      <use xlink:href="#STIXGeneral-Regular-4d" x="49.999985"/>
      <use xlink:href="#STIXGeneral-Regular-65" x="138.899979"/>
@@ -4221,7 +4599,7 @@ z
      <use xlink:href="#STIXGeneral-Regular-2e" x="4773.798615"/>
     </g>
     <!-- §With two DSP48 per engine; with one, 123 ms. Matching the binary latency would need 480 DSP48 (the device has 140). -->
-    <g transform="translate(8.64 227.060455) scale(0.068 -0.068)">
+    <g transform="translate(8.64 242.899971) scale(0.068 -0.068)">
      <use xlink:href="#STIXGeneral-Regular-a7"/>
      <use xlink:href="#STIXGeneral-Regular-57" x="49.999985"/>
      <use xlink:href="#STIXGeneral-Regular-69" x="144.399979"/>
@@ -4340,7 +4718,7 @@ z
      <use xlink:href="#STIXGeneral-Regular-2e" x="4899.698532"/>
     </g>
     <!-- ‖DSP48 slices for the layers that are binary in the proposed network; the INT8 tail (Conv3, Conv4) uses 7 in all three. -->
-    <g transform="translate(8.64 235.017603) scale(0.068 -0.068)">
+    <g transform="translate(8.64 250.857119) scale(0.068 -0.068)">
      <use xlink:href="#STIXGeneral-Regular-2016"/>
      <use xlink:href="#STIXGeneral-Regular-44" x="52.299988"/>
      <use xlink:href="#STIXGeneral-Regular-53" x="124.499969"/>
@@ -4462,7 +4840,7 @@ z
      <use xlink:href="#STIXGeneral-Regular-2e" x="4701.798553"/>
     </g>
     <!-- Accuracy: test split, 12 classes; W8A8 = 8-bit weights and activations (QAT). -->
-    <g transform="translate(8.64 242.908769) scale(0.068 -0.068)">
+    <g transform="translate(8.64 258.748285) scale(0.068 -0.068)">
      <defs>
       <path id="STIXGeneral-Regular-51" d="M 4486 -1133 
 L 4179 -1133 
@@ -4581,8 +4959,8 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pc14f7b62b3">
-   <rect x="0" y="0" width="642.829091" height="266.4"/>
+  <clipPath id="p3d85012372">
+   <rect x="0" y="0" width="642.829091" height="285.84"/>
   </clipPath>
  </defs>
 </svg>

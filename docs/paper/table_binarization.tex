@@ -8,20 +8,20 @@ on the Same FPGA (Xilinx XC7S75, 50\,MHz), Google Speech Commands v2}
 \setlength{\tabcolsep}{4.2pt}
 \begin{tabular}{llr rrr rrl r r rl}
 \toprule
- & & & \multicolumn{3}{c}{Ops / inference [M]} & \multicolumn{3}{c}{Compute power$^{*}$ [mW]} & & & \multicolumn{2}{c}{Accuracy [\%]} \\
+ & & & \multicolumn{3}{c}{Ops / inference [M]} & \multicolumn{3}{c}{Arith.\ + memory power$^{*}$ [mW]} & & & \multicolumn{2}{c}{Accuracy [\%]} \\
 \cmidrule(lr){4-6}\cmidrule(lr){7-9}\cmidrule(lr){12-13}
 Method & Binarized layers & Weights [kbit] & XNOR & ADD & MAC & inference & avg.\ @10\,Hz & (improv.$^{\dagger}$) & Latency [ms] & DSP$^{\|}$ & 12 classes & \\
 \midrule
-Binary (proposed) & B1--B3, Conv2 & 375.6 & 3.42 & 1.44 & 1.15 & 1.00 & 0.57 & (2.6$\times$) & 57.4$^{\ddagger}$ & 0 & 82.5 & (ref.) \\
-Conv2 $\rightarrow$ INT8 & B1--B3 & 445.9 & 2.78 & 1.56 & 1.67 & 1.04 & 0.73 & (2.0$\times$) & 69.9 & 1 & 82.8 & (+0.3) \\
-All INT8 (W8A8) & -- & 750.1 & -- & 1.44 & 4.57 & 1.65 & 1.47 & (ref.) & 89.2$^{\S}$ & 30 & 86.7 & (+4.2) \\
+Binary (proposed) & B1--B3, Conv2 & 375.6 & 3.42 & 1.44 & 1.15 & 1.63 & 0.93 & (2.2$\times$) & 57.4$^{\ddagger}$ & 0 & 82.5 & (ref.) \\
+Conv2 $\rightarrow$ INT8 & B1--B3 & 445.9 & 2.78 & 1.56 & 1.67 & 1.62 & 1.13 & (1.8$\times$) & 69.9 & 1 & 82.8 & (+0.3) \\
+All INT8 (W8A8) & -- & 750.1 & -- & 1.44 & 4.57 & 2.30 & 2.05 & (ref.) & 89.2$^{\S}$ & 30 & 86.7 & (+4.2) \\
 \bottomrule
 \end{tabular}
 
 \vspace{2pt}
 \begin{minipage}{\textwidth}\footnotesize
 All three networks have the same topology and 93{,}952 weights; only layer precision differs. XNOR: 32-bit packed XNOR-popcount term; ADD: INT8 weight $\times$ $\pm$1 activation (sign-controlled add); MAC: INT8 multiply-accumulate. \\
-$^{*}$Dynamic compute power only. Per-operation cost comes from Table V: engine power at 32 terms/cycle and 50\,MHz is 1.9\,mW (XNOR), 24\,mW (ADD) and 43\,mW (MAC on DSP48); dividing by the term rate (50\,MHz $\times$ 32 $\times$ 64/65 = 1.58 G terms/s) gives 1.19, 15.2 and 27.3\,pJ per term. Network power = $\Sigma$ ops $\times$ (pJ per term), divided by the latency (during inference) or multiplied by 10\,Hz (average at the 10-Hz inference rate). Memory access, control and static power are excluded; for reference, the whole device draws 0.184\,W during inference of the proposed network, 0.094\,W of it static (vectorless). \\
+$^{*}$Dynamic power of the arithmetic and its operand memory (a weight-ROM word read every cycle and the activation frame register), from Table V(b). At 32 terms/cycle and 50\,MHz an engine draws 5.8\,mW (XNOR, LUT ROM as in the proposed design), 43\,mW (ADD, LUT ROM) and 57\,mW (MAC on DSP48 with a block-RAM ROM, the cheaper INT8 option); dividing by the term rate (50\,MHz $\times$ 32 $\times$ 64/65 = 1.58 G terms/s) gives 3.65, 27.3 and 36.2\,pJ per term. Network power = $\Sigma$ ops $\times$ (pJ per term), divided by the latency (during inference) or multiplied by 10\,Hz (average at the 10-Hz inference rate). With a LUT ROM for the INT8 MAC, All INT8 costs 2.3$\times$ the binary network; with arithmetic alone (Table V(a)), 2.6$\times$. Excluded: control and clock distribution (the same folded controller in all three) and static power (0.094\,W, the same device); for reference, the whole device draws 0.184\,W during inference of the proposed network (vectorless). \\
 $^{\dagger}$Relative to All INT8, on the 10-Hz average. \\
 $^{\ddagger}$Measured on chip (600/600 clips bit-exact with the integer reference). Other latencies are estimated from cycle counts. \\
 $^{\S}$With two DSP48 per engine; with one, 123\,ms. Matching the binary latency would need 480 DSP48 (the device has 140). \\
