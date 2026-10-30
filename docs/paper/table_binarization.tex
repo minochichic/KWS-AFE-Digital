@@ -6,32 +6,26 @@ on the Same FPGA (Xilinx XC7S75, 50\,MHz), Google Speech Commands v2}
 \label{tab:binarization}
 \centering
 \setlength{\tabcolsep}{4.2pt}
-\begin{tabular}{llr rrr rl r r rl}
+\begin{tabular}{llr rrr rrl r r rl}
 \toprule
- & & & \multicolumn{3}{c}{Ops / inference [M]} & \multicolumn{2}{c}{Energy$^{*}$ [$\mu$J]} & & & \multicolumn{2}{c}{Accuracy [\%]} \\
-\cmidrule(lr){4-6}\cmidrule(lr){7-8}\cmidrule(lr){11-12}
-Method & Binarized layers & Weights [kbit] & XNOR & ADD & MAC & compute & (improv.) & Latency [ms] & DSP$^{\S}$ & 12 classes & \\
+ & & & \multicolumn{3}{c}{Ops / inference [M]} & \multicolumn{3}{c}{Compute power$^{*}$ [mW]} & & & \multicolumn{2}{c}{Accuracy [\%]} \\
+\cmidrule(lr){4-6}\cmidrule(lr){7-9}\cmidrule(lr){12-13}
+Method & Binarized layers & Weights [kbit] & XNOR & ADD & MAC & inference & avg.\ @10\,Hz & (improv.$^{\dagger}$) & Latency [ms] & DSP$^{\|}$ & 12 classes & \\
 \midrule
-Binary (proposed) & B1--B3, Conv2 & 375.6 & 3.42 & 1.44 & 1.15 & 57.3 & (2.6$\times$) & 57.4$^{\dagger}$ & 0 & 82.5\% & (ref.) \\
-Conv2 $\rightarrow$ INT8 & B1--B3 & 445.9 & 2.78 & 1.56 & 1.67 & 72.7 & (2.0$\times$) & 69.9 & 1 & 82.8\% & (+0.3\%) \\
-All INT8 (W8A8) & -- & 750.1 & -- & 1.44 & 4.57 & 146.7 & (ref.) & 89.2$^{\ddagger}$ & 30 & 86.7\% & (+4.2\%) \\
+Binary (proposed) & B1--B3, Conv2 & 375.6 & 3.42 & 1.44 & 1.15 & 1.00 & 0.57 & (2.6$\times$) & 57.4$^{\ddagger}$ & 0 & 82.5 & (ref.) \\
+Conv2 $\rightarrow$ INT8 & B1--B3 & 445.9 & 2.78 & 1.56 & 1.67 & 1.04 & 0.73 & (2.0$\times$) & 69.9 & 1 & 82.8 & (+0.3) \\
+All INT8 (W8A8) & -- & 750.1 & -- & 1.44 & 4.57 & 1.65 & 1.47 & (ref.) & 89.2$^{\S}$ & 30 & 86.7 & (+4.2) \\
 \bottomrule
 \end{tabular}
 
 \vspace{2pt}
 \begin{minipage}{\textwidth}\footnotesize
-All three networks have the same topology and 93{,}952 weights; only the precision of the
-layers differs. XNOR: 32-bit packed XNOR-popcount term; ADD: INT8 weight $\times$ $\pm1$
-activation (sign-controlled add); MAC: INT8 multiply-accumulate.
-$^{*}$Dynamic compute energy only: per-operation energy from post-route, vectorless power of
-MAC micro-benchmarks on the same device (XNOR 1.19\,pJ, ADD 15.2\,pJ, MAC on DSP48 27.3\,pJ)
-times operation counts; memory access, control and static power are excluded.
-$^{\dagger}$Measured on chip (600/600 clips bit-exact with the integer reference).
-Other latencies are estimated from cycle counts.
-$^{\ddagger}$With two DSP48 per engine; with one, 123\,ms. Matching the binary latency would
-need 480 DSP48 (the device has 140).
-$^{\S}$DSP48 slices for the layers that are binary in the proposed network; the INT8 tail
-(Conv3, Conv4) uses 7 in all three.
-Accuracy: test split, 12 classes; W8A8 is 8-bit weights and activations (QAT).
+All three networks have the same topology and 93{,}952 weights; only layer precision differs. XNOR: 32-bit packed XNOR-popcount term; ADD: INT8 weight $\times$ $\pm$1 activation (sign-controlled add); MAC: INT8 multiply-accumulate. \\
+$^{*}$Dynamic compute power only. Per-operation cost comes from Table V: engine power at 32 terms/cycle and 50\,MHz is 1.9\,mW (XNOR), 24\,mW (ADD) and 43\,mW (MAC on DSP48); dividing by the term rate (50\,MHz $\times$ 32 $\times$ 64/65 = 1.58 G terms/s) gives 1.19, 15.2 and 27.3\,pJ per term. Network power = $\Sigma$ ops $\times$ (pJ per term), divided by the latency (during inference) or multiplied by 10\,Hz (average at the 10-Hz inference rate). Memory access, control and static power are excluded; for reference, the whole device draws 0.184\,W during inference of the proposed network, 0.094\,W of it static (vectorless). \\
+$^{\dagger}$Relative to All INT8, on the 10-Hz average. \\
+$^{\ddagger}$Measured on chip (600/600 clips bit-exact with the integer reference). Other latencies are estimated from cycle counts. \\
+$^{\S}$With two DSP48 per engine; with one, 123\,ms. Matching the binary latency would need 480 DSP48 (the device has 140). \\
+$^{\|}$DSP48 slices for the layers that are binary in the proposed network; the INT8 tail (Conv3, Conv4) uses 7 in all three. \\
+Accuracy: test split, 12 classes; W8A8 = 8-bit weights and activations (QAT).
 \end{minipage}
 \end{table*}

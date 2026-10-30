@@ -491,9 +491,10 @@ B3 4, conv2 2)다. int8 로 바꾸며 지연을 지키려면 엔진마다 int8 M
 
 ## 10. 한 장 정리
 
-논문용 표(IEEE, booktabs): [`paper/table_binarization.tex`](paper/table_binarization.tex)
-· 미리보기 [`paper/table_binarization.png`](paper/table_binarization.png)
-· 생성 `python docs/paper/make_table_binarization.py`. 그림은 §9 의 두 SVG.
+논문용 표(IEEE, booktabs, 전력은 W 단위, 산출 방법은 각주): 네트워크 비교
+[`paper/table_binarization`](paper/table_binarization.png) (TABLE IV) · MAC 엔진 비교
+[`paper/table_mac_bench`](paper/table_mac_bench.png) (TABLE V), 각각 `.tex` / `.svg` / `.png`.
+생성 `.venv/bin/python docs/paper/make_table_binarization.py`. 그림은 §9 의 두 SVG.
 
 | | 이진 (`bd_base`) | int8 W8A8 (`bd_allint8_a8`) |
 |---|---|---|
