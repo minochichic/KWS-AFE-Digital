@@ -18,5 +18,6 @@ def test_bench_kind(tmp_path, kind):
                     "-o", str(exe), str(ROOT / "rtl/kws_bin_mac.v"),
                     str(ROOT / "rtl/bench/bench_mac.v"), str(ROOT / "rtl/bench/tb_bench_mac.v")],
                    check=True, capture_output=True)
-    out = subprocess.run(["vvp", str(exe)], check=True, capture_output=True, text=True).stdout
+    out = subprocess.run(["vvp", str(exe)], check=True, capture_output=True, text=True,
+                         cwd=ROOT / "rtl/bench").stdout   # bench_rom.mem
     assert "20 frames checked, 0 failures" in out, out

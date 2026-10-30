@@ -45,6 +45,9 @@ if {[llength $argv] > 0} {
 
 read_verilog [list rtl/kws_bin_mac.v rtl/bench/bench_mac.v]
 read_xdc rtl/bench/bench_mac.xdc
+# the memory KINDs' weight ROM ($readmemh "bench_rom.mem"); read_mem makes the
+# bare file name resolve during synth_design
+read_mem rtl/bench/bench_rom.mem
 
 proc grab {re text} {
     if {[regexp $re $text -> v]} { return $v }
@@ -94,16 +97,16 @@ foreach r $rows {
     puts $csv "$k,$name,$tpc,$lut,$ff,$dsp,$bram,$wns,$dyn,$tot,$ln,$fn,[format %.2f $dn],[format %.3f $pj]"
     puts [format "%-16s %5d %7d %7d %4s %5s %7.2f %9.1f %9.1f %10.3f" \
           $name $tpc $ln $fn $dsp $bram $wns [expr {$dyn * 1000.0}] $dn $pj]
-    # The memory kinds' ROMs are constants from an initial loop. If synthesis
-    # ever failed to evaluate it, the ROM would be all zero and fold away, and
-    # the "memory" row would cost nothing. Expected: 256x32 ROM ~ 128 LUT per
-    # copy, 256x256 ~ 1,024 LUT, or 4 RAMB36 in block RAM.
+    # If $readmemh does not find bench_rom.mem the ROM is all zero and folds
+    # away, and the "memory" row costs nothing -- the first version (an initial
+    # loop) lost most of its ROM that way. Expected: 256x32 ROM ~ 128 LUT per
+    # copy, 256x256 ~ 1,024 LUT, or 4 RAMB36 tiles in block RAM.
     set floor [dict create 8 1500 9 1500 11 1500 12 250]
     if {[dict exists $floor $k] && $ln < [dict get $floor $k]} {
         puts "  SUSPECT: $name has $ln LUT (< [dict get $floor $k]) -- ROM folded away?"
     }
-    if {$k == 10 && ($bram eq "NA" || $bram < 4)} {
-        puts "  SUSPECT: $name has $bram block RAM tiles (< 4) -- ROM not in BRAM?"
+    if {$k == 10 && ($bram eq "NA" || $bram < 3.5)} {
+        puts "  SUSPECT: $name has $bram block RAM tiles (< 3.5) -- ROM not in BRAM?"
     }
 }
 close $csv

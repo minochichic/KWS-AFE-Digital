@@ -1,7 +1,8 @@
 // tb_bench_mac -- the microbenchmark is alive and computes what it claims.
 //
-//   iverilog -g2005 -Wall -DKIND_UNDER_TEST=1 -s tb_bench_mac -o /tmp/b \
+//   iverilog -g2012 -DKIND_UNDER_TEST=1 -s tb_bench_mac -o /tmp/b \
 //            rtl/kws_bin_mac.v rtl/bench/bench_mac.v rtl/bench/tb_bench_mac.v
+//   (cd rtl/bench && vvp /tmp/b)        -- bench_rom.mem is read from the cwd
 //
 // Copy 0 / lane 0's accumulator is recomputed from the operands the DUT shows
 // at the engine's input (bench_mac mon_*) and compared when each vector
@@ -67,13 +68,15 @@ module tb_bench_mac;
         end
     end
 
-    // memory kinds: the weight at the engine is the ROM's word (bench_mac mix)
+    // memory kinds: the weight at the engine is the file's word (copy 0 for
+    // binary, which uses bits [31:0])
     localparam         MEM  = (KIND >= 8 && KIND <= 12);
-    localparam integer SALT = BIN ? 0 : 99;            // copy 0 / the int8 ROM
+    reg  [255:0] golden [0:255];
+    initial $readmemh("bench_rom.mem", golden);
     reg  [7:0]   addr_q;
     always @(posedge clk) addr_q <= dut.addr;
     wire [7:0]   raddr  = (KIND == 10) ? addr_q : dut.addr;
-    wire [255:0] want_w = dut.mix(raddr, SALT);
+    wire [255:0] want_w = golden[raddr];
     integer rom_checked = 0;
     always @(posedge clk) if (MEM && rst_n && dut.mon_valid) begin
         if (BIN ? (dut.mon_wgt[31:0] !== want_w[31:0]) : (dut.mon_wgt !== want_w)) begin
@@ -89,6 +92,12 @@ module tb_bench_mac;
         repeat (65 * 20 + 3) @(posedge clk);
         if (toggles == 0) begin
             $display("FAIL out never toggled -- logic would be optimised away");
+            fails = fails + 1;
+        end
+        // a missing file leaves both the DUT's ROM and `golden` X, and X !== X
+        // is false -- so check the file arrived at all
+        if (MEM && (^golden[0] === 1'bx || ^golden[255] === 1'bx || golden[0] == 256'd0)) begin
+            $display("FAIL bench_rom.mem not loaded (run vvp from rtl/bench)");
             fails = fails + 1;
         end
         if (MEM && rom_checked < 1000) begin

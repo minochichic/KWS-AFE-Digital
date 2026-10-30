@@ -36,7 +36,10 @@
 // Same ROM shape as the design: pw 128 -> 64 is 64 x 4 words = 256 words, read
 // asynchronously from LUTs (kws_pw_conv w_rom). The frame register is reloaded
 // every 4 vectors (260 cycles) -- pw 128 -> 64 latches a frame per 64 output
-// channels x 4 words. Contents are fixed pseudo-random constants from mix().
+// channels x 4 words. Contents: rtl/bench/bench_rom.mem (gen_bench_rom.py),
+// 256 x 256 random bits loaded with $readmemh as the design loads weights;
+// binary copy m uses bits [32m +: 32]. NOT an initial loop: Vivado folded most
+// of one to constants (2026-10-30, first run of these KINDs).
 //
 // The network's op counts are already known (conv2_int8_compare.md 4, 9.2);
 // what is missing is what one term of each kind costs in LUT/FF/DSP and power.
@@ -65,7 +68,8 @@
 
 module bench_mac #(
     parameter integer KIND = 0,
-    parameter integer ACC  = 24        // int8 lanes: compared mod 2^24 in the tb
+    parameter integer ACC  = 24,       // int8 lanes: compared mod 2^24 in the tb
+    parameter ROM_FILE     = "bench_rom.mem"   // found via read_mem / the cwd
 ) (
     input  wire clk,
     input  wire rst_n,
@@ -98,19 +102,6 @@ module bench_mac #(
     wire [255:0] act_bits = {s[3], s[2], s[1], s[0]};
     wire [255:0] wgt_bits = {s[7], s[6], s[5], s[4]};
     wire [511:0] pool     = {wgt_bits, act_bits};
-
-    // ROM contents: 256 pseudo-random bits per (word, salt), a constant
-    function [255:0] mix(input integer idx, input integer salt);
-        reg [63:0] x;
-        integer c;
-        begin
-            for (c = 0; c < 4; c = c + 1) begin
-                x = ({32'd0, idx} << 2) + c;
-                x = x ^ ({32'd0, salt} << 40) ^ 64'h9E3779B97F4A7C15;
-                mix[64*c +: 64] = xs64(xs64(xs64(x)));
-            end
-        end
-    endfunction
 
     // ---- vector rhythm: start, then VEC words --------------------------------- //
     reg [6:0] pos;                      // 0 = start, 1..VEC = data
@@ -197,11 +188,12 @@ module bench_mac #(
                 else if (vcnt == 2'd0 && pos == m)   frame <= pool[(128 * m) % 512 +: 128];
             wire [31:0] aw = frame[32 * pos[1:0] +: 32];
 
-            // the weight ROM: 256 x 32, asynchronous, in LUTs -- kws_pw_conv w_rom
-            (* rom_style = "distributed" *) reg [31:0] rom [0:255];
-            integer i;
-            initial for (i = 0; i < 256; i = i + 1) rom[i] = mix(i, m);
-            wire [31:0] ww = rom[addr];
+            // the weight ROM: 256 x 32, asynchronous, in LUTs -- kws_pw_conv w_rom.
+            // Declared 256 wide to share the file; synthesis keeps 32 columns.
+            (* rom_style = "distributed" *) reg [255:0] rom [0:255];
+            initial $readmemh(ROM_FILE, rom);
+            wire [255:0] rw = rom[addr];
+            wire [31:0]  ww = rw[32*m +: 32];
 
             wire signed [15:0] acc;
             wire               ov;
@@ -245,14 +237,12 @@ module bench_mac #(
         if (BRAM) begin : g_bram
             (* rom_style = "block" *) reg [255:0] rom [0:255];
             reg [255:0] q;
-            integer i;
-            initial for (i = 0; i < 256; i = i + 1) rom[i] = mix(i, 99);
+            initial $readmemh(ROM_FILE, rom);
             always @(posedge clk) q <= rom[addr];
             assign ww = q;
         end else begin : g_lut
             (* rom_style = "distributed" *) reg [255:0] rom [0:255];
-            integer i;
-            initial for (i = 0; i < 256; i = i + 1) rom[i] = mix(i, 99);
+            initial $readmemh(ROM_FILE, rom);
             assign ww = rom[addr];
         end
 

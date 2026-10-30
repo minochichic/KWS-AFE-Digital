@@ -512,9 +512,12 @@ B3 4, conv2 2)다. int8 로 바꾸며 지연을 지키려면 엔진마다 int8 M
 vivado -mode batch -source rtl/bench/run_mac_bench.tcl -notrace -tclargs 8 9 10 11 12
 ```
 
-ROM 내용은 initial 루프의 상수다. Vivado 가 그걸 못 풀면 ROM 이 0 이 되어 사라지므로,
-스크립트가 LUT/BRAM 하한 아래면 `SUSPECT` 를 찍는다. 시뮬(`tests/test_bench_mac.py`)은
-ROM 워드가 주소대로 나오는지까지 본다 (0 ROM · BRAM 정렬 어긋남 돌연변이 둘 다 실패 확인).
+ROM 내용은 `rtl/bench/bench_rom.mem` (256 × 256 랜덤, `gen_bench_rom.py`) 을 설계와 같이
+`$readmemh` 로 싣는다. **첫 실행(initial 루프로 계산한 상수)은 무효**였다 — iverilog 는 풀었는데
+Vivado 는 대부분을 상수로 접어 지웠다 (BRAM 1.5/4 타일, `bin32_mem` LUT 146 < 엔진 단독 173).
+스크립트의 `SUSPECT` 하한이 그것을 잡았다. 시뮬(`tests/test_bench_mac.py`)은 ROM 워드가 파일의
+그 주소 값인지까지 본다 (파일 없음 · BRAM 정렬 어긋남 · 잘못된 슬라이스 돌연변이 셋 다 실패 확인).
+시뮬은 Vivado 의 ROM 처리를 대신하지 못하므로 `SUSPECT` 가 안 찍히는 것까지 확인한다.
 
 결과가 오면 TABLE IV/V 의 전력을 "연산 + 피연산자 메모리"로 바꾼다. 남는 제외 항목은
 제어(세 행이 같은 folded 컨트롤러)와 정적(세 행 같은 0.094 W)뿐이다.
