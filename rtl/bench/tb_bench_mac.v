@@ -3,9 +3,14 @@
 //   iverilog -g2005 -Wall -DKIND_UNDER_TEST=1 -s tb_bench_mac -o /tmp/b \
 //            rtl/kws_bin_mac.v rtl/bench/bench_mac.v rtl/bench/tb_bench_mac.v
 //
-// For the int8 kinds, lane 0's accumulator is recomputed from the same
-// stimulus bits and compared at the end of every vector. For bin32 the
-// accumulator is checked against 2*popcount - N. `out` must toggle.
+// Copy 0 / lane 0's accumulator is recomputed from the operands the DUT shows
+// at the engine's input (bench_mac mon_*) and compared when each vector
+// closes. The operands are whatever the KIND feeds -- stimulus bits, or ROM
+// and frame-register words for the memory kinds. For those, the weight word at
+// the engine must also be the ROM's word for the address read (one cycle back
+// for block RAM): an all-zero or misaddressed ROM fails. Which activation
+// meets which weight is NOT checked -- the data is random, so the pairing
+// changes no cost. `out` must toggle.
 
 `timescale 1ns/1ps
 `default_nettype none
@@ -16,6 +21,8 @@
 
 module tb_bench_mac;
     localparam integer KIND = `KIND_UNDER_TEST;
+    localparam         BIN  = (KIND == 0 || KIND == 7 || KIND == 8 || KIND == 12);
+    localparam         PM1  = (KIND == 3 || KIND == 11);
     reg clk = 0, rst_n = 0;
     wire out;
     always #10 clk = ~clk;
@@ -24,6 +31,7 @@ module tb_bench_mac;
 
     integer fails = 0, checked = 0, toggles = 0;
     reg     out_q = 0;
+    reg     armed = 0;
     reg signed [31:0] ref_acc;
 
     always @(posedge clk) begin
@@ -31,43 +39,48 @@ module tb_bench_mac;
         out_q <= out;
     end
 
-    // reference for lane 0 / the binary engine, from the DUT's own stimulus
+    // one term of lane 0, from the operands at the engine's input
+    wire signed [31:0] term =
+        BIN ? 2 * $countones(~(dut.mon_act[31:0] ^ dut.mon_wgt[31:0])) - 32
+      : PM1 ? (dut.mon_act[0] ? $signed(dut.mon_wgt[7:0]) : -$signed(dut.mon_wgt[7:0]))
+            : $signed(dut.mon_act[7:0]) * $signed(dut.mon_wgt[7:0]);
+
+    // A vector closes on the start that opens the next one; the accumulator
+    // still holds the finished vector there (sampled before the edge's update).
     always @(posedge clk) begin
-        if (!rst_n) ref_acc <= 0;
-        else if (dut.start) ref_acc <= 0;
-        else if (dut.in_valid) begin
-            if (KIND == 0 || KIND == 7)
-                ref_acc <= ref_acc + 2 * $countones(~(dut.act_bits[31:0] ^ dut.wgt_bits[31:0])) - 32;
-            else if (KIND == 3)
-                ref_acc <= ref_acc + (dut.act_bits[0] ? $signed(dut.wgt_bits[7:0])
-                                                     : -$signed(dut.wgt_bits[7:0]));
-            else
-                ref_acc <= ref_acc + $signed(dut.act_bits[7:0]) * $signed(dut.wgt_bits[7:0]);
+        if (!rst_n) begin
+            ref_acc <= 0;
+        end else if (dut.mon_start) begin
+            if (armed && KIND != 5) begin
+                if (dut.mon_acc !== ref_acc[23:0]) begin
+                    fails = fails + 1;
+                    $display("FAIL acc %0d want %0d", $signed(dut.mon_acc), ref_acc);
+                end
+                checked = checked + 1;
+            end else if (armed) begin
+                checked = checked + 1;       // stimulus only: it runs
+            end
+            armed   <= 1;
+            ref_acc <= 0;
+        end else if (dut.mon_valid) begin
+            ref_acc <= ref_acc + term;
         end
     end
 
-    // compare when a vector closes (the cycle the rhythm wraps to start)
-    always @(posedge clk) begin
-        if (rst_n && dut.pos == 7'd64) begin
-            #1;
-            if (KIND == 5) begin
-                // stimulus only: nothing to check but that it runs
-            end else if (KIND == 0) begin
-                if (dut.g_bin.acc !== ref_acc[15:0]) begin
-                    fails = fails + 1;
-                    $display("FAIL bin acc %0d want %0d", dut.g_bin.acc, ref_acc);
-                end
-            end else if (KIND == 7) begin
-                if (dut.g_bin8.g_m[0].acc !== ref_acc[15:0]) begin
-                    fails = fails + 1;
-                    $display("FAIL bin8 acc %0d want %0d", dut.g_bin8.g_m[0].acc, ref_acc);
-                end
-            end else if (dut.g_int.acc[0] !== ref_acc[23:0]) begin
-                fails = fails + 1;
-                $display("FAIL lane0 acc %0d want %0d", dut.g_int.acc[0], ref_acc);
-            end
-            checked = checked + 1;
+    // memory kinds: the weight at the engine is the ROM's word (bench_mac mix)
+    localparam         MEM  = (KIND >= 8 && KIND <= 12);
+    localparam integer SALT = BIN ? 0 : 99;            // copy 0 / the int8 ROM
+    reg  [7:0]   addr_q;
+    always @(posedge clk) addr_q <= dut.addr;
+    wire [7:0]   raddr  = (KIND == 10) ? addr_q : dut.addr;
+    wire [255:0] want_w = dut.mix(raddr, SALT);
+    integer rom_checked = 0;
+    always @(posedge clk) if (MEM && rst_n && dut.mon_valid) begin
+        if (BIN ? (dut.mon_wgt[31:0] !== want_w[31:0]) : (dut.mon_wgt !== want_w)) begin
+            fails = fails + 1;
+            if (fails < 5) $display("FAIL rom word at addr %0d", raddr);
         end
+        rom_checked = rom_checked + 1;
     end
 
     initial begin
@@ -76,6 +89,10 @@ module tb_bench_mac;
         repeat (65 * 20 + 3) @(posedge clk);
         if (toggles == 0) begin
             $display("FAIL out never toggled -- logic would be optimised away");
+            fails = fails + 1;
+        end
+        if (MEM && rom_checked < 1000) begin
+            $display("FAIL only %0d ROM words checked", rom_checked);
             fails = fails + 1;
         end
         $display("KIND %0d: %0d vectors checked, out toggled %0d times", KIND, checked, toggles);
