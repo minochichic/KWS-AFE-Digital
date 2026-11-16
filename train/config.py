@@ -314,6 +314,19 @@ class AFEConfig:
 
     threshold_measured_path: str = ""
 
+    # 보드가 만들 수 있는 임계값만 쓰게 한다 (data/thr_grid.py). 채널 x 기준전압
+    # 표 (raw 엔벨로프 단위, CSV). forward 가 학습된 임계값을 표의 한 칸으로
+    # straight-through 로 붙인다 -- 네트워크는 늘 납땜 가능한 비교기로 학습된다.
+    # "" = 끔 = 정확한 no-op. normalize "fixed"/"none", comparators_per_channel 1 만.
+    threshold_grid_path: str = ""
+    # 기준전압 하나가 구동할 수 있는 비교기 수 (2026-11 보드: 4). 0 = 제한 없음.
+    threshold_grid_capacity: int = 0
+    # 클립마다 peak-to-peak 을 이 값(PCM 단위)으로 맞춘 뒤 필터뱅크에 넣는다.
+    # AWG 벤치가 ARB 를 클립마다 100 mVpp 로 맞추는 것과 같은 조건. 0 = 끔.
+    # 0.29 = "100 mVpp ~ PCM 0.29" (experiments/afe_clip.py). 격자 모드에서는
+    # 값 자체는 임의다 -- 격자 표가 같은 값으로 만들어져 있기만 하면 된다.
+    input_pp: float = 0.0
+
     threshold_trainable: bool = True
     ste: str = "hardtanh"               # STE flavor for the step function
     ste_clip: float = 1.0
@@ -511,6 +524,15 @@ class Config:
             raise ValueError(
                 'afe.threshold_init="measured" requires '
                 "afe.threshold_measured_path")
+        if getattr(a, "threshold_grid_path", ""):
+            if a.normalize not in ("fixed", "none"):
+                raise ValueError(
+                    f"afe.threshold_grid_path needs normalize 'fixed' or 'none' "
+                    f"(an absolute comparator); got {a.normalize!r}")
+            if k != 1:
+                raise ValueError("afe.threshold_grid_path supports one comparator per channel")
+        if getattr(a, "input_pp", 0.0) < 0:
+            raise ValueError(f"afe.input_pp must be >= 0, got {a.input_pp}")
         if a.threshold_init not in ("channel_mean", "quantile", "measured"):
             raise ValueError(
                 f"afe.threshold_init must be 'channel_mean', 'quantile' or "

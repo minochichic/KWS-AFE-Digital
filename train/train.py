@@ -432,6 +432,16 @@ def _run_speech_commands(args) -> None:
     # to the analog side.
     if args.init_from:
         _load_initial_state(model, afe, args.init_from)
+        if getattr(cfg.afe, "input_pp", 0.0) > 0:
+            # The checkpoint's lo/hi and thresholds were measured at the dataset's
+            # own loudness; with input_pp every clip arrives at one level, so the
+            # front end's scale is re-measured. The network weights stay.
+            waves = collect_init_batch(train_loader)
+            if cfg.afe.normalize in _NEEDS_SCALE:
+                afe.init_fixed_scale(waves)
+            afe.init_thresholds(waves)
+            print(f"input_pp={cfg.afe.input_pp}: front-end scale and thresholds "
+                  f"re-initialized on the new input level")
     else:
         waves = collect_init_batch(train_loader)     # 2048 clips
         if cfg.afe.normalize in _NEEDS_SCALE:

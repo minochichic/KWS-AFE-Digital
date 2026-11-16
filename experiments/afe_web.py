@@ -14,7 +14,9 @@ at http://127.0.0.1:8765 that redraws once a second:
 
 The board keeps only BOARD_MAX_CAPS (16) captures; once all are read the
 server clears the log (board_log_reset) so it keeps going. Every capture is
-appended to out/afe/live/*.jsonl.
+appended to out/afe/live/*.jsonl, with the comparator reference voltages typed
+into the page (V_thr) -- experiments/thr_calib.py fits the threshold grid from
+those records, so a capture is only usable for calibration if V_thr was set.
 
     python -m experiments.afe_web --run runs/bd_base --ref out/afe/54aecbd5_nohash_1/ref.json
 """
@@ -135,12 +137,47 @@ class Playing:
                 "sim": r["sim"], "playing": r["ref"]}
 
 
+def parse_vthr(text: str) -> Optional[List[float]]:
+    """'948' -> 16 x 948.0; '900,916,...' (16 values) -> those; anything else -> None."""
+    vals = [v for v in re.split(r"[,\s]+", text.strip()) if v]
+    try:
+        mv = [float(v) for v in vals]
+    except ValueError:
+        return None
+    if len(mv) == 1:
+        mv = mv * 16
+    return mv if len(mv) == 16 else None
+
+
+class VThr:
+    """The comparator reference voltages, as typed on the page by whoever set them.
+
+    Like the ARB name: the board cannot report them, so they are told. Captures within
+    SETTLE seconds of a change may predate it and carry no voltages."""
+
+    SETTLE = 2.0
+
+    def __init__(self, text: str = "") -> None:
+        self.set(text)
+        self.since = 0.0
+
+    def set(self, text: str) -> None:
+        self.text = text or ""
+        self.mv = parse_vthr(self.text) if self.text else None
+        self.since = time.time()
+
+    def tag(self) -> dict:
+        settled = time.time() - self.since >= self.SETTLE
+        return {"vthr": self.text, "vthr_mv": self.mv if (self.mv and settled) else None}
+
+
 class Poller(threading.Thread):
     def __init__(self, board: Board, model, names: List[str], period: float, log_path: Path,
-                 playing: Playing) -> None:
+                 playing: Playing, vthr: VThr) -> None:
         super().__init__(daemon=True)
         self.board, self.model, self.names, self.period, self.log_path = board, model, names, period, log_path
         self.playing = playing
+        self.vthr = vthr
         self.lock = threading.Lock()
         self.caps: List[dict] = []
         self.tally: Counter = Counter()
@@ -188,7 +225,7 @@ class Poller(threading.Thread):
         if new:
             bits = np.stack([bits_of(c["clip"]) for c in new])
             pred, prob = classify(self.model, bits)
-            tag = self.playing.tag()
+            tag = {**self.playing.tag(), **self.vthr.tag()}
             with self.lock, self.log_path.open("a") as f:
                 for c, p, q in zip(new, pred, prob):
                     m = tag
@@ -250,7 +287,8 @@ class Poller(threading.Thread):
                     "correct": v["fpga"].get(v["label"], 0)} for _, v in sorted(self.per_ref.items())]
             return {"status": self.status, "caps": self.caps, "tally": dict(self.tally),
                     "total": self.total, "agree": self.agree, "per_ref": per,
-                    "playing": self.playing.current, "tune": {**self.tune, "refs": len(self.tune["refs"])}}
+                    "playing": self.playing.current, "vthr": self.vthr.text,
+                    "vthr_ok": self.vthr.mv is not None, "tune": {**self.tune, "refs": len(self.tune["refs"])}}
 
 
 def main() -> None:
@@ -267,6 +305,8 @@ def main() -> None:
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--save", default="out/afe/live", help="every capture is appended here as JSON lines")
     ap.add_argument("--open", action="store_true", help="open the page in the default browser")
+    ap.add_argument("--vthr", default="", help="comparator references [mV]: one value for all "
+                                               "16, or 16 comma-separated (can be set on the page)")
     args = ap.parse_args()
 
     url = f"http://127.0.0.1:{args.port}"
@@ -294,8 +334,9 @@ def main() -> None:
     playing = Playing(ref_paths, names)
     print(f"{len(playing.refs)} reference clip(s)", flush=True)
     page_cfg = {"names": names, "fc": fc, "refs": list(playing.refs.values())}
+    vthr = VThr(args.vthr)
     poller = Poller(Board(args.elf, args.cli, args.nm), model, names, args.period,
-                    save / f"live_{time.strftime('%Y%m%d_%H%M%S')}.jsonl", playing)
+                    save / f"live_{time.strftime('%Y%m%d_%H%M%S')}.jsonl", playing, vthr)
     poller.start()
     page = PAGE.replace("/*CFG*/null", json.dumps(page_cfg))
 
@@ -307,6 +348,11 @@ def main() -> None:
                 from urllib.parse import parse_qs, urlparse
                 playing.set((parse_qs(urlparse(self.path).query).get("ref") or [None])[0])
                 body, ctype = json.dumps({"playing": playing.current}).encode(), "application/json"
+            elif self.path.startswith("/vthr"):              # /vthr?v=948 | /vthr?v=900,916,...
+                from urllib.parse import parse_qs, urlparse
+                vthr.set((parse_qs(urlparse(self.path).query).get("v") or [""])[0])
+                body, ctype = json.dumps({"vthr": vthr.text, "ok": vthr.mv is not None}).encode(), \
+                    "application/json"
             elif self.path.startswith("/reset_tune"):        # after turning a trimmer
                 poller.request_reset()
                 body, ctype = b"{}", "application/json"
@@ -356,6 +402,7 @@ canvas{width:100%;display:block}.row{display:flex;justify-content:space-between;
 </style></head><body>
 <header><h1>AFE → STM32 → FPGA 실시간</h1><span id="conn" class="mute"><span class="dot"></span>연결 중</span>
 <label>재생 중인 ARB <select id="play"><option value="">(고르세요)</option></select></label>
+<label title="비교기 기준전압. 하나만 쓰면 16채널 모두, 아니면 ch0..15 순서로 16개를 쉼표로">V_thr (mV) <input id="vthr" size="34" placeholder="948  또는  900,916,...(16개)"></label><span id="vthrok" class="mute"></span>
 <span id="cnt" class="mute"></span></header>
 <main>
 <section class="card"><div class="ans">
@@ -404,10 +451,14 @@ function drawRate(cv,words,simw){const [g,W,H]=setup(cv);const B=20,bw=W/16,max=
 const playSel=document.getElementById('play');
 CFG.refs.forEach(r=>{const o=document.createElement('option');o.value=r.ref;o.textContent=`${r.ref} — ${r.label} (시뮬: ${r.sim_pred})`;playSel.appendChild(o)});
 playSel.onchange=async()=>{await fetch('/play?ref='+encodeURIComponent(playSel.value));sel=null;tick()};
+const vthrIn=document.getElementById('vthr');
+vthrIn.onchange=async()=>{await fetch('/vthr?v='+encodeURIComponent(vthrIn.value));tick()};
 const esc=s=>String(s??'—');
 function render(){if(!S)return;const st=S.status;const c=document.getElementById('conn');
  c.innerHTML=`<span class="dot ${st.ok?'ok':''}"></span>`+(st.ok?`연결됨 · ${st.updated}`:st.msg);
  if(document.activeElement!==playSel)playSel.value=S.playing||'';
+ if(document.activeElement!==vthrIn)vthrIn.value=S.vthr||'';
+ document.getElementById('vthrok').textContent=S.vthr?(S.vthr_ok?'✓ 기록 중':'✗ 형식 (1개 또는 16개)'):'(보정에 쓰려면 입력)';
  if(st.ok){document.getElementById('cnt').textContent=`보낸 클립 ${st.clips} · 응답 ${st.ok_n} · 타임아웃 ${st.timeouts} · 배경 ${st.bg.toFixed(2)}채널`;
   document.getElementById('board').innerHTML=`무음 ${st.quiet_s.toFixed(1)} s 동안 발화율<br>`+(st.quiet_rate?st.quiet_rate.map((r,k)=>`ch${k} ${r.toFixed(2)}`).join(' · '):'—')}
  const caps=S.caps,cur=caps.find(x=>x.n===sel)||caps[caps.length-1],pr=S.playing?REF[S.playing]:null;

@@ -323,6 +323,24 @@ class AFEFrontend(nn.Module):
         if cfg.normalize == "xlse":
             self.register_buffer("lse_temp", torch.ones(1))
 
+        # Buildable thresholds (data/thr_grid.py). Not persistent: the table is
+        # the config's file, so checkpoints written before this load unchanged
+        # and a run re-scored with a new table uses the new table.
+        self.grid_levels = None
+        gp = getattr(cfg, "threshold_grid_path", "") or ""
+        if gp:
+            from data.thr_grid import load_grid
+            p = Path(gp)
+            if not p.is_absolute():
+                p = Path(__file__).resolve().parents[1] / p
+            levels, g = load_grid(p)
+            if g.shape[0] != cfg.n_channels:
+                raise ValueError(f"{p}: {g.shape[0]} channels, config has {cfg.n_channels}")
+            self.grid_levels = levels
+            self.register_buffer("grid_raw", torch.tensor(g, dtype=torch.float32),
+                                 persistent=False)
+            self._grid_cache = (None, None)
+
         # AGC divides by a running level, which is only meaningful in a
         # multiplicative (amplitude) domain. Under log compression a gain is a
         # SUBTRACTION and values go negative, so division is wrong there.
@@ -367,6 +385,12 @@ class AFEFrontend(nn.Module):
         threshold initialization and for inspection plots.
         """
         wave = self._fix_length(wave)
+        pp = float(getattr(self.cfg, "input_pp", 0.0) or 0.0)
+        if pp > 0.0:
+            # The AWG bench: every clip leaves the generator at the same Vpp.
+            # Digital zero stays zero (0 x anything).
+            span = wave.amax(dim=-1, keepdim=True) - wave.amin(dim=-1, keepdim=True)
+            wave = wave * (pp / span.clamp_min(1e-8))
         mel = self._bands(wave)                         # [B, C, frames] power
         comp = getattr(self.cfg, "compression", "log")
         if comp == "log":
@@ -629,6 +653,11 @@ class AFEFrontend(nn.Module):
         tmin = float(getattr(self.cfg, "threshold_min", 0.0) or 0.0)
         if tmin > 0.0:
             thr = thr + (thr.clamp(min=tmin) - thr).detach()
+        if self.grid_levels is not None:
+            # Forward on the level the board would use, gradient to the free
+            # threshold -- same straight-through as the clamps above, so a
+            # channel can walk to the next level instead of sticking.
+            thr = thr + (self.grid_thresholds().view(1, -1, 1) - thr).detach()
         # Optional comparator input offset Vos (real LPV7215 has ~mV; ideal
         # sign() has none). Random per (clip, channel) -> eval Monte-Carlos over
         # the offset distribution. vos=0 is an exact no-op (baseline unchanged).
@@ -777,8 +806,40 @@ class AFEFrontend(nn.Module):
         finished run look unbuildable (alpha 1.341) when it was in fact pinned at
         1.0. Export and any per-channel report must go through here.
         """
+        if self.grid_levels is not None:
+            return self.grid_thresholds()
         thr = self.threshold.detach()
         return thr.clamp(0.0, 1.0) if self.cfg.normalize in _DIVIDER_FORM else thr
+
+    def _grid_norm(self) -> torch.Tensor:
+        """The grid table in the comparator's (normalized) units."""
+        g = self.grid_raw
+        if self.cfg.normalize == "fixed":
+            g = (g - self.fixed_lo) / (self.fixed_hi - self.fixed_lo + _EPS)
+        return g
+
+    @torch.no_grad()
+    def grid_choice(self):
+        """Level index per channel for the current thresholds (capacity-aware).
+
+        Cached on the threshold values: during eval nothing moves, and the
+        assignment is a small Python Hungarian, not something to redo per batch
+        for nothing."""
+        from data.thr_grid import assign
+        thr = self.threshold.detach().float().cpu().numpy()
+        g = self._grid_norm().cpu().numpy()
+        key = (thr.tobytes(), float(self.fixed_lo) if self.cfg.normalize == "fixed" else 0.0,
+               float(self.fixed_hi) if self.cfg.normalize == "fixed" else 0.0)
+        if self._grid_cache[0] != key:
+            cap = int(getattr(self.cfg, "threshold_grid_capacity", 0) or 0)
+            self._grid_cache = (key, assign(thr, g, cap))
+        return self._grid_cache[1]
+
+    def grid_thresholds(self) -> torch.Tensor:
+        """[C] normalized thresholds the board would use: one grid cell per channel."""
+        lvl = torch.as_tensor(self.grid_choice(), device=self.grid_raw.device)
+        g = self._grid_norm()
+        return g[torch.arange(g.shape[0], device=g.device), lvl].detach()
 
     @torch.no_grad()
     def init_thresholds(self, waves: torch.Tensor) -> None:
