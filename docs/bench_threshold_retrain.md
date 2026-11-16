@@ -70,6 +70,16 @@ python -m experiments.thr_grid report --run runs/bd_grid
 ```
 
 보정 전에 파이프라인만 먼저 돌려 보려면 표를 `thr_grid_sim_20261116.csv` 로.
+
+격자가 정확도를 얼마나 깎는지는 같은 조건의 자유 임계 런(`bd_pp`: input_pp 만, 격자 없음)과
+비교한다. `compare` 는 각 런의 임계를 그 표의 **기준전압(mV)** 으로 바꿔 보여 준다 —
+자유 런이 900 아래·996 위를 원하는 채널이 곧 이 회로 범위가 깎는 채널이다.
+
+```bash
+python -m experiments.thr_grid compare --grid <표.csv> --run runs/bd_pp runs/bd_grid
+```
+
+2026-11-16 임시 표 결과: `bd_base` 0.825 → `bd_pp` 0.861 → `bd_grid_sim` 0.790.
 `--init-from` 이면 input_pp 때문에 lo/hi 와 임계 초기값을 새 입력 레벨에서 다시 잰다.
 
 ### 4. 보드 반영

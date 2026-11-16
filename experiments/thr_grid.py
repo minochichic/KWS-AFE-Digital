@@ -161,6 +161,77 @@ def report(args) -> None:
     print(f"wrote {out}")
 
 
+def raw_thresholds(run: Path):
+    """(cfg, latent raw thresholds [C], used raw thresholds [C] or None) of a run.
+
+    Raw = the envelope units of the grid table (envelopes raw=True). For a free
+    run the two are the same; for a grid run the latent one is where training
+    pushed the parameter (straight-through keeps pushing past an edge cell),
+    the used one is the cell the board gets."""
+    import torch
+    from data.afe import _EPS, AFEFrontend, load_afe_state
+    from train.config import load_config
+    cfg = load_config(str(run / "config.yaml"))
+    if cfg.afe.normalize != "fixed" or cfg.afe.input_pp <= 0:
+        raise SystemExit(f"{run}: needs normalize=fixed and input_pp>0 "
+                         f"(got {cfg.afe.normalize}, {cfg.afe.input_pp}) -- raw units differ otherwise")
+    afe = AFEFrontend(cfg.afe)
+    ck = torch.load(run / "best.pt", map_location="cpu", weights_only=True)
+    load_afe_state(afe, ck["afe"])
+    lo, hi = float(afe.fixed_lo), float(afe.fixed_hi)
+    to_raw = lambda t: t.detach().double().numpy() * (hi - lo + _EPS) + lo
+    latent = to_raw(afe.threshold)
+    used = to_raw(afe.grid_thresholds()) if afe.grid_levels is not None else None
+    return cfg, latent, used
+
+
+def equiv_mv(raw: float, row: np.ndarray, levels: List[float]) -> float:
+    """The reference voltage that would put this channel's comparator at `raw`:
+    linear along the table row, extended with the end slopes outside it."""
+    ok = np.isfinite(row)
+    v, r = np.asarray(levels, dtype=float)[ok], row[ok]
+    if len(r) < 2:
+        return float("nan")
+    if raw <= r[0]:
+        return float(v[0] + (raw - r[0]) * (v[1] - v[0]) / (r[1] - r[0]))
+    if raw >= r[-1]:
+        return float(v[-1] + (raw - r[-1]) * (v[-1] - v[-2]) / (r[-1] - r[-2]))
+    return float(np.interp(raw, r, v))
+
+
+def compare(args) -> None:
+    """Where each run's thresholds sit on the board's voltage axis."""
+    from data.thr_grid import load_grid
+    levels, g = load_grid(Path(args.grid))
+    cols, lines = [], []
+    for run in args.run:
+        cfg, latent, used = raw_thresholds(Path(run))
+        name = Path(run).name
+        cols.append((name, latent, used))
+    head = f"{'ch':>3} | " + "".join(f"{n[:16]:>18}" for n, _, _ in cols)
+    print(f"grid {args.grid}: {levels[0]:g}..{levels[-1]:g} mV")
+    print("equivalent reference voltage [mV] of each run's threshold "
+          "(latent -> used for a grid run; < > = outside the buildable range)")
+    print(head)
+    out_lo, out_hi = {n: [] for n, _, _ in cols}, {n: [] for n, _, _ in cols}
+    for c in range(g.shape[0]):
+        cells = []
+        for n, latent, used in cols:
+            m = equiv_mv(latent[c], g[c], levels)
+            mark = "<" if m < levels[0] - 8 else (">" if m > levels[-1] + 8 else " ")
+            if mark == "<":
+                out_lo[n].append(c)
+            elif mark == ">":
+                out_hi[n].append(c)
+            s = f"{m:7.0f}{mark}"
+            if used is not None:
+                s += f"->{equiv_mv(used[c], g[c], levels):4.0f}"
+            cells.append(f"{s:>18}")
+        print(f"{c:>3} | " + "".join(cells))
+    for n, _, _ in cols:
+        print(f"{n}: below {levels[0]:g} mV ch {out_lo[n]}, above {levels[-1]:g} mV ch {out_hi[n]}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -176,8 +247,12 @@ def main() -> None:
     s.add_argument("--out", required=True)
     r = sub.add_parser("report", help="voltage per channel of a grid-trained run")
     r.add_argument("--run", required=True)
+    c = sub.add_parser("compare", help="each run's thresholds as reference voltages on a grid")
+    c.add_argument("--grid", required=True)
+    c.add_argument("--run", nargs="+", required=True,
+                   help="runs trained with the same input_pp and filter bank (free or grid)")
     args = ap.parse_args()
-    sim(args) if args.cmd == "sim" else report(args)
+    {"sim": sim, "report": report, "compare": compare}[args.cmd](args)
 
 
 if __name__ == "__main__":

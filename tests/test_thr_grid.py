@@ -133,3 +133,28 @@ def test_grid_rejects_relative_modes(tmp_path):
     write_grid(tmp_path / "g.csv", LEVELS, np.ones((16, 7)))
     with pytest.raises(ValueError, match="normalize"):
         Config(afe=AFEConfig(normalize="minmax", threshold_grid_path=str(tmp_path / "g.csv"))).validate()
+
+
+def test_compare_reads_runs_in_board_voltage(tmp_path):
+    """thr_grid compare: a grid run's used threshold lands exactly on its level's mV,
+    and the latent one converts back to the same raw value forward() compares."""
+    from experiments.thr_grid import equiv_mv, raw_thresholds
+    from train.config import load_config
+    fe, wave, q = _grid_frontend(tmp_path, input_pp=0.29)
+    run = tmp_path / "run"
+    run.mkdir()
+    cfg = load_config("configs/base.yaml")
+    cfg.afe = fe.cfg
+    cfg.save(run / "config.yaml")
+    torch.save({"afe": fe.state_dict()}, run / "best.pt")
+    _, latent, used = raw_thresholds(run)
+    lvl = fe.grid_choice()
+    assert np.allclose(used, q[np.arange(16), lvl], rtol=1e-5)
+    for c in range(16):
+        assert equiv_mv(used[c], q[c], LEVELS) == pytest.approx(LEVELS[lvl[c]], abs=0.05)   # float32 round trip
+    lo, hi = float(fe.fixed_lo), float(fe.fixed_hi)
+    assert np.allclose(latent, fe.threshold.detach().numpy() * (hi - lo + 1e-6) + lo, rtol=1e-5)
+    # outside the row: the end slopes carry on
+    row = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+    assert equiv_mv(0.0, row, LEVELS) == pytest.approx(884.0)
+    assert equiv_mv(8.5, row, LEVELS) == pytest.approx(1020.0)
