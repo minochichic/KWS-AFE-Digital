@@ -177,6 +177,14 @@ def to_grid(fit: dict, levels: List[float], sim: np.ndarray = None):
                 if not np.isfinite(g[c, j]) and np.isfinite(sim[c, j]):
                     g[c, j] = sim[c, j] * scale
                     src[c][j] = "sim x%.2f" % scale if have else "sim"
+    # a higher reference can never trip on a smaller envelope: where a scaled sim cell lands
+    # below a measured one at a lower voltage (ch12 on 2026-11-17 hardly moves with V_thr),
+    # carry the lower cell up
+    for c in range(16):
+        for j in range(1, len(levels)):
+            if np.isfinite(g[c, j]) and np.isfinite(g[c, j - 1]) and g[c, j] < g[c, j - 1]:
+                g[c, j] = g[c, j - 1]
+                src[c][j] = (src[c][j] or "board") + " raised to monotone"
     return g, src
 
 
@@ -190,6 +198,9 @@ def main() -> None:
     ap.add_argument("--input-pp", type=float, default=0.29, help="afe.input_pp the run will use")
     ap.add_argument("--sim", type=Path, default=None,
                     help="thr_grid sim table: fills voltages with no captures, scaled per channel")
+    ap.add_argument("--vthr-offset", type=float, default=0.0,
+                    help="mV added to every V_thr typed on the page: the taps measured by DMM sit "
+                         "this far from their nominal value (2026-11-17: +2)")
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
 
@@ -197,6 +208,8 @@ def main() -> None:
     recs = load_records(args.logs)
     if not recs:
         raise SystemExit("no capture carries both a settled ARB and V_thr -- type V_thr on the page")
+    for r in recs:
+        r["vthr_mv"] = [float(v) + args.vthr_offset for v in r["vthr_mv"]]
     sw = SoftwareAFE(args.config, {"afe.spice_matrix_path": args.spice_matrix,
                                    "afe.input_pp": args.input_pp})
     envs = {}
@@ -233,8 +246,9 @@ def main() -> None:
               f"model these channels; check them on the board before trusting their cells")
     write_grid(args.out, levels, g, [
         f"experiments/thr_calib.py, {datetime.date.today()}, {len(recs)} captures from "
-        + ", ".join(p.name for p in args.logs)[:300],
-        f"raw envelope at input_pp={args.input_pp}, filterbank {args.spice_matrix}",
+        + ", ".join(sorted({str(p.parent if p.name == 'captures.jsonl' else p) for p in args.logs}))[:300],
+        f"raw envelope at input_pp={args.input_pp}, filterbank {args.spice_matrix}, "
+        f"V_thr = typed + {args.vthr_offset:g} mV",
         "cells from board captures unless listed: "
         + ", ".join(f"ch{c}@{levels[j]:g}={src[c][j]}" for c in range(16) for j in range(len(levels))
                     if src[c][j] != "board")[:600],

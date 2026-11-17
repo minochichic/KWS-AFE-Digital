@@ -143,6 +143,29 @@ AFE 비교기 16가닥 → J5 → STM32 (-D WAKE_AFELOG) → J4 → FPGA (kws_wa
 **보지 않는 것**: J6 경로(FPGA `kws_frame_ctrl`)와의 프레임 대조 -- FPGA 비교기 경로에는 프레임을 꺼내는
 수단이 없다(ILA 또는 덤프 RTL 필요). 이번엔 소프트웨어 AFE 가 기준이다.
 
+**ARB 별 기록과 클래스 단위 시험 (2026-10-30 도구).** 뷰어(`tools/afe_view.cmd` = `experiments.afe_web`)에서
+재생 중인 ARB 를 고르는 순간 그 ARB 의 *기록* 이 새로 시작되고, 이전 기록은 `out/afe/sessions/<세션>/<nn>_<ARB>/`
+(captures.csv · slots.csv · threshold.csv · record.json · sheet.png) 로 저장된다. 세션 폴더에는 기록별 한 줄
+(`records.csv`)과 정답 × FPGA 답 (`confusion.csv/png`) 이 쌓인다. 목표 캡처 수에 닿으면 자동 일시 중지·저장,
+"새 기록" 은 같은 ARB 를 다시 (threshold 를 바꾼 뒤).
+
+| 순서 | 할 일 | 명령 |
+|---|---|---|
+| 1 | 클래스당 10 개 연속 ARB. **지금 쓰는 것: 동료의 병합 파일 `signal_arb_total/<class>/*_merged_<class>.arb`** (클립은 제 길이 그대로, 앞·사이·뒤 500 ms, 단어마다 100 mVpp, 0.9 V; 구간은 같은 폴더 `settings.json`). 직접 만들 때는 `python -m experiments.afe_seq build --gsc <speech_commands_v0.02> --per-class 10` (1.5 s 고정 슬롯) | |
+| 2 | 각 ARB 의 소프트웨어 기준 (클립별 그림·답, 트리거 규칙이 자를 캡처와 주기 안 위치) | `python -m experiments.afe_seq prep signal_arb_total` (폴더째) → `out/afe/<arb 이름>/ref.json`. `settings.json` 이 있으면 그 구간을, 없으면 `afe_seq build` 의 `.json` 을, 둘 다 없으면 파일 이름의 단어 하나로 |
+| 3 | 재생 · 기록 | 뷰어에서 ARB 고르기 → 목표 캡처(기본 = 클립 수, 즉 한 바퀴) → 다음 ARB |
+| 4 | confusion matrix (여러 세션 합쳐서) | `python -m experiments.afe_report out/afe/sessions/<세션> ... --out out/afe/report_<날짜>` → `confusion_{fpga,best_pt,sim}.{csv,png}` · `confusion_all.png` (12×12, 알파벳 순 -- Cerutti 그림과 같은 배치) · per_class.csv · threshold.csv · report.md. 세션 폴더에는 기록이 저장될 때마다 같은 것이 자동으로 다시 만들어진다 |
+
+`signal_arb_total/unknown` 은 다른 열 개와 달리 **10 mVpp · 0 V 오프셋** 으로 만들어졌다(2026-10-30). 그대로 재생하면
+0.9 V 바이어스가 없고 레벨이 1/10 이라 시뮬에서도 트리거가 하나도 안 걸린다. 100 mVpp / 900 mV 로 다시 만들거나, AWG 에서
+Offset 900 mV · Amplitude 118.7 mVpp(파일 11.87 mVpp 의 10 배)로 직접 맞추고 `prep signal_arb_total/unknown --scale 10`.
+
+연속 ARB 에서 캡처가 *어느 클립* 인지는 보드의 프레임 틱(`end`, LSE)과 AWG 주기로 정한다: 소프트웨어 기준이 슬롯별
+캡처가 주기의 어디서 끝나는지 알고, 뷰어가 보드 캡처들을 가장 많이 맞추는 오프셋을 찾는다(±20 칸, 캡처 3 개부터).
+어느 슬롯에도 안 맞는 캡처는 "슬롯에 안 맞음"(이중 트리거 등)으로 빠진다. 무음(silence) ARB 는 배경잡음 crop 이며,
+데이터셋 음량 그대로면 수백 mVpp 라 `--max-mv`(기본 100) 로 줄인다 -- 기준은 파일을 읽어 만들므로 따라간다.
+**확인 필요**: EDU33212A 의 ARB 메모리가 960 k 점(15 s × 64 kSa/s)을 받는지 -- 안 되면 `--per-class 5` 나 `--rate 32000`.
+
 `wake_core` 는 레지스터·인터럽트·시간을 모른다. 10 ms 마다 `wake_tick(&w, frame)` 을
 부르면 `WAKE_CLIP_READY` 를 돌려줄 때가 있고, 그때 `wake_clip(&w)` 이 100칸이다.
 보드 쪽(`board.c`)은 칸을 만들어 넣고, 완성되면 보내고, 답을 받으면 `wake_sent(&w)`.
