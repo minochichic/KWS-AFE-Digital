@@ -1,0 +1,20 @@
+# analog/AFE_board/artifacts/thr_grid_board_20261117.csv with only the 11/17 setting C cell per channel (nominal 980,948,900,948,996,932,996,948,980,932,948,900,980,900,932,932 + 2 mV)
+# every other cell NaN = unusable, so training keeps these voltages and only the weights adapt
+# train with afe.input_pp=0.29 afe.threshold_grid_path=<this file>
+ch,902,918,934,950,966,982,998
+0,,,,,,1.77359,
+1,,,,1.0985,,,
+2,0.477807,,,,,,
+3,,,,1.15655,,,
+4,,,,,,,1.82298
+5,,,0.903132,,,,
+6,,,,,,,1.69947
+7,,,,1.78407,,,
+8,,,,,,1.08717,
+9,,,0.806841,,,,
+10,,,,0.847482,,,
+11,0.498297,,,,,,
+12,,,,,,0.534911,
+13,0.466657,,,,,,
+14,,,0.742861,,,,
+15,,,0.725195,,,,
