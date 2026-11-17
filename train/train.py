@@ -362,7 +362,18 @@ def _load_initial_state(model, afe, path: str) -> None:
         if "afe" not in state:
             raise ValueError(f"checkpoint {path} has no AFE state")
         from data.afe import load_afe_state
-        load_afe_state(afe, state["afe"])
+        sd = dict(state["afe"])
+        # The filterbank is the circuit this run's config names, not a learned
+        # weight: keep the one the config built. (2026-11-17: bd_setC_leak was
+        # started with spice_matrix_path=..._leak.csv and --init-from a plain-matrix
+        # run, and trained on the plain matrix -- ch7/ch12 nearly dead.)
+        own = afe.state_dict()
+        for k in ("spice_fbank",):
+            if k in sd and k in own and not torch.equal(sd[k], own[k]):
+                print(f"--init-from: {k} differs from the checkpoint's; "
+                      f"keeping this config's ({afe.cfg.spice_matrix_path})")
+                sd[k] = own[k]
+        load_afe_state(afe, sd)
     print(f"initialized model/AFE from {path} (epoch {state.get('epoch', '?')}); "
           "optimizer starts fresh")
 
