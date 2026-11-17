@@ -1,0 +1,21 @@
+# analog/AFE_board/artifacts/thr_grid_board_20261117_leak.csv with only the 11/17 setting C cell per channel (nominal 980,948,900,948,996,932,996,948,980,932,948,900,980,900,932,932 + 2 mV)
+# fitted with afe.spice_matrix_path=analog/AFE/artifacts/filterbank_matrix_board_leak.csv -- train with that matrix, not the plain one
+# every other cell NaN = unusable, so training keeps these voltages and only the weights adapt
+# train with afe.input_pp=0.29 afe.threshold_grid_path=<this file>
+ch,902,918,934,950,966,982,998
+0,,,,,,1.77139,
+1,,,,1.10593,,,
+2,0.513963,,,,,,
+3,,,,1.15719,,,
+4,,,,,,,1.82298
+5,,,0.931255,,,,
+6,,,,,,,1.69602
+7,,,,4.39783,,,
+8,,,,,,1.0586,
+9,,,0.807381,,,,
+10,,,,0.848094,,,
+11,0.542435,,,,,,
+12,,,,,,3.03579,
+13,0.46097,,,,,,
+14,,,0.766429,,,,
+15,,,0.856416,,,,
