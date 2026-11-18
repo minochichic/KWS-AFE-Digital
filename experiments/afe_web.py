@@ -499,6 +499,14 @@ canvas{width:100%;display:block}.row{display:flex;justify-content:space-between;
 #thumbs{display:flex;flex-wrap:wrap;gap:8px}.th{cursor:pointer;border:2px solid transparent;border-radius:6px;padding:3px;background:var(--bg)}
 .th.sel{border-color:var(--on)}.th div{font-size:11px;text-align:center}.ok{color:var(--ok)}.badc{color:var(--bad)}
 .legend span{display:inline-block;width:10px;height:10px;margin:0 4px 0 12px;vertical-align:-1px}
+main{grid-template-columns:minmax(0,1fr)}.hide{display:none!important}
+.ans{gap:56px;align-items:flex-end}.ans b{font-size:52px;line-height:1.1}.ans .k{font-size:15px}
+#verdict{font-size:52px;line-height:1.1;font-weight:700}.flash{animation:fl .9s ease-out}
+@keyframes fl{from{background:color-mix(in srgb,var(--on) 22%,var(--card))}to{background:var(--card)}}
+details.card>summary{cursor:pointer;font-size:13px;color:var(--mute);font-weight:600;list-style:none}
+details.card>summary::before{content:'▶';display:inline-block;width:18px;transition:transform .15s}
+details.card[open]>summary::before{transform:rotate(90deg)}details.card[open]>summary{margin-bottom:10px}
+#cmacc{font-size:30px;font-weight:700;margin:0 0 8px}#cm table.res{font-size:16px}#cm .res th,#cm .res td{padding:6px 10px}
 .full{grid-column:1/-1}table.res{border-collapse:collapse;width:100%;font-size:13px;color:var(--ink)}.res th,.res td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left}.res th{color:var(--mute);font-weight:600}select{font:inherit;padding:2px 4px}button{font:inherit;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer}.pausebtn.on{background:var(--bad);border-color:var(--bad);color:#fff}@media (max-width:860px){main{grid-template-columns:1fr}}
 </style></head><body>
 <header><h1>AFE → STM32 → FPGA 실시간</h1><span id="conn" class="mute"><span class="dot"></span>연결 중</span>
@@ -512,36 +520,33 @@ canvas{width:100%;display:block}.row{display:flex;justify-content:space-between;
 <span id="recp" class="mute"></span>
 <button id="newrec">새 기록 (같은 ARB 다시 — threshold 바꾼 뒤)</button><button id="saverec">지금 저장</button>
 </div><div id="recs" class="mute" style="font-size:12px;margin-top:6px"></div></section>
-<section class="card"><div class="ans">
-<div><div class="k">캡처</div><b id="cn">—</b></div>
+<section class="card full" id="capcard"><div class="ans">
 <div><div class="k">FPGA 답</div><b id="fp">—</b></div>
-<div><div class="k">best.pt (같은 100칸)</div><b id="bp">—</b></div>
 <div><div class="k">정답</div><b id="lb">—</b></div>
-<div><div class="k">소프트웨어 AFE 예측</div><b id="sp">—</b></div></div>
+<div><div class="k">&nbsp;</div><span id="verdict"></span></div>
+<span class="hide"><b id="cn"></b><b id="bp"></b><b id="sp"></b></span></div>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
 <button id="savepng">이 캡처 PNG 저장</button><button id="savecsv">이 기록 저장 (CSV·PNG)</button>
 <span id="saved" class="mute" style="font-size:12px"></span></div>
 <h2 id="imgt">STM32 가 FPGA 로 보낸 16×100 (진할수록 1, 아래가 저역)</h2><canvas id="img" height="300"></canvas></section>
-<section class="card"><h2>FPGA 답 누계 (전체)</h2><div id="tally" class="mute">아직 없음</div>
-<h2 style="margin-top:16px">FPGA = best.pt</h2><div id="agree" style="font-size:22px">—</div>
-<h2 style="margin-top:16px">보드</h2><div id="board" class="mute"></div></section>
-<section class="card"><h2>채널별 발화율 <span class="legend"><span style="background:var(--on)"></span>보드 (이 캡처)<span style="background:var(--sim)"></span>소프트웨어 AFE</span></h2><canvas id="rate" height="190"></canvas></section>
-<section class="card"><h2 id="simt">소프트웨어 AFE 기준</h2><canvas id="sim" height="190"></canvas></section>
-<section class="card full"><h2 id="tunet">threshold 조정 안내</h2>
+<section class="card full"><h2 id="cmt">정답 × FPGA 답 (이번 세션, 채점된 캡처)</h2><div id="cmacc"></div><div id="cm" class="mute">아직 없음</div></section>
+<div class="hide"><div id="tally"></div><div id="agree"></div><div id="board"></div><h2 id="simt"></h2><canvas id="sim" height="190"></canvas></div>
+<details class="card full fold"><summary>채널별 발화율 <span class="legend"><span style="background:var(--on)"></span>보드 (이 캡처)<span style="background:var(--sim)"></span>소프트웨어 AFE</span></summary><canvas id="rate" height="190"></canvas></details>
+<details class="card full fold"><summary id="tunet">threshold 조정 안내</summary>
 <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px"><span id="tunei" class="mute"></span>
 <button class="pausebtn"></button></div>
 <div class="legend mute" style="margin-bottom:4px"><span style="background:var(--sim)"></span>목표 (소프트웨어 AFE, 같은 ARB)<span style="background:var(--on)"></span>보드 (합산)<span style="background:var(--bad)"></span>무음 발화</div>
 <canvas id="tunec" height="190"></canvas><div id="tunetab" style="margin-top:10px"></div>
 <div class="mute" style="font-size:12px;margin-top:8px">합산 = 지금 기록(이 ARB 를 고른 뒤)의 채점된 캡처 전부 (고른 직후 2 초, 일시 중지 중, 슬롯에 안 맞는 캡처 제외). 목표는 캡처마다 그 슬롯의 소프트웨어 AFE 캡처 창이며,
 ARB 100 mVpp ≈ PCM 0.29 레벨 보정을 쓴다 — 레벨 기준이 바뀌면 목표도 바뀐다. 무음 발화 = 보드가 트리거 대기(IDLE) 중인 프레임에서 켜진 비율 (ARB 앞뒤 무음 포함).
-Vthr 를 올리면 발화가 준다. 발화율은 Vthr 에 대해 넓게 평평하고 잡음 바닥 근처에서 급하게 변하므로, 한 번에 조금씩 바꾸고 "새 기록" 으로 다시 모은다.</div></section>
-<section class="card full" id="slotcard" style="display:none"><h2 id="slott">슬롯별 결과</h2><div id="slots"></div></section>
-<section class="card full"><h2>최근 캡처 (누르면 위에 크게)</h2><div id="thumbs"></div></section>
-<section class="card full"><h2 id="sumt">기록별 결과 (이번 세션)</h2><div id="sum" class="mute">재생 중인 ARB 를 고르면 기록이 시작되고, 다른 ARB 를 고르면 저장된 뒤 여기 한 줄이 된다</div></section>
-<section class="card full"><h2 id="cmt">정답 × FPGA 답 (이번 세션, 채점된 캡처)</h2><div id="cm" class="mute">아직 없음</div></section>
+Vthr 를 올리면 발화가 준다. 발화율은 Vthr 에 대해 넓게 평평하고 잡음 바닥 근처에서 급하게 변하므로, 한 번에 조금씩 바꾸고 "새 기록" 으로 다시 모은다.</div></details>
+<details class="card full fold" id="slotcard" style="display:none"><summary id="slott">슬롯별 결과</summary><div id="slots"></div></details>
+<details class="card full fold"><summary>최근 캡처 (누르면 위에 크게)</summary><div id="thumbs"></div></details>
+<details class="card full fold" open><summary id="sumt">기록별 결과 (이번 세션)</summary><div id="sum" class="mute">재생 중인 ARB 를 고르면 기록이 시작되고, 다른 ARB 를 고르면 저장된 뒤 여기 한 줄이 된다</div></details>
 </main>
 <script>
-const CFG=/*CFG*/null;let S=null,sel=null;
+const CFG=/*CFG*/null;let S=null,sel=null,lastN=null;
+document.querySelectorAll('details.fold').forEach(d=>d.addEventListener('toggle',()=>render()));
 const REF=Object.fromEntries(CFG.refs.map(r=>[r.ref,r]));
 const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
 const bits=w=>w.map(x=>Array.from({length:16},(_,k)=>(x>>k)&1));
@@ -578,6 +583,8 @@ function render(){if(!S)return;const st=S.status;const c=document.getElementById
  const label=cur?cur.label:(pr&&pr.label),simw=cur&&cur.sim?cur.sim:(pr&&pr.sim),simRef=cur&&cur.playing?cur.playing:(pr&&pr.ref);
  if(cur){const good=label&&cur.fpga===label;document.getElementById('cn').textContent='#'+cur.n;
   const fp=document.getElementById('fp');fp.textContent=cur.fpga;fp.className=label?(good?'ok':'badc'):'';
+  const vd=document.getElementById('verdict');vd.textContent=label?(good?'✓ 정답':'✗ 오답'):'';vd.className=label?(good?'ok':'badc'):'';
+  if(cur.n!==lastN){lastN=cur.n;const cc=document.getElementById('capcard');cc.classList.remove('flash');void cc.offsetWidth;cc.classList.add('flash')}
   document.getElementById('bp').textContent=`${cur.best_pt} ${cur.prob.toFixed(2)}`;
   document.getElementById('imgt').textContent=`캡처 #${cur.n} (${cur.time})${cur.playing?' · '+cur.playing+(isSeq(cur)?' 슬롯 '+cur.slot:'')+(cur.ref?'':' ('+(WHY[cur.why]||cur.why)+', 집계 제외)'):''} — STM32 가 FPGA 로 보낸 16×100, 아래가 저역`;
   drawImg(document.getElementById('img'),cur.clip,css('--on'))}
@@ -623,7 +630,7 @@ function renderCM(){const C=S.confusion;if(!C.rows.length)return;
  const cols=C.cols.filter(c=>C.rows.includes(c)||C.rows.some(l=>C.m[l][c]));let tot=0,ok=0;
  const body=C.rows.map(l=>{const row=C.m[l],n=Object.values(row).reduce((a,b)=>a+b,0);tot+=n;ok+=row[l]||0;
   return `<tr><th>${l}</th>`+cols.map(c=>{const v=row[c]||0;return `<td style="text-align:center;${v?`background:color-mix(in srgb,var(--on) ${Math.round(70*v/n)}%,transparent)`:''}" class="${v&&c===l?'ok':''}">${v||''}</td>`}).join('')+`<td>${n}</td><td>${n?Math.round(100*(row[l]||0)/n)+'%':''}</td></tr>`}).join('');
- document.getElementById('cmt').textContent=`정답 × FPGA 답 (이번 세션, 채점된 캡처) — 정확도 ${tot?Math.round(1000*ok/tot)/10:0}% (${ok}/${tot})`;
+ document.getElementById('cmacc').innerHTML=`정확도 <span class="ok">${tot?Math.round(1000*ok/tot)/10:0}%</span> <span class="mute" style="font-size:18px;font-weight:400">(${ok}/${tot} 캡처)</span>`;
  document.getElementById('cm').innerHTML=`<table class="res"><tr><th>정답 \\ FPGA</th>${cols.map(c=>`<th>${c}</th>`).join('')}<th>합</th><th>정답률</th></tr>${body}</table>`}
 const TOL=.03,QMAX=.02,MIN_N=5;
 function verdict(n,b,s,q){const d=b-s;
